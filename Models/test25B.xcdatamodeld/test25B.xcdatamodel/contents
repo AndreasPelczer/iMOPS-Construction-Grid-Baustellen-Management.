@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24G419" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="Assigment" representedClassName="Assigment" syncable="YES"/>
+    <entity name="Auftrag" representedClassName=".Auftrag" syncable="YES">
+        <attribute name="deliveryTemperature" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="employeeName" optional="YES" attributeType="String"/>
+        <attribute name="extras" optional="YES" attributeType="String" defaultValueString=""/>
+        <attribute name="isCompleted" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="lastStartTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="processingDetails" optional="YES" attributeType="String"/>
+        <attribute name="statusRawValue" attributeType="String"/>
+        <attribute name="storageLocation" optional="YES" attributeType="String"/>
+        <attribute name="storageNote" attributeType="String"/>
+        <attribute name="totalProcessingTime" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="jobs" inverseEntity="Event"/>
+    </entity>
+    <entity name="CDIngredient" representedClassName=".CDIngredient" syncable="YES">
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <attribute name="menge" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="product" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDProduct" inverseName="ingredients" inverseEntity="CDProduct"/>
+    </entity>
+    <entity name="CDLexikonEntry" representedClassName="CDLexikonEntry" syncable="YES">
+        <attribute name="beschreibung" optional="YES" attributeType="String"/>
+        <attribute name="code" optional="YES" attributeType="String"/>
+        <attribute name="details" optional="YES" attributeType="String"/>
+        <attribute name="kategorie" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="CDProduct" representedClassName="CDProduct" syncable="YES">
+        <attribute name="algorithmusText" optional="YES" attributeType="String"/>
+        <attribute name="allergene" optional="YES" attributeType="String"/>
+        <attribute name="beschreibung" optional="YES" attributeType="String"/>
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="dataSource" optional="YES" attributeType="String"/>
+        <attribute name="fett" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="String"/>
+        <attribute name="kcal" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="portionen" optional="YES" attributeType="String"/>
+        <attribute name="stockQuantity" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="stockUnit" optional="YES" attributeType="String"/>
+        <attribute name="zucker" optional="YES" attributeType="String"/>
+        <attribute name="zusatzstoffe" optional="YES" attributeType="String"/>
+        <relationship name="ingredients" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDIngredient" inverseName="product" inverseEntity="CDIngredient"/>
+    </entity>
+    <entity name="Employee" representedClassName="Employee" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="rolle" optional="YES" attributeType="String"/>
+        <attribute name="telefon" optional="YES" attributeType="String"/>
+        <attribute name="notiz" optional="YES" attributeType="String"/>
+        <attribute name="isActive" optional="YES" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="Event" representedClassName=".Event" syncable="YES">
+        <attribute name="eventEndTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="eventNumber" optional="YES" attributeType="String"/>
+        <attribute name="eventStartTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="extras" optional="YES" attributeType="String"/>
+        <attribute name="location" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="setupTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="timeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="jobs" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="event" inverseEntity="Auftrag"/>
+    </entity>
+</model>
