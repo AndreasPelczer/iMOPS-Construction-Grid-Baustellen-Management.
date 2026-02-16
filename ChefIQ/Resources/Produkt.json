@@ -1,0 +1,29 @@
+[
+  {
+    "id": "A1-HUEHN-2026",
+    "name": "Hühnerbrust Supreme",
+    "mumpsCategory": "Geflügel",
+    "baseTemperature": 165,
+    "baseTime": 22,
+    "umamiFactor": 8.5,
+    "safetyNote": "Kerntemperatur von 72°C zwingend erforderlich."
+  },
+  {
+    "id": "B2-MATJES-007",
+    "name": "Original Matjesfilet",
+    "mumpsCategory": "Fisch",
+    "baseTemperature": 0,
+    "baseTime": 0,
+    "umamiFactor": 9.8,
+    "safetyNote": "Kühlkette nicht unterbrechen. Lagerung bei 2-4°C."
+  },
+  {
+    "id": "C3-RIND-VAK",
+    "name": "Rinderrücken (Vakuum)",
+    "mumpsCategory": "Fleisch",
+    "baseTemperature": 54,
+    "baseTime": 120,
+    "umamiFactor": 9.2,
+    "safetyNote": "Sous-vide Garen. Beutel auf Unversehrtheit prüfen."
+  }
+]
