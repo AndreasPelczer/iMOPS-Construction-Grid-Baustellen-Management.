@@ -1,0 +1,688 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "exportDate": "2026-02-17T14:32:15Z",
+    "plugin": "iMOPS SketchUp Plugin",
+    "sketchupVersion": "2024",
+    "exportedBy": "raphael@beispiel.de"
+  },
+
+  "project": {
+    "id": "MHM-2026-001",
+    "name": "Mannheim Gewerbepark",
+    "client": "Müller GmbH",
+    "location": "Mannheim, Industriestraße 42",
+    "startDate": "2026-03-01",
+    "endDate": "2026-12-31",
+    "description": "Neubau eines Gewerbeparks mit 3 Gebäuden, Außenanlagen und Infrastruktur"
+  },
+
+  "modelInfo": {
+    "totalGroups": 12,
+    "totalComponents": 47,
+    "totalFaces": 156,
+    "totalArea": {
+      "value": 1245.5,
+      "unit": "m²"
+    },
+    "totalVolume": {
+      "value": 4567.8,
+      "unit": "m³"
+    },
+    "boundingBox": {
+      "min": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "max": { "x": 45.0, "y": 30.0, "z": 12.5 }
+    }
+  },
+
+  "safety": {
+    "hazardZones": [
+      {
+        "id": "HZ-001",
+        "name": "Dachgeschoss",
+        "type": "FALL_RISK",
+        "riskLevel": "HIGH",
+        "description": "Absturzgefahr durch Arbeit in der Höhe",
+        "triggers": [
+          {
+            "type": "HEIGHT",
+            "value": 12.5,
+            "unit": "m",
+            "threshold": 2.0,
+            "triggered": true
+          }
+        ],
+        "requiredPPE": [
+          {
+            "type": "HELMET",
+            "name": "Schutzhelm",
+            "category": "HEAD_PROTECTION",
+            "mandatory": true,
+            "standard": "EN 397"
+          },
+          {
+            "type": "FALL_PROTECTION",
+            "name": "Absturzsicherung",
+            "category": "BODY_PROTECTION",
+            "mandatory": true,
+            "standard": "EN 361"
+          },
+          {
+            "type": "SAFETY_HARNESS",
+            "name": "Auffanggurt",
+            "category": "BODY_PROTECTION",
+            "mandatory": true,
+            "standard": "EN 361"
+          }
+        ],
+        "complianceNotes": [
+          "§12 ArbSchG: Arbeitgeber muss Gefährdungsbeurteilung durchführen",
+          "TRBS 2121: Gefährdung von Personen durch Absturz"
+        ],
+        "geometry": {
+          "type": "POLYGON",
+          "coordinates": [
+            { "x": 10.0, "y": 15.0, "z": 12.5 },
+            { "x": 25.0, "y": 15.0, "z": 12.5 },
+            { "x": 25.0, "y": 30.0, "z": 12.5 },
+            { "x": 10.0, "y": 30.0, "z": 12.5 }
+          ],
+          "area": { "value": 225.0, "unit": "m²" }
+        },
+        "accessRestriction": {
+          "requiresPermit": true,
+          "permitType": "HEIGHT_WORK_PERMIT",
+          "maxPersons": 4,
+          "supervisorRequired": true
+        }
+      },
+
+      {
+        "id": "HZ-002",
+        "name": "Kellerraum 3",
+        "type": "CONFINED_SPACE",
+        "riskLevel": "MEDIUM",
+        "description": "Enger Raum mit erhöhtem Risiko durch schlechte Belüftung",
+        "triggers": [
+          {
+            "type": "AREA",
+            "value": 8.5,
+            "unit": "m²",
+            "threshold": 15.0,
+            "triggered": true
+          },
+          {
+            "type": "VENTILATION",
+            "value": "POOR",
+            "triggered": true
+          }
+        ],
+        "requiredPPE": [
+          {
+            "type": "RESPIRATORY_PROTECTION",
+            "name": "Atemschutzmaske FFP3",
+            "category": "RESPIRATORY_PROTECTION",
+            "mandatory": true,
+            "standard": "EN 149"
+          },
+          {
+            "type": "GAS_DETECTOR",
+            "name": "Sauerstoffmessgerät",
+            "category": "MEASUREMENT_DEVICE",
+            "mandatory": true,
+            "standard": "EN 60079-29-1"
+          }
+        ],
+        "complianceNotes": [
+          "DGUV Regel 113-004: Arbeiten in engen Räumen",
+          "BetrSichV §4: Gefährdungsbeurteilung für enge Räume"
+        ],
+        "geometry": {
+          "type": "POLYGON",
+          "coordinates": [
+            { "x": 2.0, "y": 5.0, "z": -3.0 },
+            { "x": 6.5, "y": 5.0, "z": -3.0 },
+            { "x": 6.5, "y": 7.0, "z": -3.0 },
+            { "x": 2.0, "y": 7.0, "z": -3.0 }
+          ],
+          "area": { "value": 8.5, "unit": "m²" },
+          "volume": { "value": 20.4, "unit": "m³" }
+        },
+        "accessRestriction": {
+          "requiresPermit": true,
+          "permitType": "CONFINED_SPACE_PERMIT",
+          "maxPersons": 2,
+          "supervisorRequired": true,
+          "emergencyPlanRequired": true,
+          "continuousMonitoring": true
+        }
+      },
+
+      {
+        "id": "HZ-003",
+        "name": "Staplerweg Außen",
+        "type": "VEHICLE_TRAFFIC",
+        "riskLevel": "MEDIUM",
+        "description": "Gefahrenbereich durch Gabelstapler-Verkehr",
+        "triggers": [
+          {
+            "type": "COMPONENT_DETECTED",
+            "componentName": "Gabelstapler Linde H30D",
+            "category": "VEHICLE",
+            "triggered": true
+          }
+        ],
+        "requiredPPE": [
+          {
+            "type": "HIGH_VIS_VEST",
+            "name": "Warnweste",
+            "category": "VISIBILITY",
+            "mandatory": true,
+            "standard": "EN ISO 20471"
+          },
+          {
+            "type": "SAFETY_SHOES",
+            "name": "Sicherheitsschuhe S3",
+            "category": "FOOT_PROTECTION",
+            "mandatory": true,
+            "standard": "EN ISO 20345"
+          }
+        ],
+        "complianceNotes": [
+          "ASR A5.2: Straßenverkehr auf Betriebsgelände",
+          "DGUV Vorschrift 68: Flurförderzeuge"
+        ],
+        "geometry": {
+          "type": "POLYGON",
+          "coordinates": [
+            { "x": 30.0, "y": 0.0, "z": 0.0 },
+            { "x": 45.0, "y": 0.0, "z": 0.0 },
+            { "x": 45.0, "y": 5.0, "z": 0.0 },
+            { "x": 30.0, "y": 5.0, "z": 0.0 }
+          ],
+          "area": { "value": 75.0, "unit": "m²" }
+        },
+        "accessRestriction": {
+          "requiresPermit": false,
+          "signageRequired": true,
+          "speedLimit": { "value": 10, "unit": "km/h" },
+          "separatePedestrianPath": true
+        },
+        "vehicleInfo": {
+          "type": "FORKLIFT",
+          "model": "Linde H30D",
+          "maxLoad": { "value": 3000, "unit": "kg" },
+          "operatingHours": "07:00-18:00"
+        }
+      },
+
+      {
+        "id": "HZ-004",
+        "name": "Kranbereich",
+        "type": "CRANE_OPERATION",
+        "riskLevel": "HIGH",
+        "description": "Gefahrenbereich durch Turmdrehkran-Betrieb",
+        "triggers": [
+          {
+            "type": "COMPONENT_DETECTED",
+            "componentName": "Turmdrehkran Liebherr 63K",
+            "category": "CRANE",
+            "triggered": true
+          }
+        ],
+        "requiredPPE": [
+          {
+            "type": "HELMET",
+            "name": "Schutzhelm",
+            "category": "HEAD_PROTECTION",
+            "mandatory": true,
+            "standard": "EN 397"
+          },
+          {
+            "type": "HIGH_VIS_VEST",
+            "name": "Warnweste",
+            "category": "VISIBILITY",
+            "mandatory": true,
+            "standard": "EN ISO 20471"
+          }
+        ],
+        "complianceNotes": [
+          "BetrSichV Anhang 1: Prüfung von Kranen",
+          "DGUV Vorschrift 52: Krane"
+        ],
+        "geometry": {
+          "type": "CIRCLE",
+          "center": { "x": 20.0, "y": 20.0, "z": 0.0 },
+          "radius": 40.0,
+          "safetyRadius": 10.0,
+          "area": { "value": 5026.5, "unit": "m²" }
+        },
+        "accessRestriction": {
+          "requiresPermit": true,
+          "permitType": "CRANE_OPERATION_PERMIT",
+          "exclusionZone": true,
+          "signageRequired": true,
+          "communicationRequired": true
+        },
+        "craneInfo": {
+          "type": "TOWER_CRANE",
+          "model": "Liebherr 63K",
+          "maxLoad": { "value": 6000, "unit": "kg" },
+          "hookHeight": { "value": 45.0, "unit": "m" },
+          "radius": { "value": 40.0, "unit": "m" },
+          "operatingHours": "07:00-17:00",
+          "operatorCertificationRequired": true
+        }
+      },
+
+      {
+        "id": "HZ-005",
+        "name": "Schweißbereich",
+        "type": "FIRE_RISK",
+        "riskLevel": "MEDIUM",
+        "description": "Brandgefahr durch Schweißarbeiten und Funkenflug",
+        "triggers": [
+          {
+            "type": "TAG_DETECTED",
+            "tagName": "Elektrik",
+            "triggered": true
+          },
+          {
+            "type": "NAME_PATTERN",
+            "pattern": "Schweiß*",
+            "triggered": true
+          }
+        ],
+        "requiredPPE": [
+          {
+            "type": "WELDING_HELMET",
+            "name": "Schweißerhelm",
+            "category": "HEAD_PROTECTION",
+            "mandatory": true,
+            "standard": "EN 175"
+          },
+          {
+            "type": "WELDING_GLOVES",
+            "name": "Schweißerhandschuhe",
+            "category": "HAND_PROTECTION",
+            "mandatory": true,
+            "standard": "EN 12477"
+          },
+          {
+            "type": "FIRE_RESISTANT_CLOTHING",
+            "name": "Schweißerschutzkleidung",
+            "category": "BODY_PROTECTION",
+            "mandatory": true,
+            "standard": "EN ISO 11611"
+          }
+        ],
+        "complianceNotes": [
+          "TRGS 528: Schweißtechnische Arbeiten",
+          "ASR A2.2: Maßnahmen gegen Brände"
+        ],
+        "geometry": {
+          "type": "POLYGON",
+          "coordinates": [
+            { "x": 15.0, "y": 8.0, "z": 3.0 },
+            { "x": 20.0, "y": 8.0, "z": 3.0 },
+            { "x": 20.0, "y": 12.0, "z": 3.0 },
+            { "x": 15.0, "y": 12.0, "z": 3.0 }
+          ],
+          "area": { "value": 20.0, "unit": "m²" }
+        },
+        "accessRestriction": {
+          "requiresPermit": true,
+          "permitType": "HOT_WORK_PERMIT",
+          "fireWatchRequired": true,
+          "fireExtinguisherRequired": true,
+          "ventilationRequired": true
+        },
+        "fireProtection": {
+          "extinguisherType": "CO2",
+          "extinguisherQuantity": 2,
+          "fireBlanketsAvailable": true,
+          "emergencyExitDistance": { "value": 15.0, "unit": "m" }
+        }
+      }
+    ],
+
+    "generalSafetyRequirements": [
+      {
+        "category": "EMERGENCY_EXITS",
+        "description": "Notausgänge müssen frei und gekennzeichnet sein",
+        "standard": "ASR A2.3"
+      },
+      {
+        "category": "FIRST_AID",
+        "description": "Erste-Hilfe-Ausstattung vorhanden",
+        "standard": "ASR A4.3"
+      },
+      {
+        "category": "FIRE_SAFETY",
+        "description": "Feuerlöscher alle 20m verfügbar",
+        "standard": "ASR A2.2"
+      }
+    ]
+  },
+
+  "calculation": {
+    "components": [
+      {
+        "id": "COMP-001",
+        "category": "WALLS",
+        "type": "DRYWALL",
+        "material": "Gipskartonplatte 2x12,5mm",
+        "description": "Trockenbau-Innenwände",
+        "quantity": {
+          "value": 45.5,
+          "unit": "m²"
+        },
+        "unitPrice": {
+          "value": 28.50,
+          "unit": "EUR/m²",
+          "source": "Standard-Preisliste 2026"
+        },
+        "totalCost": {
+          "value": 1296.75,
+          "currency": "EUR"
+        },
+        "laborHours": {
+          "value": 18.2,
+          "unit": "h",
+          "hourlyRate": 45.00
+        },
+        "geometry": {
+          "groups": ["Erdgeschoss", "1.OG"],
+          "thickness": { "value": 0.1, "unit": "m" },
+          "height": { "value": 2.8, "unit": "m" }
+        },
+        "lvPosition": {
+          "number": "352.01.001",
+          "description": "Trockenbau-Wand 2x GK 12,5mm auf Metallständerwerk",
+          "unitOfMeasure": "m²"
+        }
+      },
+
+      {
+        "id": "COMP-002",
+        "category": "FLOORS",
+        "type": "CONCRETE",
+        "material": "Beton C30/37",
+        "description": "Betonböden Erdgeschoss + 1.OG",
+        "quantity": {
+          "value": 120.0,
+          "unit": "m²"
+        },
+        "unitPrice": {
+          "value": 85.00,
+          "unit": "EUR/m²",
+          "source": "Standard-Preisliste 2026"
+        },
+        "totalCost": {
+          "value": 10200.00,
+          "currency": "EUR"
+        },
+        "laborHours": {
+          "value": 48.0,
+          "unit": "h",
+          "hourlyRate": 55.00
+        },
+        "geometry": {
+          "groups": ["Erdgeschoss", "1.OG"],
+          "thickness": { "value": 0.15, "unit": "m" },
+          "area": { "value": 120.0, "unit": "m²" },
+          "volume": { "value": 18.0, "unit": "m³" }
+        },
+        "lvPosition": {
+          "number": "322.01.005",
+          "description": "Stahlbetondecke C30/37, 15cm stark",
+          "unitOfMeasure": "m²"
+        }
+      },
+
+      {
+        "id": "COMP-003",
+        "category": "DOORS",
+        "type": "STANDARD_DOOR",
+        "material": "Holz-Tür CPL weiß",
+        "description": "Innentüren 90x210cm, Zarge inkl.",
+        "quantity": {
+          "value": 5,
+          "unit": "Stück"
+        },
+        "unitPrice": {
+          "value": 450.00,
+          "unit": "EUR/Stück",
+          "source": "Standard-Preisliste 2026"
+        },
+        "totalCost": {
+          "value": 2250.00,
+          "currency": "EUR"
+        },
+        "laborHours": {
+          "value": 10.0,
+          "unit": "h",
+          "hourlyRate": 45.00
+        },
+        "geometry": {
+          "componentName": "Tür 90x210",
+          "instances": [
+            { "location": "Erdgeschoss/Raum 1", "position": { "x": 5.0, "y": 10.0, "z": 0.0 } },
+            { "location": "Erdgeschoss/Raum 2", "position": { "x": 8.0, "y": 10.0, "z": 0.0 } },
+            { "location": "1.OG/Raum 1", "position": { "x": 5.0, "y": 10.0, "z": 3.0 } },
+            { "location": "1.OG/Raum 2", "position": { "x": 8.0, "y": 10.0, "z": 3.0 } },
+            { "location": "1.OG/Raum 3", "position": { "x": 12.0, "y": 10.0, "z": 3.0 } }
+          ]
+        },
+        "lvPosition": {
+          "number": "361.01.002",
+          "description": "Holztür CPL weiß, 90x210cm, Zarge, Beschläge",
+          "unitOfMeasure": "Stück"
+        }
+      },
+
+      {
+        "id": "COMP-004",
+        "category": "WINDOWS",
+        "type": "STANDARD_WINDOW",
+        "material": "Kunststofffenster weiß, 3-fach Verglasung",
+        "description": "Fenster 120x150cm, Uw=0.95 W/m²K",
+        "quantity": {
+          "value": 12,
+          "unit": "Stück"
+        },
+        "unitPrice": {
+          "value": 400.00,
+          "unit": "EUR/Stück",
+          "source": "Standard-Preisliste 2026"
+        },
+        "totalCost": {
+          "value": 4800.00,
+          "currency": "EUR"
+        },
+        "laborHours": {
+          "value": 18.0,
+          "unit": "h",
+          "hourlyRate": 50.00
+        },
+        "geometry": {
+          "componentName": "Fenster 120x150",
+          "instances": [
+            { "location": "Erdgeschoss/Außenwand Süd", "position": { "x": 3.0, "y": 0.0, "z": 1.2 } },
+            { "location": "Erdgeschoss/Außenwand Süd", "position": { "x": 8.0, "y": 0.0, "z": 1.2 } },
+            { "location": "Erdgeschoss/Außenwand Süd", "position": { "x": 13.0, "y": 0.0, "z": 1.2 } },
+            { "location": "Erdgeschoss/Außenwand Ost", "position": { "x": 0.0, "y": 5.0, "z": 1.2 } },
+            { "location": "Erdgeschoss/Außenwand Ost", "position": { "x": 0.0, "y": 10.0, "z": 1.2 } },
+            { "location": "Erdgeschoss/Außenwand Ost", "position": { "x": 0.0, "y": 15.0, "z": 1.2 } },
+            { "location": "1.OG/Außenwand Süd", "position": { "x": 3.0, "y": 0.0, "z": 4.2 } },
+            { "location": "1.OG/Außenwand Süd", "position": { "x": 8.0, "y": 0.0, "z": 4.2 } },
+            { "location": "1.OG/Außenwand Süd", "position": { "x": 13.0, "y": 0.0, "z": 4.2 } },
+            { "location": "1.OG/Außenwand Ost", "position": { "x": 0.0, "y": 5.0, "z": 4.2 } },
+            { "location": "1.OG/Außenwand Ost", "position": { "x": 0.0, "y": 10.0, "z": 4.2 } },
+            { "location": "1.OG/Außenwand Ost", "position": { "x": 0.0, "y": 15.0, "z": 4.2 } }
+          ]
+        },
+        "lvPosition": {
+          "number": "363.01.004",
+          "description": "Kunststofffenster 120x150cm, 3-fach Verglasung",
+          "unitOfMeasure": "Stück"
+        }
+      },
+
+      {
+        "id": "COMP-005",
+        "category": "SCAFFOLDING",
+        "type": "FACADE_SCAFFOLD",
+        "material": "Gerüst Fassade",
+        "description": "Fassadengerüst für Außenarbeiten",
+        "quantity": {
+          "value": 280.0,
+          "unit": "m²"
+        },
+        "unitPrice": {
+          "value": 8.50,
+          "unit": "EUR/m²/Monat",
+          "source": "Standard-Preisliste 2026"
+        },
+        "rentalDuration": {
+          "value": 6,
+          "unit": "Monate"
+        },
+        "totalCost": {
+          "value": 14280.00,
+          "currency": "EUR"
+        },
+        "geometry": {
+          "groups": ["Außengerüst Süd", "Außengerüst Ost"],
+          "height": { "value": 12.5, "unit": "m" },
+          "length": { "value": 35.0, "unit": "m" },
+          "area": { "value": 280.0, "unit": "m²" }
+        },
+        "lvPosition": {
+          "number": "001.01.002",
+          "description": "Fassadengerüst, 280m², Miete 6 Monate",
+          "unitOfMeasure": "m²"
+        },
+        "safetyRelated": true,
+        "linkedHazardZone": "HZ-001"
+      }
+    ],
+
+    "summary": {
+      "totalComponents": 5,
+      "totalCost": {
+        "materials": 32826.75,
+        "labor": 7185.00,
+        "total": 40011.75,
+        "currency": "EUR"
+      },
+      "totalLaborHours": 94.2,
+      "costByCategory": [
+        { "category": "WALLS", "cost": 1296.75, "percentage": 3.2 },
+        { "category": "FLOORS", "cost": 10200.00, "percentage": 25.5 },
+        { "category": "DOORS", "cost": 2250.00, "percentage": 5.6 },
+        { "category": "WINDOWS", "cost": 4800.00, "percentage": 12.0 },
+        { "category": "SCAFFOLDING", "cost": 14280.00, "percentage": 35.7 },
+        { "category": "OTHER", "cost": 7185.00, "percentage": 18.0 }
+      ],
+      "estimatedDuration": {
+        "value": 6,
+        "unit": "Monate"
+      }
+    }
+  },
+
+  "geometry": {
+    "buildings": [
+      {
+        "id": "BLDG-001",
+        "name": "Hauptgebäude",
+        "floors": [
+          {
+            "id": "FLOOR-001",
+            "name": "Erdgeschoss",
+            "elevation": 0.0,
+            "height": 3.0,
+            "area": { "value": 450.0, "unit": "m²" },
+            "groups": [
+              { "name": "Büro 1", "area": 25.0 },
+              { "name": "Büro 2", "area": 25.0 },
+              { "name": "Lagerraum", "area": 80.0 },
+              { "name": "Sanitär", "area": 15.0 }
+            ]
+          },
+          {
+            "id": "FLOOR-002",
+            "name": "1. Obergeschoss",
+            "elevation": 3.0,
+            "height": 3.0,
+            "area": { "value": 450.0, "unit": "m²" },
+            "groups": [
+              { "name": "Büro 3", "area": 30.0 },
+              { "name": "Büro 4", "area": 30.0 },
+              { "name": "Konferenzraum", "area": 50.0 },
+              { "name": "Technikraum", "area": 20.0 }
+            ]
+          },
+          {
+            "id": "FLOOR-003",
+            "name": "Dachgeschoss",
+            "elevation": 6.0,
+            "height": 6.5,
+            "area": { "value": 225.0, "unit": "m²" },
+            "groups": [
+              { "name": "Dachterrasse", "area": 100.0 },
+              { "name": "Technikzentrale", "area": 45.0 }
+            ]
+          }
+        ]
+      }
+    ],
+
+    "siteLayout": {
+      "totalSiteArea": { "value": 2500.0, "unit": "m²" },
+      "buildingFootprint": { "value": 450.0, "unit": "m²" },
+      "parkingArea": { "value": 300.0, "unit": "m²" },
+      "greenArea": { "value": 800.0, "unit": "m²" },
+      "roadArea": { "value": 950.0, "unit": "m²" }
+    }
+  },
+
+  "tags": {
+    "trades": [
+      "Rohbau",
+      "Trockenbau",
+      "Elektrik",
+      "Sanitär",
+      "Gerüstbau",
+      "Fassade"
+    ],
+    "phases": [
+      "Planung",
+      "Genehmigung",
+      "Rohbau",
+      "Ausbau",
+      "Fertigstellung"
+    ]
+  },
+
+  "exports": {
+    "pdf": {
+      "available": false,
+      "formats": ["A4", "A3"]
+    },
+    "csv": {
+      "available": false,
+      "includes": ["components", "costs", "hazards"]
+    },
+    "ifc": {
+      "available": false,
+      "version": "IFC4"
+    }
+  },
+
+  "checksum": {
+    "algorithm": "SHA256",
+    "value": "a3c7e9b2f1d4e8a6c5b3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1"
+  }
+}
