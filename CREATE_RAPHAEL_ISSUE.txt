@@ -1,0 +1,42 @@
+========================================
+🚀 RAPHAEL GITHUB ISSUE ERSTELLEN
+========================================
+
+SCHRITT 1: Klicke auf diesen Link (kopiere ihn in deinen Browser):
+
+https://github.com/AndreasPelczer/iMOPS-Construction-Grid-Baustellen-Management/issues/new?title=%F0%9F%9A%80%20%5BRAPHAEL%5D%20SketchUp-Plugin%20Prototyp%20-%20Setup%20%26%20Aufgaben%20%28Deadline%3A%2024.02.2026%29&labels=high%20priority,raphael,prototype,sketchup-plugin
+
+SCHRITT 2: Im GitHub-Formular, kopiere diesen Text in das "Description"-Feld:
+(Der Text ist in der Datei RAPHAEL_ISSUE.md - einfach copy-paste)
+
+SCHRITT 3: Klicke auf "Submit new issue"
+
+========================================
+
+ALTERNATIV: Komplett-URL mit Body (falls dein Browser lange URLs unterstützt):
+
+https://github.com/AndreasPelczer/iMOPS-Construction-Grid-Baustellen-Management/issues/new?title=%F0%9F%9A%80%20%5BRAPHAEL%5D%20SketchUp-Plugin%20Prototyp&labels=high%20priority,raphael,prototype
+
+Dann copy-paste den Inhalt von RAPHAEL_ISSUE.md in das Beschreibungsfeld.
+
+========================================
+
+ODER: Manuell erstellen
+
+1. Gehe zu: https://github.com/AndreasPelczer/iMOPS-Construction-Grid-Baustellen-Management/issues/new
+
+2. Titel: 🚀 [RAPHAEL] SketchUp-Plugin Prototyp - Setup & Aufgaben (Deadline: 24.02.2026)
+
+3. Description: Kopiere Inhalt von RAPHAEL_ISSUE.md
+
+4. Labels: high priority, raphael, prototype, sketchup-plugin
+
+5. Assignees: Raphael (falls vorhanden)
+
+6. Submit!
+
+========================================
+
+✅ FERTIG! Das Issue ist dann live und Raphael bekommt eine Notification.
+
+========================================
