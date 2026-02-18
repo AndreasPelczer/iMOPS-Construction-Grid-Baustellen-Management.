@@ -109,12 +109,6 @@ final class AddJobViewModel {
 
         do {
             try viewContext.save()
-
-            // Phase 3: Job im Kernel registrieren (Meier-Score)
-            MainActor.assumeIsolated {
-                KernelBridge.shared.registerJob(newJob)
-            }
-
             return true
         } catch {
             print("Fehler beim Speichern des neuen Auftrags: \(error)")
