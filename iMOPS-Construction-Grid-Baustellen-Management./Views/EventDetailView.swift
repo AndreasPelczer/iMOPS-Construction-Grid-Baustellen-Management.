@@ -207,11 +207,15 @@ struct EventDetailView: View {
                                 .background(.thinMaterial)
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    cadFiles.removeAll { $0.id == file.id }
+                                    saveCADFiles()
+                                } label: {
+                                    Label("Loeschen", systemImage: "trash")
+                                }
+                            }
                         }
-                    }
-                    .onDelete { offsets in
-                        cadFiles.remove(atOffsets: offsets)
-                        saveCADFiles()
                     }
                 }
             }
