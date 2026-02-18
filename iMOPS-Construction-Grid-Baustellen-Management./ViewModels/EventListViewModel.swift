@@ -2,6 +2,7 @@
 
 import Foundation
 import CoreData
+import Combine
 import SwiftUI
 
 // MARK: - EventFilter ENUM (Muss außerhalb oder vor der Klasse stehen)
