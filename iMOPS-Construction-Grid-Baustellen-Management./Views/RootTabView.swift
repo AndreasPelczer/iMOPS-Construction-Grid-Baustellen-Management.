@@ -20,7 +20,15 @@ struct RootTabView: View {
                 Label("Baustellen", systemImage: "building.2")
             }
 
-            // TAB 2: Crew (nur für Disponent / Leitung)
+            // TAB 2: Katalog (Material-Lexikon)
+            NavigationStack {
+                MaterialLexikonView()
+            }
+            .tabItem {
+                Label("Katalog", systemImage: "books.vertical")
+            }
+
+            // TAB 3: Crew (nur für Disponent / Leitung)
             if session.role == .dispatcher || session.role == .director {
                 NavigationStack {
                     CrewPlanningView()
@@ -30,7 +38,7 @@ struct RootTabView: View {
                 }
             }
 
-            // TAB 3: Settings
+            // TAB 4: Settings
             NavigationStack {
                 SettingsView()
             }
