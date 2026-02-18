@@ -187,35 +187,7 @@ struct EventDetailView: View {
             } else {
                 VStack(spacing: 8) {
                     ForEach(cadFiles) { file in
-                        if let url = file.fullURL {
-                            NavigationLink {
-                                CADViewerView(fileURL: url, fileName: file.fileName)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "cube.fill")
-                                        .font(.title3).foregroundStyle(.accentColor)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(file.fileName).font(.body)
-                                        Text(file.importDate.formatted(date: .abbreviated, time: .shortened))
-                                            .font(.caption).foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption).foregroundStyle(.secondary)
-                                }
-                                .padding(.vertical, 8).padding(.horizontal, 10)
-                                .background(.thinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            }
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    cadFiles.removeAll { $0.id == file.id }
-                                    saveCADFiles()
-                                } label: {
-                                    Label("Loeschen", systemImage: "trash")
-                                }
-                            }
-                        }
+                        cadFileRow(file)
                     }
                 }
             }
@@ -223,6 +195,39 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    @ViewBuilder
+    private func cadFileRow(_ file: CADFileInfo) -> some View {
+        if let url = file.fullURL {
+            NavigationLink {
+                CADViewerView(fileURL: url, fileName: file.fileName)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "cube.fill")
+                        .font(.title3).foregroundStyle(.accentColor)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(file.fileName).font(.body)
+                        Text(file.importDate.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 8).padding(.horizontal, 10)
+                .background(.thinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .contextMenu {
+                Button(role: .destructive) {
+                    cadFiles.removeAll { $0.id == file.id }
+                    saveCADFiles()
+                } label: {
+                    Label("Loeschen", systemImage: "trash")
+                }
+            }
+        }
     }
 
     // MARK: - CHECKLIST CARD
