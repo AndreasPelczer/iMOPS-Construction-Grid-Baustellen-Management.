@@ -50,7 +50,7 @@ struct ContentView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddEventSheet = true }) {
-                    Label("Add Event", systemImage: "plus.circle.fill")
+                    Label("Neue Baustelle", systemImage: "plus.circle.fill")
                 }
             }
         }

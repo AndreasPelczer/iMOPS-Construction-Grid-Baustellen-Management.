@@ -33,12 +33,12 @@ final class AddJobViewModel {
     var isHotDelivery: Bool = false
 
     let storageLocations = [
-        "FischKühlhaus", "Molkerei", "Fleisch", "Bereitstelle",
-        "VorkühlerFk", "TK OG", "TK Fingerfood", "TK Logistik Nord"
+        "Baustelle EG", "Baustelle OG", "Materiallager",
+        "Container", "Werkstatt", "Bauhof"
     ]
     let storageNotes = [
-        "1/1 Schwarz", "1/1 Silber", "1/2 Schwarz", "1/2 Silber",
-        "1/1 Silber 10er", "1/1 Silber 6,5 cm", "30cm 1/2 Silber 10,30"
+        "Palette", "Gitterbox", "Sack/Gebinde",
+        "Einzelteile", "Europalette", "Big Bag"
     ]
 
     // MARK: - SOP Template

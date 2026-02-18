@@ -26,10 +26,10 @@ struct AddEventView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(header: Text("Hauptdetails")) {
-                    TextField("Titel", text: $title)
-                    TextField("Eventnummer", text: $eventNumber)
-                    TextField("Veranstaltungsort (Location)", text: $location)
+                Section(header: Text("Baustelle")) {
+                    TextField("Bezeichnung", text: $title)
+                    TextField("Baustellennummer", text: $eventNumber)
+                    TextField("Adresse / Standort", text: $location)
                 }
                 
                 Section(header: Text("Notizen")) {
@@ -40,12 +40,12 @@ struct AddEventView: View {
                 }
                 
                 Section(header: Text("Zeitplan")) {
-                    DatePicker("Setup Beginn", selection: $setupTime, displayedComponents: [.date, .hourAndMinute])
-                    DatePicker("Event Start", selection: $eventStartTime, displayedComponents: [.date, .hourAndMinute])
-                    DatePicker("Event Ende", selection: $eventEndTime, displayedComponents: [.date, .hourAndMinute])
+                    DatePicker("Baustelleneinrichtung", selection: $setupTime, displayedComponents: [.date, .hourAndMinute])
+                    DatePicker("Baubeginn", selection: $eventStartTime, displayedComponents: [.date, .hourAndMinute])
+                    DatePicker("Fertigstellung", selection: $eventEndTime, displayedComponents: [.date, .hourAndMinute])
                 }
             }
-            .navigationTitle("Neues Event erstellen")
+            .navigationTitle("Neue Baustelle")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") { dismiss() }

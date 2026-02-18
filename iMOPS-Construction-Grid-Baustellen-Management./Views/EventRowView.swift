@@ -18,9 +18,9 @@ struct EventRowView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            // MARK: - Event-Details (unverändert)
+            // MARK: - Baustellen-Details
             HStack {
-                            Text(event.title ?? "Unbekanntes Event")
+                            Text(event.title ?? "Unbenannte Baustelle")
                                 .font(.headline)
                             Spacer()
                             // Kommentar: Verwenden Sie eventStartTime wie in ContentView definiert

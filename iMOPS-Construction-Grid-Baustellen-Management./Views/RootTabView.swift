@@ -12,12 +12,12 @@ struct RootTabView: View {
 
     var body: some View {
         TabView {
-            // TAB 1: Aufträge / Events
+            // TAB 1: Baustellen
             NavigationStack {
                 ContentView()
             }
             .tabItem {
-                Label("Zu erledigen", systemImage: "target")
+                Label("Baustellen", systemImage: "building.2")
             }
 
             // TAB 2: Crew (nur für Disponent / Leitung)

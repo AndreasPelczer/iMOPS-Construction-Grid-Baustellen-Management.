@@ -33,7 +33,7 @@ struct SettingsView: View {
             }
 
             Section {
-                Text("Mission = Event (CoreData). Crew/RCA/Scan sind als MVP-Platzhalter angebunden und werden als nächstes gefüllt.")
+                Text("Baustelle = Event (CoreData). Auftraege werden pro Baustelle verwaltet. CAD-Viewer und Gewerke-Vorlagen sind integriert.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

@@ -28,10 +28,10 @@ struct EditEventView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(header: Text("Hauptdetails")) {
-                    TextField("Titel", text: $title)
-                    TextField("Eventnummer", text: $eventNumber)
-                    TextField("Veranstaltungsort (Location)", text: $location)
+                Section(header: Text("Baustelle")) {
+                    TextField("Bezeichnung", text: $title)
+                    TextField("Baustellennummer", text: $eventNumber)
+                    TextField("Adresse / Standort", text: $location)
                 }
                 
                 Section(header: Text("Notizen")) {
@@ -40,12 +40,12 @@ struct EditEventView: View {
                 }
                 
                 Section(header: Text("Zeitplan")) {
-                    DatePicker("Setup Beginn", selection: $setupTime)
-                    DatePicker("Event Start", selection: $eventStartTime)
-                    DatePicker("Event Ende", selection: $eventEndTime)
+                    DatePicker("Baustelleneinrichtung", selection: $setupTime)
+                    DatePicker("Baubeginn", selection: $eventStartTime)
+                    DatePicker("Fertigstellung", selection: $eventEndTime)
                 }
             }
-            .navigationTitle("Event bearbeiten")
+            .navigationTitle("Baustelle bearbeiten")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") { dismiss() }

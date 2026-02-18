@@ -2,6 +2,7 @@
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+*.xcodeproj/project.xcworkspace/xcuserdata/
 DerivedData/
 build/
 *.pbxuser
@@ -13,6 +14,11 @@ build/
 *.perspectivev3
 !default.perspectivev3
 xcuserdata/
+*.xcuserstate
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
 
 # Swift Package Manager
 .build/
