@@ -5,17 +5,14 @@
 //  Created by Andreas Pelczer on 12.01.26.
 //
 
-
 import SwiftUI
 
-/// Root Tabs: Mission (Events), Crew, RCA, Scan, Settings.
-/// Mission = Event (test25B).
 struct RootTabView: View {
     @Environment(AppSession.self) private var session
 
     var body: some View {
         TabView {
-            // TAB 1: Mission Control (Events)
+            // TAB 1: Aufträge / Events
             NavigationStack {
                 ContentView()
             }
@@ -23,7 +20,7 @@ struct RootTabView: View {
                 Label("Zu erledigen", systemImage: "target")
             }
 
-            // TAB 2: Crew (Planung / Zuweisung) – Platzhalter für MVP
+            // TAB 2: Crew (nur für Disponent / Leitung)
             if session.role == .dispatcher || session.role == .director {
                 NavigationStack {
                     CrewPlanningView()
@@ -33,30 +30,7 @@ struct RootTabView: View {
                 }
             }
 
-            // TAB 3: RCA (Remote Chef Annotation) – Platzhalter für MVP
-            NavigationStack {
-                RCAHubView()
-            }
-            .tabItem {
-                Label("RCA", systemImage: "pencil.and.scribble")
-            }
-
-            // TAB 4: Vision-Kit Scan – Platzhalter für MVP
-            NavigationStack {
-                VisionScanView()
-            }
-            .tabItem {
-                Label("Scan", systemImage: "viewfinder")
-            }
-
-            NavigationStack {
-                KnowledgeHomeView()
-            }
-            .tabItem {
-                Label("Wissen", systemImage: "book.fill")
-            }
-
-            // TAB 5: Settings (Rolle/Sprache)
+            // TAB 3: Settings
             NavigationStack {
                 SettingsView()
             }
