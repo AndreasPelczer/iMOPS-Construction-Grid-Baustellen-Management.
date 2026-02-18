@@ -8,10 +8,10 @@ import SwiftUI
 // MARK: - EventFilter ENUM (Muss außerhalb oder vor der Klasse stehen)
 
 enum EventFilter: String, CaseIterable, Identifiable {
-    case upcoming = "Bevorstehend"
-    case past = "Vergangen"
+    case upcoming = "Aktiv"
+    case past = "Abgeschlossen"
     case all = "Alle"
-    
+
     var id: String { self.rawValue }
 }
 

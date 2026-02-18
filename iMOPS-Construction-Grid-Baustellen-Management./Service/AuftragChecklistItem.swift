@@ -7,17 +7,16 @@ struct AuftragChecklistItem: Codable, Identifiable, Equatable {
     var isDone: Bool = false
 }
 
-// MARK: - Zettel: Produktionspositionen (die Zeilen vom Zettel)
+// MARK: - Auftragspositionen (Material / Arbeitspakete)
 struct AuftragLineItem: Codable, Identifiable, Equatable {
     var id: String = UUID().uuidString
-    var title: String            // z.B. "Bulgur"
-    var amount: String = ""      // z.B. "6"
-    var unit: String = ""        // z.B. "Rezept" / "GN 1/1" / "Port."
-    var note: String = ""        // z.B. "12 Min Dampf, danach auflockern"
+    var title: String            // z.B. "Gipskartonplatten"
+    var amount: String = ""      // z.B. "120"
+    var unit: String = ""        // z.B. "m2" / "Stueck" / "lfm"
+    var note: String = ""        // z.B. "Knauf 12,5mm, Brandschutz"
 }
 
-// MARK: - Extras Payload (MASTER für Auftrag.extras)
-// -> hier kommt ALLES rein: Modus, SOP, Pins, Zettelkopf, Positionen
+// MARK: - Extras Payload (MASTER fuer Auftrag.extras)
 struct AuftragExtrasPayload: Codable {
 
     // Modus
@@ -30,31 +29,21 @@ struct AuftragExtrasPayload: Codable {
     var pinnedProductIDs: [String] = []
     var pinnedLexikonCodes: [String] = []
 
-    // ✅ Zettelkopf
-    var orderNumber: String = ""     // "9779-04"
-    var station: String = ""         // "Torhaus, E2, Teambüro"
-    var deadline: Date? = nil        // Uhrzeit / Deadline
-    var persons: Int = 0             // Personen/Portionen
+    // Auftragskopf
+    var orderNumber: String = ""     // "B-2026-042"
+    var station: String = ""         // "EG Wohnung 3" / "OG Bad"
+    var deadline: Date? = nil        // Fertigstellungstermin
+    var persons: Int = 0             // Anzahl Arbeiter
 
-    // ✅ Zettel-Positionen
+    // Positionen (Material / Arbeitspakete)
     var lineItems: [AuftragLineItem] = []
 
-    // ChefIQ: Allergen-Zusammenfassung (Snapshot pro Auftrag)
-    var allergenSummary: [String] = []        // z.B. ["A", "G", "L"]
-    var nutritionSnapshot: NutritionSnapshot? // BE, kcal etc.
+    // Baustellen-spezifisch
+    var gewerk: String = ""          // z.B. "Elektro", "Sanitaer"
+    var planReferenz: String = ""    // Verweis auf CAD-Datei / Plannummer
 }
 
-// MARK: - Nährstoff-Snapshot (für ChefIQ PINS)
-struct NutritionSnapshot: Codable, Equatable {
-    var beValue: String = ""
-    var calories: String = ""
-    var fat: String = ""
-    var carbs: String = ""
-    var protein: String = ""
-    var medicalNote: String = ""
-}
-
-// MARK: - JSON Helfer für Auftrag.extras (String?)
+// MARK: - JSON Helfer fuer Auftrag.extras (String?)
 extension AuftragExtrasPayload {
 
     static func from(_ extrasString: String?) -> AuftragExtrasPayload {
@@ -74,5 +63,5 @@ extension AuftragExtrasPayload {
     }
 }
 
-// MARK: - Kompatibilität (nur Item-Alias – KEIN Payload-Alias!)
+// MARK: - Kompatibilitaet
 typealias ChecklistItem = AuftragChecklistItem

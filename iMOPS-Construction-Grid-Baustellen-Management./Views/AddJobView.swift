@@ -22,16 +22,16 @@ struct AddJobView: View {
             Form {
 
                 
-                // Zettelkopf
-                Section("Zettelkopf") {
-                    TextField("Auftragsnummer (9779-04)", text: $viewModel.orderNumber)
+                // Auftragskopf
+                Section("Auftragskopf") {
+                    TextField("Auftragsnummer (B-2026-042)", text: $viewModel.orderNumber)
                         .textInputAutocapitalization(.never)
 
-                    TextField("Station/Ort (Torhaus E2)", text: $viewModel.station)
+                    TextField("Bereich / Stockwerk (EG Wohnung 3)", text: $viewModel.station)
 
                     HStack {
-                        Stepper(value: $viewModel.persons, in: 0...5000) {
-                            Text("Personen")
+                        Stepper(value: $viewModel.persons, in: 0...100) {
+                            Text("Arbeiter")
                         }
                         Spacer()
                         Text(viewModel.persons == 0 ? "—" : "\(viewModel.persons)")
@@ -40,18 +40,18 @@ struct AddJobView: View {
                     }
 
                     HStack {
-                        Toggle("Deadline", isOn: $viewModel.hasDeadline)
+                        Toggle("Termin", isOn: $viewModel.hasDeadline)
                         if viewModel.hasDeadline {
-                            DatePicker("", selection: $viewModel.deadline, displayedComponents: [.hourAndMinute])
+                            DatePicker("", selection: $viewModel.deadline, displayedComponents: [.date, .hourAndMinute])
                                 .labelsHidden()
                         }
                     }
                 }
 
 
-                // 2) WAS IST ZU TUN? (1 Satz wie auf dem Zettel)
-                Section("Was ist zu tun?") {
-                    TextField("z.B. Bulgur 6× Rezept – 10:30 schicken", text: $viewModel.taskSummary)
+                // 2) WAS IST ZU TUN?
+                Section("Aufgabe") {
+                    TextField("z.B. Elektro EG verlegen, Estrich OG", text: $viewModel.taskSummary)
                         .font(.headline)
                 }
                 // 3) PRODUKTIONSPOSITIONEN (wie auf Papier)
@@ -63,23 +63,22 @@ struct AddJobView: View {
 
                     ForEach($viewModel.lineItems) { $item in
                         VStack(alignment: .leading, spacing: 8) {
-                            TextField("Position (z.B. Bulgur, Chili, Wurst…)", text: $item.title)
+                            TextField("Material (z.B. Gipskarton, Kabel NYM…)", text: $item.title)
 
                             HStack {
                                 TextField("Menge", text: $item.amount)
                                     .frame(maxWidth: 90)
-                                TextField("Einheit (z.B. Rezept/GN/Port.)", text: $item.unit)
+                                TextField("Einheit (m2 / Stueck / lfm)", text: $item.unit)
                             }
                             HStack(spacing: 8) {
-                                Button("Rezept") { item.unit = "Rezept" }
-                                Button("Port.") { item.unit = "Port." }
-                                Button("GN 1/1") { item.unit = "GN 1/1" }
+                                Button("m2") { item.unit = "m2" }
+                                Button("Stueck") { item.unit = "Stueck" }
+                                Button("lfm") { item.unit = "lfm" }
                             }
                             .font(.caption)
                             .buttonStyle(.bordered)
 
-
-                            TextField("Notiz (z.B. 12 Min Dampf, auflockern)", text: $item.note)
+                            TextField("Hinweis (z.B. Brandschutz F90)", text: $item.note)
                                 .foregroundStyle(.secondary)
                         }
                         .swipeActions {
@@ -97,12 +96,12 @@ struct AddJobView: View {
                         Label("Position hinzufügen", systemImage: "plus.circle.fill")
                     }
                 } header: {
-                    Text("Produktionsliste (Positionen)")
+                    Text("Material / Positionen")
                 }
 
-                // 4) SOP / MODUS / TEMPLATE
-                Section("Modus & Vorlage") {
-                    Toggle("Ausbildung (Schritte abhaken)", isOn: $viewModel.trainingMode)
+                // 4) GEWERK / VORLAGE
+                Section("Gewerk & Vorlage") {
+                    Toggle("Schritte einzeln abhaken", isOn: $viewModel.trainingMode)
 
                     Picker("Vorlage", selection: $viewModel.selectedTemplate) {
                         Text("Keine").tag(Optional<AuftragTemplate>.none)
@@ -112,8 +111,8 @@ struct AddJobView: View {
                     }
                 }
 
-                // 5) ORGA (deine bestehenden Felder)
-                Section("Orga / Behälter / Auslieferung") {
+                // 5) ORGA
+                Section("Zuweisung & Lager") {
                     if employees.isEmpty {
                         TextField("Mitarbeiter (optional)", text: $viewModel.employeeName)
                     } else {
@@ -147,7 +146,7 @@ struct AddJobView: View {
                     }
                     .pickerStyle(.menu)
 
-                    Toggle("Heiß ausliefern?", isOn: $viewModel.isHotDelivery)
+                    Toggle("Eilauftrag", isOn: $viewModel.isHotDelivery)
                 }
             }
             .navigationTitle("Neuer Auftrag")

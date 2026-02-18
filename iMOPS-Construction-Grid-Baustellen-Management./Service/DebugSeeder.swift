@@ -6,10 +6,9 @@ enum DebugSeeder {
     static func seedIfNeeded(context: NSManagedObjectContext) {
         #if DEBUG
 
-        let key = "didSeedDemoEvent_v1"
+        let key = "didSeedDemoEvent_v2"
         if UserDefaults.standard.bool(forKey: key) { return }
 
-        // Nur seeden, wenn noch keine Events existieren
         let req: NSFetchRequest<Event> = Event.fetchRequest()
         req.fetchLimit = 1
         let existing = (try? context.fetch(req)) ?? []
@@ -18,54 +17,54 @@ enum DebugSeeder {
             return
         }
 
-        // MARK: - Event
+        // MARK: - Baustelle
         let event = Event(context: context)
-        event.name = "DEMO: Kantine & Produktion (MEP Test)"
-        event.title = "Kantine & Produktion"
-        event.location = "Produktionsküche / Kantine"
-        event.setupTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())
-        event.eventStartTime = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())
-        event.eventEndTime = Calendar.current.date(bySettingHour: 15, minute: 0, second: 0, of: Date())
+        event.name = "DEMO: Sanierung Altbau (Test)"
+        event.title = "Sanierung Altbau Goethestrasse 8"
+        event.location = "Goethestrasse 8, 60313 Frankfurt"
+        event.setupTime = Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date())
+        event.eventStartTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())
+        event.eventEndTime = Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date())
         event.timeStamp = Date()
-        event.notes = "Internes Test-Event zum Durchspielen von MEP, SOP und Übergaben"
+        event.notes = "Kernsanierung 2. OG: Trockenbau, Elektro, Sanitaer, Maler"
 
-        // MARK: - Aufträge
+        // MARK: - Auftraege
         let jobs: [(String, [String])] = [
             (
-                "Setzarbeiten Küchenbereich 2",
+                "Trockenbau 2. OG – Waende stellen",
                 [
-                    "MEP: GN-Bleche 1/1 bereitstellen (Geschirrlager 1 – Regal 2 Fach 7)",
-                    "MEP: Etiketten, Stift, Klebeband bereitstellen",
-                    "MEP: Handschuhe & Reinigungstücher prüfen",
-                    "SOP: Ware holen (Menge + Charge prüfen)",
-                    "SOP: Bleche belegen nach Standard",
-                    "SOP: Beschriften (Datum / Uhrzeit / Allergene)",
-                    "SOP: In Kühlkette zurückstellen",
-                    "SOP: Auftrag übergabefähig markieren"
+                    "UW-/CW-Profile ausmessen + schneiden",
+                    "Unterkonstruktion montieren",
+                    "Daemmung einlegen (Mineralwolle 60mm)",
+                    "Beplankung Seite 1 (GKB 12,5mm)",
+                    "Elektro-Leerrohre einlegen",
+                    "Beplankung Seite 2",
+                    "Fugen verspachteln + schleifen",
+                    "Freigabe fuer Maler einholen"
                 ]
             ),
             (
-                "Produktion: Spätzle anbraten",
+                "Elektro 2. OG – Neuverkabelung",
                 [
-                    "MEP: Pfanne/Kipper & Butter bereitstellen",
-                    "MEP: GN 1/1 6,5 cm bereitstellen (Ziel: ca. 5 cm Füllhöhe)",
-                    "MEP: Hortenwagen 15 prüfen & vorheizen",
-                    "SOP: Spätzle in Butter leicht anbraten",
-                    "SOP: Gleichmäßig auf GN-Bleche verteilen",
-                    "SOP: In Hortenwagen 15 einhängen",
-                    "SOP: Temperatur prüfen & dokumentieren",
-                    "SOP: Übergabe an Kantine markieren",
-                    "SOP: Spülküche informieren – Kipper reinigen"
+                    "Bestandsleitungen pruefen / demontieren",
+                    "Neue Leerrohre in Trockenbau verlegen",
+                    "Kabel einziehen nach E-Plan",
+                    "Schalter- und Steckdosen setzen",
+                    "Verteilerkasten verdrahten",
+                    "Isolations- und Durchgangspruefung",
+                    "Abnahmeprotokoll erstellen"
                 ]
             ),
             (
-                "VA: Essensausgabe Kantine 12–15 Uhr",
+                "Malerarbeiten 2. OG – Waende + Decken",
                 [
-                    "MEP: Ausgabeplatz prüfen & vorbereiten",
-                    "SOP: Spätzle aus Hortenwagen übernehmen",
-                    "SOP: Ausgabe starten",
-                    "SOP: Nachschubstatus beobachten",
-                    "SOP: Ausgabe beenden & Rückmeldung geben"
+                    "Untergrund pruefen + Risse ausbessern",
+                    "Grundierung auftragen",
+                    "Abkleben (Fenster, Boden, Tuerzargen)",
+                    "1. Anstrich Waende + Decken",
+                    "2. Anstrich nach Trocknungszeit",
+                    "Abkleben entfernen + Nacharbeiten",
+                    "Endkontrolle + Freigabe"
                 ]
             )
         ]
@@ -88,9 +87,9 @@ enum DebugSeeder {
         do {
             try context.save()
             UserDefaults.standard.set(true, forKey: key)
-            print("🧪 DEBUG SEED: Demo-Event mit MEP/SOP-Aufträgen angelegt.")
+            print("DEBUG SEED: Demo-Baustelle mit Auftraegen angelegt.")
         } catch {
-            print("❌ DEBUG SEED Fehler: \(error)")
+            print("DEBUG SEED Fehler: \(error)")
         }
 
         #endif

@@ -108,7 +108,7 @@ struct AuftragDetailView: View {
 
     private var modeCard: some View {
         HStack {
-            Text(extras.trainingMode ? "Ausbildung" : "Profi")
+            Text(extras.trainingMode ? "Schrittweise" : "Schnellmodus")
                 .font(.headline)
             Spacer()
             Toggle("", isOn: Binding(
@@ -125,7 +125,7 @@ struct AuftragDetailView: View {
     private var productionListCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Produktionsliste").font(.headline)
+                Text("Materialliste").font(.headline)
                 Spacer()
                 Text("\(extras.lineItems.count)")
                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
@@ -162,7 +162,7 @@ struct AuftragDetailView: View {
     private var checklistCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("MEP / Schritte / SOP").font(.headline)
+                Text("Arbeitsschritte").font(.headline)
                 Spacer()
                 Menu {
                     ForEach(AuftragTemplate.allCases) { tpl in
@@ -220,10 +220,10 @@ struct AuftragDetailView: View {
                 }
 
                 if extras.checklist.isEmpty {
-                    Text("Keine SOP hinterlegt.")
+                    Text("Keine Arbeitsschritte hinterlegt.")
                         .font(.subheadline).foregroundStyle(.secondary).padding(.top, 4)
                 } else {
-                    DisclosureGroup("SOP anzeigen (\(extras.checklist.count))") {
+                    DisclosureGroup("Schritte anzeigen (\(extras.checklist.count))") {
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(extras.checklist) { item in
                                 proStepRow(item)

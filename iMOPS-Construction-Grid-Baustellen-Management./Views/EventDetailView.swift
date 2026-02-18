@@ -32,8 +32,10 @@ struct EventDetailView: View {
 
     @State private var showingEditSheet = false
     @State private var showingAddJobSheet = false
+    @State private var showingCADPicker = false
     @State private var selectedJobFilter: JobFilter = .all
     @State private var extras = EventExtrasPayload()
+    @State private var cadFiles: [CADFileInfo] = []
     @State private var newStepText: String = ""
     @State private var refreshID = UUID()
 
@@ -63,25 +65,39 @@ struct EventDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 headerCard
+                cadCard
                 checklistCard
                 jobsCard
                 Spacer(minLength: 8)
             }
             .padding()
         }
-        .navigationTitle(event.title ?? "Event")
+        .navigationTitle(event.title ?? "Baustelle")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Bearbeiten") { showingEditSheet = true }
             }
         }
-        .onAppear { extras = loadExtras() }
+        .onAppear {
+            extras = loadExtras()
+            cadFiles = loadCADFiles()
+        }
         .sheet(isPresented: $showingEditSheet, onDismiss: { refreshID = UUID() }) {
             EditEventView(event: event)
         }
         .sheet(isPresented: $showingAddJobSheet, onDismiss: { refreshID = UUID() }) {
             AddJobView(event: event, viewContext: viewContext)
+        }
+        .sheet(isPresented: $showingCADPicker) {
+            CADDocumentPicker { importedURL in
+                let info = CADFileInfo(
+                    fileName: importedURL.lastPathComponent,
+                    relativePath: importedURL.lastPathComponent
+                )
+                cadFiles.append(info)
+                saveCADFiles()
+            }
         }
     }
 
@@ -90,7 +106,7 @@ struct EventDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(event.title ?? "Unbenanntes Event")
+                    Text(event.title ?? "Unbenannte Baustelle")
                         .font(.title2.bold())
                     HStack(spacing: 10) {
                         if let nr = event.eventNumber, !nr.isEmpty {
@@ -142,6 +158,67 @@ struct EventDetailView: View {
             Text("\u{2022}").foregroundStyle(.secondary)
             Text(date, style: .time).font(.footnote).foregroundStyle(.secondary)
         }
+    }
+
+    // MARK: - CAD / PLAENE CARD
+    private var cadCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Plaene & CAD").font(.headline)
+                Spacer()
+                Button { showingCADPicker = true } label: {
+                    Label("Importieren", systemImage: "doc.badge.plus")
+                        .font(.subheadline)
+                }
+            }
+
+            if cadFiles.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "cube.transparent")
+                        .font(.title2).foregroundStyle(.secondary)
+                    VStack(alignment: .leading) {
+                        Text("Keine Plaene importiert")
+                            .font(.subheadline)
+                        Text("USDZ, OBJ oder DAE Dateien importieren")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.top, 4)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(cadFiles) { file in
+                        if let url = file.fullURL {
+                            NavigationLink {
+                                CADViewerView(fileURL: url, fileName: file.fileName)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "cube.fill")
+                                        .font(.title3).foregroundStyle(.accentColor)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(file.fileName).font(.body)
+                                        Text(file.importDate.formatted(date: .abbreviated, time: .shortened))
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 8).padding(.horizontal, 10)
+                                .background(.thinMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            }
+                        }
+                    }
+                    .onDelete { offsets in
+                        cadFiles.remove(atOffsets: offsets)
+                        saveCADFiles()
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     // MARK: - CHECKLIST CARD
@@ -304,6 +381,25 @@ struct EventDetailView: View {
         extras.checklist.removeAll { $0.id == itemID }
         saveExtras(extras)
     }
+
+    // MARK: - CAD Files Load/Save (UserDefaults, keyed by eventNumber)
+    private var cadStorageKey: String {
+        "cadFiles_\(event.eventNumber ?? "unknown")"
+    }
+
+    private func loadCADFiles() -> [CADFileInfo] {
+        guard let data = UserDefaults.standard.data(forKey: cadStorageKey),
+              let payload = try? JSONDecoder().decode(CADFilesPayload.self, from: data)
+        else { return [] }
+        return payload.files
+    }
+
+    private func saveCADFiles() {
+        let payload = CADFilesPayload(files: cadFiles)
+        if let data = try? JSONEncoder().encode(payload) {
+            UserDefaults.standard.set(data, forKey: cadStorageKey)
+        }
+    }
 }
 
 // -------------------------------------------------------------
@@ -339,7 +435,7 @@ struct EventTimelineBar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Event-Status: \(progressData.statusText)")
+            Text("Baustellen-Status: \(progressData.statusText)")
                 .font(.caption).foregroundColor(.secondary)
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
