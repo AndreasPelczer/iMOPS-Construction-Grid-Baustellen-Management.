@@ -33,9 +33,11 @@ struct EventDetailView: View {
     @State private var showingEditSheet = false
     @State private var showingAddJobSheet = false
     @State private var showingCADPicker = false
+    @State private var showingMaterialPicker = false
     @State private var selectedJobFilter: JobFilter = .all
     @State private var extras = EventExtrasPayload()
     @State private var cadFiles: [CADFileInfo] = []
+    @State private var pinnedMaterials: [CDLexikonEntry] = []
     @State private var newStepText: String = ""
     @State private var refreshID = UUID()
 
@@ -66,6 +68,7 @@ struct EventDetailView: View {
             VStack(alignment: .leading, spacing: 18) {
                 headerCard
                 cadCard
+                materialCard
                 checklistCard
                 jobsCard
                 Spacer(minLength: 8)
@@ -82,6 +85,7 @@ struct EventDetailView: View {
         .onAppear {
             extras = loadExtras()
             cadFiles = loadCADFiles()
+            pinnedMaterials = fetchPinnedMaterials()
         }
         .sheet(isPresented: $showingEditSheet, onDismiss: { refreshID = UUID() }) {
             EditEventView(event: event)
@@ -98,6 +102,19 @@ struct EventDetailView: View {
                 cadFiles.append(info)
                 saveCADFiles()
             }
+        }
+        .sheet(isPresented: $showingMaterialPicker, onDismiss: {
+            pinnedMaterials = fetchPinnedMaterials()
+        }) {
+            MaterialPickerSheet(
+                pinnedCodes: Binding(
+                    get: { extras.pinnedLexikonCodes },
+                    set: { newCodes in
+                        extras.pinnedLexikonCodes = newCodes
+                        saveExtras(extras)
+                    }
+                )
+            )
         }
     }
 
@@ -160,7 +177,7 @@ struct EventDetailView: View {
         }
     }
 
-    // MARK: - CAD / PLAENE CARD
+    // MARK: - CAD / PLAENE CARD (gruppiert nach Plantyp)
     private var cadCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -185,9 +202,24 @@ struct EventDetailView: View {
                 }
                 .padding(.top, 4)
             } else {
-                VStack(spacing: 8) {
-                    ForEach(cadFiles) { file in
-                        cadFileRow(file)
+                let grouped = Dictionary(grouping: cadFiles, by: { $0.planType })
+                let sortedKeys = grouped.keys.sorted()
+                ForEach(sortedKeys, id: \.self) { planType in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 6) {
+                            if let pt = PlanType(rawValue: planType) {
+                                Image(systemName: pt.icon)
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Text(planType)
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.top, 4)
+
+                        ForEach(grouped[planType] ?? []) { file in
+                            cadFileRow(file)
+                        }
                     }
                 }
             }
@@ -228,6 +260,91 @@ struct EventDetailView: View {
                 }
             }
         }
+    }
+
+    // MARK: - MATERIAL CARD (gepinnte Materialien)
+    private var materialCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Materialien").font(.headline)
+                Spacer()
+                Button { showingMaterialPicker = true } label: {
+                    Label("Zuordnen", systemImage: "plus.circle")
+                        .font(.subheadline)
+                }
+            }
+
+            if pinnedMaterials.isEmpty && extras.pinnedLexikonCodes.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "shippingbox")
+                        .font(.title2).foregroundStyle(.secondary)
+                    VStack(alignment: .leading) {
+                        Text("Keine Materialien zugeordnet")
+                            .font(.subheadline)
+                        Text("Materialien aus dem Katalog dieser Baustelle zuweisen")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.top, 4)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(pinnedMaterials, id: \.objectID) { mat in
+                        HStack(spacing: 12) {
+                            Image(systemName: iconForKategorie(mat.kategorie))
+                                .font(.title3).foregroundStyle(.orange)
+                                .frame(width: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(mat.name ?? "").font(.body)
+                                HStack(spacing: 6) {
+                                    Text(mat.code ?? "").font(.caption).foregroundStyle(.secondary)
+                                    Text("\u{2022}").foregroundStyle(.secondary)
+                                    Text(mat.kategorie ?? "").font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            Button {
+                                unpinMaterial(code: mat.code ?? "")
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundStyle(.red.opacity(0.7))
+                            }
+                        }
+                        .padding(.vertical, 8).padding(.horizontal, 10)
+                        .background(.thinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func iconForKategorie(_ kat: String?) -> String {
+        switch kat {
+        case "Rohbau":      return "building.2"
+        case "Trockenbau":  return "square.split.2x2"
+        case "Elektro":     return "bolt.fill"
+        case "Sanitaer":    return "drop.fill"
+        case "Daemmung":    return "shield.fill"
+        case "Ausbau":      return "paintbrush.fill"
+        default:            return "shippingbox"
+        }
+    }
+
+    private func unpinMaterial(code: String) {
+        extras.pinnedLexikonCodes.removeAll { $0 == code }
+        saveExtras(extras)
+        pinnedMaterials = fetchPinnedMaterials()
+    }
+
+    private func fetchPinnedMaterials() -> [CDLexikonEntry] {
+        guard !extras.pinnedLexikonCodes.isEmpty else { return [] }
+        let req: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
+        req.predicate = NSPredicate(format: "code IN %@", extras.pinnedLexikonCodes)
+        req.sortDescriptors = [NSSortDescriptor(keyPath: \CDLexikonEntry.name, ascending: true)]
+        return (try? viewContext.fetch(req)) ?? []
     }
 
     // MARK: - CHECKLIST CARD
@@ -407,6 +524,88 @@ struct EventDetailView: View {
         let payload = CADFilesPayload(files: cadFiles)
         if let data = try? JSONEncoder().encode(payload) {
             UserDefaults.standard.set(data, forKey: cadStorageKey)
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// MARK: - Material Picker Sheet
+// -------------------------------------------------------------
+struct MaterialPickerSheet: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+    @Binding var pinnedCodes: [String]
+
+    @FetchRequest(
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \CDLexikonEntry.kategorie, ascending: true),
+            NSSortDescriptor(keyPath: \CDLexikonEntry.name, ascending: true)
+        ]
+    ) private var allMaterials: FetchedResults<CDLexikonEntry>
+
+    @State private var searchText = ""
+
+    private var filtered: [CDLexikonEntry] {
+        if searchText.isEmpty { return Array(allMaterials) }
+        let q = searchText.lowercased()
+        return allMaterials.filter {
+            ($0.name ?? "").lowercased().contains(q) ||
+            ($0.kategorie ?? "").lowercased().contains(q) ||
+            ($0.code ?? "").lowercased().contains(q)
+        }
+    }
+
+    private var grouped: [(String, [CDLexikonEntry])] {
+        Dictionary(grouping: filtered, by: { $0.kategorie ?? "Sonstige" })
+            .sorted { $0.key < $1.key }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(grouped, id: \.0) { category, materials in
+                    Section(category) {
+                        ForEach(materials, id: \.objectID) { mat in
+                            Button {
+                                togglePin(code: mat.code ?? "")
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(mat.name ?? "").font(.body)
+                                        Text(mat.code ?? "").font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    if pinnedCodes.contains(mat.code ?? "") {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(.green)
+                                    } else {
+                                        Image(systemName: "circle")
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            .foregroundStyle(.primary)
+                        }
+                    }
+                }
+            }
+            .searchable(text: $searchText, prompt: "Material suchen...")
+            .navigationTitle("Material zuordnen")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func togglePin(code: String) {
+        guard !code.isEmpty else { return }
+        if let idx = pinnedCodes.firstIndex(of: code) {
+            pinnedCodes.remove(at: idx)
+        } else {
+            pinnedCodes.append(code)
         }
     }
 }

@@ -73,6 +73,30 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
     }
 }
 
+// MARK: - Plantypen
+
+enum PlanType: String, CaseIterable, Identifiable {
+    case grundriss = "Grundriss"
+    case schnitt = "Schnitt"
+    case elektroplan = "Elektroplan"
+    case sanitaerplan = "Sanitaerplan"
+    case statik = "Statik"
+    case sonstiges = "Sonstiges"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .grundriss:     return "rectangle.split.3x3"
+        case .schnitt:       return "scissors"
+        case .elektroplan:   return "bolt.fill"
+        case .sanitaerplan:  return "drop.fill"
+        case .statik:        return "triangle.fill"
+        case .sonstiges:     return "doc.fill"
+        }
+    }
+}
+
 // MARK: - Verwaltung der importierten CAD-Dateien
 
 struct CADFileInfo: Identifiable, Codable, Equatable {
@@ -80,10 +104,31 @@ struct CADFileInfo: Identifiable, Codable, Equatable {
     var fileName: String
     var relativePath: String // Relativer Pfad unter Documents/CADFiles/
     var importDate: Date = Date()
+    var planType: String = "Sonstiges"
 
     var fullURL: URL? {
         let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         return docsDir.appendingPathComponent("CADFiles").appendingPathComponent(relativePath)
+    }
+
+    // Backward-compatible decoding fuer bestehende Daten ohne planType
+    enum CodingKeys: String, CodingKey {
+        case id, fileName, relativePath, importDate, planType
+    }
+
+    init(fileName: String, relativePath: String, planType: String = "Sonstiges") {
+        self.fileName = fileName
+        self.relativePath = relativePath
+        self.planType = planType
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        fileName = try c.decode(String.self, forKey: .fileName)
+        relativePath = try c.decode(String.self, forKey: .relativePath)
+        importDate = try c.decode(Date.self, forKey: .importDate)
+        planType = try c.decodeIfPresent(String.self, forKey: .planType) ?? "Sonstiges"
     }
 }
 
