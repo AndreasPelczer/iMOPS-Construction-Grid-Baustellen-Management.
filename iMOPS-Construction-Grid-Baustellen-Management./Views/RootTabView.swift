@@ -20,7 +20,17 @@ struct RootTabView: View {
                 Label("Baustellen", systemImage: "building.2")
             }
 
-            // TAB 2: Katalog (Material-Lexikon)
+            // TAB 2: Haus-Konfigurator (nur fuer Disponent / Leitung)
+            if session.role == .dispatcher || session.role == .director {
+                NavigationStack {
+                    HouseConfiguratorView()
+                }
+                .tabItem {
+                    Label("Planer", systemImage: "house.and.flag")
+                }
+            }
+
+            // TAB 3: Katalog (Material-Lexikon)
             NavigationStack {
                 MaterialLexikonView()
             }
