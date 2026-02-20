@@ -9,8 +9,9 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
     let onPicked: (URL) -> Void
     /// Callback: wird bei Dateien aufgerufen, die Server-Konvertierung brauchen
     var onServerConvert: ((URL) -> Void)?
-    /// Callback: wird bei SKP-Dateien aufgerufen (nicht direkt unterstuetzt)
-    var onSKPPicked: (() -> Void)?
+    /// Callback: wird bei SKP-Dateien aufgerufen (nicht direkt unterstuetzt).
+    /// Liefert die lokale URL der kopierten SKP-Datei.
+    var onSKPPicked: ((URL?) -> Void)?
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         // Unterstuetzte Typen: USDZ, OBJ, DAE + weitere 3D-Formate
@@ -37,7 +38,13 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onPicked: onPicked, onServerConvert: onServerConvert, onSKPPicked: onSKPPicked)
+        Coordinator(onPicked: onPicked, onServerConvert: onServerConvert, onSKPPicked: onSKPPicked, cadDir: Self.cadDirectory)
+    }
+
+    /// App-Sandbox Verzeichnis fuer CAD-Dateien
+    private static var cadDirectory: URL {
+        let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return docsDir.appendingPathComponent("CADFiles", isDirectory: true)
     }
 
     /// Formate die SceneKit direkt laden kann (keine Konvertierung noetig)
@@ -52,12 +59,14 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         let onPicked: (URL) -> Void
         let onServerConvert: ((URL) -> Void)?
-        let onSKPPicked: (() -> Void)?
+        let onSKPPicked: ((URL?) -> Void)?
+        let cadDir: URL
 
-        init(onPicked: @escaping (URL) -> Void, onServerConvert: ((URL) -> Void)?, onSKPPicked: (() -> Void)?) {
+        init(onPicked: @escaping (URL) -> Void, onServerConvert: ((URL) -> Void)?, onSKPPicked: ((URL?) -> Void)?, cadDir: URL) {
             self.onPicked = onPicked
             self.onServerConvert = onServerConvert
             self.onSKPPicked = onSKPPicked
+            self.cadDir = cadDir
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
@@ -69,9 +78,10 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
 
             let ext = sourceURL.pathExtension.lowercased()
 
-            // SKP-Dateien: Hinweis zeigen (proprietaeres Format)
+            // SKP-Dateien: In Sandbox kopieren und Callback mit URL aufrufen
             if ext == "skp" {
-                onSKPPicked?()
+                let localURL = copySKPToSandbox(sourceURL: sourceURL)
+                onSKPPicked?(localURL)
                 return
             }
 
@@ -115,6 +125,26 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
                 }
             } catch {
                 print("CAD Import Fehler: \(error)")
+            }
+        }
+
+        /// Kopiert eine SKP-Datei in die App-Sandbox, damit sie spaeter
+        /// per UIDocumentInteractionController an SketchUp uebergeben werden kann.
+        private func copySKPToSandbox(sourceURL: URL) -> URL? {
+            let fileManager = FileManager.default
+            do {
+                if !fileManager.fileExists(atPath: cadDir.path) {
+                    try fileManager.createDirectory(at: cadDir, withIntermediateDirectories: true)
+                }
+                let destURL = cadDir.appendingPathComponent(sourceURL.lastPathComponent)
+                if fileManager.fileExists(atPath: destURL.path) {
+                    try fileManager.removeItem(at: destURL)
+                }
+                try fileManager.copyItem(at: sourceURL, to: destURL)
+                return destURL
+            } catch {
+                print("SKP Kopie-Fehler: \(error)")
+                return nil
             }
         }
     }

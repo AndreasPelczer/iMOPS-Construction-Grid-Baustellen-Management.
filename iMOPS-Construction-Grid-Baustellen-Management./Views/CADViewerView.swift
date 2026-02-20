@@ -36,6 +36,15 @@ struct CADViewerView: View {
         }
         .navigationTitle(fileName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    ExternalAppLauncher.shared.openInExternalApp(fileURL: fileURL)
+                } label: {
+                    Label("Extern oeffnen", systemImage: "arrow.up.forward.app")
+                }
+            }
+        }
     }
 }
 

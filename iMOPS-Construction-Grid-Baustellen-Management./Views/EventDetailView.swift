@@ -46,6 +46,8 @@ struct EventDetailView: View {
     @State private var conversionError: String?
     @State private var showConversionError = false
     @State private var showSKPHint = false
+    @State private var showNoExternalApp = false
+    @State private var lastPickedSKPURL: URL?
 
     // MARK: Jobs: gefiltert + sortiert
     private var filteredJobs: [Auftrag] {
@@ -112,7 +114,8 @@ struct EventDetailView: View {
                 onServerConvert: { fileURL in
                     convertFileToUSDZ(fileURL)
                 },
-                onSKPPicked: {
+                onSKPPicked: { skpFileURL in
+                    lastPickedSKPURL = skpFileURL
                     showSKPHint = true
                 }
             )
@@ -142,10 +145,22 @@ struct EventDetailView: View {
         } message: {
             Text(conversionError ?? "Unbekannter Fehler")
         }
-        .alert("SKP-Format nicht direkt unterstuetzt", isPresented: $showSKPHint) {
+        .alert("SKP-Datei erkannt", isPresented: $showSKPHint) {
+            if let skpURL = lastPickedSKPURL {
+                Button("In SketchUp oeffnen") {
+                    ExternalAppLauncher.shared.openInExternalApp(fileURL: skpURL) { found in
+                        if !found { showNoExternalApp = true }
+                    }
+                }
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("SKP kann nicht direkt im CAD-Viewer angezeigt werden.\n\nWenn SketchUp for iPad installiert ist, kannst du die Datei dort oeffnen.\n\nAlternativ: Exportiere als OBJ oder DAE ueber app.sketchup.com")
+        }
+        .alert("Keine passende App gefunden", isPresented: $showNoExternalApp) {
             Button("OK") {}
         } message: {
-            Text("SKP ist ein proprietaeres SketchUp-Format.\n\nBitte exportiere die Datei zuerst als OBJ oder DAE:\n1. Oeffne app.sketchup.com (kostenlos)\n2. Lade die SKP-Datei hoch\n3. Exportiere als OBJ oder DAE\n4. Importiere die exportierte Datei hier")
+            Text("Es wurde keine installierte App gefunden, die diesen Dateityp oeffnen kann.\n\nFuer SKP-Dateien: Installiere \"SketchUp for iPad\" aus dem App Store.")
         }
         .sheet(isPresented: $showingMaterialPicker, onDismiss: {
             pinnedMaterials = fetchPinnedMaterials()
@@ -296,6 +311,15 @@ struct EventDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .contextMenu {
+                Button {
+                    ExternalAppLauncher.shared.openInExternalApp(fileURL: url) { found in
+                        if !found {
+                            showNoExternalApp = true
+                        }
+                    }
+                } label: {
+                    Label("In externer App oeffnen", systemImage: "arrow.up.forward.app")
+                }
                 Button(role: .destructive) {
                     cadFiles.removeAll { $0.id == file.id }
                     saveCADFiles()
