@@ -322,13 +322,16 @@ struct EventDetailView: View {
             }
             .contextMenu {
                 Button {
-                    ExternalAppLauncher.shared.openInExternalApp(fileURL: url) { found in
-                        if !found {
-                            showNoExternalApp = true
-                        }
+                    if let sketchupURL = URL(string: "https://app.sketchup.com") {
+                        UIApplication.shared.open(sketchupURL)
                     }
                 } label: {
-                    Label("In externer App oeffnen", systemImage: "arrow.up.forward.app")
+                    Label("In SketchUp Web oeffnen", systemImage: "safari")
+                }
+                Button {
+                    ExternalAppLauncher.shared.openInExternalApp(fileURL: url)
+                } label: {
+                    Label("Teilen / Andere App", systemImage: "square.and.arrow.up")
                 }
                 Button(role: .destructive) {
                     cadFiles.removeAll { $0.id == file.id }

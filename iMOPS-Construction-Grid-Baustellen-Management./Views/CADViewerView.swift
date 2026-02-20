@@ -38,10 +38,21 @@ struct CADViewerView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    ExternalAppLauncher.shared.openInExternalApp(fileURL: fileURL)
+                Menu {
+                    Button {
+                        if let url = URL(string: "https://app.sketchup.com") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        Label("In SketchUp Web oeffnen", systemImage: "safari")
+                    }
+                    Button {
+                        ExternalAppLauncher.shared.openInExternalApp(fileURL: fileURL)
+                    } label: {
+                        Label("Teilen / Andere App", systemImage: "square.and.arrow.up")
+                    }
                 } label: {
-                    Label("Extern oeffnen", systemImage: "arrow.up.forward.app")
+                    Image(systemName: "square.and.arrow.up")
                 }
             }
         }
