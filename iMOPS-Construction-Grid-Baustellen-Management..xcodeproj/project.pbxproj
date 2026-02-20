@@ -32,6 +32,9 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1A961EDB2F45FFC30027C5B3 /* iMOPS-Construction-Grid-Baustellen-Management. */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1A961F052F45FFC50027C5B3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
 			path = "iMOPS-Construction-Grid-Baustellen-Management.";
 			sourceTree = "<group>";
 		};
@@ -46,6 +49,16 @@
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1A961F052F45FFC50027C5B3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1A961ED82F45FFC30027C5B3 /* iMOPS-Construction-Grid-Baustellen-Management. */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		1A961ED62F45FFC30027C5B3 /* Frameworks */ = {
