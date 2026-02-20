@@ -1,5 +1,5 @@
 import Foundation
-import CoreData
+internal import CoreData
 
 @objc(Employee)
 public class Employee: NSManagedObject {}

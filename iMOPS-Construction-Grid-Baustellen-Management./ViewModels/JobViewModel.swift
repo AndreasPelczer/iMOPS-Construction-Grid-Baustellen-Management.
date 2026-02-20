@@ -6,7 +6,7 @@
 // ViewModels/JobViewModel.swift
 
 import Foundation
-import CoreData
+internal import CoreData
 import Observation
 
 // Dieses ViewModel trennt die Geschäftslogik (Timer, Statuswechsel)

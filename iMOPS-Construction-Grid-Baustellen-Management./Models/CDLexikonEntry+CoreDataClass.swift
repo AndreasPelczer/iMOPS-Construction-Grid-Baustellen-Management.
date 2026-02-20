@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import CoreData
+internal import CoreData
 
 @objc(CDLexikonEntry)
 public class CDLexikonEntry: NSManagedObject {

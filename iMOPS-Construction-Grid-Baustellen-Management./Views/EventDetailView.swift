@@ -1,5 +1,5 @@
 import SwiftUI
-import CoreData
+internal import CoreData
 import Combine
 
 // MARK: - Helpers: Extras JSON (Checkliste)

@@ -1,5 +1,5 @@
 import SwiftUI
-import CoreData
+internal import CoreData
 
 struct AuftragRowView: View {
     @Environment(\.managedObjectContext) private var ctx

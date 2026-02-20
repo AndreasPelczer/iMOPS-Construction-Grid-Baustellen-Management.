@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import CoreData
+internal import CoreData
 
 // MARK: - Crew Planning (Hauptansicht)
 

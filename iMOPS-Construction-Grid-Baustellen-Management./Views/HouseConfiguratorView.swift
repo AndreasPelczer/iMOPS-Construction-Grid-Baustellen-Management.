@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import CoreData
+internal import CoreData
 
 // MARK: - Haupt-View: Konfigurator
 
