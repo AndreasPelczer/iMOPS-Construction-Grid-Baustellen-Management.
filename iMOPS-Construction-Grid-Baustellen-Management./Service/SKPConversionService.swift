@@ -1,14 +1,15 @@
 import Foundation
 
-/// Service fuer die serverseitige SKP-zu-USDZ-Konvertierung.
+/// Service fuer die serverseitige 3D-Datei-zu-USDZ-Konvertierung.
 ///
 /// Ablauf:
-///   1. App waehlt .skp Datei aus (Document Picker)
+///   1. App waehlt 3D-Datei aus (Document Picker)
 ///   2. SKPConversionService.convert() laedt die Datei zum Server hoch
-///   3. Server konvertiert SKP -> USDZ (via Blender headless)
+///   3. Server konvertiert zu USDZ (via Blender headless)
 ///   4. Server gibt USDZ zurueck
 ///   5. App speichert USDZ lokal und zeigt sie im CAD-Viewer an
 ///
+/// Unterstuetzte Formate: OBJ, DAE, FBX, STL, glTF/glB
 /// Server-Endpoint: POST /api/convert (multipart/form-data)
 ///
 /// Konfiguration: Server-URL in UserDefaults unter "imops_server_url"
@@ -43,14 +44,14 @@ class SKPConversionService {
         self.session = URLSession(configuration: config)
     }
 
-    // MARK: - Hauptfunktion: SKP -> USDZ konvertieren
+    // MARK: - Hauptfunktion: 3D-Datei -> USDZ konvertieren
 
-    /// Konvertiert eine lokale SKP-Datei serverseitig zu USDZ.
+    /// Konvertiert eine lokale 3D-Datei serverseitig zu USDZ.
     ///
-    /// - Parameter skpURL: Lokaler Pfad zur .skp-Datei (in der App-Sandbox)
+    /// - Parameter fileURL: Lokaler Pfad zur 3D-Datei (in der App-Sandbox)
     /// - Returns: Lokaler Pfad zur konvertierten .usdz-Datei
     /// - Throws: ConversionError bei Netzwerk-/Server-Fehlern
-    func convert(skpURL: URL) async throws -> URL {
+    func convert(fileURL: URL) async throws -> URL {
         let endpoint = URL(string: "\(serverURL)/api/convert")!
 
         // Multipart-Request aufbauen
@@ -59,8 +60,8 @@ class SKPConversionService {
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
-        let fileData = try Data(contentsOf: skpURL)
-        let fileName = skpURL.lastPathComponent
+        let fileData = try Data(contentsOf: fileURL)
+        let fileName = fileURL.lastPathComponent
 
         var body = Data()
         body.append("--\(boundary)\r\n")
@@ -95,8 +96,8 @@ class SKPConversionService {
             try fileManager.createDirectory(at: cadDir, withIntermediateDirectories: true)
         }
 
-        // Dateiname: Original-SKP-Name mit .usdz Endung
-        let usdzName = (skpURL.deletingPathExtension().lastPathComponent) + ".usdz"
+        // Dateiname: Original-Name mit .usdz Endung
+        let usdzName = (fileURL.deletingPathExtension().lastPathComponent) + ".usdz"
         let usdzURL = cadDir.appendingPathComponent(usdzName)
 
         // Falls gleiche Datei existiert, ueberschreiben
