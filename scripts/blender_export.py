@@ -99,20 +99,31 @@ def import_file(filepath):
 
     try:
         if ext == ".skp":
-            # SketchUp-Import benoetigt ein Addon
-            # Versuche zuerst das eingebaute/installierte Addon
+            # SketchUp-Import benoetigt ein Addon/Extension
+            # Versuche bekannte Addon-Namen zu aktivieren
+            skp_addon_names = [
+                "io_import_sketchup",
+                "sketchup_importer",
+                "import_sketchup",
+            ]
+            for addon_name in skp_addon_names:
+                try:
+                    bpy.ops.preferences.addon_enable(module=addon_name)
+                    print(f"[blender_export] SKP-Addon '{addon_name}' aktiviert")
+                    break
+                except Exception:
+                    continue
+
+            # Jetzt den Import versuchen
             try:
                 bpy.ops.import_scene.skp(filepath=filepath)
                 print("[blender_export] SKP-Import via Addon erfolgreich")
             except AttributeError:
                 msg = (
-                    "[blender_export] FEHLER: SketchUp-Importer-Addon nicht "
-                    "installiert!\n"
-                    "  Installiere eines der folgenden Addons in Blender:\n"
-                    "  - https://extensions.blender.org (suche 'SketchUp')\n"
-                    "  - https://github.com/nicoekkart/bpy_sketchup_importer\n"
-                    "  Oder exportiere die SKP-Datei zuerst als DAE/OBJ aus "
-                    "SketchUp."
+                    "[blender_export] FEHLER: SketchUp-Importer nicht gefunden!\n"
+                    "  Bitte oeffne Blender -> Edit -> Preferences -> Get Extensions\n"
+                    "  und installiere einen SketchUp-Importer.\n"
+                    "  Dann den Server neu starten."
                 )
                 print(msg, file=sys.stderr)
                 return False
