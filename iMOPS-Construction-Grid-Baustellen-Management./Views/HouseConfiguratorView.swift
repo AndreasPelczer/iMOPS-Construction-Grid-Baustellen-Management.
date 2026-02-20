@@ -127,7 +127,7 @@ struct HouseConfiguratorView: View {
                 Spacer()
                 Text(formatCurrency(project.wohnflaeche * project.ausstattung.kostenProQm))
                     .font(.headline.monospacedDigit())
-                    .foregroundStyle(.accentColor)
+                    .foregroundStyle(Color.accentColor)
             }
         }
     }
@@ -236,7 +236,7 @@ struct HouseProjectResultView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(formatCurrency(result.gesamtkosten))
                         .font(.title2.bold().monospacedDigit())
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                     Text("Gesamtkosten").font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -318,7 +318,7 @@ struct HouseProjectResultView: View {
                 Spacer()
                 Text(formatCurrency(result.gesamtkosten))
                     .font(.title3.bold().monospacedDigit())
-                    .foregroundStyle(.accentColor)
+                    .foregroundStyle(Color.accentColor)
             }
             .padding()
             .background(.ultraThinMaterial)
@@ -414,7 +414,7 @@ struct HouseProjectResultView: View {
                                 Spacer()
                                 Text("\(formatMenge(pos.menge)) \(pos.einheit)")
                                     .font(.subheadline.monospacedDigit())
-                                    .foregroundStyle(.accentColor)
+                                    .foregroundStyle(Color.accentColor)
                             }
                             .padding(.vertical, 4)
                         }
