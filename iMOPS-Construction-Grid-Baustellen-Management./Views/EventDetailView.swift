@@ -281,7 +281,7 @@ struct EventDetailView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "cube.fill")
-                        .font(.title3).foregroundStyle(.accentColor)
+                        .font(.title3).foregroundColor(.accentColor)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(file.fileName).font(.body)
                         Text(file.importDate.formatted(date: .abbreviated, time: .shortened))

@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreData
 
 struct AddMaterialView: View {
     @Environment(\.managedObjectContext) private var viewContext
