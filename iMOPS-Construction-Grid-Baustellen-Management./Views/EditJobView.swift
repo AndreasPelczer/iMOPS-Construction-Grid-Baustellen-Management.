@@ -1,5 +1,5 @@
 import SwiftUI
-internal import CoreData
+import CoreData
 
 struct EditJobView: View {
     @Environment(\.managedObjectContext) var viewContext

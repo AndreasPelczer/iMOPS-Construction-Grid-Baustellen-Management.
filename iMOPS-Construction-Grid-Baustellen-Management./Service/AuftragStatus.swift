@@ -29,7 +29,7 @@ enum AuftragStatus: String, CaseIterable, Codable, Identifiable {
     var color: Color {
         switch self {
         case .pending: return .gray
-        case .inProgress: return .accentColor
+        case .inProgress: return Color(uiColor: .tintColor)
         case .onHold: return .orange
         case .completed: return .green
         }

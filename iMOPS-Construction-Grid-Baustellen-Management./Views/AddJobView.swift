@@ -1,5 +1,5 @@
 import SwiftUI
-internal import CoreData
+import CoreData
 
 struct AddJobView: View {
     @Environment(\.dismiss) private var dismiss

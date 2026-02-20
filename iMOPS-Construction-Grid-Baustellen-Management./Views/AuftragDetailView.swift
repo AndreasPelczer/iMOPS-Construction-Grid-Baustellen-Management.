@@ -1,5 +1,5 @@
 import SwiftUI
-internal import CoreData
+import CoreData
 
 // MARK: - Master = AuftragExtrasPayload
 typealias JobExtrasPayload = AuftragExtrasPayload

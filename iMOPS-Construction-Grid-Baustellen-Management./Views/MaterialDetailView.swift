@@ -12,7 +12,7 @@ struct MaterialDetailView: View {
                             .font(.caption.weight(.semibold))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
-                            .background(Color.accentColor.opacity(0.15))
+                            .background(.tint.opacity(0.15))
                             .clipShape(Capsule())
                         Spacer()
                         Text(material.kategorie ?? "")

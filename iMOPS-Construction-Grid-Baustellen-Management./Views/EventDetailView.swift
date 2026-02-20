@@ -1,6 +1,6 @@
 import SwiftUI
 import SafariServices
-internal import CoreData
+import CoreData
 import Combine
 
 // MARK: - Helpers: Extras JSON (Checkliste)
@@ -222,7 +222,7 @@ struct EventDetailView: View {
                     timeRow(icon: "timer", title: "Setup", date: setup, color: .orange)
                 }
                 if let start = event.eventStartTime {
-                    timeRow(icon: "calendar.day.timeline.leading", title: "Start", date: start, color: .accentColor)
+                    timeRow(icon: "calendar.day.timeline.leading", title: "Start", date: start, color: Color(uiColor: .tintColor))
                 }
                 if let end = event.eventEndTime {
                     timeRow(icon: "clock.badge.checkmark", title: "Ende", date: end, color: .green)
@@ -310,7 +310,7 @@ struct EventDetailView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "cube.fill")
-                        .font(.title3).foregroundColor(.accentColor)
+                        .font(.title3).foregroundStyle(.tint)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(file.fileName).font(.body)
                         Text(file.importDate.formatted(date: .abbreviated, time: .shortened))

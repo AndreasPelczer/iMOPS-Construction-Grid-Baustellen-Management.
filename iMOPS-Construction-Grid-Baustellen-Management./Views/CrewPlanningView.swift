@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-internal import CoreData
+import CoreData
 
 // MARK: - Crew Planning (Hauptansicht)
 
@@ -160,11 +160,11 @@ struct EmployeeRowView: View {
             // Avatar
             ZStack {
                 Circle()
-                    .fill(employee.isActive ? Color.accentColor.opacity(0.15) : Color(.systemGray5))
+                    .fill(employee.isActive ? Color(uiColor: .tintColor).opacity(0.15) : Color(.systemGray5))
                     .frame(width: 44, height: 44)
                 Text(initials)
                     .font(.headline)
-                    .foregroundStyle(employee.isActive ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(employee.isActive ? Color(uiColor: .tintColor) : Color.secondary)
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -317,11 +317,11 @@ struct EmployeeDetailView: View {
                 // Avatar groß
                 ZStack {
                     Circle()
-                        .fill(Color.accentColor.opacity(0.15))
+                        .fill(Color(uiColor: .tintColor).opacity(0.15))
                         .frame(width: 64, height: 64)
                     Text(initials)
                         .font(.title.bold())
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color(uiColor: .tintColor))
                 }
 
                 VStack(alignment: .leading, spacing: 4) {

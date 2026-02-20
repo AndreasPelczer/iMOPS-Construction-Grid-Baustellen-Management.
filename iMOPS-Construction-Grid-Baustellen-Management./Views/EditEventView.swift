@@ -1,5 +1,5 @@
 import SwiftUI
-internal import CoreData
+import CoreData
 
 struct EditEventView: View {
     @Environment(\.managedObjectContext) var viewContext
