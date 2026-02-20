@@ -32,6 +32,7 @@ app = Flask(__name__)
 MAX_UPLOAD_SIZE = 200 * 1024 * 1024  # 200 MB
 ALLOWED_INPUT = {".skp", ".obj", ".dae", ".fbx", ".stl", ".gltf", ".glb"}
 BLENDER_PATH = os.environ.get("BLENDER_PATH", shutil.which("blender") or "blender")
+ASSIMP_PATH = os.environ.get("ASSIMP_PATH", shutil.which("assimp") or "assimp")
 BLENDER_SCRIPT = Path(__file__).parent.parent / "scripts" / "blender_export.py"
 
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE
@@ -41,15 +42,42 @@ app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE
 # Konvertierungs-Logik
 # ------------------------------------------------------------------
 
+def convert_skp_to_obj(input_path: Path, work_dir: Path) -> Path:
+    """
+    Konvertiere eine SKP-Datei zu OBJ via assimp CLI.
+    Returns: Pfad zur OBJ-Datei.
+    """
+    obj_path = work_dir / (input_path.stem + ".obj")
+
+    cmd = [ASSIMP_PATH, "export", str(input_path), str(obj_path)]
+
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+
+    if result.returncode != 0 or not obj_path.exists():
+        error_msg = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"assimp SKP->OBJ fehlgeschlagen: {error_msg[-300:]}")
+
+    return obj_path
+
+
 def convert_to_usdz(input_path: Path, work_dir: Path) -> Path:
     """
-    Konvertiere eine 3D-Datei zu USDZ via Blender.
+    Konvertiere eine 3D-Datei zu USDZ.
 
-    Fuer SKP-Dateien: SKP -> (Blender) -> USDZ
+    Fuer SKP-Dateien: SKP -> (assimp) -> OBJ -> (Blender) -> USDZ
     Fuer andere: Direkt via Blender -> USDZ
 
     Returns: Pfad zur USDZ-Datei oder raise bei Fehler.
     """
+    # SKP-Dateien zuerst ueber assimp zu OBJ konvertieren
+    if input_path.suffix.lower() == ".skp":
+        input_path = convert_skp_to_obj(input_path, work_dir)
+
     output_path = work_dir / (input_path.stem + ".usdz")
 
     # Blender im Headless-Modus mit unserem Export-Skript
@@ -119,10 +147,13 @@ def convert_with_trimesh_fallback(input_path: Path, work_dir: Path) -> Path:
 def health():
     """Health-Check Endpoint."""
     blender_ok = shutil.which(BLENDER_PATH) is not None or os.path.isfile(BLENDER_PATH)
+    assimp_ok = shutil.which(ASSIMP_PATH) is not None or os.path.isfile(ASSIMP_PATH)
     return jsonify({
         "status": "ok",
         "blender_available": blender_ok,
         "blender_path": BLENDER_PATH,
+        "assimp_available": assimp_ok,
+        "assimp_path": ASSIMP_PATH,
         "max_upload_mb": MAX_UPLOAD_SIZE // (1024 * 1024),
     })
 
@@ -177,7 +208,7 @@ def convert():
             else:
                 return jsonify({
                     "error": str(e),
-                    "hint": "SKP-Konvertierung benoetigt Blender auf dem Server",
+                    "hint": "SKP-Konvertierung benoetigt assimp und Blender",
                 }), 500
 
         # Ergebnis zuruecksenden
@@ -223,6 +254,7 @@ if __name__ == "__main__":
     print(f"  iMOPS Konvertierungsserver")
     print(f"  Port: {port}")
     print(f"  Blender: {BLENDER_PATH}")
+    print(f"  Assimp: {ASSIMP_PATH}")
     print(f"  Max Upload: {MAX_UPLOAD_SIZE // (1024*1024)} MB")
     print(f"{'='*50}\n")
 
