@@ -46,9 +46,6 @@ struct EventDetailView: View {
     @State private var isConverting = false
     @State private var conversionError: String?
     @State private var showConversionError = false
-    @State private var showSKPHint = false
-    @State private var showNoExternalApp = false
-    @State private var lastPickedSKPURL: URL?
     @State private var showSketchUpWeb = false
 
     // MARK: Jobs: gefiltert + sortiert
@@ -117,8 +114,15 @@ struct EventDetailView: View {
                     convertFileToUSDZ(fileURL)
                 },
                 onSKPPicked: { skpFileURL in
-                    lastPickedSKPURL = skpFileURL
-                    showSKPHint = true
+                    // SKP-Datei zur Liste hinzufuegen (wird in Safari/SketchUp Web geoeffnet)
+                    if let url = skpFileURL {
+                        let info = CADFileInfo(
+                            fileName: url.lastPathComponent,
+                            relativePath: url.lastPathComponent
+                        )
+                        cadFiles.append(info)
+                        saveCADFiles()
+                    }
                 }
             )
         }
@@ -146,29 +150,6 @@ struct EventDetailView: View {
             Button("OK") {}
         } message: {
             Text(conversionError ?? "Unbekannter Fehler")
-        }
-        .alert("SKP-Datei erkannt", isPresented: $showSKPHint) {
-            if let skpURL = lastPickedSKPURL {
-                Button("In SketchUp App oeffnen") {
-                    ExternalAppLauncher.shared.openInExternalApp(fileURL: skpURL) { found in
-                        if !found { showNoExternalApp = true }
-                    }
-                }
-            }
-            Button("SketchUp Web oeffnen") {
-                showSketchUpWeb = true
-            }
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("SKP kann nicht direkt im CAD-Viewer angezeigt werden.\n\nOeffne die Datei in SketchUp (App oder Web) und exportiere als OBJ oder DAE fuer den 3D-Viewer.")
-        }
-        .alert("Keine passende App gefunden", isPresented: $showNoExternalApp) {
-            Button("SketchUp Web oeffnen") {
-                showSketchUpWeb = true
-            }
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Keine installierte App gefunden.\n\nDu kannst SketchUp Web kostenlos im Browser nutzen.")
         }
         .sheet(isPresented: $showSketchUpWeb) {
             if let url = URL(string: "https://app.sketchup.com") {
@@ -302,44 +283,91 @@ struct EventDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
+    /// Prueft ob eine Datei eine SKP-Datei ist
+    private func isSKPFile(_ file: CADFileInfo) -> Bool {
+        file.fileName.lowercased().hasSuffix(".skp")
+    }
+
     @ViewBuilder
     private func cadFileRow(_ file: CADFileInfo) -> some View {
         if let url = file.fullURL {
-            NavigationLink {
-                CADViewerView(fileURL: url, fileName: file.fileName)
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "cube.fill")
-                        .font(.title3).foregroundStyle(.tint)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(file.fileName).font(.body)
-                        Text(file.importDate.formatted(date: .abbreviated, time: .shortened))
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 8).padding(.horizontal, 10)
-                .background(.thinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-            .contextMenu {
+            if isSKPFile(file) {
+                // SKP-Dateien: Direkt in Safari/SketchUp Web oeffnen (kein interner 3D-Viewer)
                 Button {
                     showSketchUpWeb = true
                 } label: {
-                    Label("In SketchUp Web oeffnen", systemImage: "safari")
+                    HStack(spacing: 12) {
+                        Image(systemName: "safari.fill")
+                            .font(.title3).foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(file.fileName).font(.body)
+                            Text("Oeffnet in SketchUp Web (Safari)")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8).padding(.horizontal, 10)
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                Button {
-                    ExternalAppLauncher.shared.openInExternalApp(fileURL: url)
-                } label: {
-                    Label("Teilen / Andere App", systemImage: "square.and.arrow.up")
+                .contextMenu {
+                    Button {
+                        showSketchUpWeb = true
+                    } label: {
+                        Label("In SketchUp Web oeffnen", systemImage: "safari")
+                    }
+                    Button {
+                        ExternalAppLauncher.shared.openInExternalApp(fileURL: url)
+                    } label: {
+                        Label("Teilen / Andere App", systemImage: "square.and.arrow.up")
+                    }
+                    Button(role: .destructive) {
+                        cadFiles.removeAll { $0.id == file.id }
+                        saveCADFiles()
+                    } label: {
+                        Label("Loeschen", systemImage: "trash")
+                    }
                 }
-                Button(role: .destructive) {
-                    cadFiles.removeAll { $0.id == file.id }
-                    saveCADFiles()
+            } else {
+                // Andere Formate (USDZ, OBJ, DAE etc.): Interner 3D-Viewer
+                NavigationLink {
+                    CADViewerView(fileURL: url, fileName: file.fileName)
                 } label: {
-                    Label("Loeschen", systemImage: "trash")
+                    HStack(spacing: 12) {
+                        Image(systemName: "cube.fill")
+                            .font(.title3).foregroundStyle(.tint)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(file.fileName).font(.body)
+                            Text(file.importDate.formatted(date: .abbreviated, time: .shortened))
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8).padding(.horizontal, 10)
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .contextMenu {
+                    Button {
+                        showSketchUpWeb = true
+                    } label: {
+                        Label("In SketchUp Web oeffnen", systemImage: "safari")
+                    }
+                    Button {
+                        ExternalAppLauncher.shared.openInExternalApp(fileURL: url)
+                    } label: {
+                        Label("Teilen / Andere App", systemImage: "square.and.arrow.up")
+                    }
+                    Button(role: .destructive) {
+                        cadFiles.removeAll { $0.id == file.id }
+                        saveCADFiles()
+                    } label: {
+                        Label("Loeschen", systemImage: "trash")
+                    }
                 }
             }
         }
