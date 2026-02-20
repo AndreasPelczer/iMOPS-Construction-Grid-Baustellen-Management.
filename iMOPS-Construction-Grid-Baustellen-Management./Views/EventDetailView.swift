@@ -573,14 +573,35 @@ struct EventDetailView: View {
 
     // MARK: - Server-Konvertierung (FBX, STL, glTF -> USDZ)
 
-    /// Sendet eine 3D-Datei an den Konvertierungsserver und speichert das USDZ-Ergebnis.
+    /// Konvertiert eine 3D-Datei zu USDZ.
+    /// Versucht zuerst lokale On-Device-Konvertierung (ModelIO),
+    /// fällt bei Bedarf auf den Server zurueck.
     private func convertFileToUSDZ(_ fileURL: URL) {
+        let service = SKPConversionService.shared
+
+        // Lokale Konvertierung (STL, OBJ, PLY) - kein Server noetig
+        if service.canConvertLocally(fileURL: fileURL) {
+            do {
+                let usdzURL = try service.convertLocally(fileURL: fileURL)
+                let info = CADFileInfo(
+                    fileName: usdzURL.lastPathComponent,
+                    relativePath: usdzURL.lastPathComponent
+                )
+                cadFiles.append(info)
+                saveCADFiles()
+                return
+            } catch {
+                // Fallback auf Server-Konvertierung
+            }
+        }
+
+        // Server-Konvertierung (FBX, glTF, oder lokaler Fallback)
         isConverting = true
         conversionError = nil
 
         Task {
             do {
-                let usdzURL = try await SKPConversionService.shared.convert(fileURL: fileURL)
+                let usdzURL = try await service.convert(fileURL: fileURL)
 
                 await MainActor.run {
                     let info = CADFileInfo(

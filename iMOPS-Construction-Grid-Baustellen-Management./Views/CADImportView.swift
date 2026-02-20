@@ -43,8 +43,11 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
     /// Formate die SceneKit direkt laden kann (keine Konvertierung noetig)
     private static let nativeFormats: Set<String> = ["usdz", "usda", "usdc", "obj", "dae", "scn", "abc"]
 
+    /// Formate die lokal auf dem Geraet konvertiert werden koennen (ModelIO)
+    private static let localConvertFormats: Set<String> = ["stl", "ply"]
+
     /// Formate die per Server zu USDZ konvertiert werden (Blender)
-    private static let convertFormats: Set<String> = ["fbx", "stl", "gltf", "glb"]
+    private static let convertFormats: Set<String> = ["fbx", "gltf", "glb"]
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         let onPicked: (URL) -> Void
@@ -91,8 +94,20 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
 
                 try fileManager.copyItem(at: sourceURL, to: destURL)
 
-                // Formate die Server-Konvertierung brauchen (FBX, STL, glTF)
-                if CADDocumentPicker.convertFormats.contains(ext), let handler = onServerConvert {
+                // Formate die lokal konvertiert werden koennen (STL, PLY)
+                if CADDocumentPicker.localConvertFormats.contains(ext) {
+                    do {
+                        let usdzURL = try SKPConversionService.shared.convertLocally(fileURL: destURL)
+                        onPicked(usdzURL)
+                    } catch {
+                        // Fallback: Server-Konvertierung versuchen
+                        if let handler = onServerConvert {
+                            handler(destURL)
+                        }
+                    }
+                }
+                // Formate die Server-Konvertierung brauchen (FBX, glTF)
+                else if CADDocumentPicker.convertFormats.contains(ext), let handler = onServerConvert {
                     handler(destURL)
                 } else {
                     // Native Formate direkt anzeigen (USDZ, OBJ, DAE)
