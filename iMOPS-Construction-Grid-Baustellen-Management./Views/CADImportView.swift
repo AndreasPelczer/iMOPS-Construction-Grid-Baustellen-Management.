@@ -1,13 +1,17 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Document Picker fuer CAD-Dateien (USDZ, OBJ, DAE).
+/// Document Picker fuer CAD-Dateien (USDZ, OBJ, DAE, SKP).
 /// Kopiert die Datei in die App-Sandbox und gibt die lokale URL zurueck.
+/// SKP-Dateien werden automatisch per Server-Konvertierung in USDZ umgewandelt.
 struct CADDocumentPicker: UIViewControllerRepresentable {
+    /// Callback: liefert die lokale URL (bei SKP: nach Konvertierung die USDZ-URL)
     let onPicked: (URL) -> Void
+    /// Callback: wird bei SKP-Dateien aufgerufen, die Server-Konvertierung brauchen
+    var onSKPPicked: ((URL) -> Void)?
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        // Unterstuetzte Typen: USDZ + generische 3D-Formate
+        // Unterstuetzte Typen: USDZ + generische 3D-Formate + SKP
         var types: [UTType] = []
         if let usdz = UTType("com.pixar.universal-scene-description-mobile") {
             types.append(usdz)
@@ -18,8 +22,13 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
         if let dae = UTType("org.khronos.collada.digital-asset-exchange") {
             types.append(dae)
         }
-        // Fallback: alle 3D-Inhalte
+        // SketchUp-Dateien (.skp)
+        if let skp = UTType("com.trimble.sketchup.skp") {
+            types.append(skp)
+        }
+        // Fallback: alle 3D-Inhalte + beliebige Dateien (damit .skp sicher erkannt wird)
         types.append(.threeDContent)
+        types.append(.item)
 
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: types)
         picker.allowsMultipleSelection = false
@@ -30,14 +39,16 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onPicked: onPicked)
+        Coordinator(onPicked: onPicked, onSKPPicked: onSKPPicked)
     }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         let onPicked: (URL) -> Void
+        let onSKPPicked: ((URL) -> Void)?
 
-        init(onPicked: @escaping (URL) -> Void) {
+        init(onPicked: @escaping (URL) -> Void, onSKPPicked: ((URL) -> Void)?) {
             self.onPicked = onPicked
+            self.onSKPPicked = onSKPPicked
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
@@ -65,7 +76,14 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
                 }
 
                 try fileManager.copyItem(at: sourceURL, to: destURL)
-                onPicked(destURL)
+
+                // SKP-Dateien -> Server-Konvertierung anstoßen
+                let ext = destURL.pathExtension.lowercased()
+                if ext == "skp", let skpHandler = onSKPPicked {
+                    skpHandler(destURL)
+                } else {
+                    onPicked(destURL)
+                }
             } catch {
                 print("CAD Import Fehler: \(error)")
             }

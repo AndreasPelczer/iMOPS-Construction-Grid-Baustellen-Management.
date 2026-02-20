@@ -32,6 +32,13 @@ Pods/
 *.swp
 *~
 
-# Beispieldaten (zu groß für Git)
+# Beispieldaten (zu gross fuer Git)
 beispieldaten/*.skp
 beispieldaten/*.zip
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
