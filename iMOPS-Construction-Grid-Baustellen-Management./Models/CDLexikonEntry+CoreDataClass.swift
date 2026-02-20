@@ -10,6 +10,6 @@ import Foundation
 internal import CoreData
 
 @objc(CDLexikonEntry)
-public class CDLexikonEntry: NSManagedObject {
+class CDLexikonEntry: NSManagedObject {
 
 }

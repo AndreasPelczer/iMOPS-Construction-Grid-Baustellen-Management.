@@ -10,6 +10,6 @@ import Foundation
 internal import CoreData
 
 @objc(CDProduct)
-public class CDProduct: NSManagedObject {
+class CDProduct: NSManagedObject {
 
 }

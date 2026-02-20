@@ -10,6 +10,6 @@ import Foundation
 internal import CoreData
 
 
-public class Auftrag: NSManagedObject {
+class Auftrag: NSManagedObject {
 
 }

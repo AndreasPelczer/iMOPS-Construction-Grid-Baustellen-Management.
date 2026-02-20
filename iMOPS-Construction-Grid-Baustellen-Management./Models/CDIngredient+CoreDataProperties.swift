@@ -12,14 +12,14 @@ internal import CoreData
 
 extension CDIngredient {
 
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<CDIngredient> {
+    @nonobjc class func fetchRequest() -> NSFetchRequest<CDIngredient> {
         return NSFetchRequest<CDIngredient>(entityName: "CDIngredient")
     }
 
-    @NSManaged public var einheit: String?
-    @NSManaged public var menge: String?
-    @NSManaged public var name: String?
-    @NSManaged public var product: CDProduct?
+    @NSManaged var einheit: String?
+    @NSManaged var menge: String?
+    @NSManaged var name: String?
+    @NSManaged var product: CDProduct?
 
 }
 
