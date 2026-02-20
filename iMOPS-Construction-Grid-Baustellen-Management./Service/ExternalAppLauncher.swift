@@ -1,62 +1,43 @@
 import UIKit
 
-/// Oeffnet Dateien in externen Apps via UIDocumentInteractionController.
-/// Zeigt automatisch alle installierten Apps an, die den Dateityp unterstuetzen
-/// (z.B. SketchUp for iPad fuer SKP-Dateien).
-class ExternalAppLauncher: NSObject, UIDocumentInteractionControllerDelegate {
+/// Oeffnet Dateien in externen Apps via UIActivityViewController.
+/// Funktioniert auf iOS, iPadOS und Mac Catalyst (Designed for iPad).
+class ExternalAppLauncher: NSObject {
 
     static let shared = ExternalAppLauncher()
 
-    private var documentController: UIDocumentInteractionController?
-
-    /// Oeffnet das "Oeffnen in..."-Menue fuer eine Datei.
-    /// Zeigt alle installierten Apps an, die diesen Dateityp unterstuetzen.
+    /// Oeffnet das Share-Sheet fuer eine Datei.
+    /// Zeigt alle installierten Apps an, die diesen Dateityp unterstuetzen
+    /// (z.B. SketchUp, Preview, Finder etc.).
     ///
     /// - Parameters:
     ///   - fileURL: Lokaler Pfad zur Datei
-    ///   - completion: Wird aufgerufen mit `true` wenn mindestens eine App verfuegbar war
+    ///   - completion: Wird aufgerufen mit `true` wenn das Sheet angezeigt wurde
     func openInExternalApp(fileURL: URL, completion: ((Bool) -> Void)? = nil) {
         guard let viewController = Self.topViewController() else {
             completion?(false)
             return
         }
 
-        let controller = UIDocumentInteractionController(url: fileURL)
-        controller.delegate = self
-        self.documentController = controller
-
-        let presented = controller.presentOpenInMenu(
-            from: viewController.view.bounds,
-            in: viewController.view,
-            animated: true
+        let activityVC = UIActivityViewController(
+            activityItems: [fileURL],
+            applicationActivities: nil
         )
 
-        completion?(presented)
-    }
+        // Auf iPad/Mac: Popover-Anker setzen (sonst Crash)
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = viewController.view
+            popover.sourceRect = CGRect(
+                x: viewController.view.bounds.midX,
+                y: viewController.view.bounds.midY,
+                width: 0, height: 0
+            )
+            popover.permittedArrowDirections = []
+        }
 
-    /// Zeigt eine Vorschau der Datei an (Quick Look).
-    func previewFile(fileURL: URL) {
-        guard let viewController = Self.topViewController() else { return }
-
-        let controller = UIDocumentInteractionController(url: fileURL)
-        controller.delegate = self
-        self.documentController = controller
-
-        controller.presentPreview(animated: true)
-    }
-
-    // MARK: - UIDocumentInteractionControllerDelegate
-
-    func documentInteractionControllerViewControllerForPreview(
-        _ controller: UIDocumentInteractionController
-    ) -> UIViewController {
-        Self.topViewController() ?? UIViewController()
-    }
-
-    func documentInteractionControllerDidDismissOpenInMenu(
-        _ controller: UIDocumentInteractionController
-    ) {
-        documentController = nil
+        viewController.present(activityVC, animated: true) {
+            completion?(true)
+        }
     }
 
     // MARK: - Helper: Top ViewController finden
