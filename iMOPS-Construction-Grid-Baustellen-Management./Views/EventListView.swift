@@ -1,7 +1,7 @@
 // EventListView.swift
 
 import SwiftUI
-internal import CoreData // CoreData ist nötig für Event Typ
+import CoreData // CoreData ist nötig für Event Typ
 
 struct EventListView: View {
     // 1. Nimmt die Liste von Events direkt entgegen (muss nicht @Published sein)

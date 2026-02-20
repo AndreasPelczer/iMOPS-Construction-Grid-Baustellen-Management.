@@ -1,5 +1,5 @@
 import SwiftUI
-internal import CoreData
+import CoreData
 
 struct MaterialLexikonView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -90,7 +90,7 @@ struct MaterialLexikonView: View {
         HStack(spacing: 12) {
             Image(systemName: iconForKategorie(entry.kategorie))
                 .font(.title3)
-                .foregroundColor(.accentColor)
+                .foregroundStyle(.tint)
                 .frame(width: 32)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name ?? "").font(.body)
@@ -139,7 +139,7 @@ struct FilterChip: View {
                 .font(.subheadline.weight(isSelected ? .semibold : .regular))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 6)
-                .background(isSelected ? Color.accentColor : Color(.systemGray5))
+                .background(isSelected ? Color(uiColor: .tintColor) : Color(.systemGray5))
                 .foregroundStyle(isSelected ? .white : .primary)
                 .clipShape(Capsule())
         }

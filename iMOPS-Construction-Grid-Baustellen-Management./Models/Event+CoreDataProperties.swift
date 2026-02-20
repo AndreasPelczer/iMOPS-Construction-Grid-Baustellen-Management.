@@ -7,7 +7,7 @@
 //
 
 import Foundation
-internal import CoreData
+import CoreData
 
 // FÜGEN SIE DIESE KLASSENDEFINITION HINZU
 @objc(Event) // Dies ist wichtig für Core Data

@@ -1,5 +1,5 @@
 import SwiftUI
-internal import CoreData
+import CoreData
 
 struct AuftragRowView: View {
     @Environment(\.managedObjectContext) private var ctx
@@ -90,12 +90,12 @@ struct AuftragRowView: View {
         .background(RoundedRectangle(cornerRadius: 12).fill(Color(uiColor: .secondarySystemBackground)))
         .overlay(alignment: .leading) {
             if isActive {
-                RoundedRectangle(cornerRadius: 12).fill(Color.accentColor).frame(width: 4)
+                RoundedRectangle(cornerRadius: 12).fill(.tint).frame(width: 4)
             }
         }
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isActive ? Color.accentColor.opacity(0.6) : .clear, lineWidth: 1)
+                .stroke(isActive ? Color(uiColor: .tintColor).opacity(0.6) : .clear, lineWidth: 1)
         )
         .contextMenu {
             Button("Start") { setStatus(.inProgress) }

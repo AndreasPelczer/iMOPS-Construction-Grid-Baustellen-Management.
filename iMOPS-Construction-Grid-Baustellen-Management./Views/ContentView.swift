@@ -1,7 +1,7 @@
 // Views/ContentView.swift
 
 import SwiftUI
-internal import CoreData
+import CoreData
 
 // MARK: - Haupt-View
 

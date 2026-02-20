@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-internal import CoreData
+import CoreData
 
 @main
 struct iMOPSApp: App {

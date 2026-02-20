@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-internal import CoreData
+import CoreData
 
 // MARK: - Haupt-View: Konfigurator
 
@@ -35,7 +35,7 @@ struct HouseConfiguratorView: View {
                         Spacer()
                     }
                 }
-                .listRowBackground(Color.accentColor)
+                .listRowBackground(Color(uiColor: .tintColor))
                 .foregroundStyle(.white)
             }
         }
@@ -127,7 +127,7 @@ struct HouseConfiguratorView: View {
                 Spacer()
                 Text(formatCurrency(project.wohnflaeche * project.ausstattung.kostenProQm))
                     .font(.headline.monospacedDigit())
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(.tint)
             }
         }
     }
@@ -236,7 +236,7 @@ struct HouseProjectResultView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(formatCurrency(result.gesamtkosten))
                         .font(.title2.bold().monospacedDigit())
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(.tint)
                     Text("Gesamtkosten").font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -318,7 +318,7 @@ struct HouseProjectResultView: View {
                 Spacer()
                 Text(formatCurrency(result.gesamtkosten))
                     .font(.title3.bold().monospacedDigit())
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(.tint)
             }
             .padding()
             .background(.ultraThinMaterial)
@@ -337,7 +337,7 @@ struct HouseProjectResultView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 3).fill(Color(.systemGray5)).frame(height: 6)
-                    RoundedRectangle(cornerRadius: 3).fill(Color.accentColor.opacity(0.7))
+                    RoundedRectangle(cornerRadius: 3).fill(Color(uiColor: .tintColor).opacity(0.7))
                         .frame(width: geo.size.width * anteil, height: 6)
                 }
             }
@@ -414,7 +414,7 @@ struct HouseProjectResultView: View {
                                 Spacer()
                                 Text("\(formatMenge(pos.menge)) \(pos.einheit)")
                                     .font(.subheadline.monospacedDigit())
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(.tint)
                             }
                             .padding(.vertical, 4)
                         }
