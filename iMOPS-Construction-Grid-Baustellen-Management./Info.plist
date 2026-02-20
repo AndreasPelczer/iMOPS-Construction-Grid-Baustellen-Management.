@@ -11,7 +11,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
-			<string>Alternate</string>
+			<string>Owner</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.sketchup.skp</string>
@@ -38,9 +38,9 @@
 			</array>
 		</dict>
 	</array>
-	<key>UTImportedTypeDeclarations</key>
+	<key>UTExportedTypeDeclarations</key>
 	<array>
-		<!-- SKP: iOS kennt den Typ nicht von Haus aus -->
+		<!-- SKP: iMOPS definiert den Typ fuer iOS (kein anderer App tut das) -->
 		<dict>
 			<key>UTTypeIdentifier</key>
 			<string>com.sketchup.skp</string>
@@ -49,6 +49,7 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeTagSpecification</key>
 			<dict>
@@ -59,9 +60,13 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/vnd.sketchup.skp</string>
+					<string>application/octet-stream</string>
 				</array>
 			</dict>
 		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
 		<!-- FBX -->
 		<dict>
 			<key>UTTypeIdentifier</key>
