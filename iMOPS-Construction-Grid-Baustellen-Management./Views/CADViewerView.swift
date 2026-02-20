@@ -1,7 +1,24 @@
 import SwiftUI
+import SafariServices
 import SceneKit
 import ModelIO
 import SceneKit.ModelIO
+
+// MARK: - In-App Safari Browser
+
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewControllerRepresented(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
+}
 
 /// 3D-Viewer fuer USDZ/OBJ/DAE/STL Dateien via SceneKit.
 /// Unterstuetzt Drehen, Zoomen und Pan per Gesten.
@@ -11,6 +28,7 @@ struct CADViewerView: View {
     let fileName: String
 
     @State private var loadError: String?
+    @State private var showSketchUpWeb = false
 
     var body: some View {
         Group {
@@ -36,6 +54,30 @@ struct CADViewerView: View {
         }
         .navigationTitle(fileName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button {
+                        showSketchUpWeb = true
+                    } label: {
+                        Label("In SketchUp Web oeffnen", systemImage: "safari")
+                    }
+                    Button {
+                        ExternalAppLauncher.shared.openInExternalApp(fileURL: fileURL)
+                    } label: {
+                        Label("Teilen / Andere App", systemImage: "square.and.arrow.up")
+                    }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+        }
+        .sheet(isPresented: $showSketchUpWeb) {
+            if let url = URL(string: "https://app.sketchup.com") {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
+        }
     }
 }
 

@@ -90,7 +90,7 @@ struct MaterialLexikonView: View {
         HStack(spacing: 12) {
             Image(systemName: iconForKategorie(entry.kategorie))
                 .font(.title3)
-                .foregroundStyle(.accentColor)
+                .foregroundColor(.accentColor)
                 .frame(width: 32)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name ?? "").font(.body)
