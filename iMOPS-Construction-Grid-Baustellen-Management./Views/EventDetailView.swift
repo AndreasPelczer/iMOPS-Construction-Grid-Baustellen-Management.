@@ -147,20 +147,30 @@ struct EventDetailView: View {
         }
         .alert("SKP-Datei erkannt", isPresented: $showSKPHint) {
             if let skpURL = lastPickedSKPURL {
-                Button("In SketchUp oeffnen") {
+                Button("In SketchUp App oeffnen") {
                     ExternalAppLauncher.shared.openInExternalApp(fileURL: skpURL) { found in
                         if !found { showNoExternalApp = true }
                     }
                 }
             }
+            Button("SketchUp Web oeffnen") {
+                if let url = URL(string: "https://app.sketchup.com") {
+                    UIApplication.shared.open(url)
+                }
+            }
             Button("OK", role: .cancel) {}
         } message: {
-            Text("SKP kann nicht direkt im CAD-Viewer angezeigt werden.\n\nWenn SketchUp for iPad installiert ist, kannst du die Datei dort oeffnen.\n\nAlternativ: Exportiere als OBJ oder DAE ueber app.sketchup.com")
+            Text("SKP kann nicht direkt im CAD-Viewer angezeigt werden.\n\nOeffne die Datei in SketchUp (App oder Web) und exportiere als OBJ oder DAE fuer den 3D-Viewer.")
         }
         .alert("Keine passende App gefunden", isPresented: $showNoExternalApp) {
-            Button("OK") {}
+            Button("SketchUp Web oeffnen") {
+                if let url = URL(string: "https://app.sketchup.com") {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("OK", role: .cancel) {}
         } message: {
-            Text("Es wurde keine installierte App gefunden, die diesen Dateityp oeffnen kann.\n\nFuer SKP-Dateien: Installiere \"SketchUp for iPad\" aus dem App Store.")
+            Text("Keine installierte App gefunden.\n\nDu kannst SketchUp Web kostenlos im Browser nutzen.")
         }
         .sheet(isPresented: $showingMaterialPicker, onDismiss: {
             pinnedMaterials = fetchPinnedMaterials()
