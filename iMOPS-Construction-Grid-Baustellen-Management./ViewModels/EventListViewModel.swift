@@ -1,7 +1,7 @@
 // ViewModels/EventListViewModel.swift
 
 import Foundation
-import CoreData
+internal import CoreData
 import Combine
 import SwiftUI
 

@@ -1,5 +1,5 @@
 import Foundation
-import CoreData
+internal import CoreData
 import SceneKit
 
 /// Legt eine Demo-Baustelle an, damit das System realistisch getestet werden kann.

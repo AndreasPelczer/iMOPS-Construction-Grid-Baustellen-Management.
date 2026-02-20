@@ -1,5 +1,5 @@
 import SwiftUI
-import CoreData
+internal import CoreData
 import Combine
 
 // MARK: - Helpers: Extras JSON (Checkliste)
@@ -41,10 +41,11 @@ struct EventDetailView: View {
     @State private var newStepText: String = ""
     @State private var refreshID = UUID()
 
-    // SKP-Konvertierung
-    @State private var isConvertingSKP = false
+    // Server-Konvertierung (FBX, STL, glTF -> USDZ)
+    @State private var isConverting = false
     @State private var conversionError: String?
     @State private var showConversionError = false
+    @State private var showSKPHint = false
 
     // MARK: Jobs: gefiltert + sortiert
     private var filteredJobs: [Auftrag] {
@@ -108,19 +109,22 @@ struct EventDetailView: View {
                     cadFiles.append(info)
                     saveCADFiles()
                 },
-                onSKPPicked: { skpURL in
-                    convertSKPFile(skpURL)
+                onServerConvert: { fileURL in
+                    convertFileToUSDZ(fileURL)
+                },
+                onSKPPicked: {
+                    showSKPHint = true
                 }
             )
         }
         .overlay {
-            if isConvertingSKP {
+            if isConverting {
                 ZStack {
                     Color.black.opacity(0.4).ignoresSafeArea()
                     VStack(spacing: 16) {
                         ProgressView()
                             .scaleEffect(1.5)
-                        Text("SKP wird konvertiert...")
+                        Text("Wird konvertiert...")
                             .font(.headline)
                         Text("Datei wird an den Server gesendet\nund automatisch in USDZ umgewandelt.")
                             .font(.caption)
@@ -137,6 +141,11 @@ struct EventDetailView: View {
             Button("OK") {}
         } message: {
             Text(conversionError ?? "Unbekannter Fehler")
+        }
+        .alert("SKP-Format nicht direkt unterstuetzt", isPresented: $showSKPHint) {
+            Button("OK") {}
+        } message: {
+            Text("SKP ist ein proprietaeres SketchUp-Format.\n\nBitte exportiere die Datei zuerst als OBJ oder DAE:\n1. Oeffne app.sketchup.com (kostenlos)\n2. Lade die SKP-Datei hoch\n3. Exportiere als OBJ oder DAE\n4. Importiere die exportierte Datei hier")
         }
         .sheet(isPresented: $showingMaterialPicker, onDismiss: {
             pinnedMaterials = fetchPinnedMaterials()
@@ -231,7 +240,7 @@ struct EventDetailView: View {
                     VStack(alignment: .leading) {
                         Text("Keine Plaene importiert")
                             .font(.subheadline)
-                        Text("SKP, USDZ, OBJ oder DAE Dateien importieren")
+                        Text("USDZ, OBJ, DAE, FBX, STL oder glTF importieren")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -562,16 +571,37 @@ struct EventDetailView: View {
         }
     }
 
-    // MARK: - SKP Server-Konvertierung
+    // MARK: - Server-Konvertierung (FBX, STL, glTF -> USDZ)
 
-    /// Sendet eine SKP-Datei an den Konvertierungsserver und speichert das USDZ-Ergebnis.
-    private func convertSKPFile(_ skpURL: URL) {
-        isConvertingSKP = true
+    /// Konvertiert eine 3D-Datei zu USDZ.
+    /// Versucht zuerst lokale On-Device-Konvertierung (ModelIO),
+    /// fällt bei Bedarf auf den Server zurueck.
+    private func convertFileToUSDZ(_ fileURL: URL) {
+        let service = SKPConversionService.shared
+
+        // Lokale Konvertierung (STL, OBJ, PLY) - kein Server noetig
+        if service.canConvertLocally(fileURL: fileURL) {
+            do {
+                let usdzURL = try service.convertLocally(fileURL: fileURL)
+                let info = CADFileInfo(
+                    fileName: usdzURL.lastPathComponent,
+                    relativePath: usdzURL.lastPathComponent
+                )
+                cadFiles.append(info)
+                saveCADFiles()
+                return
+            } catch {
+                // Fallback auf Server-Konvertierung
+            }
+        }
+
+        // Server-Konvertierung (FBX, glTF, oder lokaler Fallback)
+        isConverting = true
         conversionError = nil
 
         Task {
             do {
-                let usdzURL = try await SKPConversionService.shared.convert(skpURL: skpURL)
+                let usdzURL = try await service.convert(fileURL: fileURL)
 
                 await MainActor.run {
                     let info = CADFileInfo(
@@ -580,11 +610,11 @@ struct EventDetailView: View {
                     )
                     cadFiles.append(info)
                     saveCADFiles()
-                    isConvertingSKP = false
+                    isConverting = false
                 }
             } catch {
                 await MainActor.run {
-                    isConvertingSKP = false
+                    isConverting = false
                     conversionError = error.localizedDescription
                     showConversionError = true
                 }

@@ -1,5 +1,5 @@
 import SwiftUI
-import CoreData
+internal import CoreData
 
 struct MaterialLexikonView: View {
     @Environment(\.managedObjectContext) private var viewContext

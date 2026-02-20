@@ -7,30 +7,30 @@
 //
 
 import Foundation
-import CoreData
+internal import CoreData
 
 
 extension CDProduct {
 
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<CDProduct> {
+    @nonobjc class func fetchRequest() -> NSFetchRequest<CDProduct> {
         return NSFetchRequest<CDProduct>(entityName: "CDProduct")
     }
 
-    @NSManaged public var algorithmusText: String?
-    @NSManaged public var allergene: String?
-    @NSManaged public var beschreibung: String?
-    @NSManaged public var category: String?
-    @NSManaged public var dataSource: String?
-    @NSManaged public var fett: String?
-    @NSManaged public var id: String?
-    @NSManaged public var kcal: String?
-    @NSManaged public var name: String?
-    @NSManaged public var portionen: String?
-    @NSManaged public var stockQuantity: Double
-    @NSManaged public var stockUnit: String?
-    @NSManaged public var zucker: String?
-    @NSManaged public var zusatzstoffe: String?
-    @NSManaged public var ingredients: NSSet?
+    @NSManaged var algorithmusText: String?
+    @NSManaged var allergene: String?
+    @NSManaged var beschreibung: String?
+    @NSManaged var category: String?
+    @NSManaged var dataSource: String?
+    @NSManaged var fett: String?
+    @NSManaged var id: String?
+    @NSManaged var kcal: String?
+    @NSManaged var name: String?
+    @NSManaged var portionen: String?
+    @NSManaged var stockQuantity: Double
+    @NSManaged var stockUnit: String?
+    @NSManaged var zucker: String?
+    @NSManaged var zusatzstoffe: String?
+    @NSManaged var ingredients: NSSet?
 
 }
 

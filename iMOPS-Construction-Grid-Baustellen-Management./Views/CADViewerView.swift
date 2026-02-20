@@ -1,8 +1,11 @@
 import SwiftUI
 import SceneKit
+import ModelIO
+import SceneKit.ModelIO
 
-/// 3D-Viewer fuer USDZ/OBJ/DAE Dateien via SceneKit.
+/// 3D-Viewer fuer USDZ/OBJ/DAE/STL Dateien via SceneKit.
 /// Unterstuetzt Drehen, Zoomen und Pan per Gesten.
+/// STL-Dateien werden via ModelIO geladen.
 struct CADViewerView: View {
     let fileURL: URL
     let fileName: String
@@ -49,9 +52,18 @@ struct SceneKitView: UIViewRepresentable {
         scnView.backgroundColor = UIColor.systemBackground
 
         do {
-            let scene = try SCNScene(url: fileURL, options: [
-                .checkConsistency: true
-            ])
+            let ext = fileURL.pathExtension.lowercased()
+            let scene: SCNScene
+
+            // STL/PLY: ModelIO verwenden (SCNScene kann diese nicht direkt laden)
+            if ext == "stl" || ext == "ply" {
+                let asset = MDLAsset(url: fileURL)
+                scene = SCNScene(mdlAsset: asset)
+            } else {
+                scene = try SCNScene(url: fileURL, options: [
+                    .checkConsistency: true
+                ])
+            }
             scnView.scene = scene
 
             // Kamera auf Modell ausrichten

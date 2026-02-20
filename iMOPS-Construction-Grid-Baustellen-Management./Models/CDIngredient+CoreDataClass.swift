@@ -7,9 +7,9 @@
 //
 
 import Foundation
-import CoreData
+internal import CoreData
 
 
-public class CDIngredient: NSManagedObject {
+class CDIngredient: NSManagedObject {
 
 }

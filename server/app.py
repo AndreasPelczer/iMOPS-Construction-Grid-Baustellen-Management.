@@ -30,7 +30,7 @@ app = Flask(__name__)
 
 # Konfiguration
 MAX_UPLOAD_SIZE = 200 * 1024 * 1024  # 200 MB
-ALLOWED_INPUT = {".skp", ".obj", ".dae", ".fbx", ".stl", ".gltf", ".glb"}
+ALLOWED_INPUT = {".obj", ".dae", ".fbx", ".stl", ".gltf", ".glb"}
 BLENDER_PATH = os.environ.get("BLENDER_PATH", shutil.which("blender") or "blender")
 BLENDER_SCRIPT = Path(__file__).parent.parent / "scripts" / "blender_export.py"
 
@@ -45,8 +45,7 @@ def convert_to_usdz(input_path: Path, work_dir: Path) -> Path:
     """
     Konvertiere eine 3D-Datei zu USDZ via Blender.
 
-    Fuer SKP-Dateien: SKP -> (Blender) -> USDZ
-    Fuer andere: Direkt via Blender -> USDZ
+    Unterstuetzte Formate: OBJ, DAE, FBX, STL, glTF/glB
 
     Returns: Pfad zur USDZ-Datei oder raise bei Fehler.
     """
@@ -56,7 +55,6 @@ def convert_to_usdz(input_path: Path, work_dir: Path) -> Path:
     cmd = [
         BLENDER_PATH,
         "--background",
-        "--factory-startup",
         "--python", str(BLENDER_SCRIPT),
         "--",
         "--input", str(input_path),
@@ -72,11 +70,17 @@ def convert_to_usdz(input_path: Path, work_dir: Path) -> Path:
     )
 
     if result.returncode != 0:
+        # Blender gibt Fehler sowohl ueber stdout als auch stderr aus
+        combined = result.stdout + "\n" + result.stderr
         error_lines = [
-            line for line in result.stderr.splitlines()
-            if "Error" in line or "FEHLER" in line
+            line for line in combined.splitlines()
+            if "Error" in line or "FEHLER" in line or "Traceback" in line
         ]
-        error_msg = "\n".join(error_lines) if error_lines else result.stderr[-500:]
+        if not error_lines:
+            # Letzten relevanten Output als Fehler nehmen
+            error_msg = combined.strip()[-500:]
+        else:
+            error_msg = "\n".join(error_lines)
         raise RuntimeError(f"Blender-Konvertierung fehlgeschlagen: {error_msg}")
 
     if not output_path.exists():
@@ -94,10 +98,6 @@ def convert_with_trimesh_fallback(input_path: Path, work_dir: Path) -> Path:
         import trimesh
     except ImportError:
         raise RuntimeError("Weder Blender noch trimesh verfuegbar")
-
-    ext = input_path.suffix.lower()
-    if ext == ".skp":
-        raise RuntimeError("SKP-Konvertierung benoetigt Blender")
 
     mesh = trimesh.load(str(input_path))
     # Trimesh kann kein USDZ direkt -> OBJ als Zwischenformat
@@ -172,7 +172,7 @@ def convert():
             else:
                 return jsonify({
                     "error": str(e),
-                    "hint": "SKP-Konvertierung benoetigt Blender auf dem Server",
+                    "hint": "Konvertierung benoetigt Blender auf dem Server",
                 }), 500
 
         # Ergebnis zuruecksenden

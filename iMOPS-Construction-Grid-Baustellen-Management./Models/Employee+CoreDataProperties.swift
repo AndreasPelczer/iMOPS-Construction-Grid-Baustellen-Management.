@@ -1,20 +1,20 @@
 import Foundation
-import CoreData
+internal import CoreData
 
 @objc(Employee)
-public class Employee: NSManagedObject {}
+class Employee: NSManagedObject {}
 
 extension Employee {
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<Employee> {
+    @nonobjc class func fetchRequest() -> NSFetchRequest<Employee> {
         return NSFetchRequest<Employee>(entityName: "Employee")
     }
 
-    @NSManaged public var id: UUID?
-    @NSManaged public var name: String?
-    @NSManaged public var rolle: String?
-    @NSManaged public var telefon: String?
-    @NSManaged public var notiz: String?
-    @NSManaged public var isActive: Bool
+    @NSManaged var id: UUID?
+    @NSManaged var name: String?
+    @NSManaged var rolle: String?
+    @NSManaged var telefon: String?
+    @NSManaged var notiz: String?
+    @NSManaged var isActive: Bool
 }
 
 extension Employee: Identifiable {}

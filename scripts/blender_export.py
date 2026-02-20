@@ -99,21 +99,33 @@ def import_file(filepath):
 
     try:
         if ext == ".skp":
-            # SketchUp-Import benoetigt ein Addon
-            # Versuche zuerst das eingebaute/installierte Addon
+            # SketchUp-Import benoetigt ein Addon/Extension
+            # Versuche bekannte Addon-Namen zu aktivieren
+            skp_addon_names = [
+                "io_import_sketchup",
+                "sketchup_importer",
+                "import_sketchup",
+            ]
+            for addon_name in skp_addon_names:
+                try:
+                    bpy.ops.preferences.addon_enable(module=addon_name)
+                    print(f"[blender_export] SKP-Addon '{addon_name}' aktiviert")
+                    break
+                except Exception:
+                    continue
+
+            # Jetzt den Import versuchen
             try:
                 bpy.ops.import_scene.skp(filepath=filepath)
                 print("[blender_export] SKP-Import via Addon erfolgreich")
             except AttributeError:
-                print(
-                    "[blender_export] FEHLER: SketchUp-Importer-Addon nicht "
-                    "installiert!\n"
-                    "  Installiere eines der folgenden Addons in Blender:\n"
-                    "  - https://extensions.blender.org (suche 'SketchUp')\n"
-                    "  - https://github.com/nicoekkart/bpy_sketchup_importer\n"
-                    "  Oder exportiere die SKP-Datei zuerst als DAE/OBJ aus "
-                    "SketchUp."
+                msg = (
+                    "[blender_export] FEHLER: SketchUp-Importer nicht gefunden!\n"
+                    "  Bitte oeffne Blender -> Edit -> Preferences -> Get Extensions\n"
+                    "  und installiere einen SketchUp-Importer.\n"
+                    "  Dann den Server neu starten."
                 )
+                print(msg, file=sys.stderr)
                 return False
 
         elif ext == ".obj":
@@ -140,7 +152,7 @@ def import_file(filepath):
             bpy.ops.import_scene.gltf(filepath=filepath)
 
         else:
-            print(f"[blender_export] FEHLER: Unbekanntes Format: {ext}")
+            print(f"[blender_export] FEHLER: Unbekanntes Format: {ext}", file=sys.stderr)
             return False
 
         print(f"[blender_export] Import erfolgreich: "
@@ -148,7 +160,7 @@ def import_file(filepath):
         return True
 
     except Exception as e:
-        print(f"[blender_export] FEHLER beim Import: {e}")
+        print(f"[blender_export] FEHLER beim Import: {e}", file=sys.stderr)
         return False
 
 
@@ -172,7 +184,8 @@ def export_file(filepath, fmt):
             if not hasattr(bpy.ops.wm, "usd_export"):
                 print(
                     "[blender_export] FEHLER: USD-Export nicht verfuegbar. "
-                    "Blender 3.0+ erforderlich."
+                    "Blender 3.0+ erforderlich.",
+                    file=sys.stderr
                 )
                 return False
             bpy.ops.wm.usd_export(
@@ -208,14 +221,14 @@ def export_file(filepath, fmt):
             )
 
         else:
-            print(f"[blender_export] FEHLER: Unbekanntes Export-Format: {fmt}")
+            print(f"[blender_export] FEHLER: Unbekanntes Export-Format: {fmt}", file=sys.stderr)
             return False
 
         print(f"[blender_export] Export erfolgreich: {filepath}")
         return True
 
     except Exception as e:
-        print(f"[blender_export] FEHLER beim Export: {e}")
+        print(f"[blender_export] FEHLER beim Export: {e}", file=sys.stderr)
         return False
 
 
@@ -227,7 +240,7 @@ def main():
 
     if not os.path.exists(input_path):
         print(f"[blender_export] FEHLER: Eingabedatei nicht gefunden: "
-              f"{input_path}")
+              f"{input_path}", file=sys.stderr)
         sys.exit(1)
 
     # Szene leeren

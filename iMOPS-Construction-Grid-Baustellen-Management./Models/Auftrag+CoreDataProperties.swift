@@ -7,26 +7,26 @@
 //
 
 import Foundation
-import CoreData
+internal import CoreData
 
 
 extension Auftrag {
 
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<Auftrag> {
+    @nonobjc class func fetchRequest() -> NSFetchRequest<Auftrag> {
         return NSFetchRequest<Auftrag>(entityName: "Auftrag")
     }
 
-    @NSManaged public var deliveryTemperature: Bool
-    @NSManaged public var employeeName: String?
-    @NSManaged public var isCompleted: Bool
-    @NSManaged public var lastStartTime: Date?
-    @NSManaged public var processingDetails: String?
-    @NSManaged public var statusRawValue: String?
-    @NSManaged public var storageLocation: String?
-    @NSManaged public var storageNote: String?
-    @NSManaged public var totalProcessingTime: Double
-    @NSManaged public var event: Event?
-    @NSManaged public var extras: String?
+    @NSManaged var deliveryTemperature: Bool
+    @NSManaged var employeeName: String?
+    @NSManaged var isCompleted: Bool
+    @NSManaged var lastStartTime: Date?
+    @NSManaged var processingDetails: String?
+    @NSManaged var statusRawValue: String?
+    @NSManaged var storageLocation: String?
+    @NSManaged var storageNote: String?
+    @NSManaged var totalProcessingTime: Double
+    @NSManaged var event: Event?
+    @NSManaged var extras: String?
 
 
 }

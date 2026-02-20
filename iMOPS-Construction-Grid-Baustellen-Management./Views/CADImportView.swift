@@ -1,17 +1,19 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Document Picker fuer CAD-Dateien (USDZ, OBJ, DAE, SKP).
+/// Document Picker fuer CAD-Dateien (USDZ, OBJ, DAE, FBX, STL, glTF).
 /// Kopiert die Datei in die App-Sandbox und gibt die lokale URL zurueck.
-/// SKP-Dateien werden automatisch per Server-Konvertierung in USDZ umgewandelt.
+/// Formate die SceneKit nicht direkt lesen kann werden per Server zu USDZ konvertiert.
 struct CADDocumentPicker: UIViewControllerRepresentable {
-    /// Callback: liefert die lokale URL (bei SKP: nach Konvertierung die USDZ-URL)
+    /// Callback: liefert die lokale URL (bei Konvertierung: die USDZ-URL)
     let onPicked: (URL) -> Void
-    /// Callback: wird bei SKP-Dateien aufgerufen, die Server-Konvertierung brauchen
-    var onSKPPicked: ((URL) -> Void)?
+    /// Callback: wird bei Dateien aufgerufen, die Server-Konvertierung brauchen
+    var onServerConvert: ((URL) -> Void)?
+    /// Callback: wird bei SKP-Dateien aufgerufen (nicht direkt unterstuetzt)
+    var onSKPPicked: (() -> Void)?
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        // Unterstuetzte Typen: USDZ + generische 3D-Formate + SKP
+        // Unterstuetzte Typen: USDZ, OBJ, DAE + weitere 3D-Formate
         var types: [UTType] = []
         if let usdz = UTType("com.pixar.universal-scene-description-mobile") {
             types.append(usdz)
@@ -22,11 +24,7 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
         if let dae = UTType("org.khronos.collada.digital-asset-exchange") {
             types.append(dae)
         }
-        // SketchUp-Dateien (.skp)
-        if let skp = UTType("com.trimble.sketchup.skp") {
-            types.append(skp)
-        }
-        // Fallback: alle 3D-Inhalte + beliebige Dateien (damit .skp sicher erkannt wird)
+        // Fallback: alle 3D-Inhalte + beliebige Dateien (damit FBX, STL, glTF, SKP erkannt werden)
         types.append(.threeDContent)
         types.append(.item)
 
@@ -39,15 +37,26 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onPicked: onPicked, onSKPPicked: onSKPPicked)
+        Coordinator(onPicked: onPicked, onServerConvert: onServerConvert, onSKPPicked: onSKPPicked)
     }
+
+    /// Formate die SceneKit direkt laden kann (keine Konvertierung noetig)
+    private static let nativeFormats: Set<String> = ["usdz", "usda", "usdc", "obj", "dae", "scn", "abc"]
+
+    /// Formate die lokal auf dem Geraet konvertiert werden koennen (ModelIO)
+    private static let localConvertFormats: Set<String> = ["stl", "ply"]
+
+    /// Formate die per Server zu USDZ konvertiert werden (Blender)
+    private static let convertFormats: Set<String> = ["fbx", "gltf", "glb"]
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         let onPicked: (URL) -> Void
-        let onSKPPicked: ((URL) -> Void)?
+        let onServerConvert: ((URL) -> Void)?
+        let onSKPPicked: (() -> Void)?
 
-        init(onPicked: @escaping (URL) -> Void, onSKPPicked: ((URL) -> Void)?) {
+        init(onPicked: @escaping (URL) -> Void, onServerConvert: ((URL) -> Void)?, onSKPPicked: (() -> Void)?) {
             self.onPicked = onPicked
+            self.onServerConvert = onServerConvert
             self.onSKPPicked = onSKPPicked
         }
 
@@ -57,6 +66,14 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
             // Security-Scoped Resource Zugriff
             guard sourceURL.startAccessingSecurityScopedResource() else { return }
             defer { sourceURL.stopAccessingSecurityScopedResource() }
+
+            let ext = sourceURL.pathExtension.lowercased()
+
+            // SKP-Dateien: Hinweis zeigen (proprietaeres Format)
+            if ext == "skp" {
+                onSKPPicked?()
+                return
+            }
 
             // In App-Sandbox kopieren
             let fileManager = FileManager.default
@@ -77,11 +94,23 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
 
                 try fileManager.copyItem(at: sourceURL, to: destURL)
 
-                // SKP-Dateien -> Server-Konvertierung anstoßen
-                let ext = destURL.pathExtension.lowercased()
-                if ext == "skp", let skpHandler = onSKPPicked {
-                    skpHandler(destURL)
+                // Formate die lokal konvertiert werden koennen (STL, PLY)
+                if CADDocumentPicker.localConvertFormats.contains(ext) {
+                    do {
+                        let usdzURL = try SKPConversionService.shared.convertLocally(fileURL: destURL)
+                        onPicked(usdzURL)
+                    } catch {
+                        // Fallback: Server-Konvertierung versuchen
+                        if let handler = onServerConvert {
+                            handler(destURL)
+                        }
+                    }
+                }
+                // Formate die Server-Konvertierung brauchen (FBX, glTF)
+                else if CADDocumentPicker.convertFormats.contains(ext), let handler = onServerConvert {
+                    handler(destURL)
                 } else {
+                    // Native Formate direkt anzeigen (USDZ, OBJ, DAE)
                     onPicked(destURL)
                 }
             } catch {

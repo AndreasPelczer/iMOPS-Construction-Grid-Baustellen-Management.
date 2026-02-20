@@ -7,20 +7,20 @@
 //
 
 import Foundation
-import CoreData
+internal import CoreData
 
 
 extension CDLexikonEntry {
 
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<CDLexikonEntry> {
+    @nonobjc class func fetchRequest() -> NSFetchRequest<CDLexikonEntry> {
         return NSFetchRequest<CDLexikonEntry>(entityName: "CDLexikonEntry")
     }
 
-    @NSManaged public var beschreibung: String?
-    @NSManaged public var code: String?
-    @NSManaged public var details: String?
-    @NSManaged public var kategorie: String?
-    @NSManaged public var name: String?
+    @NSManaged var beschreibung: String?
+    @NSManaged var code: String?
+    @NSManaged var details: String?
+    @NSManaged var kategorie: String?
+    @NSManaged var name: String?
 
 }
 

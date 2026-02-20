@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import CoreData
+internal import CoreData
 
 func updateStatus(_ newStatus: JobStatus, context: NSManagedObjectContext) {
   //  job.status = newStatus

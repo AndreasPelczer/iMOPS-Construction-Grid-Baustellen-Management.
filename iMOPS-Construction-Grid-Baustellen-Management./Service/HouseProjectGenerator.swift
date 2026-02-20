@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import CoreData
+internal import CoreData
 
 enum HouseProjectGenerator {
 
