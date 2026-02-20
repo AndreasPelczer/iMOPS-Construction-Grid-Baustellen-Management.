@@ -1,4 +1,5 @@
 import SwiftUI
+import SafariServices
 internal import CoreData
 import Combine
 
@@ -48,6 +49,7 @@ struct EventDetailView: View {
     @State private var showSKPHint = false
     @State private var showNoExternalApp = false
     @State private var lastPickedSKPURL: URL?
+    @State private var showSketchUpWeb = false
 
     // MARK: Jobs: gefiltert + sortiert
     private var filteredJobs: [Auftrag] {
@@ -154,9 +156,7 @@ struct EventDetailView: View {
                 }
             }
             Button("SketchUp Web oeffnen") {
-                if let url = URL(string: "https://app.sketchup.com") {
-                    UIApplication.shared.open(url)
-                }
+                showSketchUpWeb = true
             }
             Button("OK", role: .cancel) {}
         } message: {
@@ -164,13 +164,17 @@ struct EventDetailView: View {
         }
         .alert("Keine passende App gefunden", isPresented: $showNoExternalApp) {
             Button("SketchUp Web oeffnen") {
-                if let url = URL(string: "https://app.sketchup.com") {
-                    UIApplication.shared.open(url)
-                }
+                showSketchUpWeb = true
             }
             Button("OK", role: .cancel) {}
         } message: {
             Text("Keine installierte App gefunden.\n\nDu kannst SketchUp Web kostenlos im Browser nutzen.")
+        }
+        .sheet(isPresented: $showSketchUpWeb) {
+            if let url = URL(string: "https://app.sketchup.com") {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
         }
         .sheet(isPresented: $showingMaterialPicker, onDismiss: {
             pinnedMaterials = fetchPinnedMaterials()
@@ -322,9 +326,7 @@ struct EventDetailView: View {
             }
             .contextMenu {
                 Button {
-                    if let sketchupURL = URL(string: "https://app.sketchup.com") {
-                        UIApplication.shared.open(sketchupURL)
-                    }
+                    showSketchUpWeb = true
                 } label: {
                     Label("In SketchUp Web oeffnen", systemImage: "safari")
                 }
