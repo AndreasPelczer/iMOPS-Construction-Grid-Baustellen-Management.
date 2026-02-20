@@ -56,7 +56,6 @@ def convert_to_usdz(input_path: Path, work_dir: Path) -> Path:
     cmd = [
         BLENDER_PATH,
         "--background",
-        "--factory-startup",
         "--python", str(BLENDER_SCRIPT),
         "--",
         "--input", str(input_path),
@@ -72,11 +71,17 @@ def convert_to_usdz(input_path: Path, work_dir: Path) -> Path:
     )
 
     if result.returncode != 0:
+        # Blender gibt Fehler sowohl ueber stdout als auch stderr aus
+        combined = result.stdout + "\n" + result.stderr
         error_lines = [
-            line for line in result.stderr.splitlines()
-            if "Error" in line or "FEHLER" in line
+            line for line in combined.splitlines()
+            if "Error" in line or "FEHLER" in line or "Traceback" in line
         ]
-        error_msg = "\n".join(error_lines) if error_lines else result.stderr[-500:]
+        if not error_lines:
+            # Letzten relevanten Output als Fehler nehmen
+            error_msg = combined.strip()[-500:]
+        else:
+            error_msg = "\n".join(error_lines)
         raise RuntimeError(f"Blender-Konvertierung fehlgeschlagen: {error_msg}")
 
     if not output_path.exists():

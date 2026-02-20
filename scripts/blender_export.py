@@ -105,7 +105,7 @@ def import_file(filepath):
                 bpy.ops.import_scene.skp(filepath=filepath)
                 print("[blender_export] SKP-Import via Addon erfolgreich")
             except AttributeError:
-                print(
+                msg = (
                     "[blender_export] FEHLER: SketchUp-Importer-Addon nicht "
                     "installiert!\n"
                     "  Installiere eines der folgenden Addons in Blender:\n"
@@ -114,6 +114,7 @@ def import_file(filepath):
                     "  Oder exportiere die SKP-Datei zuerst als DAE/OBJ aus "
                     "SketchUp."
                 )
+                print(msg, file=sys.stderr)
                 return False
 
         elif ext == ".obj":
@@ -140,7 +141,7 @@ def import_file(filepath):
             bpy.ops.import_scene.gltf(filepath=filepath)
 
         else:
-            print(f"[blender_export] FEHLER: Unbekanntes Format: {ext}")
+            print(f"[blender_export] FEHLER: Unbekanntes Format: {ext}", file=sys.stderr)
             return False
 
         print(f"[blender_export] Import erfolgreich: "
@@ -148,7 +149,7 @@ def import_file(filepath):
         return True
 
     except Exception as e:
-        print(f"[blender_export] FEHLER beim Import: {e}")
+        print(f"[blender_export] FEHLER beim Import: {e}", file=sys.stderr)
         return False
 
 
@@ -172,7 +173,8 @@ def export_file(filepath, fmt):
             if not hasattr(bpy.ops.wm, "usd_export"):
                 print(
                     "[blender_export] FEHLER: USD-Export nicht verfuegbar. "
-                    "Blender 3.0+ erforderlich."
+                    "Blender 3.0+ erforderlich.",
+                    file=sys.stderr
                 )
                 return False
             bpy.ops.wm.usd_export(
@@ -208,14 +210,14 @@ def export_file(filepath, fmt):
             )
 
         else:
-            print(f"[blender_export] FEHLER: Unbekanntes Export-Format: {fmt}")
+            print(f"[blender_export] FEHLER: Unbekanntes Export-Format: {fmt}", file=sys.stderr)
             return False
 
         print(f"[blender_export] Export erfolgreich: {filepath}")
         return True
 
     except Exception as e:
-        print(f"[blender_export] FEHLER beim Export: {e}")
+        print(f"[blender_export] FEHLER beim Export: {e}", file=sys.stderr)
         return False
 
 
@@ -227,7 +229,7 @@ def main():
 
     if not os.path.exists(input_path):
         print(f"[blender_export] FEHLER: Eingabedatei nicht gefunden: "
-              f"{input_path}")
+              f"{input_path}", file=sys.stderr)
         sys.exit(1)
 
     # Szene leeren
