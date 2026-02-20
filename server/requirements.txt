@@ -1,0 +1,4 @@
+flask>=3.0
+gunicorn>=21.2
+trimesh>=4.0
+numpy>=1.24

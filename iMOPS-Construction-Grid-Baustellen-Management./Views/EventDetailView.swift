@@ -41,6 +41,11 @@ struct EventDetailView: View {
     @State private var newStepText: String = ""
     @State private var refreshID = UUID()
 
+    // SKP-Konvertierung
+    @State private var isConvertingSKP = false
+    @State private var conversionError: String?
+    @State private var showConversionError = false
+
     // MARK: Jobs: gefiltert + sortiert
     private var filteredJobs: [Auftrag] {
         _ = refreshID
@@ -94,14 +99,44 @@ struct EventDetailView: View {
             AddJobView(event: event, viewContext: viewContext)
         }
         .sheet(isPresented: $showingCADPicker) {
-            CADDocumentPicker { importedURL in
-                let info = CADFileInfo(
-                    fileName: importedURL.lastPathComponent,
-                    relativePath: importedURL.lastPathComponent
-                )
-                cadFiles.append(info)
-                saveCADFiles()
+            CADDocumentPicker(
+                onPicked: { importedURL in
+                    let info = CADFileInfo(
+                        fileName: importedURL.lastPathComponent,
+                        relativePath: importedURL.lastPathComponent
+                    )
+                    cadFiles.append(info)
+                    saveCADFiles()
+                },
+                onSKPPicked: { skpURL in
+                    convertSKPFile(skpURL)
+                }
+            )
+        }
+        .overlay {
+            if isConvertingSKP {
+                ZStack {
+                    Color.black.opacity(0.4).ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("SKP wird konvertiert...")
+                            .font(.headline)
+                        Text("Datei wird an den Server gesendet\nund automatisch in USDZ umgewandelt.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(32)
+                    .background(.ultraThickMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                }
             }
+        }
+        .alert("Konvertierung fehlgeschlagen", isPresented: $showConversionError) {
+            Button("OK") {}
+        } message: {
+            Text(conversionError ?? "Unbekannter Fehler")
         }
         .sheet(isPresented: $showingMaterialPicker, onDismiss: {
             pinnedMaterials = fetchPinnedMaterials()
@@ -196,7 +231,7 @@ struct EventDetailView: View {
                     VStack(alignment: .leading) {
                         Text("Keine Plaene importiert")
                             .font(.subheadline)
-                        Text("USDZ, OBJ oder DAE Dateien importieren")
+                        Text("SKP, USDZ, OBJ oder DAE Dateien importieren")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -524,6 +559,36 @@ struct EventDetailView: View {
         let payload = CADFilesPayload(files: cadFiles)
         if let data = try? JSONEncoder().encode(payload) {
             UserDefaults.standard.set(data, forKey: cadStorageKey)
+        }
+    }
+
+    // MARK: - SKP Server-Konvertierung
+
+    /// Sendet eine SKP-Datei an den Konvertierungsserver und speichert das USDZ-Ergebnis.
+    private func convertSKPFile(_ skpURL: URL) {
+        isConvertingSKP = true
+        conversionError = nil
+
+        Task {
+            do {
+                let usdzURL = try await SKPConversionService.shared.convert(skpURL: skpURL)
+
+                await MainActor.run {
+                    let info = CADFileInfo(
+                        fileName: usdzURL.lastPathComponent,
+                        relativePath: usdzURL.lastPathComponent
+                    )
+                    cadFiles.append(info)
+                    saveCADFiles()
+                    isConvertingSKP = false
+                }
+            } catch {
+                await MainActor.run {
+                    isConvertingSKP = false
+                    conversionError = error.localizedDescription
+                    showConversionError = true
+                }
+            }
         }
     }
 }
