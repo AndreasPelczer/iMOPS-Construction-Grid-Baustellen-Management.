@@ -9,6 +9,8 @@
         <attribute name="lastStartTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="processingDetails" optional="YES" attributeType="String"/>
         <attribute name="statusRawValue" attributeType="String"/>
+        <attribute name="kostenGruppeBezeichnung" optional="YES" attributeType="String"/>
+        <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
         <attribute name="storageLocation" optional="YES" attributeType="String"/>
         <attribute name="storageNote" attributeType="String"/>
         <attribute name="totalProcessingTime" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
