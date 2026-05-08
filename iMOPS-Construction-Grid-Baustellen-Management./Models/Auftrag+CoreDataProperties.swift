@@ -19,6 +19,8 @@ extension Auftrag {
     @NSManaged var deliveryTemperature: Bool
     @NSManaged var employeeName: String?
     @NSManaged var isCompleted: Bool
+    @NSManaged var kostenGruppeBezeichnung: String?
+    @NSManaged var kostenGruppeNummer: String?
     @NSManaged var lastStartTime: Date?
     @NSManaged var processingDetails: String?
     @NSManaged var statusRawValue: String?
