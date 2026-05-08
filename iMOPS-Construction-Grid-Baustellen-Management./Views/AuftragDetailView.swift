@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import UniformTypeIdentifiers
 
 // MARK: - Master = AuftragExtrasPayload
 typealias JobExtrasPayload = AuftragExtrasPayload
@@ -11,6 +12,9 @@ struct AuftragDetailView: View {
 
     @State private var extras = JobExtrasPayload()
     @State private var newStepText: String = ""
+    @State private var zeigeImportPicker = false
+    @State private var importFehler: [String] = []
+    @State private var zeigeImportFehler = false
 
     private var doneCount: Int { extras.checklist.filter { $0.isDone }.count }
     private var totalCount: Int { extras.checklist.count }
@@ -41,6 +45,16 @@ struct AuftragDetailView: View {
         .navigationTitle(whatToDoText)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { extras = loadExtras() }
+        .sheet(isPresented: $zeigeImportPicker) {
+            MaterialImportPickerView { result in
+                verarbeiteImport(result)
+            }
+        }
+        .alert("Import-Hinweise", isPresented: $zeigeImportFehler) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importFehler.joined(separator: "\n"))
+        }
     }
 
     // MARK: - UI Cards
@@ -96,6 +110,22 @@ struct AuftragDetailView: View {
                 }
             }
 
+            if let kg = job.kostenGruppeNummer, !kg.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: "list.number")
+                    Text(kg)
+                    if let bez = job.kostenGruppeBezeichnung, !bez.isEmpty {
+                        Text("·")
+                        Text(bez).lineLimit(1)
+                    }
+                }
+                .font(.caption)
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(Color.accentColor.opacity(0.12))
+                .foregroundStyle(Color.accentColor)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
             if extras.trainingMode, let next = nextOpenStepTitle, !job.isCompleted {
                 Text("Jetzt: \(next)")
                     .font(.subheadline.weight(.semibold)).padding(.top, 2)
@@ -129,6 +159,14 @@ struct AuftragDetailView: View {
                 Spacer()
                 Text("\(extras.lineItems.count)")
                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                Button {
+                    zeigeImportPicker = true
+                } label: {
+                    Label("Import", systemImage: "square.and.arrow.down")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.mini)
             }
 
             if extras.lineItems.isEmpty {
@@ -138,7 +176,18 @@ struct AuftragDetailView: View {
                 VStack(spacing: 10) {
                     ForEach(extras.lineItems) { item in
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(item.title).font(.body.weight(.semibold))
+                            HStack(alignment: .top) {
+                                Text(item.title).font(.body.weight(.semibold))
+                                Spacer()
+                                if !item.kostenGruppeNummer.isEmpty {
+                                    Text(item.kostenGruppeNummer)
+                                        .font(.caption2)
+                                        .padding(.horizontal, 5).padding(.vertical, 2)
+                                        .background(Color.accentColor.opacity(0.12))
+                                        .foregroundStyle(Color.accentColor)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                }
+                            }
                             if !(item.amount.isEmpty && item.unit.isEmpty) {
                                 Text("\(item.amount) \(item.unit)".trimmingCharacters(in: .whitespaces))
                                     .font(.subheadline).foregroundStyle(.secondary)
@@ -335,5 +384,61 @@ struct AuftragDetailView: View {
         }
         job.isCompleted = false
         saveExtras(extras)
+    }
+
+    // MARK: - Material Import
+
+    private func verarbeiteImport(_ result: MaterialImportResult) {
+        extras.lineItems.append(contentsOf: result.items)
+        saveExtras(extras)
+        if !result.fehler.isEmpty {
+            importFehler = result.fehler
+            zeigeImportFehler = true
+        }
+    }
+}
+
+// MARK: - Document Picker für Materiallisten (CSV / JSON)
+
+struct MaterialImportPickerView: UIViewControllerRepresentable {
+    let onImport: (MaterialImportResult) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let typen: [UTType] = [.commaSeparatedText, .json, .plainText]
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: typen)
+        picker.allowsMultipleSelection = false
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onImport: onImport, dismiss: dismiss)
+    }
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onImport: (MaterialImportResult) -> Void
+        let dismiss: DismissAction
+
+        init(onImport: @escaping (MaterialImportResult) -> Void, dismiss: DismissAction) {
+            self.onImport = onImport
+            self.dismiss = dismiss
+        }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard let url = urls.first else { return }
+            guard url.startAccessingSecurityScopedResource() else { return }
+            defer { url.stopAccessingSecurityScopedResource() }
+
+            let result = MaterialImportService.shared.importiere(von: url)
+            onImport(result)
+            dismiss()
+        }
+
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            dismiss()
+        }
     }
 }

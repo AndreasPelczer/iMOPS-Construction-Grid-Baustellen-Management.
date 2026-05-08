@@ -14,6 +14,7 @@ struct AuftragLineItem: Codable, Identifiable, Equatable {
     var amount: String = ""      // z.B. "120"
     var unit: String = ""        // z.B. "m2" / "Stueck" / "lfm"
     var note: String = ""        // z.B. "Knauf 12,5mm, Brandschutz"
+    var kostenGruppeNummer: String = ""  // DIN 276 KG, z.B. "334"
 }
 
 // MARK: - Extras Payload (MASTER fuer Auftrag.extras)
