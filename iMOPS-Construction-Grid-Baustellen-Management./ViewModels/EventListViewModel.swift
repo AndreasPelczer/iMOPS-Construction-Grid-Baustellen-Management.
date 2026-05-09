@@ -5,7 +5,7 @@ import CoreData
 import Combine
 import SwiftUI
 
-// MARK: - EventFilter ENUM (Muss außerhalb oder vor der Klasse stehen)
+// MARK: - EventFilter
 
 enum EventFilter: String, CaseIterable, Identifiable {
     case upcoming = "Aktiv"
@@ -15,12 +15,14 @@ enum EventFilter: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 }
 
-// MARK: - EventListViewModel CLASS
+// MARK: - EventListViewModel
 
 class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsControllerDelegate {
 
     // MARK: - Properties
     @Published var events: [Event] = []
+    @Published var lastError: String? = nil
+
     private let viewContext: NSManagedObjectContext
     private var fetchedResultsController: NSFetchedResultsController<Event>!
 
@@ -35,10 +37,7 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
     // MARK: - Setup
 
     private func setupFetchedResultsController() {
-        // HINWEIS: request muss innerhalb der Funktion definiert werden
-        let request: NSFetchRequest<Event> = Event.fetchRequest() 
-
-        // KORRIGIERT: Nur EINE Definition des Sortier-Descriptors, String-basiert für Stabilität
+        let request: NSFetchRequest<Event> = Event.fetchRequest()
         let dateSort = NSSortDescriptor(key: "eventStartTime", ascending: true)
         request.sortDescriptors = [dateSort]
 
@@ -52,15 +51,15 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
 
         do {
             try fetchedResultsController.performFetch()
-            if let fetchedEvents = fetchedResultsController.fetchedObjects {
-                self.events = self.prioritizeEvents(fetchedEvents)
+            if let fetched = fetchedResultsController.fetchedObjects {
+                self.events = self.prioritizeEvents(fetched)
             }
         } catch {
-            print("❌ Fehler beim initialen Fetch: \(error.localizedDescription)")
+            lastError = "Laden fehlgeschlagen: \(error.localizedDescription)"
         }
     }
-    
-    // MARK: - Filter Logik (HINWEIS: Jetzt KORREKT innerhalb der Klasse!)
+
+    // MARK: - Filter
 
     func applyFilter(filter: EventFilter) {
         let now = Date()
@@ -68,51 +67,42 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
 
         switch filter {
         case .upcoming:
-            // Aktiv = noch nicht abgeschlossen (Fertigstellung liegt in der Zukunft, oder kein Enddatum)
             predicate = NSPredicate(format: "eventEndTime == nil OR eventEndTime >= %@", now as NSDate)
         case .past:
-            // Abgeschlossen = Fertigstellungsdatum liegt in der Vergangenheit
             predicate = NSPredicate(format: "eventEndTime < %@", now as NSDate)
         case .all:
             predicate = nil
         }
 
         fetchedResultsController.fetchRequest.predicate = predicate
-        
+
         do {
             try fetchedResultsController.performFetch()
-            if let fetchedEvents = fetchedResultsController.fetchedObjects {
-                self.events = self.prioritizeEvents(fetchedEvents)
+            if let fetched = fetchedResultsController.fetchedObjects {
+                self.events = self.prioritizeEvents(fetched)
             }
         } catch {
-            print("❌ Fehler beim Filter-Fetch: \(error.localizedDescription)")
+            lastError = "Filter fehlgeschlagen: \(error.localizedDescription)"
         }
     }
 
-
-    // MARK: - Priorisierungslogik
+    // MARK: - Priorisierung
 
     private func prioritizeEvents(_ fetchedEvents: [Event]) -> [Event] {
-        return fetchedEvents.sorted { (eventA: Event, eventB: Event) -> Bool in
-            let isActiveA = hasActiveJobs(event: eventA)
-            let isActiveB = hasActiveJobs(event: eventB)
-
-            if isActiveA != isActiveB {
-                return isActiveA
-            }
-            return (eventA.eventStartTime ?? Date()) < (eventB.eventStartTime ?? Date())
+        return fetchedEvents.sorted { (a: Event, b: Event) -> Bool in
+            let activeA = hasActiveJobs(event: a)
+            let activeB = hasActiveJobs(event: b)
+            if activeA != activeB { return activeA }
+            return (a.eventStartTime ?? Date()) < (b.eventStartTime ?? Date())
         }
     }
 
     func hasActiveJobs(event: Event) -> Bool {
         guard let jobs = event.jobs as? Set<Auftrag> else { return false }
-        return jobs.contains { job in
-            // HINWEIS: job.status muss ein String-Enum oder eine Comparable Property sein
-            return job.status == .inProgress || job.status == .pending || job.status == .onHold
-        }
+        return jobs.contains { $0.status == .inProgress || $0.status == .pending || $0.status == .onHold }
     }
 
-    // MARK: - Öffentliche CRUD Funktionen
+    // MARK: - CRUD
 
     func deleteEvents(offsets: IndexSet) {
         withAnimation {
@@ -124,21 +114,20 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
     // MARK: - NSFetchedResultsControllerDelegate
 
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        if let fetchedEvents = controller.fetchedObjects as? [Event] {
+        if let fetched = controller.fetchedObjects as? [Event] {
             DispatchQueue.main.async {
-                self.events = self.prioritizeEvents(fetchedEvents)
+                self.events = self.prioritizeEvents(fetched)
             }
         }
     }
 
-    // MARK: - Core Data Helper
+    // MARK: - CoreData
 
     private func saveContext() {
         do {
             try viewContext.save()
         } catch {
-            let nsError = error as NSError
-            print("❌ Fehler beim Speichern im EventListViewModel: \(nsError.localizedDescription)")
+            lastError = "Speichern fehlgeschlagen: \(error.localizedDescription)"
         }
     }
 }
