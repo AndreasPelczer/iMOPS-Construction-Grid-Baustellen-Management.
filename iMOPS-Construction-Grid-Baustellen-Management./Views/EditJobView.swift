@@ -18,6 +18,7 @@ struct EditJobView: View {
     @State private var isCompleted: Bool
     @State private var storageNote: String
     @State private var selectedKG: DIN276KostenGruppe?
+    @State private var showHelp = false
 
     init(job: Auftrag) {
         self.job = job
@@ -87,6 +88,17 @@ struct EditJobView: View {
                 }
             }
             .navigationTitle("Auftrag bearbeiten")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showHelp = true } label: {
+                        Image(systemName: "questionmark.circle")
+                    }
+                    .tint(.orange)
+                }
+            }
+            .sheet(isPresented: $showHelp) {
+                EditJobHelpView()
+            }
         }
     }
 
@@ -106,6 +118,57 @@ struct EditJobView: View {
             dismiss()
         } catch {
             print("Fehler beim Speichern: \(error)")
+        }
+    }
+}
+
+// MARK: - Hilfe
+
+struct EditJobHelpView: View {
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Zuweisung & Status") {
+                    Label("Mitarbeiter: wer ist aktuell für diesen Auftrag zuständig", systemImage: "person")
+                    Label("Status – Bedeutung der Stufen:", systemImage: "arrow.right.circle")
+                    VStack(alignment: .leading, spacing: 6) {
+                        statusRow("Offen", desc: "Auftrag angelegt, noch nicht begonnen", color: .secondary)
+                        statusRow("In Bearbeitung", desc: "Arbeiten laufen aktiv", color: .orange)
+                        statusRow("Abgeschlossen", desc: "Alle Arbeiten fertiggestellt", color: .green)
+                    }
+                    .padding(.vertical, 4)
+                }
+                Section("DIN 276 Kostengruppe") {
+                    Text("Die Kostengruppe ordnet den Auftrag in die DIN 276 Baukostenstruktur ein. Wichtig für Abrechnung, Controlling und Nachunternehmer-Zuordnung.")
+                    Label("KG 300 – Baukonstruktion (z.B. Wände, Decken)", systemImage: "building.2")
+                    Label("KG 400 – Technische Anlagen (z.B. Elektro, Sanitär)", systemImage: "bolt")
+                    Label("KG 500 – Außenanlagen", systemImage: "leaf")
+                }
+                Section("Hinweise") {
+                    Label("Änderungen werden sofort in CoreData gespeichert", systemImage: "icloud")
+                    Label("BuildIQ kann die Kostengruppe automatisch per KI vorschlagen", systemImage: "brain.head.profile")
+                }
+            }
+            .navigationTitle("Hilfe: Auftrag bearbeiten")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                        .tint(.orange)
+                }
+            }
+        }
+    }
+
+    private func statusRow(_ name: String, desc: String, color: Color) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Circle().fill(color).frame(width: 8, height: 8).padding(.top, 5)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(name).font(.subheadline).bold()
+                Text(desc).font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 }
