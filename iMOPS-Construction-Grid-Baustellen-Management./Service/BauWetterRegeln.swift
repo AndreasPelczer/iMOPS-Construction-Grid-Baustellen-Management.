@@ -44,9 +44,7 @@ struct BauWarnung: Identifiable, Equatable {
 // MARK: - Auftrag-Empfehlung bei schlechtem Wetter
 
 struct WetterEmpfehlung {
-    /// Auftragstyp der bei diesem Wetter sinnvoll ist
     let gewerk: String
-    /// KGs die bei diesem Wetter bevorzugt werden sollen
     let bevorzugteKGs: [String]
     let grund: String
 }
@@ -159,5 +157,32 @@ struct BauWetterRegeln {
         if stufen.contains(.stopp)    { return .red }
         if stufen.contains(.vorsicht) { return .orange }
         return .green
+    }
+
+    // MARK: - Strukturierte Validierung (RuleViolation-Pattern)
+    //
+    // Gibt nur bei echten STOPP-Bedingungen .failure zurück.
+    // VORSICHT-Warnungen bleiben in warnungen() — die sind UI-Hinweise, kein Blocker.
+
+    static func validateArbeitsbedingungen(wetter: BaustellenWetter) -> ValidationResult {
+        // Sturm → sofortiger SHE-Stopp (höchste Priorität)
+        if wetter.windGeschwindigkeit >= 17.2 {
+            return BauValidator.validateWindsicherheit(windGeschwindigkeit: wetter.windGeschwindigkeit)
+        }
+
+        // Frost oder Extremhitze → Betonage/Arbeitsschutz-Stopp
+        let tempResult = BauValidator.validateBetonage(temperatur: wetter.temperatur)
+        if case .failure = tempResult { return tempResult }
+
+        // Starkregen → Erdarbeiten-Stopp
+        if wetter.niederschlag1h >= 10 {
+            return .failure(RuleViolation(
+                ruleId: "BAU-W-03",
+                reason: "Starkregen (\(String(format: "%.0f", wetter.niederschlag1h)) mm/h): Keine Erdarbeiten, Baugrube sichern.",
+                fields: ["niederschlag1h"]
+            ))
+        }
+
+        return .success(())
     }
 }
