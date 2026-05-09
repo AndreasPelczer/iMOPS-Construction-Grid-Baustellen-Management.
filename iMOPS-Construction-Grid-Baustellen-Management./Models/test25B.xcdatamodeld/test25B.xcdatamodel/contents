@@ -66,6 +66,9 @@
         <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="timeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="title" optional="YES" attributeType="String"/>
+        <attribute name="bauherr" optional="YES" attributeType="String"/>
+        <attribute name="architekt" optional="YES" attributeType="String"/>
+        <attribute name="baugenehmigungNr" optional="YES" attributeType="String"/>
         <relationship name="jobs" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="event" inverseEntity="Auftrag"/>
         <relationship name="maengel" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Mangel" inverseName="event" inverseEntity="Mangel"/>
     </entity>

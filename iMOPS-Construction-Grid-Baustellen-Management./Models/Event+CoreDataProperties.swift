@@ -32,6 +32,9 @@ extension Event {
     @NSManaged var startTime: Date?
     @NSManaged var timeStamp: Date?
     @NSManaged var title: String?
+    @NSManaged var bauherr: String?
+    @NSManaged var architekt: String?
+    @NSManaged var baugenehmigungNr: String?
     @NSManaged var jobs: NSSet?
     @NSManaged var maengel: NSSet?
 

@@ -214,6 +214,21 @@ struct EventDetailView: View {
                 EventTimelineBar(event: event)
             }
 
+            let beteiligte: [(String, String)] = [
+                ("person.crop.square", event.bauherr ?? ""),
+                ("pencil.and.ruler", event.architekt ?? ""),
+                ("doc.badge.gearshape", event.baugenehmigungNr ?? "")
+            ].filter { !$0.1.isEmpty }
+            if !beteiligte.isEmpty {
+                Divider().opacity(0.4)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(beteiligte, id: \.0) { icon, wert in
+                        Label(wert, systemImage: icon)
+                            .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                }
+            }
+
             if let notes = event.notes, !notes.isEmpty {
                 Divider().opacity(0.4)
                 Text(notes).font(.subheadline).foregroundStyle(.secondary).lineLimit(4)
