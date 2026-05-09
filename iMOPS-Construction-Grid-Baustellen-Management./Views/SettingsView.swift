@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var serverURL: String = SKPConversionService.shared.serverURL
     @State private var serverStatus: String = ""
     @State private var isCheckingServer = false
+    @State private var wetterApiKey: String = UserDefaults.standard.string(forKey: WetterService.apiKeyUserDefaultsKey) ?? ""
 
     var body: some View {
         @Bindable var session = session
@@ -33,6 +34,22 @@ struct SettingsView: View {
                     Text("Español").tag("es")
                     Text("العربية").tag("ar")
                 }
+            }
+
+            Section("Wetter") {
+                SecureField("OpenWeatherMap API-Key", text: $wetterApiKey)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .onChange(of: wetterApiKey) { _, newValue in
+                        UserDefaults.standard.set(newValue, forKey: WetterService.apiKeyUserDefaultsKey)
+                        Task { await WetterService.shared.cacheLeeren() }
+                    }
+                Link(destination: URL(string: "https://openweathermap.org/api")!) {
+                    Label("Kostenlos registrieren (openweathermap.org)", systemImage: "safari")
+                        .font(.caption)
+                }
+                Text("Kostenloser Plan reicht: 60 Abfragen/Minute, aktuelles Wetter pro Standort.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
 
             Section("SKP-Konvertierungsserver") {

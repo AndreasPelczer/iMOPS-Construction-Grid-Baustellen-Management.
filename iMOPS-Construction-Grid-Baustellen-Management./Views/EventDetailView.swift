@@ -74,6 +74,7 @@ struct EventDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 headerCard
+                WetterKarteView(ort: event.location ?? "")
                 cadCard
                 materialCard
                 checklistCard
