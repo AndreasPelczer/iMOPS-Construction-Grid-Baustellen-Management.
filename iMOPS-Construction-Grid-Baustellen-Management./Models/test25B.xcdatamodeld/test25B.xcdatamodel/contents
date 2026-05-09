@@ -67,5 +67,20 @@
         <attribute name="timeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="title" optional="YES" attributeType="String"/>
         <relationship name="jobs" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="event" inverseEntity="Auftrag"/>
+        <relationship name="maengel" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Mangel" inverseName="event" inverseEntity="Mangel"/>
     </entity>
-</model>
+    <entity name="Mangel" representedClassName="Mangel" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="titel" optional="YES" attributeType="String"/>
+        <attribute name="beschreibung" optional="YES" attributeType="String"/>
+        <attribute name="ort" optional="YES" attributeType="String"/>
+        <attribute name="gewerk" optional="YES" attributeType="String"/>
+        <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
+        <attribute name="statusRawValue" optional="YES" attributeType="String" defaultValueString="offen"/>
+        <attribute name="frist" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="erfasstAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="erfasstVon" optional="YES" attributeType="String"/>
+        <attribute name="fotoPfad" optional="YES" attributeType="String"/>
+        <attribute name="schwere" optional="YES" attributeType="String" defaultValueString="mittel"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="maengel" inverseEntity="Event"/>
+    </entity>

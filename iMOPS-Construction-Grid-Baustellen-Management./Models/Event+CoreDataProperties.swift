@@ -33,6 +33,24 @@ extension Event {
     @NSManaged var timeStamp: Date?
     @NSManaged var title: String?
     @NSManaged var jobs: NSSet?
+    @NSManaged var maengel: NSSet?
+
+}
+
+// MARK: Generated accessors for maengel
+extension Event {
+
+    @objc(addMaengelObject:)
+    @NSManaged func addToMaengel(_ value: Mangel)
+
+    @objc(removeMaengelObject:)
+    @NSManaged func removeFromMaengel(_ value: Mangel)
+
+    @objc(addMaengel:)
+    @NSManaged func addToMaengel(_ values: NSSet)
+
+    @objc(removeMaengel:)
+    @NSManaged func removeFromMaengel(_ values: NSSet)
 
 }
 
