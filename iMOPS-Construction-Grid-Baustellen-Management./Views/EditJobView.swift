@@ -7,7 +7,6 @@ struct EditJobView: View {
 
     @ObservedObject var job: Auftrag
 
-    // Alte Küchen-Listen bleiben im Code (werden nicht mehr angezeigt)
     let storageLocations = ["FischKühlhaus", "Molkerei", "Fleisch", "Bereitstelle", "VorkühlerFk", "TK Oben", "TK- Fingerfood"]
     let storageNotes = ["1/1 Schwarz", "1/1 Silber", "1/2 Schwarz", "1/2 Silber", "1/1 Silber 10er", "1/1 Silber 6,5 cm", "30cm 1/2 Silber 10,30"]
 
@@ -71,8 +70,7 @@ struct EditJobView: View {
                     Button(action: saveChanges) {
                         HStack {
                             Spacer()
-                            Text("Änderungen Speichern")
-                                .bold()
+                            Text("Änderungen Speichern").bold()
                             Spacer()
                         }
                     }
@@ -109,57 +107,5 @@ struct EditJobView: View {
         } catch {
             print("Fehler beim Speichern: \(error)")
         }
-    }
-}
-
-// Dedizierte Such- und Picker-View für die Kostengruppe
-struct KostenGruppePickerView: View {
-    @Binding var selection: DIN276KostenGruppe?
-    @Environment(\.dismiss) var dismiss
-    @State private var suchtext = ""
-
-    private var gefiltert: [DIN276KostenGruppe] {
-        guard !suchtext.isEmpty else { return DIN276KostenGruppe.alle }
-        let s = suchtext.lowercased()
-        return DIN276KostenGruppe.alle.filter {
-            $0.nummer.contains(s) || $0.bezeichnung.lowercased().contains(s)
-        }
-    }
-
-    var body: some View {
-        List {
-            if selection != nil {
-                Button("Keine Kostengruppe") {
-                    selection = nil
-                    dismiss()
-                }
-                .foregroundColor(.red)
-            }
-            ForEach(gefiltert) { kg in
-                Button {
-                    selection = kg
-                    dismiss()
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(kg.nummer)
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            Text(kg.bezeichnung)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        if selection?.nummer == kg.nummer {
-                            Image(systemName: "checkmark")
-                                .foregroundColor(.accentColor)
-                        }
-                    }
-                }
-            }
-        }
-        .searchable(text: $suchtext, prompt: "KG-Nummer oder Bezeichnung")
-        .navigationTitle("Kostengruppe wählen")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -23,6 +23,9 @@ struct MangelErfassenView: View {
     @State private var fotoImage: UIImage? = nil
     @State private var zeigeKamera = false
 
+    // Fehlerzustand
+    @State private var lastViolation: RuleViolation? = nil
+
     private let gewerkOptionen = [
         "Rohbau", "Mauerwerk", "Beton", "Elektro", "Sanitär",
         "Heizung", "Lüftung", "Trockenbau", "Fliesen", "Maler",
@@ -122,12 +125,27 @@ struct MangelErfassenView: View {
             .fullScreenCover(isPresented: $zeigeKamera) {
                 KameraView(onFoto: { img in fotoImage = img })
             }
+            .alert(
+                lastViolation.map { $0.ruleId } ?? "Fehler",
+                isPresented: Binding(
+                    get: { lastViolation != nil },
+                    set: { if !$0 { lastViolation = nil } }
+                )
+            ) {
+                Button("OK") { lastViolation = nil }
+            } message: {
+                if let v = lastViolation {
+                    Text(v.reason)
+                }
+            }
         }
     }
 
     // MARK: - Speichern
 
     private func speichern() {
+        lastViolation = nil
+
         let mangel = Mangel(context: ctx)
         mangel.id = UUID()
         mangel.titel = titel.trimmingCharacters(in: .whitespaces)
@@ -150,7 +168,11 @@ struct MangelErfassenView: View {
             try ctx.save()
             dismiss()
         } catch {
-            print("Mangel speichern Fehler: \(error)")
+            lastViolation = RuleViolation(
+                ruleId: "BAU-R99",
+                reason: "Speichern fehlgeschlagen: \(error.localizedDescription)",
+                fields: nil
+            )
         }
     }
 
@@ -165,7 +187,7 @@ struct MangelErfassenView: View {
     }
 }
 
-// MARK: - Einfache Kamera-View
+// MARK: - Kamera-View
 
 struct KameraView: UIViewControllerRepresentable {
     let onFoto: (UIImage) -> Void

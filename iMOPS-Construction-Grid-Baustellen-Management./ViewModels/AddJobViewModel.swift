@@ -7,27 +7,26 @@ final class AddJobViewModel {
     private let viewContext: NSManagedObjectContext
     let event: Event
 
-    // MARK: - Zettelkopf (oben am Papier)
-    var orderNumber: String = ""        // 9779-04
-    var station: String = ""            // Torhaus E2
-    var deadline: Date = Date()         // Uhrzeit
+    // MARK: - Zettelkopf
+    var orderNumber: String = ""
+    var station: String = ""
+    var deadline: Date = Date()
     var hasDeadline: Bool = true
-    var persons: Int = 0                // Personen/Portionen
+    var persons: Int = 0
 
-    // MARK: - Zuweisung (optional)
+    // MARK: - Zuweisung
     var employeeName: String = ""
 
     // MARK: - Status
     var jobStatus: JobStatus = .pending
 
-    // MARK: - „Zettel-Body"
-    // Kurzer Auftragstext (das, was du aktuell als processingDetails nutzt)
-    var taskSummary: String = ""        // z.B. "Bulgur 6x Rezept, 10:30 schicken"
+    // MARK: - Auftragstext
+    var taskSummary: String = ""
 
-    // Produktionspositionen (wie auf dem Zettel)
+    // MARK: - Positionen
     var lineItems: [AuftragLineItem] = []
 
-    // MARK: - Behälter / Lager (deine existierenden Felder)
+    // MARK: - Behälter / Lager
     var storageLocation: String
     var storageNote: String
     var isHotDelivery: Bool = false
@@ -45,15 +44,19 @@ final class AddJobViewModel {
     var trainingMode: Bool = false
     var selectedTemplate: AuftragTemplate? = nil
 
+    // MARK: - Fehlerzustand (für die View)
+    /// Gesetzt wenn saveNewJob() oder die Validierung scheitert.
+    var lastViolation: RuleViolation? = nil
+
     init(event: Event, context: NSManagedObjectContext) {
         self.event = event
         self.viewContext = context
-
         self.storageLocation = storageLocations.first ?? ""
         self.storageNote = storageNotes.first ?? ""
     }
 
     // MARK: - Helpers
+
     func addLineItem() {
         lineItems.append(AuftragLineItem(title: ""))
     }
@@ -62,56 +65,67 @@ final class AddJobViewModel {
         lineItems.removeAll { $0.id == item.id }
     }
 
+    /// Nutzt BauValidator statt manuellem String-Check.
     var isSaveButtonDisabled: Bool {
-        // Minimal: ohne "Was ist zu tun?" speichern wir keinen Auftrag
-        taskSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if case .failure = BauValidator.validateAuftrag(
+            id: orderNumber.isEmpty ? "_draft" : orderNumber,
+            titel: taskSummary.trimmingCharacters(in: .whitespacesAndNewlines),
+            baustelle: event.eventName ?? station
+        ) { return true }
+        return false
     }
 
     // MARK: - Save
-    func saveNewJob() -> Bool {
-        let newJob = Auftrag(context: viewContext)
 
-        // CoreData-Felder, die es bei dir gibt:
+    func saveNewJob() -> Bool {
+        lastViolation = nil
+
+        // Validierung vor CoreData-Zugriff
+        let validation = BauValidator.validateAuftrag(
+            id: orderNumber.isEmpty ? "_draft" : orderNumber,
+            titel: taskSummary.trimmingCharacters(in: .whitespacesAndNewlines),
+            baustelle: event.eventName ?? station
+        )
+        if case .failure(let violation) = validation {
+            lastViolation = violation
+            return false
+        }
+
+        let newJob = Auftrag(context: viewContext)
         newJob.employeeName = employeeName
         newJob.storageLocation = storageLocation
         newJob.storageNote = storageNote
         newJob.deliveryTemperature = isHotDelivery
-
-        // "Was ist zu tun?" → in processingDetails (damit Row/Listen was zeigen)
         newJob.processingDetails = taskSummary
-
         newJob.status = jobStatus
         newJob.isCompleted = (jobStatus == .completed)
         newJob.event = event
-
         newJob.totalProcessingTime = 0.0
         newJob.lastStartTime = nil
 
-        // Extras (Zettelkopf + Positionen + SOP)
         var extras = AuftragExtrasPayload()
         extras.trainingMode = trainingMode
         extras.orderNumber = orderNumber
         extras.station = station
         extras.persons = persons
         extras.deadline = hasDeadline ? deadline : nil
-
-        // Positionen: leere Titel rausfiltern
         extras.lineItems = lineItems.filter {
             !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
-
-        // SOP aus Template (optional)
         if let tpl = selectedTemplate {
             extras.checklist = tpl.steps.map { AuftragChecklistItem(title: $0) }
         }
-
         newJob.extras = extras.toJSONString()
 
         do {
             try viewContext.save()
             return true
         } catch {
-            print("Fehler beim Speichern des neuen Auftrags: \(error)")
+            lastViolation = RuleViolation(
+                ruleId: "BAU-R99",
+                reason: "Speichern fehlgeschlagen: \(error.localizedDescription)",
+                fields: nil
+            )
             return false
         }
     }

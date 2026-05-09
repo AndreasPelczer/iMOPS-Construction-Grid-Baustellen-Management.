@@ -21,7 +21,6 @@ struct AddJobView: View {
         NavigationStack {
             Form {
 
-                
                 // Auftragskopf
                 Section("Auftragskopf") {
                     TextField("Auftragsnummer (B-2026-042)", text: $viewModel.orderNumber)
@@ -48,13 +47,13 @@ struct AddJobView: View {
                     }
                 }
 
-
-                // 2) WAS IST ZU TUN?
+                // Aufgabe
                 Section("Aufgabe") {
                     TextField("z.B. Elektro EG verlegen, Estrich OG", text: $viewModel.taskSummary)
                         .font(.headline)
                 }
-                // 3) PRODUKTIONSPOSITIONEN (wie auf Papier)
+
+                // Positionen
                 Section {
                     if viewModel.lineItems.isEmpty {
                         Text("Noch keine Positionen. Tippe auf „Position hinzufügen“.")
@@ -99,7 +98,7 @@ struct AddJobView: View {
                     Text("Material / Positionen")
                 }
 
-                // 4) GEWERK / VORLAGE
+                // Gewerk & Vorlage
                 Section("Gewerk & Vorlage") {
                     Toggle("Schritte einzeln abhaken", isOn: $viewModel.trainingMode)
 
@@ -111,7 +110,7 @@ struct AddJobView: View {
                     }
                 }
 
-                // 5) ORGA
+                // Zuweisung & Lager
                 Section("Zuweisung & Lager") {
                     if employees.isEmpty {
                         TextField("Mitarbeiter (optional)", text: $viewModel.employeeName)
@@ -133,16 +132,12 @@ struct AddJobView: View {
                     .pickerStyle(.menu)
 
                     Picker("Lagerort", selection: $viewModel.storageLocation) {
-                        ForEach(viewModel.storageLocations, id: \.self) { loc in
-                            Text(loc)
-                        }
+                        ForEach(viewModel.storageLocations, id: \.self) { Text($0) }
                     }
                     .pickerStyle(.menu)
 
                     Picker("Behälter/Hinweis", selection: $viewModel.storageNote) {
-                        ForEach(viewModel.storageNotes, id: \.self) { note in
-                            Text(note)
-                        }
+                        ForEach(viewModel.storageNotes, id: \.self) { Text($0) }
                     }
                     .pickerStyle(.menu)
 
@@ -156,11 +151,22 @@ struct AddJobView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Speichern") {
-                        if viewModel.saveNewJob() {
-                            dismiss()
-                        }
+                        if viewModel.saveNewJob() { dismiss() }
                     }
                     .disabled(viewModel.isSaveButtonDisabled)
+                }
+            }
+            .alert(
+                viewModel.lastViolation.map { $0.ruleId } ?? "Fehler",
+                isPresented: Binding(
+                    get: { viewModel.lastViolation != nil },
+                    set: { if !$0 { viewModel.lastViolation = nil } }
+                )
+            ) {
+                Button("OK") { viewModel.lastViolation = nil }
+            } message: {
+                if let v = viewModel.lastViolation {
+                    Text(v.reason)
                 }
             }
         }
