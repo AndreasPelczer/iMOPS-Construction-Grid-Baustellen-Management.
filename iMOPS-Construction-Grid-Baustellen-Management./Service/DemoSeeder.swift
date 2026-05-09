@@ -28,11 +28,10 @@ enum DemoSeeder {
         event.title = "Neubau Mehrfamilienhaus Lindenstrasse 12"
         event.eventNumber = demoEventNumber
         event.location = "Lindenstrasse 12, 60325 Frankfurt"
-        event.notes = """
-Demo-Baustelle: 6 Wohneinheiten, 3 Geschosse.
-Bauherr: Mustermann GmbH
-Architekt: Planbuero Schmidt
-"""
+        event.bauherr = "Mustermann GmbH"
+        event.architekt = "Planbuero Schmidt & Partner"
+        event.baugenehmigungNr = "BG-2025-0042-FFM"
+        event.notes = "Demo-Baustelle: 6 Wohneinheiten, 3 Geschosse."
         event.timeStamp = now
 
         var extras = EventExtrasPayload()

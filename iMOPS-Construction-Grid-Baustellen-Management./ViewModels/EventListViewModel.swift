@@ -64,19 +64,19 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
 
     func applyFilter(filter: EventFilter) {
         let now = Date()
-        var predicate: NSPredicate? = NSPredicate(format: "eventNumber != nil")
-        
+        let predicate: NSPredicate?
+
         switch filter {
         case .upcoming:
-            let upcomingPredicate = NSPredicate(format: "eventStartTime >= %@", now as NSDate)
-            predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [predicate!, upcomingPredicate])
+            // Aktiv = noch nicht abgeschlossen (Fertigstellung liegt in der Zukunft, oder kein Enddatum)
+            predicate = NSPredicate(format: "eventEndTime == nil OR eventEndTime >= %@", now as NSDate)
         case .past:
-            let pastPredicate = NSPredicate(format: "eventStartTime < %@", now as NSDate)
-            predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [predicate!, pastPredicate])
+            // Abgeschlossen = Fertigstellungsdatum liegt in der Vergangenheit
+            predicate = NSPredicate(format: "eventEndTime < %@", now as NSDate)
         case .all:
-            predicate = NSPredicate(format: "eventNumber != nil")
+            predicate = nil
         }
-        
+
         fetchedResultsController.fetchRequest.predicate = predicate
         
         do {
