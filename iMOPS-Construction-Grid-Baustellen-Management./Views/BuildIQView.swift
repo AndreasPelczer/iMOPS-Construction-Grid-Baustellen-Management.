@@ -17,6 +17,7 @@ struct BuildIQView: View {
     @State private var scanResult: BuildIQResult? = nil
     @State private var errorMessage: String? = nil
     @State private var showAssignSheet = false
+    @State private var showHelp = false
     @State private var shutterEffect = false
 
     private let buildIQService = BuildIQService()
@@ -67,7 +68,18 @@ struct BuildIQView: View {
                         .cornerRadius(8)
 
                     Spacer()
-                    Color.clear.frame(width: 90, height: 36) // Balance
+
+                    Button {
+                        showHelp = true
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14).padding(.vertical, 8)
+                            .background(Color.black.opacity(0.55))
+                            .cornerRadius(8)
+                    }
+                    .frame(width: 90)
                 }
                 .padding()
 
@@ -117,6 +129,9 @@ struct BuildIQView: View {
                 }
                 .environment(\.managedObjectContext, ctx)
             }
+        }
+        .sheet(isPresented: $showHelp) {
+            BuildIQHelpView()
         }
     }
 
@@ -211,7 +226,6 @@ struct BuildIQView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { shutterEffect = false }
 
         #if targetEnvironment(simulator)
-        // Simulator: Testtext direkt verarbeiten
         processText("Ytong Porenbeton PP2-0.4 240mm Wandbaustein Planblock Mauerwerk")
         #else
         scannerVM.onImageCaptured = { image in
@@ -298,7 +312,6 @@ struct AuftragZuweisungView: View {
                 }
             }
             .safeAreaInset(edge: .top) {
-                // Ergebnis-Preview oben
                 HStack {
                     Image(systemName: "brain.head.profile")
                         .foregroundColor(.orange)
@@ -324,6 +337,164 @@ struct AuftragZuweisungView: View {
                     )
                 }
             }
+        }
+    }
+}
+
+// MARK: - BuildIQ Landing (Tab-Root)
+
+struct BuildIQLandingView: View {
+    @State private var showScanner = false
+    @State private var showHelp = false
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 32) {
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.12))
+                        .frame(width: 130, height: 130)
+                    Image(systemName: "brain.head.profile")
+                        .font(.system(size: 54))
+                        .foregroundColor(.orange)
+                }
+                .padding(.top, 40)
+
+                VStack(spacing: 6) {
+                    Text("BuildIQ")
+                        .font(.largeTitle).bold()
+                    Text("KI-gestützte Baumaterial-Erkennung")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                VStack(alignment: .leading, spacing: 18) {
+                    featureRow(icon: "camera.fill",      title: "Kamera-Scan",       desc: "Fotografiere Lieferscheine oder Materialschilder")
+                    featureRow(icon: "text.viewfinder",  title: "Texterkennung",      desc: "Vision OCR liest den Text automatisch")
+                    featureRow(icon: "sparkles",         title: "Gemini 2.0 Flash",   desc: "KI ordnet DIN 276 Kostengruppen zu")
+                    featureRow(icon: "link.badge.plus",  title: "Auftrag zuweisen",   desc: "Ergebnis direkt einem offenen Auftrag zuordnen")
+                }
+                .padding(.horizontal, 28)
+
+                Button {
+                    showScanner = true
+                } label: {
+                    Label("Scanner starten", systemImage: "camera.viewfinder")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+                .padding(.horizontal, 28)
+                .padding(.bottom, 40)
+            }
+        }
+        .navigationTitle("BuildIQ")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showHelp = true
+                } label: {
+                    Image(systemName: "questionmark.circle")
+                }
+                .tint(.orange)
+            }
+        }
+        .fullScreenCover(isPresented: $showScanner) {
+            BuildIQView()
+        }
+        .sheet(isPresented: $showHelp) {
+            BuildIQHelpView()
+        }
+    }
+
+    private func featureRow(icon: String, title: String, desc: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(.orange)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline).bold()
+                Text(desc).font(.caption).foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - BuildIQ Hilfe
+
+struct BuildIQHelpView: View {
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Was ist BuildIQ?") {
+                    Text("BuildIQ verbindet Kamera, OCR und Google Gemini 2.0 Flash, um Baumaterialien automatisch zu erkennen und DIN 276 Kostengruppen zuzuordnen – direkt auf der Baustelle.")
+                }
+
+                Section("So funktioniert's") {
+                    helpStep(nr: "1", icon: "camera.fill",     text: "Halte die Kamera auf einen Lieferschein oder ein Materialschild.")
+                    helpStep(nr: "2", icon: "text.viewfinder", text: "Tippe den Auslöser – Vision OCR liest den Text automatisch.")
+                    helpStep(nr: "3", icon: "sparkles",        text: "Gemini 2.0 Flash analysiert und ordnet eine DIN 276 Kostengruppe zu.")
+                    helpStep(nr: "4", icon: "link.badge.plus", text: "Weise das Ergebnis einem offenen Auftrag zu.")
+                }
+
+                Section("DIN 276 Kostengruppen") {
+                    Text("DIN 276 gliedert Baukosten in Gruppen von 100–700. Beispiele:")
+                    Label("KG 300 – Bauwerk (Baukonstruktion)", systemImage: "building.2")
+                    Label("KG 330 – Außenwände / Außenstützen", systemImage: "square.split.diagonal")
+                    Label("KG 352 – Außentüren und -fenster", systemImage: "door.sliding.left.hand.closed")
+                    Label("KG 400 – Technische Anlagen", systemImage: "wrench.and.screwdriver")
+                }
+
+                Section("Konfidenz-Ampel") {
+                    HStack(spacing: 10) {
+                        Circle().fill(Color.green).frame(width: 10, height: 10)
+                        Text("Hoch – Ergebnis sehr zuverlässig")
+                    }
+                    HStack(spacing: 10) {
+                        Circle().fill(Color.yellow).frame(width: 10, height: 10)
+                        Text("Mittel – manuelle Prüfung empfohlen")
+                    }
+                    HStack(spacing: 10) {
+                        Circle().fill(Color.red).frame(width: 10, height: 10)
+                        Text("Niedrig – bitte manuell korrigieren")
+                    }
+                }
+
+                Section("Hinweise") {
+                    Label("Gute Beleuchtung verbessert die OCR-Genauigkeit erheblich.", systemImage: "lightbulb")
+                    Label("GEMINI_API_KEY muss in Secrets.plist hinterlegt sein.", systemImage: "key.fill")
+                    Label("BuildIQ ist nur auf iPhone/iPad verfügbar (kein macCatalyst).", systemImage: "iphone")
+                }
+            }
+            .navigationTitle("BuildIQ Hilfe")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                        .tint(.orange)
+                }
+            }
+        }
+    }
+
+    private func helpStep(nr: String, icon: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                Circle().fill(Color.orange).frame(width: 24, height: 24)
+                Text(nr).font(.caption).bold().foregroundColor(.white)
+            }
+            Image(systemName: icon)
+                .foregroundColor(.orange)
+                .frame(width: 20)
+            Text(text)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
