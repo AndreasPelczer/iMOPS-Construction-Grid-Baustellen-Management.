@@ -18,13 +18,12 @@ struct MangelErfassenView: View {
     @State private var selectedKG: DIN276KostenGruppe? = nil
     @State private var erfasstVon = ""
 
-    // Foto
     @State private var fotoItem: PhotosPickerItem? = nil
     @State private var fotoImage: UIImage? = nil
     @State private var zeigeKamera = false
 
-    // Fehlerzustand
     @State private var lastViolation: RuleViolation? = nil
+    @State private var showHelp = false
 
     private let gewerkOptionen = [
         "Rohbau", "Mauerwerk", "Beton", "Elektro", "Sanitär",
@@ -109,10 +108,19 @@ struct MangelErfassenView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") { dismiss() }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showHelp = true } label: {
+                        Image(systemName: "questionmark.circle")
+                    }
+                    .tint(.orange)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Speichern") { speichern() }
                         .disabled(titel.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
+            }
+            .sheet(isPresented: $showHelp) {
+                MangelHelpView()
             }
             .onChange(of: fotoItem) { _, item in
                 Task {
@@ -218,5 +226,55 @@ struct KameraView: UIViewControllerRepresentable {
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { dismiss() }
+    }
+}
+
+// MARK: - Hilfe
+
+struct MangelHelpView: View {
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Was ist ein Mangel?") {
+                    Text("Ein Mangel ist eine Abweichung von der vereinbarten Leistung – z.B. ein Riss im Putz, falsch verlegte Leitungen, oder fehlende Dämmung. Mängel werden dokumentiert, bewertet und bis zur Behebung verfolgt.")
+                }
+                Section("Schwere-Stufen") {
+                    Label("Kritisch – sofortige Behebung erforderlich, Sicherheitsrisiko", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                    Label("Hoch – Behebung innerhalb weniger Tage", systemImage: "exclamationmark.circle.fill")
+                        .foregroundStyle(.orange)
+                    Label("Mittel – Standardfrist (14 Tage)", systemImage: "minus.circle.fill")
+                        .foregroundStyle(.yellow)
+                    Label("Niedrig – bei nächster Gelegenheit", systemImage: "arrow.down.circle.fill")
+                        .foregroundStyle(.blue)
+                }
+                Section("Frist") {
+                    Text("Frist = Datum bis zur vollständigen Mängelbehebung. Nach Ablauf wird der Mangel als überfällig markiert. Standard: 14 Tage ab Erfassung.")
+                }
+                Section("Kostengruppe (DIN 276)") {
+                    Text("Ordnet den Mangel einer DIN 276 Kostengruppe zu. Wichtig für die Abrechnung und für die Zuordnung zu Nachunternehmern. Optional – kann auch später ergänzt werden.")
+                }
+                Section("Foto") {
+                    Label("Foto als Beweis und Dokumentation – wichtig bei Gewährleistungsansprüchen", systemImage: "camera.fill")
+                    Label("Kamera: direkt fotografieren · Bibliothek: vorhandenes Bild auswählen", systemImage: "photo")
+                    Label("Tippe auf das Foto um es zu entfernen und neu aufzunehmen", systemImage: "hand.tap")
+                }
+                Section("Status-Ablauf") {
+                    Label("Offen → In Arbeit → Behoben", systemImage: "arrow.right.circle")
+                    Text("Status kann in der Mängelliste geändert werden.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Hilfe: Mangel erfassen")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                        .tint(.orange)
+                }
+            }
+        }
     }
 }
