@@ -22,9 +22,12 @@ enum DebugSeeder {
         event.name = "DEMO: Sanierung Altbau (Test)"
         event.title = "Sanierung Altbau Goethestrasse 8"
         event.location = "Goethestrasse 8, 60313 Frankfurt"
+        event.bauherr = "Stadt Frankfurt a.M."
+        event.architekt = "Buero fuer Denkmalpflege Krause"
+        event.baugenehmigungNr = "BG-2025-0017-FFM"
         event.setupTime = Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date())
         event.eventStartTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())
-        event.eventEndTime = Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date())
+        event.eventEndTime = Calendar.current.date(byAdding: .day, value: 60, to: Date())
         event.timeStamp = Date()
         event.notes = "Kernsanierung 2. OG: Trockenbau, Elektro, Sanitaer, Maler"
 

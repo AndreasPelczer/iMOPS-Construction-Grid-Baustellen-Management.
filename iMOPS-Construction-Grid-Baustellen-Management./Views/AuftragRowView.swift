@@ -133,6 +133,13 @@ struct AuftragRowView: View {
             if extras.persons > 0 {
                 Label("\(extras.persons)", systemImage: "person.2")
             }
+            if let kg = auftrag.kostenGruppeNummer, !kg.isEmpty {
+                Text(kg)
+                    .padding(.horizontal, 5).padding(.vertical, 2)
+                    .background(Color.accentColor.opacity(0.12))
+                    .foregroundStyle(Color.accentColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+            }
         }
         .font(.caption).foregroundStyle(.secondary).lineLimit(1)
     }

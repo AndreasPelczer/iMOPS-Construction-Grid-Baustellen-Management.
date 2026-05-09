@@ -19,10 +19,13 @@ struct AddEventView: View {
     @State private var notes: String = ""
     @State private var eventNumber: String = ""
     @State private var location: String = ""
+    @State private var bauherr: String = ""
+    @State private var architekt: String = ""
+    @State private var baugenehmigungNr: String = ""
     @State private var eventStartTime: Date = nextFullHour()
     @State private var setupTime: Date = nextFullHour().addingTimeInterval(-3600)
     @State private var eventEndTime: Date = nextFullHour().addingTimeInterval(3600 * 3)
-    
+
     var body: some View {
         NavigationStack {
             Form {
@@ -31,14 +34,21 @@ struct AddEventView: View {
                     TextField("Baustellennummer", text: $eventNumber)
                     TextField("Adresse / Standort", text: $location)
                 }
-                
+
+                Section(header: Text("Beteiligte")) {
+                    TextField("Bauherr / Auftraggeber", text: $bauherr)
+                    TextField("Architekt / Planungsbuero", text: $architekt)
+                    TextField("Baugenehmigungsnummer", text: $baugenehmigungNr)
+                        .textInputAutocapitalization(.never)
+                }
+
                 Section(header: Text("Notizen")) {
                     TextEditor(text: $notes)
                         .frame(minHeight: 80)
                         .border(Color.gray.opacity(0.3), width: 1)
                         .cornerRadius(5)
                 }
-                
+
                 Section(header: Text("Zeitplan")) {
                     DatePicker("Baustelleneinrichtung", selection: $setupTime, displayedComponents: [.date, .hourAndMinute])
                     DatePicker("Baubeginn", selection: $eventStartTime, displayedComponents: [.date, .hourAndMinute])
@@ -66,11 +76,14 @@ struct AddEventView: View {
         newEvent.notes = notes
         newEvent.eventNumber = eventNumber
         newEvent.location = location
+        newEvent.bauherr = bauherr.trimmingCharacters(in: .whitespacesAndNewlines)
+        newEvent.architekt = architekt.trimmingCharacters(in: .whitespacesAndNewlines)
+        newEvent.baugenehmigungNr = baugenehmigungNr.trimmingCharacters(in: .whitespacesAndNewlines)
         newEvent.eventStartTime = eventStartTime
         newEvent.setupTime = setupTime
         newEvent.eventEndTime = eventEndTime
         newEvent.timeStamp = Date()
-        
+
         do {
             try viewContext.save()
             dismiss()

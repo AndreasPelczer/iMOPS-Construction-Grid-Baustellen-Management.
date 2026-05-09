@@ -40,6 +40,7 @@ struct EventDetailView: View {
     @State private var cadFiles: [CADFileInfo] = []
     @State private var pinnedMaterials: [CDLexikonEntry] = []
     @State private var newStepText: String = ""
+    @State private var showingMaengelListe = false
     @State private var refreshID = UUID()
 
     // Server-Konvertierung (FBX, STL, glTF -> USDZ)
@@ -74,9 +75,11 @@ struct EventDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 headerCard
+                WetterKarteView(ort: event.location ?? "")
                 cadCard
                 materialCard
                 checklistCard
+                maengelCard
                 jobsCard
                 Spacer(minLength: 8)
             }
@@ -209,6 +212,21 @@ struct EventDetailView: View {
                     timeRow(icon: "clock.badge.checkmark", title: "Ende", date: end, color: .green)
                 }
                 EventTimelineBar(event: event)
+            }
+
+            let beteiligte: [(String, String)] = [
+                ("person.crop.square", event.bauherr ?? ""),
+                ("pencil.and.ruler", event.architekt ?? ""),
+                ("doc.badge.gearshape", event.baugenehmigungNr ?? "")
+            ].filter { !$0.1.isEmpty }
+            if !beteiligte.isEmpty {
+                Divider().opacity(0.4)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(beteiligte, id: \.0) { icon, wert in
+                        Label(wert, systemImage: icon)
+                            .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                }
             }
 
             if let notes = event.notes, !notes.isEmpty {
@@ -534,6 +552,80 @@ struct EventDetailView: View {
         .padding(.vertical, 8).padding(.horizontal, 10)
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    // MARK: - MAENGEL CARD
+
+    private var maengelAnzahl: Int {
+        (event.maengel?.count ?? 0)
+    }
+
+    private var maengelOffenAnzahl: Int {
+        guard let set = event.maengel else { return 0 }
+        return set.compactMap { $0 as? Mangel }.filter { $0.status == .offen || $0.status == .inArbeit }.count
+    }
+
+    private var maengelCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Maengel (\(maengelAnzahl))").font(.headline)
+                Spacer()
+                Button {
+                    showingMaengelListe = true
+                } label: {
+                    Label("Alle anzeigen", systemImage: "list.bullet")
+                        .font(.subheadline)
+                }
+            }
+
+            if maengelAnzahl == 0 {
+                HStack(spacing: 10) {
+                    Image(systemName: "checkmark.seal")
+                        .font(.title2).foregroundStyle(.green)
+                    VStack(alignment: .leading) {
+                        Text("Keine Maengel erfasst")
+                            .font(.subheadline)
+                        Text("Maengel direkt vor Ort erfassen und verwalten.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.top, 4)
+            } else {
+                HStack(spacing: 20) {
+                    VStack(spacing: 2) {
+                        Text("\(maengelOffenAnzahl)")
+                            .font(.title2.bold())
+                            .foregroundStyle(maengelOffenAnzahl > 0 ? .red : .primary)
+                        Text("Offen").font(.caption).foregroundStyle(.secondary)
+                    }
+                    VStack(spacing: 2) {
+                        Text("\(maengelAnzahl - maengelOffenAnzahl)")
+                            .font(.title2.bold())
+                            .foregroundStyle(.green)
+                        Text("Erledigt").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        showingMaengelListe = true
+                    } label: {
+                        Text("Details")
+                            .font(.subheadline.weight(.medium))
+                            .padding(.horizontal, 14).padding(.vertical, 7)
+                            .background(Color(.tertiarySystemFill))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .sheet(isPresented: $showingMaengelListe) {
+            MangelListeView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
     }
 
     // MARK: - JOBS CARD
