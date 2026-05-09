@@ -42,8 +42,8 @@ struct EventDetailView: View {
     @State private var newStepText: String = ""
     @State private var showingMaengelListe = false
     @State private var refreshID = UUID()
+    @State private var showHelp = false
 
-    // Server-Konvertierung (FBX, STL, glTF -> USDZ)
     @State private var isConverting = false
     @State private var conversionError: String?
     @State private var showConversionError = false
@@ -89,6 +89,12 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showHelp = true } label: {
+                    Image(systemName: "questionmark.circle")
+                }
+                .tint(.orange)
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Bearbeiten") { showingEditSheet = true }
             }
         }
@@ -96,6 +102,9 @@ struct EventDetailView: View {
             extras = loadExtras()
             cadFiles = loadCADFiles()
             pinnedMaterials = fetchPinnedMaterials()
+        }
+        .sheet(isPresented: $showHelp) {
+            EventDetailHelpView()
         }
         .sheet(isPresented: $showingEditSheet, onDismiss: { refreshID = UUID() }) {
             EditEventView(event: event)
@@ -117,7 +126,6 @@ struct EventDetailView: View {
                     convertFileToUSDZ(fileURL)
                 },
                 onSKPPicked: { skpFileURL in
-                    // SKP-Datei zur Liste hinzufuegen (wird in Safari/SketchUp Web geoeffnet)
                     if let url = skpFileURL {
                         let info = CADFileInfo(
                             fileName: url.lastPathComponent,
@@ -249,7 +257,7 @@ struct EventDetailView: View {
         }
     }
 
-    // MARK: - CAD / PLAENE CARD (gruppiert nach Plantyp)
+    // MARK: - CAD / PLAENE CARD
     private var cadCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -301,7 +309,6 @@ struct EventDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    /// Prueft ob eine Datei eine SKP-Datei ist
     private func isSKPFile(_ file: CADFileInfo) -> Bool {
         file.fileName.lowercased().hasSuffix(".skp")
     }
@@ -310,7 +317,6 @@ struct EventDetailView: View {
     private func cadFileRow(_ file: CADFileInfo) -> some View {
         if let url = file.fullURL {
             if isSKPFile(file) {
-                // SKP-Dateien: Direkt in Safari/SketchUp Web oeffnen (kein interner 3D-Viewer)
                 Button {
                     showSketchUpWeb = true
                 } label: {
@@ -349,7 +355,6 @@ struct EventDetailView: View {
                     }
                 }
             } else {
-                // Andere Formate (USDZ, OBJ, DAE etc.): Interner 3D-Viewer
                 NavigationLink {
                     CADViewerView(fileURL: url, fileName: file.fileName)
                 } label: {
@@ -391,7 +396,7 @@ struct EventDetailView: View {
         }
     }
 
-    // MARK: - MATERIAL CARD (gepinnte Materialien)
+    // MARK: - MATERIAL CARD
     private var materialCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -711,7 +716,7 @@ struct EventDetailView: View {
         saveExtras(extras)
     }
 
-    // MARK: - CAD Files Load/Save (UserDefaults, keyed by eventNumber)
+    // MARK: - CAD Files Load/Save
     private var cadStorageKey: String {
         "cadFiles_\(event.eventNumber ?? "unknown")"
     }
@@ -731,14 +736,9 @@ struct EventDetailView: View {
     }
 
     // MARK: - Server-Konvertierung (FBX, STL, glTF -> USDZ)
-
-    /// Konvertiert eine 3D-Datei zu USDZ.
-    /// Versucht zuerst lokale On-Device-Konvertierung (ModelIO),
-    /// fällt bei Bedarf auf den Server zurueck.
     private func convertFileToUSDZ(_ fileURL: URL) {
         let service = SKPConversionService.shared
 
-        // Lokale Konvertierung (STL, OBJ, PLY) - kein Server noetig
         if service.canConvertLocally(fileURL: fileURL) {
             do {
                 let usdzURL = try service.convertLocally(fileURL: fileURL)
@@ -749,19 +749,15 @@ struct EventDetailView: View {
                 cadFiles.append(info)
                 saveCADFiles()
                 return
-            } catch {
-                // Fallback auf Server-Konvertierung
-            }
+            } catch {}
         }
 
-        // Server-Konvertierung (FBX, glTF, oder lokaler Fallback)
         isConverting = true
         conversionError = nil
 
         Task {
             do {
                 let usdzURL = try await service.convert(fileURL: fileURL)
-
                 await MainActor.run {
                     let info = CADFileInfo(
                         fileName: usdzURL.lastPathComponent,
@@ -910,5 +906,59 @@ struct EventTimelineBar: View {
             .frame(height: 10)
         }
         .onReceive(timer) { _ in now = Date() }
+    }
+}
+
+// -------------------------------------------------------------
+// MARK: - Hilfe: Baustellen-Detail
+// -------------------------------------------------------------
+struct EventDetailHelpView: View {
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Übersicht") {
+                    Text("Die Baustellen-Detail-Ansicht ist die Schaltzentrale für ein Projekt. Alle Informationen, Aufträge, Mängel und Pläne sind hier gebündelt.")
+                }
+                Section("Karten im Überblick") {
+                    Label("Header: Name, Ort, Zeitraum, Bauherr, Architekt, Baugenehmigung", systemImage: "info.circle")
+                    Label("Wetter: Aktuelle Bedingungen + Bau-Ampel für den Standort", systemImage: "cloud.sun.fill")
+                    Label("Pläne & CAD: 3D-Modelle (USDZ, OBJ, FBX) und SketchUp-Dateien", systemImage: "cube.fill")
+                    Label("Materialien: Verknüpfte Materialien aus dem Katalog", systemImage: "shippingbox")
+                    Label("Checkliste: Schrittweise Arbeitsfortschritt abhaken", systemImage: "checkmark.square")
+                    Label("Mängel: Qualitätsprobleme erfassen und verfolgen", systemImage: "exclamationmark.triangle")
+                    Label("Aufträge: Einzelaufgaben anlegen und Mitarbeitern zuweisen", systemImage: "list.bullet.clipboard")
+                }
+                Section("Checkliste") {
+                    Label("Schritte manuell eingeben oder Vorlage (✦) für ein Gewerk laden", systemImage: "wand.and.stars")
+                    Label("Tippe auf den Kreis um einen Schritt als erledigt zu markieren", systemImage: "checkmark.circle")
+                    Label("Fortschrittsanzeige oben rechts: % der erledigten Schritte", systemImage: "chart.bar.fill")
+                }
+                Section("Mängel") {
+                    Label("Mängel = Abweichungen von der vereinbarten Leistung", systemImage: "exclamationmark.triangle.fill")
+                    Label("Tippe auf \"Alle anzeigen\" → Mängelliste mit Fotos und Status", systemImage: "list.bullet")
+                    Label("Neue Mängel in der Mängelliste über das + anlegen", systemImage: "plus.circle")
+                }
+                Section("Aufträge") {
+                    Label("Tippe auf + um einen neuen Auftrag anzulegen", systemImage: "plus.circle.fill")
+                    Label("Filter: Alle Aufträge vs. nur offene Aufträge", systemImage: "slider.horizontal.3")
+                    Label("Tippe auf einen Auftrag für Detailansicht und Fortschritt", systemImage: "chevron.right")
+                }
+                Section("CAD / Pläne") {
+                    Label("USDZ und OBJ: 3D-Vorschau direkt in der App", systemImage: "cube.fill")
+                    Label("SKP (SketchUp): öffnet SketchUp Web in Safari", systemImage: "safari")
+                    Label("FBX, STL, glTF: automatische Server-Konvertierung zu USDZ", systemImage: "arrow.triangle.2.circlepath")
+                }
+            }
+            .navigationTitle("Hilfe: Baustellen-Detail")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                        .tint(.orange)
+                }
+            }
+        }
     }
 }
