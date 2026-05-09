@@ -77,14 +77,11 @@ struct WetterKarteView: View {
 
     @ViewBuilder
     private func wetterInhalt(_ w: BaustellenWetter) -> some View {
-        // Ampel + Kurzinfo
         HStack(spacing: 14) {
-            // Ampelkreis
             Circle()
                 .fill(BauWetterRegeln.ampelFarbe(fuer: w))
                 .frame(width: 12, height: 12)
 
-            // Symbol + Temperatur
             Image(systemName: w.icon)
                 .font(.title2)
                 .foregroundStyle(.primary)
@@ -107,7 +104,6 @@ struct WetterKarteView: View {
             }
         }
 
-        // Warnungen (max. 2 kompakt)
         if !warnungen.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(warnungen.prefix(2)) { warnung in
@@ -132,7 +128,6 @@ struct WetterKarteView: View {
             }
         }
 
-        // Indoor-Empfehlung
         if let empfehlung = BauWetterRegeln.indoorEmpfehlung(fuer: w) {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.right.circle.fill")
@@ -171,11 +166,11 @@ struct WetterDetailSheet: View {
     let wetter: BaustellenWetter
     let warnungen: [BauWarnung]
     @Environment(\.dismiss) private var dismiss
+    @State private var showHelp = false
 
     var body: some View {
         NavigationStack {
             List {
-                // Übersicht
                 Section("Aktuell in \(wetter.ort)") {
                     HStack {
                         Image(systemName: wetter.icon).font(.title).frame(width: 44)
@@ -191,7 +186,6 @@ struct WetterDetailSheet: View {
                     .padding(.vertical, 4)
                 }
 
-                // Warnungen
                 if !warnungen.isEmpty {
                     Section("Baustellen-Warnungen") {
                         ForEach(warnungen) { warnung in
@@ -226,7 +220,6 @@ struct WetterDetailSheet: View {
                     }
                 }
 
-                // Indoor-Empfehlung
                 if let empfehlung = BauWetterRegeln.indoorEmpfehlung(fuer: wetter) {
                     Section("Empfehlung") {
                         VStack(alignment: .leading, spacing: 6) {
@@ -259,8 +252,81 @@ struct WetterDetailSheet: View {
             .navigationTitle("Wetterbericht")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showHelp = true } label: {
+                        Image(systemName: "questionmark.circle")
+                    }
+                    .tint(.orange)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showHelp) {
+                WetterHelpView()
+            }
+        }
+    }
+}
+
+// MARK: - Wetter-Hilfe
+
+struct WetterHelpView: View {
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Ampel-System") {
+                    HStack(spacing: 10) {
+                        Circle().fill(Color.green).frame(width: 12, height: 12)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Grün – Alle Außenarbeiten möglich").font(.subheadline).bold()
+                            Text("Ideale Bedingungen auf der Baustelle").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    HStack(spacing: 10) {
+                        Circle().fill(Color.yellow).frame(width: 12, height: 12)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Gelb – Eingeschränkt").font(.subheadline).bold()
+                            Text("Bestimmte Arbeiten nur mit Vorsicht möglich").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    HStack(spacing: 10) {
+                        Circle().fill(Color.red).frame(width: 12, height: 12)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Rot – STOPP").font(.subheadline).bold()
+                            Text("Arbeiten einzustellen – Sicherheitsrisiko").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                Section("Grenzwerte (BAU-Regeln)") {
+                    Label("Wind ≥ 50 km/h → Gerüst- und Kranarbeiten STOPP (BAU-W-01)", systemImage: "wind")
+                    Label("Wind ≥ 72 km/h → Alle Außenarbeiten STOPP", systemImage: "wind.snow")
+                    Label("Temperatur < −5 °C → Betonage STOPP, Frost-Schäden (BAU-W-02)", systemImage: "thermometer.snowflake")
+                    Label("Temperatur > 35 °C → Putz/Estrich problematisch (BAU-W-03)", systemImage: "thermometer.sun.fill")
+                    Label("Starkregen ≥ 7 mm/h → Mauerwerk und Putz draußen gefährdet", systemImage: "cloud.heavyrain.fill")
+                }
+                Section("DIN 276 & KG-Bezug") {
+                    Text("Warnungen werden direkt den betroffenen DIN 276 Kostengruppen zugeordnet – so siehst du sofort, welche Gewerke auf der Baustelle eingeschränkt sind.")
+                    Label("KG 330 – Außenwände: betroffen bei Regen/Frost", systemImage: "square.split.diagonal")
+                    Label("KG 340 – Innenwände: Trockenbau witterungsunabhängig", systemImage: "house")
+                    Label("KG 363 – Gerüste: STOPP ab Wind ≥ 50 km/h", systemImage: "ladder")
+                }
+                Section("Indoor-Empfehlung") {
+                    Text("Bei ungünstigen Außenbedingungen empfiehlt iMOPS automatisch Innenarbeiten (z.B. Trockenbau, Elektro, Sanitär) die von Witterung unabhängig sind.")
+                }
+                Section("Daten-Quelle") {
+                    Label("Wetterdaten werden über OpenWeatherMap für den hinterlegten Baustellen-Ort abgerufen.", systemImage: "network")
+                    Label("Tippe auf den Aktualisieren-Pfeil (↻) in der Wetterkarte für neue Daten.", systemImage: "arrow.clockwise")
+                }
+            }
+            .navigationTitle("Hilfe: Wetter & Regeln")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                        .tint(.orange)
                 }
             }
         }

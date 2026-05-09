@@ -12,6 +12,7 @@ struct AddJobView: View {
     private var employees: FetchedResults<Employee>
 
     @State private var viewModel: AddJobViewModel
+    @State private var showHelp = false
 
     init(event: Event, viewContext: NSManagedObjectContext) {
         _viewModel = State(initialValue: AddJobViewModel(event: event, context: viewContext))
@@ -21,7 +22,6 @@ struct AddJobView: View {
         NavigationStack {
             Form {
 
-                // Auftragskopf
                 Section("Auftragskopf") {
                     TextField("Auftragsnummer (B-2026-042)", text: $viewModel.orderNumber)
                         .textInputAutocapitalization(.never)
@@ -47,16 +47,14 @@ struct AddJobView: View {
                     }
                 }
 
-                // Aufgabe
                 Section("Aufgabe") {
                     TextField("z.B. Elektro EG verlegen, Estrich OG", text: $viewModel.taskSummary)
                         .font(.headline)
                 }
 
-                // Positionen
                 Section {
                     if viewModel.lineItems.isEmpty {
-                        Text("Noch keine Positionen. Tippe auf „Position hinzufügen“.")
+                        Text("Noch keine Positionen. Tippe auf „Position hinzufügen".")
                             .foregroundStyle(.secondary)
                     }
 
@@ -98,7 +96,6 @@ struct AddJobView: View {
                     Text("Material / Positionen")
                 }
 
-                // Gewerk & Vorlage
                 Section("Gewerk & Vorlage") {
                     Toggle("Schritte einzeln abhaken", isOn: $viewModel.trainingMode)
 
@@ -110,7 +107,6 @@ struct AddJobView: View {
                     }
                 }
 
-                // Zuweisung & Lager
                 Section("Zuweisung & Lager") {
                     if employees.isEmpty {
                         TextField("Mitarbeiter (optional)", text: $viewModel.employeeName)
@@ -150,11 +146,20 @@ struct AddJobView: View {
                     Button("Abbrechen") { dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { showHelp = true } label: {
+                        Image(systemName: "questionmark.circle")
+                    }
+                    .tint(.orange)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Speichern") {
                         if viewModel.saveNewJob() { dismiss() }
                     }
                     .disabled(viewModel.isSaveButtonDisabled)
                 }
+            }
+            .sheet(isPresented: $showHelp) {
+                AddJobHelpView()
             }
             .alert(
                 viewModel.lastViolation.map { $0.ruleId } ?? "Fehler",
@@ -167,6 +172,55 @@ struct AddJobView: View {
             } message: {
                 if let v = viewModel.lastViolation {
                     Text(v.reason)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Hilfe
+
+struct AddJobHelpView: View {
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Auftragskopf") {
+                    Label("Auftragsnummer: Format B-Jahr-Laufend, z.B. B-2026-042", systemImage: "number")
+                    Label("Bereich / Stockwerk: z.B. EG Bad, OG Wohnung 3 – für genaue Lokalisierung", systemImage: "mappin")
+                    Label("Arbeiter-Anzahl: benötigte Personen für diesen Auftrag", systemImage: "person.2")
+                    Label("Termin: optionaler Fertigstellungstermin mit Uhrzeit", systemImage: "calendar")
+                }
+                Section("Aufgabe") {
+                    Text("Kurze Beschreibung der Haupttätigkeit – z.B. \"Elektro EG verlegen\", \"Estrich OG glätten\" oder \"Außenwand dämmen\".")
+                }
+                Section("Material / Positionen") {
+                    Label("Jede Position = ein Material mit Menge und Einheit", systemImage: "shippingbox")
+                    Label("m2 = Quadratmeter · Stück = Einzelteile · lfm = laufende Meter", systemImage: "ruler")
+                    Label("Hinweis: z.B. Brandschutzklasse F90 oder DIN-Norm", systemImage: "info.circle")
+                }
+                Section("Gewerk & Vorlage") {
+                    Label("Vorlage: lädt vorgefertigte Checklisten-Schritte für ein Gewerk", systemImage: "doc.text")
+                    Label("\"Schritte einzeln abhaken\": Mitarbeiter bestätigt jeden Schritt vor Ort", systemImage: "checkmark.square")
+                }
+                Section("Zuweisung & Status") {
+                    Label("Mitarbeiter: wer führt diesen Auftrag aus", systemImage: "person")
+                    Label("Status: Offen → In Bearbeitung → Abgeschlossen", systemImage: "arrow.right.circle")
+                    Label("Eilauftrag: höchste Priorität – wird farbig hervorgehoben", systemImage: "flame.fill")
+                }
+                Section("Pflichtfelder") {
+                    Text("Auftragsnummer, Aufgabe und Baustellen-Zuordnung sind Pflicht. Der Speichern-Button bleibt gesperrt bis alle Felder korrekt ausgefüllt sind (Regel BAU-R01 bis BAU-R03).")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Hilfe: Auftrag anlegen")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                        .tint(.orange)
                 }
             }
         }

@@ -38,7 +38,7 @@ struct RootTabView: View {
                 Label("Katalog", systemImage: "books.vertical")
             }
 
-            // TAB 3: Crew (nur für Disponent / Leitung)
+            // TAB 4: Crew (nur für Disponent / Leitung)
             if session.role == .dispatcher || session.role == .director {
                 NavigationStack {
                     CrewPlanningView()
@@ -48,7 +48,17 @@ struct RootTabView: View {
                 }
             }
 
-            // TAB 4: Settings
+            // TAB 5: BuildIQ KI-Scanner (nur iOS, kein macCatalyst)
+            #if !targetEnvironment(macCatalyst)
+            NavigationStack {
+                BuildIQLandingView()
+            }
+            .tabItem {
+                Label("BuildIQ", systemImage: "brain.head.profile")
+            }
+            #endif
+
+            // TAB 6: Settings
             NavigationStack {
                 SettingsView()
             }
@@ -56,6 +66,7 @@ struct RootTabView: View {
                 Label("Settings", systemImage: "gearshape.fill")
             }
         }
+        .tint(.orange)
         .environment(\.locale, session.locale)
     }
 }

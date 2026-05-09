@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedFilter: EventFilter = .upcoming
     @State private var showingAddEventSheet = false
+    @State private var showHelp = false
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -33,8 +34,12 @@ struct ContentView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
+            ToolbarItemGroup(placement: .navigationBarLeading) {
                 EditButton()
+                Button { showHelp = true } label: {
+                    Image(systemName: "questionmark.circle")
+                }
+                .tint(.orange)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
@@ -52,6 +57,9 @@ struct ContentView: View {
         .sheet(isPresented: $showingAddEventSheet) {
             AddEventView()
                 .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showHelp) {
+            BaustellenListeHelpView()
         }
         .onChange(of: selectedFilter) { _, newFilter in
             withAnimation { eventListVM.applyFilter(filter: newFilter) }
@@ -87,6 +95,52 @@ struct ContentView: View {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environmentObject(EventListViewModel(context: persistenceController.container.viewContext))
+        }
+    }
+}
+
+// MARK: - Hilfe
+
+struct BaustellenListeHelpView: View {
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Baustellen-Übersicht") {
+                    Text("Hier siehst du alle deine Baustellen (Projekte). Jede Baustelle enthält Aufträge, Mängel, Pläne, Checklisten und Wetterdaten.")
+                }
+                Section("Filter") {
+                    Label("Bevorstehend – geplante Baustellen, noch nicht gestartet", systemImage: "calendar.badge.clock")
+                    Label("Laufend – Baustellen im aktiven Zeitraum", systemImage: "play.circle.fill")
+                    Label("Alle – gesamte Übersicht ohne Zeitfilter", systemImage: "list.bullet")
+                    Label("Abgeschlossen – beendete Projekte", systemImage: "checkmark.circle.fill")
+                }
+                Section("Neue Baustelle") {
+                    Label("Tippe auf das + rechts oben um eine neue Baustelle anzulegen", systemImage: "plus.circle.fill")
+                    Label("Felder: Name, Ort, Bauherr, Architekt, Baugenehmigungsnummer, Zeitraum", systemImage: "doc.text")
+                }
+                Section("Demo-Daten") {
+                    Label("Der Zauberstab-Button lädt Beispiel-Baustellen zum Ausprobieren", systemImage: "wand.and.stars")
+                    Label("Demo-Daten können jederzeit gelöscht werden (Wischen nach links)", systemImage: "trash")
+                }
+                Section("Löschen") {
+                    Label("Wische eine Baustelle nach links → Löschen", systemImage: "trash")
+                    Label("Oder tippe auf Bearbeiten (links oben) für Mehrfach-Auswahl", systemImage: "pencil")
+                }
+                Section("Navigation") {
+                    Label("Tippe auf eine Baustelle → Detailansicht mit allen Informationen", systemImage: "chevron.right")
+                    Label("BuildIQ-Tab: KI-Scanner für Baumaterialien → DIN 276 Zuordnung", systemImage: "brain.head.profile")
+                }
+            }
+            .navigationTitle("Hilfe: Baustellen")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                        .tint(.orange)
+                }
+            }
         }
     }
 }
