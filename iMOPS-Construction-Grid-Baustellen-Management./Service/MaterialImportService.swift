@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 struct MaterialImportResult {
     let items: [AuftragLineItem]
-    let fehler: [String]   // Zeilen/Einträge die nicht geparst werden konnten
+    let fehler: [String]
 }
 
 // MARK: - Service
@@ -40,7 +40,6 @@ struct MaterialImportService {
         case "csv", "txt":
             return parseCSV(inhalt)
         default:
-            // Unbekannte Endung: erst JSON versuchen, dann CSV
             let jsonResult = parseJSON(inhalt)
             if !jsonResult.items.isEmpty { return jsonResult }
             return parseCSV(inhalt)
@@ -61,10 +60,9 @@ struct MaterialImportService {
             return MaterialImportResult(items: [], fehler: ["Datei ist leer"])
         }
 
-        // Trennzeichen erkennen
-        let trenner: Character = ersteZeile.contains(";") ? ";" : ","
+        // String statt Character – components(separatedBy:) erwartet String oder CharacterSet
+        let trenner: String = ersteZeile.contains(";") ? ";" : ","
 
-        // Header-Zeile überspringen wenn erste Spalte ein typischer Header-Begriff ist
         let startIndex = istHeaderZeile(ersteZeile, trenner: trenner) ? 1 : 0
 
         for (i, zeile) in zeilen[startIndex...].enumerated() {
@@ -76,7 +74,6 @@ struct MaterialImportService {
                 continue
             }
 
-            // Spalten-Zuordnung heuristisch (SketchUp Generate-Report hat andere Reihenfolge)
             let (menge, einheit, notiz) = extrahiereMengeEinheitNotiz(spalten: spalten, trenner: trenner)
 
             let kgNummer = kg.ordneZu(materialName: name) ?? ""
@@ -100,12 +97,10 @@ struct MaterialImportService {
             return MaterialImportResult(items: [], fehler: ["Ungültiges UTF-8"])
         }
 
-        // Versuche Array-Format
         if let roh = try? JSONDecoder().decode([RohMaterial].self, from: data) {
             return konvertiereRohMaterialien(roh)
         }
 
-        // Versuche Objekt mit "materials"-Key (z.B. SketchUp Extension Output)
         if let wrapper = try? JSONDecoder().decode(MaterialWrapper.self, from: data) {
             return konvertiereRohMaterialien(wrapper.materials)
         }
@@ -142,29 +137,24 @@ struct MaterialImportService {
 
     // MARK: - Hilfsmethoden
 
-    private func istHeaderZeile(_ zeile: String, trenner: Character) -> Bool {
+    private func istHeaderZeile(_ zeile: String, trenner: String) -> Bool {
         let first = zeile.components(separatedBy: trenner).first?.lowercased() ?? ""
         let headerBegriffe = ["name", "bezeichnung", "material", "bauteil", "beschreibung", "title", "position"]
         return headerBegriffe.contains(where: { first.contains($0) })
     }
 
-    /// Heuristik: erkennt ob Spalte eine Zahl (Menge) oder Text (Einheit/Notiz) ist
-    private func extrahiereMengeEinheitNotiz(spalten: [String], trenner: Character) -> (menge: String, einheit: String, notiz: String) {
-        // Format 1: Name;Menge;Einheit;Notiz  (Standard)
+    private func extrahiereMengeEinheitNotiz(spalten: [String], trenner: String) -> (menge: String, einheit: String, notiz: String) {
         if spalten.count >= 3 {
             let kandidatMenge = spalten[1]
             let kandidatEinheit = spalten[2]
             let notiz = spalten.count >= 4 ? spalten[3] : ""
-            // Prüfe ob zweite Spalte eine Zahl ist
             if Double(kandidatMenge.replacingOccurrences(of: ",", with: ".")) != nil {
                 return (kandidatMenge, kandidatEinheit, notiz)
             }
-            // SketchUp Generate Report: Name,Count,Volume,Area,Length — zweite Spalte = Count (Integer)
             if let _ = Int(kandidatMenge) {
                 return (kandidatMenge, "Stk", "")
             }
         }
-        // Format: Name;Menge  (nur zwei Spalten)
         if spalten.count == 2 {
             return (spalten[1], "", "")
         }
