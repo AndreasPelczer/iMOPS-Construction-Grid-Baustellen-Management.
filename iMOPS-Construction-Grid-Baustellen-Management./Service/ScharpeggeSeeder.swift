@@ -7,6 +7,18 @@ struct ScharpeggeSeeder {
     static func seedIfNeeded(context: NSManagedObjectContext) {
         print("🐟 Scharpegge Seeder startet")
 
+        // Alle bestehenden Einträge löschen damit kein alter Datenmüll bleibt
+        let deleteRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "CDLexikonEntry")
+        let batchDelete = NSBatchDeleteRequest(fetchRequest: deleteRequest)
+        batchDelete.resultType = .resultTypeCount
+        do {
+            let result = try context.execute(batchDelete) as? NSBatchDeleteResult
+            print("🐟 Alte Einträge gelöscht: \(result?.result ?? 0)")
+            context.reset()
+        } catch {
+            print("🐟 Fehler beim Löschen: \(error)")
+        }
+
         guard let url = Bundle.main.url(forResource: "scharpegge_katalog", withExtension: "csv") else {
             print("🐟 CSV nicht gefunden")
             return
@@ -27,6 +39,7 @@ struct ScharpeggeSeeder {
 
         var count = 0
         for line in lines.dropFirst() {
+            // maxSplits:4 → genau 5 Felder; Semikolons in Beschreibung/Gebinde bleiben erhalten
             let cols = line.split(separator: ";", maxSplits: 4, omittingEmptySubsequences: false).map(String.init)
             guard cols.count >= 5 else { continue }
 
