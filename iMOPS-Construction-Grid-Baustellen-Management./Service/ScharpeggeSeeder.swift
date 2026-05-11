@@ -5,7 +5,7 @@ import CoreData
 struct ScharpeggeSeeder {
 
     static func seedIfNeeded(context: NSManagedObjectContext) {
-        let key = "scharpegge_seeded_v1"
+        let key = "scharpegge_seeded_v2"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
 
         guard let url = Bundle.main.url(forResource: "scharpegge_katalog", withExtension: "csv"),

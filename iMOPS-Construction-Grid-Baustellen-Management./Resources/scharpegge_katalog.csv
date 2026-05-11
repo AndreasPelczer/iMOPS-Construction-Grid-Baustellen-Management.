@@ -87,3 +87,216 @@ DH-3000;MSH PolySafe Wand BHP Mehrsparten;Hauseinführung;Für Kernbohrung 199-2
 DH-3002;MSH Basic-FUBO-GK-SR4 3m ohne Keller;Hauseinführung;Mehrsparten-Bauherrenpaket für Gebäude ohne Keller;Stück
 DH-4001;Hausausführung ETGAR Bauherrenpaket ohne Keller;Hauseinführung;Komplettset DIN 18533 W1.1-E WU-Beton;Stück
 DH-4002;HAW-M ETGAR Bauherrenpaket mit Keller;Hauseinführung;Komplettset DIN 18533 W1.1-E W1.2-E W2.1-E;Stück
+FDF-167S;FRADIFLEX KB 167mm 2m Stücke;Fugenblech;Arbeitsfugenblech außenliegend für drückendes Wasser 1,5mm;100m Kiste
+FDF-167R;FRADIFLEX KB 167mm Rolle;Fugenblech;Arbeitsfugenblech außenliegend für drückendes Wasser 1,5mm;25m Rolle
+FDF-200S;FRADIFLEX KB 200mm 2m Stücke;Fugenblech;Arbeitsfugenblech außenliegend 200mm breit 1,5mm dick;100m Kiste
+KAB-167;KAB Fugenblech 167mm 2m Stücke;Fugenblech;Kunststoff-Arbeitsfugenblech für Arbeitsfugen im WU-Beton;50m Kiste
+KAB-200;KAB Fugenblech 200mm 2m Stücke;Fugenblech;Kunststoff-Arbeitsfugenblech 200mm breit;50m Kiste
+DH-MSH-FUT100;Futterrohr DN 100 PE für Hauseinführung;Futterrohr;PE-Futterrohr mit Dichtring l=500mm für MSH-Systeme;Stück
+DH-MSH-FUT125;Futterrohr DN 125 PE für Hauseinführung;Futterrohr;PE-Futterrohr mit Dichtring l=500mm für MSH-Systeme;Stück
+DH-MSH-FUT150;Futterrohr DN 150 PE für Hauseinführung;Futterrohr;PE-Futterrohr mit Dichtring l=500mm für MSH-Systeme;Stück
+DH-MSH-FUT200;Futterrohr DN 200 PE für Hauseinführung;Futterrohr;PE-Futterrohr mit Dichtring l=500mm für MSH-Systeme;Stück
+BA-DN50H;MEA Bodenablauf DN50 horizontal;Bodenablauf;Edelstahlrost Einbautiefe 95mm DIN EN 1253;Stück
+BA-DN70H;MEA Bodenablauf DN70 horizontal;Bodenablauf;Edelstahlrost Einbautiefe 95mm DIN EN 1253;Stück
+BA-DN100H;MEA Bodenablauf DN100 horizontal;Bodenablauf;Edelstahlrost Einbautiefe 95mm DIN EN 1253;Stück
+BA-DN100V;MEA Bodenablauf DN100 vertikal;Bodenablauf;Edelstahlrost Einbautiefe 120mm DIN EN 1253;Stück
+BA-DN125H;MEA Bodenablauf DN125 horizontal;Bodenablauf;Edelstahlrost Einbautiefe 95mm DIN EN 1253;Stück
+EB-30-35;Erdungsband St/tZn 30x3,5mm;Erdungsband;Stahlband feuerverzinkt für Fundamenterder nach DIN VDE 0151;25m Rolle
+EB-40-40;Erdungsband St/tZn 40x4mm;Erdungsband;Stahlband feuerverzinkt für Fundamenterder nach DIN VDE 0151;25m Rolle
+EB-25-VA;Erdungsband VA 25x2mm;Erdungsband;Edelstahlband V4A für aggressive Böden nach DIN VDE 0151;25m Rolle
+BLA-ST08;Blitzableiterdraht St/tZn Ø8mm;Blitzschutz;Rundstahl feuerverzinkt für Blitzschutzanlage nach IEC 62305;25m Rolle
+BLA-CU08;Blitzableiterdraht Cu Ø8mm;Blitzschutz;Kupferdraht für Blitzschutzanlage nach IEC 62305;25m Rolle
+KLA-FZ;Dachklammer Falzziegel St/tZn;Blitzschutz;Klemmbefestigung auf Falzziegeln für Ø8mm Draht;Stück
+KLA-FF;Dachklammer Flachdach St/tZn;Blitzschutz;Aufständerung für Flachdach für Ø8mm Draht;Stück
+KLA-OG;Ortgangklammer St/tZn;Blitzschutz;Befestigung am Ortgang für Ø8mm Draht;Stück
+STY3035-020;Styrodur 3035CS 20mm;Dämmplatte;XPS-Hartschaum lambda 0,034 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3035-030;Styrodur 3035CS 30mm;Dämmplatte;XPS-Hartschaum lambda 0,034 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3035-040;Styrodur 3035CS 40mm;Dämmplatte;XPS-Hartschaum lambda 0,034 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3035-050;Styrodur 3035CS 50mm;Dämmplatte;XPS-Hartschaum lambda 0,034 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3035-060;Styrodur 3035CS 60mm;Dämmplatte;XPS-Hartschaum lambda 0,034 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3035-080;Styrodur 3035CS 80mm;Dämmplatte;XPS-Hartschaum lambda 0,034 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3035-100;Styrodur 3035CS 100mm;Dämmplatte;XPS-Hartschaum lambda 0,034 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3035-120;Styrodur 3035CS 120mm;Dämmplatte;XPS-Hartschaum lambda 0,034 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3000-020;Styrodur 3000CS 20mm;Dämmplatte;XPS-Hartschaum lambda 0,036 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3000-030;Styrodur 3000CS 30mm;Dämmplatte;XPS-Hartschaum lambda 0,036 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3000-040;Styrodur 3000CS 40mm;Dämmplatte;XPS-Hartschaum lambda 0,036 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3000-050;Styrodur 3000CS 50mm;Dämmplatte;XPS-Hartschaum lambda 0,036 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3000-060;Styrodur 3000CS 60mm;Dämmplatte;XPS-Hartschaum lambda 0,036 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3000-080;Styrodur 3000CS 80mm;Dämmplatte;XPS-Hartschaum lambda 0,036 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY3000-100;Styrodur 3000CS 100mm;Dämmplatte;XPS-Hartschaum lambda 0,036 W/(mK) Druckfestigkeit CS(10)300;m²-Paket
+STY4000-040;Styrodur 4000CS 40mm;Dämmplatte;XPS-Hartschaum lambda 0,030 W/(mK) Druckfestigkeit CS(10)400 erhöhte Tragfähigkeit;m²-Paket
+STY4000-050;Styrodur 4000CS 50mm;Dämmplatte;XPS-Hartschaum lambda 0,030 W/(mK) Druckfestigkeit CS(10)400 erhöhte Tragfähigkeit;m²-Paket
+STY4000-060;Styrodur 4000CS 60mm;Dämmplatte;XPS-Hartschaum lambda 0,030 W/(mK) Druckfestigkeit CS(10)400 erhöhte Tragfähigkeit;m²-Paket
+STY4000-080;Styrodur 4000CS 80mm;Dämmplatte;XPS-Hartschaum lambda 0,030 W/(mK) Druckfestigkeit CS(10)400 erhöhte Tragfähigkeit;m²-Paket
+STY5000-040;Styrodur 5000CS 40mm;Dämmplatte;XPS-Hartschaum lambda 0,028 W/(mK) Druckfestigkeit CS(10)500 Verkehrslast;m²-Paket
+STY5000-060;Styrodur 5000CS 60mm;Dämmplatte;XPS-Hartschaum lambda 0,028 W/(mK) Druckfestigkeit CS(10)500 Verkehrslast;m²-Paket
+STY5000-080;Styrodur 5000CS 80mm;Dämmplatte;XPS-Hartschaum lambda 0,028 W/(mK) Druckfestigkeit CS(10)500 Verkehrslast;m²-Paket
+EPS035-040;EPS 035 Perimeterdämmplatte 40mm;Dämmplatte;Expandiertes Polystyrol WLG 035 für Perimeterdämmung nach DIN 4108;m²-Paket
+EPS035-060;EPS 035 Perimeterdämmplatte 60mm;Dämmplatte;Expandiertes Polystyrol WLG 035 für Perimeterdämmung nach DIN 4108;m²-Paket
+EPS035-080;EPS 035 Perimeterdämmplatte 80mm;Dämmplatte;Expandiertes Polystyrol WLG 035 für Perimeterdämmung nach DIN 4108;m²-Paket
+EPS035-100;EPS 035 Perimeterdämmplatte 100mm;Dämmplatte;Expandiertes Polystyrol WLG 035 für Perimeterdämmung nach DIN 4108;m²-Paket
+EPS032-040;EPS 032 Dämmplatte 40mm;Dämmplatte;Expandiertes Polystyrol WLG 032 für Wärmedämmung;m²-Paket
+EPS032-060;EPS 032 Dämmplatte 60mm;Dämmplatte;Expandiertes Polystyrol WLG 032 für Wärmedämmung;m²-Paket
+EPT-020;epatherm Wohnklimaplatte 20mm;Wohnklimaplatte;Hochporöse Silikat-Wärmedämmplatte für innenraumseitige Dämmung;m²-Paket
+EPT-030;epatherm Wohnklimaplatte 30mm;Wohnklimaplatte;Hochporöse Silikat-Wärmedämmplatte für innenraumseitige Dämmung;m²-Paket
+EPT-040;epatherm Wohnklimaplatte 40mm;Wohnklimaplatte;Hochporöse Silikat-Wärmedämmplatte für innenraumseitige Dämmung;m²-Paket
+EPT-050;epatherm Wohnklimaplatte 50mm;Wohnklimaplatte;Hochporöse Silikat-Wärmedämmplatte für innenraumseitige Dämmung;m²-Paket
+EPT-060;epatherm Wohnklimaplatte 60mm;Wohnklimaplatte;Hochporöse Silikat-Wärmedämmplatte für innenraumseitige Dämmung;m²-Paket
+EPT-080;epatherm Wohnklimaplatte 80mm;Wohnklimaplatte;Hochporöse Silikat-Wärmedämmplatte für innenraumseitige Dämmung;m²-Paket
+EPT-100;epatherm Wohnklimaplatte 100mm;Wohnklimaplatte;Hochporöse Silikat-Wärmedämmplatte für innenraumseitige Dämmung;m²-Paket
+RS-100;PE-Randstreifen 100x8mm;Randstreifen;Polyethylen-Randstreifen für schwimmende Estriche DIN 18560;50m Rolle
+RS-150;PE-Randstreifen 150x8mm;Randstreifen;Polyethylen-Randstreifen für schwimmende Estriche DIN 18560;25m Rolle
+RS-100-100;PE-Randstreifen 100x10mm mit Folie;Randstreifen;Mit angeformter PE-Folie für Bodenplattenrandbereich;50m Rolle
+NB-05;Noppenbahn 0,5mm 400g/m²;Noppenbahn;PE-Noppenbahn für Wandabdichtung Noppenhöhe 5mm;50m² Rolle
+NB-08;Noppenbahn 0,8mm 500g/m²;Noppenbahn;PE-Noppenbahn Standardausführung Noppenhöhe 8mm;20m² Rolle
+NB-08-700;Noppenbahn 0,8mm 700g/m² schwer;Noppenbahn;Verstärkte PE-Noppenbahn für höhere Belastung Noppenhöhe 8mm;20m² Rolle
+NB-20-D;Noppenbahn 2,0mm Drainage;Noppenbahn;PE-Noppenbahn mit Drainagewirkung Noppenhöhe 20mm;20m² Rolle
+NB-20-DW;Noppenbahn 2,0mm Drain+Vlies;Noppenbahn;PE-Noppenbahn mit Filtervlies kaschiert Noppenhöhe 20mm;20m² Rolle
+GF-150;Gleitfolie PE 0,5mm 150cm breit;Gleitfolie;Polyethylen-Trennfolie zweilagig für gleitende Lagerung;50m Rolle
+GF-200;Gleitfolie PE 0,5mm 200cm breit;Gleitfolie;Polyethylen-Trennfolie zweilagig für gleitende Lagerung;50m Rolle
+SGS-025;Schaumglasschotter GEOCELL 0-25mm;Schaumglasschotter;Geschäumtes Recyclingglas druckstabil drainierend frostbeständig;Big Bag 1m³
+SGS-060;Schaumglasschotter GEOCELL 10-60mm;Schaumglasschotter;Grobe Körnung für Sauberkeitsschicht und Perimeterdrainage;Big Bag 1m³
+DF-12;LOHR Deckenrandschalung DF H=12cm;Schalungselement;Verlorene Schalung für Deckenrandbereich aus zementgebundenem Holzwerkstoff;2,5m Stück
+DF-15;LOHR Deckenrandschalung DF H=15cm;Schalungselement;Verlorene Schalung für Deckenrandbereich aus zementgebundenem Holzwerkstoff;2,5m Stück
+DF-20;LOHR Deckenrandschalung DF H=20cm;Schalungselement;Verlorene Schalung für Deckenrandbereich aus zementgebundenem Holzwerkstoff;2,5m Stück
+DF-25;LOHR Deckenrandschalung DF H=25cm;Schalungselement;Verlorene Schalung für Deckenrandbereich aus zementgebundenem Holzwerkstoff;2,5m Stück
+DF-30;LOHR Deckenrandschalung DF H=30cm;Schalungselement;Verlorene Schalung für Deckenrandbereich aus zementgebundenem Holzwerkstoff;2,5m Stück
+S35-12;LOHR Deckenrandschalung S35 H=12cm;Schalungselement;Verlorene Stahlschalung S35 für Deckenrandbereich mit Wärmedämmung;2,5m Stück
+S35-15;LOHR Deckenrandschalung S35 H=15cm;Schalungselement;Verlorene Stahlschalung S35 für Deckenrandbereich mit Wärmedämmung;2,5m Stück
+S35-20;LOHR Deckenrandschalung S35 H=20cm;Schalungselement;Verlorene Stahlschalung S35 für Deckenrandbereich mit Wärmedämmung;2,5m Stück
+S35-25;LOHR Deckenrandschalung S35 H=25cm;Schalungselement;Verlorene Stahlschalung S35 für Deckenrandbereich mit Wärmedämmung;2,5m Stück
+DRSF-15;LOHR Deckenrandschalung F H=15cm;Schalungselement;Verlorene Schalung F für Flachdächer mit Wärmedämmstreifen;2,5m Stück
+DRSF-20;LOHR Deckenrandschalung F H=20cm;Schalungselement;Verlorene Schalung F für Flachdächer mit Wärmedämmstreifen;2,5m Stück
+DRSFA-15;LOHR Deckenrandschalung FA H=15cm;Schalungselement;Verlorene Schalung FA mit außenseitiger Dämmung;2,5m Stück
+DRSFA-20;LOHR Deckenrandschalung FA H=20cm;Schalungselement;Verlorene Schalung FA mit außenseitiger Dämmung;2,5m Stück
+DRSFT-15;LOHR Deckenrandschalung FT H=15cm;Schalungselement;Verlorene Schalung FT thermisch optimiert;2,5m Stück
+DRSFT-20;LOHR Deckenrandschalung FT H=20cm;Schalungselement;Verlorene Schalung FT thermisch optimiert;2,5m Stück
+RAMPA4-16;LOHR Ringanker MPA4 H=16cm;Schalungselement;Ringanker-Schalungselement MPA4 für Ringbalken H=16cm;2,5m Stück
+RAMPA4-20;LOHR Ringanker MPA4 H=20cm;Schalungselement;Ringanker-Schalungselement MPA4 für Ringbalken H=20cm;2,5m Stück
+RARS-16;LOHR Ringanker RS H=16cm;Schalungselement;Ringanker-Schalungselement RS für Ringbalken H=16cm;2,5m Stück
+RARS-20;LOHR Ringanker RS H=20cm;Schalungselement;Ringanker-Schalungselement RS für Ringbalken H=20cm;2,5m Stück
+SKF-15;LOHR Sturzschalung SKF H=15cm;Schalungselement;Sturzschalung SKF für Fensterstürze H=15cm;2,5m Stück
+SKF-20;LOHR Sturzschalung SKF H=20cm;Schalungselement;Sturzschalung SKF für Fensterstürze H=20cm;2,5m Stück
+SKF-25;LOHR Sturzschalung SKF H=25cm;Schalungselement;Sturzschalung SKF für Fensterstürze H=25cm;2,5m Stück
+RPD-120;Schalrohr Rapidobat Ø120mm;Schalrohr;Rundes Schalrohr aus Papier für runde Betonstützen;3m Stück
+RPD-150;Schalrohr Rapidobat Ø150mm;Schalrohr;Rundes Schalrohr aus Papier für runde Betonstützen;3m Stück
+RPD-200;Schalrohr Rapidobat Ø200mm;Schalrohr;Rundes Schalrohr aus Papier für runde Betonstützen;3m Stück
+RPD-250;Schalrohr Rapidobat Ø250mm;Schalrohr;Rundes Schalrohr aus Papier für runde Betonstützen;3m Stück
+RPD-300;Schalrohr Rapidobat Ø300mm;Schalrohr;Rundes Schalrohr aus Papier für runde Betonstützen;3m Stück
+RPD-400;Schalrohr Rapidobat Ø400mm;Schalrohr;Rundes Schalrohr aus Papier für runde Betonstützen;3m Stück
+RPD-500;Schalrohr Rapidobat Ø500mm;Schalrohr;Rundes Schalrohr aus Papier für runde Betonstützen;3m Stück
+RPD-600;Schalrohr Rapidobat Ø600mm;Schalrohr;Rundes Schalrohr aus Papier für runde Betonstützen;3m Stück
+MEALUX-5050;MEA MEALUXIT Kellerfenster 500x500mm;Kellerfenster;Aluminium-Kellerfenster mit Edelstahlgitter einbruchhemmend RC2;Stück
+MEALUX-6050;MEA MEALUXIT Kellerfenster 600x500mm;Kellerfenster;Aluminium-Kellerfenster mit Edelstahlgitter einbruchhemmend RC2;Stück
+MEALUX-8050;MEA MEALUXIT Kellerfenster 800x500mm;Kellerfenster;Aluminium-Kellerfenster mit Edelstahlgitter einbruchhemmend RC2;Stück
+MEALUX-10050;MEA MEALUXIT Kellerfenster 1000x500mm;Kellerfenster;Aluminium-Kellerfenster mit Edelstahlgitter einbruchhemmend RC2;Stück
+MEATHM-5050;MEA MEATHERMO Kellerfenster 500x500mm;Kellerfenster;Aluminium-Kellerfenster mit Wärmedämmrahmen U-Wert 1,4 W/(m²K);Stück
+MEATHM-6050;MEA MEATHERMO Kellerfenster 600x500mm;Kellerfenster;Aluminium-Kellerfenster mit Wärmedämmrahmen U-Wert 1,4 W/(m²K);Stück
+MEATHM-8050;MEA MEATHERMO Kellerfenster 800x500mm;Kellerfenster;Aluminium-Kellerfenster mit Wärmedämmrahmen U-Wert 1,4 W/(m²K);Stück
+MEATHM-10050;MEA MEATHERMO Kellerfenster 1000x500mm;Kellerfenster;Aluminium-Kellerfenster mit Wärmedämmrahmen U-Wert 1,4 W/(m²K);Stück
+MEAAQUA-5050;MEA AQUA Kellerfenster 500x500mm;Kellerfenster;Wasserdichtes Aluminium-Kellerfenster für Hochwasserschutz;Stück
+MEAAQUA-6050;MEA AQUA Kellerfenster 600x500mm;Kellerfenster;Wasserdichtes Aluminium-Kellerfenster für Hochwasserschutz;Stück
+MEAAQUA-8050;MEA AQUA Kellerfenster 800x500mm;Kellerfenster;Wasserdichtes Aluminium-Kellerfenster für Hochwasserschutz;Stück
+MEAAQUA-10050;MEA AQUA Kellerfenster 1000x500mm;Kellerfenster;Wasserdichtes Aluminium-Kellerfenster für Hochwasserschutz;Stück
+MEAMAX-60-30;MEA MEAMAX Lichtschacht 600x400mm H300;Lichtschacht;PP-Lichtschacht mit Stufensystem stufenlos verstellbar;Stück
+MEAMAX-80-30;MEA MEAMAX Lichtschacht 800x400mm H300;Lichtschacht;PP-Lichtschacht mit Stufensystem stufenlos verstellbar;Stück
+MEAMAX-100-30;MEA MEAMAX Lichtschacht 1000x400mm H300;Lichtschacht;PP-Lichtschacht mit Stufensystem stufenlos verstellbar;Stück
+MEAMAX-120-30;MEA MEAMAX Lichtschacht 1200x400mm H300;Lichtschacht;PP-Lichtschacht mit Stufensystem stufenlos verstellbar;Stück
+MEAMN-60-30;MEA MEAMULTINORM Lichtschacht 600x400mm H300;Lichtschacht;PP-Lichtschacht nach DIN EN 13564 mit Abdeckung;Stück
+MEAMN-80-30;MEA MEAMULTINORM Lichtschacht 800x400mm H300;Lichtschacht;PP-Lichtschacht nach DIN EN 13564 mit Abdeckung;Stück
+MEAMN-100-30;MEA MEAMULTINORM Lichtschacht 1000x400mm H300;Lichtschacht;PP-Lichtschacht nach DIN EN 13564 mit Abdeckung;Stück
+MEAV-60-30;MEA MEAVECTOR Lichtschacht 600x400mm H300;Lichtschacht;PP-Lichtschacht für Neubau und Sanierung flexibel;Stück
+MEAV-80-30;MEA MEAVECTOR Lichtschacht 800x400mm H300;Lichtschacht;PP-Lichtschacht für Neubau und Sanierung flexibel;Stück
+MEAV-100-30;MEA MEAVECTOR Lichtschacht 1000x400mm H300;Lichtschacht;PP-Lichtschacht für Neubau und Sanierung flexibel;Stück
+MEABET-60;MEA Betonlichtschacht 600mm Breite;Lichtschacht;Betonlichtschacht mit Abdeckgitter und Anschlussrahmen;Stück
+MEABET-80;MEA Betonlichtschacht 800mm Breite;Lichtschacht;Betonlichtschacht mit Abdeckgitter und Anschlussrahmen;Stück
+MEABET-100;MEA Betonlichtschacht 1000mm Breite;Lichtschacht;Betonlichtschacht mit Abdeckgitter und Anschlussrahmen;Stück
+JAE-60;Jäger Betonlichtschacht 600mm;Lichtschacht;Fertigbeton-Lichtschacht mit Stahlgitterabdeckung;Stück
+JAE-80;Jäger Betonlichtschacht 800mm;Lichtschacht;Fertigbeton-Lichtschacht mit Stahlgitterabdeckung;Stück
+JAE-100;Jäger Betonlichtschacht 1000mm;Lichtschacht;Fertigbeton-Lichtschacht mit Stahlgitterabdeckung;Stück
+XTK-H200;Schöck Isokorb XT Typ K H=200mm;Isokorb;Thermische Trennung für auskragende Balkone C25/30 Standardhöhe;Stück
+XTK-H360;Schöck Isokorb XT Typ K H=360mm;Isokorb;Thermische Trennung für auskragende Balkone C25/30 erhöhte Höhe;Stück
+XTQ-H200;Schöck Isokorb XT Typ Q H=200mm;Isokorb;Thermische Trennung für Querkraftabtragung Balkone C25/30;Stück
+XTQ-H360;Schöck Isokorb XT Typ Q H=360mm;Isokorb;Thermische Trennung für Querkraftabtragung Balkone C25/30;Stück
+XTC-H200;Schöck Isokorb XT Typ C H=200mm;Isokorb;Thermische Trennung für auskragende Stützen C25/30;Stück
+XTC-H360;Schöck Isokorb XT Typ C H=360mm;Isokorb;Thermische Trennung für auskragende Stützen C25/30;Stück
+XTSK-H200;Schöck Isokorb XT Typ SK H=200mm;Isokorb;Thermische Trennung für Attiken und Brüstungen C25/30;Stück
+XTSK-H360;Schöck Isokorb XT Typ SK H=360mm;Isokorb;Thermische Trennung für Attiken und Brüstungen C25/30;Stück
+TK-H200;Schöck Isokorb T Typ K H=200mm;Isokorb;Isokorb Typ K für Standardanwendungen Moment- und Querkraftabtragung;Stück
+TQ-H200;Schöck Isokorb T Typ Q H=200mm;Isokorb;Isokorb Typ Q für reine Querkraftabtragung;Stück
+TC-H200;Schöck Isokorb T Typ C H=200mm;Isokorb;Isokorb Typ C für Stützen;Stück
+TH-H200;Schöck Isokorb T Typ H H=200mm;Isokorb;Isokorb Typ H für Holzbalkone;Stück
+TD-H200;Schöck Isokorb T Typ D H=200mm;Isokorb;Isokorb Typ D für Doppelbalkone;Stück
+TRON-B100;Schöck Tronsole Typ B 100mm;Trittschalldämmung;Elastomerlager zur Trittschallentkopplung von Treppen 100x500mm;Stück
+TRON-B150;Schöck Tronsole Typ B 150mm;Trittschalldämmung;Elastomerlager zur Trittschallentkopplung von Treppen 150x500mm;Stück
+TRON-BZ100;Schöck Tronsole Typ BZ 100mm;Trittschalldämmung;Elastomerlager zur Entkopplung Zwischenpodeste 100x500mm;Stück
+STACON-14;Stacon Dorn Ø14mm l=500mm;Fugendorn;Gleitdorn zur Schubkraftübertragung in Dehnfugen Stahl St37;Stück
+STACON-16;Stacon Dorn Ø16mm l=500mm;Fugendorn;Gleitdorn zur Schubkraftübertragung in Dehnfugen Stahl St37;Stück
+STACON-20;Stacon Dorn Ø20mm l=500mm;Fugendorn;Gleitdorn zur Schubkraftübertragung in Dehnfugen Stahl St37;Stück
+STACON-25;Stacon Dorn Ø25mm l=500mm;Fugendorn;Gleitdorn zur Schubkraftübertragung in Dehnfugen Stahl St37;Stück
+BOLE-DB10;Bole Durchstanzbewehrung DB10;Durchstanzbewehrung;Doppelkopfbolzen zur Durchstanzbewehrung Ø10mm;10 Stück
+BOLE-DB12;Bole Durchstanzbewehrung DB12;Durchstanzbewehrung;Doppelkopfbolzen zur Durchstanzbewehrung Ø12mm;10 Stück
+BOLE-DB14;Bole Durchstanzbewehrung DB14;Durchstanzbewehrung;Doppelkopfbolzen zur Durchstanzbewehrung Ø14mm;10 Stück
+ASH-SCH-20;Abstandhalter Schlange 20mm;Abstandhalter;Betonstahl-Abstandhalter Schlange für Bodenplatten 20mm Überdeckung;250 Stück
+ASH-SCH-25;Abstandhalter Schlange 25mm;Abstandhalter;Betonstahl-Abstandhalter Schlange für Bodenplatten 25mm Überdeckung;250 Stück
+ASH-SCH-30;Abstandhalter Schlange 30mm;Abstandhalter;Betonstahl-Abstandhalter Schlange für Bodenplatten 30mm Überdeckung;250 Stück
+ASH-SCH-35;Abstandhalter Schlange 35mm;Abstandhalter;Betonstahl-Abstandhalter Schlange für Bodenplatten 35mm Überdeckung;250 Stück
+ASH-SCH-40;Abstandhalter Schlange 40mm;Abstandhalter;Betonstahl-Abstandhalter Schlange für Bodenplatten 40mm Überdeckung;250 Stück
+ASH-SCH-50;Abstandhalter Schlange 50mm;Abstandhalter;Betonstahl-Abstandhalter Schlange für Bodenplatten 50mm Überdeckung;250 Stück
+ASH-DL-20;Abstandhalter Drunterleiste 20mm;Abstandhalter;Kunststoff-Drunterleiste für Bewehrungsmatten 20mm;50 Stück
+ASH-DL-25;Abstandhalter Drunterleiste 25mm;Abstandhalter;Kunststoff-Drunterleiste für Bewehrungsmatten 25mm;50 Stück
+ASH-DL-30;Abstandhalter Drunterleiste 30mm;Abstandhalter;Kunststoff-Drunterleiste für Bewehrungsmatten 30mm;50 Stück
+ASH-DL-40;Abstandhalter Drunterleiste 40mm;Abstandhalter;Kunststoff-Drunterleiste für Bewehrungsmatten 40mm;50 Stück
+ASH-FB-20;Abstandhalter Faserbeton 20mm;Abstandhalter;Faserbeton-Abstandhalter für alle Betondeckungsmaße 20mm;100 Stück
+ASH-FB-25;Abstandhalter Faserbeton 25mm;Abstandhalter;Faserbeton-Abstandhalter für alle Betondeckungsmaße 25mm;100 Stück
+ASH-FB-30;Abstandhalter Faserbeton 30mm;Abstandhalter;Faserbeton-Abstandhalter für alle Betondeckungsmaße 30mm;100 Stück
+ASH-FB-40;Abstandhalter Faserbeton 40mm;Abstandhalter;Faserbeton-Abstandhalter für alle Betondeckungsmaße 40mm;100 Stück
+ASH-RI-20;Abstandhalter Ring 20mm;Abstandhalter;Kunststoff-Ringabstandhalter für Einzelstäbe 20mm;500 Stück
+ASH-RI-25;Abstandhalter Ring 25mm;Abstandhalter;Kunststoff-Ringabstandhalter für Einzelstäbe 25mm;500 Stück
+ASH-RI-30;Abstandhalter Ring 30mm;Abstandhalter;Kunststoff-Ringabstandhalter für Einzelstäbe 30mm;500 Stück
+ASH-RI-40;Abstandhalter Ring 40mm;Abstandhalter;Kunststoff-Ringabstandhalter für Einzelstäbe 40mm;500 Stück
+ASH-EXZ-20;Abstandhalter Exzenter 20mm;Abstandhalter;Kunststoff-Exzenterabstandhalter selbstklemmend 20mm;100 Stück
+ASH-EXZ-25;Abstandhalter Exzenter 25mm;Abstandhalter;Kunststoff-Exzenterabstandhalter selbstklemmend 25mm;100 Stück
+ASH-KNA-60;Abstandhalter Kunststoffnagel 60mm;Abstandhalter;Kunststoffnagel für Mauerwerk und Schalungen 60mm;100 Stück
+ASH-KNA-80;Abstandhalter Kunststoffnagel 80mm;Abstandhalter;Kunststoffnagel für Mauerwerk und Schalungen 80mm;100 Stück
+ASH-NEV-20;Nevosafe Abstandhalter 20mm;Abstandhalter;Selbstklemmender Schnellabstandhalter Nevosafe 20mm;100 Stück
+ASH-NEV-25;Nevosafe Abstandhalter 25mm;Abstandhalter;Selbstklemmender Schnellabstandhalter Nevosafe 25mm;100 Stück
+ASH-NEV-30;Nevosafe Abstandhalter 30mm;Abstandhalter;Selbstklemmender Schnellabstandhalter Nevosafe 30mm;100 Stück
+ASH-NEV-40;Nevosafe Abstandhalter 40mm;Abstandhalter;Selbstklemmender Schnellabstandhalter Nevosafe 40mm;100 Stück
+BWA-8-500;Bewehrungsanschluss BWA Ø8mm l=500mm;Bewehrungsanschluss;Einbetonierter Anschraubanschluss für Nachtragsanschlüsse BSt 500 S;10 Stück
+BWA-10-500;Bewehrungsanschluss BWA Ø10mm l=500mm;Bewehrungsanschluss;Einbetonierter Anschraubanschluss für Nachtragsanschlüsse BSt 500 S;10 Stück
+BWA-12-500;Bewehrungsanschluss BWA Ø12mm l=500mm;Bewehrungsanschluss;Einbetonierter Anschraubanschluss für Nachtragsanschlüsse BSt 500 S;10 Stück
+BWA-14-500;Bewehrungsanschluss BWA Ø14mm l=500mm;Bewehrungsanschluss;Einbetonierter Anschraubanschluss für Nachtragsanschlüsse BSt 500 S;10 Stück
+BWA-16-500;Bewehrungsanschluss BWA Ø16mm l=500mm;Bewehrungsanschluss;Einbetonierter Anschraubanschluss für Nachtragsanschlüsse BSt 500 S;10 Stück
+BWA-20-500;Bewehrungsanschluss BWA Ø20mm l=500mm;Bewehrungsanschluss;Einbetonierter Anschraubanschluss für Nachtragsanschlüsse BSt 500 S;10 Stück
+HMS-600;Maueranschlussschiene HMS 600mm;Maueranschlussschiene;Gelochte Anschlussschiene für Mauerwerk an Stahlbetonstützen;Stück
+HMS-1200;Maueranschlussschiene HMS 1200mm;Maueranschlussschiene;Gelochte Anschlussschiene für Mauerwerk an Stahlbetonstützen;Stück
+HMS-2000;Maueranschlussschiene HMS 2000mm;Maueranschlussschiene;Gelochte Anschlussschiene für Mauerwerk an Stahlbetonstützen;Stück
+FIS-V360S;Fischer Injektionsmörtel FIS V 360 S;Injektionsmörtel;Vinylester-Injektionsmörtel für gerissenen und ungerissenen Beton;1 Kartusche
+FIS-EM150;Fischer Injektionsmörtel FIS EM 150 S;Injektionsmörtel;Epoxy-Acrylat-Mörtel für alle Untergründe außer nassen Beton;1 Kartusche
+FIS-VW300;Fischer Injektionsmörtel FIS VW 300 S;Injektionsmörtel;Vinylester-Mörtel wasserundurchlässig für WU-Beton;1 Kartusche
+TOK-B-050;TOK-Band 50mm breit;Bitumenfugenband;Selbstklebendes Bitumenfugenband für Dehn- und Arbeitsfugen 50mm;10m Rolle
+TOK-B-100;TOK-Band 100mm breit;Bitumenfugenband;Selbstklebendes Bitumenfugenband für Dehn- und Arbeitsfugen 100mm;10m Rolle
+TOK-B-150;TOK-Band 150mm breit;Bitumenfugenband;Selbstklebendes Bitumenfugenband für Dehn- und Arbeitsfugen 150mm;10m Rolle
+TOK-B-200;TOK-Band 200mm breit;Bitumenfugenband;Selbstklebendes Bitumenfugenband für Dehn- und Arbeitsfugen 200mm;10m Rolle
+TOK-BTF-050;Bitumenfugenband BFB 50mm;Bitumenfugenband;Vorgeformtes Bitumenfugenband zum Einlegen ohne Kleber 50mm;25m Rolle
+TOK-BTF-100;Bitumenfugenband BFB 100mm;Bitumenfugenband;Vorgeformtes Bitumenfugenband zum Einlegen ohne Kleber 100mm;25m Rolle
+TOK-BTF-150;Bitumenfugenband BFB 150mm;Bitumenfugenband;Vorgeformtes Bitumenfugenband zum Einlegen ohne Kleber 150mm;25m Rolle
+DENSO-015;Densolastic Bitumenmasse 15kg;Fugenabdichtung;Plastische bituminöse Dicht- und Klebemasse für Fugen und Risse;15kg Eimer
+DENSO-050;Densolastic Bitumenmasse 50kg;Fugenabdichtung;Plastische bituminöse Dicht- und Klebemasse für Fugen und Risse;50kg Eimer
+TOKFILL-001;TOK-Fill Fugenfüllmasse 25kg;Fugenfüllmasse;Bituminöse Vergussmasse für Fugen im Straßen- und Tiefbau;25kg Eimer
+ASPH-GIA;Gussasphalt GussA 25/55-55 E;Asphalt;Gussasphalt nach DIN 18560 für Estrich auf Rohdecken;25kg Sack
+ASPH-MAST;Asphaltmastix für Fugenanschlüsse;Asphalt;Bituminöse Mastixmasse für Anschlüsse und Abschlüsse;25kg Eimer
+BAF-02-200;Bauabdeckfolie PE 0,2mm 200cm;Bauabdeckfolie;Polyethylen-Schutzfolie für Estrich und Rohbau 200cm breit;50m Rolle
+BAF-04-200;Bauabdeckfolie PE 0,4mm 200cm;Bauabdeckfolie;Polyethylen-Schutzfolie verstärkt für Estrich und Rohbau;50m Rolle
+BAF-06-400;Bauabdeckfolie PE 0,6mm 400cm;Bauabdeckfolie;Schwere PE-Folie als Lastverteilungsfolie 400cm breit;25m Rolle
+BSP-4;Bautenschutzplatte 4mm 500x1000mm;Bautenschutzplatte;Regenerat-Gummiplatte zum Schutz von Abdichtungen und Böden;Stück
+BSP-6;Bautenschutzplatte 6mm 500x1000mm;Bautenschutzplatte;Regenerat-Gummiplatte zum Schutz von Abdichtungen und Böden;Stück
+BSP-8;Bautenschutzplatte 8mm 500x1000mm;Bautenschutzplatte;Regenerat-Gummiplatte zum Schutz von Abdichtungen und Böden;Stück
+GEO-150;Geotextil Filtervlies 150g/m² 2m;Geotextil;PP-Nadelvlies für Filterschichten und Trennlagen DIN EN ISO 10319;50m Rolle
+GEO-200;Geotextil Filtervlies 200g/m² 2m;Geotextil;PP-Nadelvlies für Filterschichten und Trennlagen DIN EN ISO 10319;50m Rolle
+GEO-300;Geotextil Filtervlies 300g/m² 2m;Geotextil;PP-Nadelvlies für höhere Belastungen DIN EN ISO 10319;25m Rolle
+GEO-500;Geotextil Filtervlies 500g/m² 2m;Geotextil;Schweres PP-Nadelvlies für Schutzlagen unter Drainmatten;25m Rolle
+UKV-50;Unkrautvlies 50g/m² 1m breit;Unkrautvlies;PP-Gewebe wasserdurchlässig UV-stabilisiert für Gartenbereich;25m Rolle
+UKV-100;Unkrautvlies 100g/m² 1m breit;Unkrautvlies;PP-Gewebe wasserdurchlässig UV-stabilisiert verstärkt;25m Rolle
+UKV-130;Unkrautvlies 130g/m² 2m breit;Unkrautvlies;Schweres PP-Gewebe UV-stabilisiert für Dauereinsatz;25m Rolle
