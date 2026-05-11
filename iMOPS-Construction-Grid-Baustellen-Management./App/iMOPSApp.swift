@@ -23,6 +23,9 @@ struct iMOPSApp: App {
                 .environmentObject(
                     EventListViewModel(context: persistence.container.viewContext)
                 )
+                .task {
+                    ScharpeggeSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                }
                 .onOpenURL { url in
                     importedFileHandler.handleIncomingFile(url: url)
                 }
@@ -112,7 +115,6 @@ final class ImportedFileHandler {
     var importedFileName = ""
     var lastImportedFileURL: URL?
 
-    /// Unterstuetzte SceneKit-Formate (direkt anzeigbar)
     private let viewableFormats: Set<String> = ["usdz", "usda", "usdc", "obj", "dae", "scn", "abc", "stl", "ply"]
 
     func handleIncomingFile(url: URL) {
@@ -147,7 +149,6 @@ final class ImportedFileHandler {
             } else if viewableFormats.contains(ext) {
                 showImportedCADViewer = true
             } else {
-                // FBX, glTF etc. - erstmal als importiert anzeigen
                 showImportedSKPSheet = true
             }
         } catch {
