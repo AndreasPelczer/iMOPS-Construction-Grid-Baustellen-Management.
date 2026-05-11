@@ -5,7 +5,7 @@ import CoreData
 struct ScharpeggeSeeder {
 
     static func seedIfNeeded(context: NSManagedObjectContext) {
-        let key = "scharpegge_seeded_v2"
+        let key = "scharpegge_seeded_v3"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
 
         print("🐟 Scharpegge Seeder startet")
@@ -29,9 +29,10 @@ struct ScharpeggeSeeder {
         print("🐟 CSV Zeilen (inkl. Header): \(lines.count)")
 
         // Erste Zeile ist Header — überspringen
+        // maxSplits:4 → immer genau 5 Felder, Semikolons im letzten Feld bleiben erhalten
         var count = 0
         for line in lines.dropFirst() {
-            let cols = line.components(separatedBy: ";")
+            let cols = line.split(separator: ";", maxSplits: 4, omittingEmptySubsequences: false).map(String.init)
             guard cols.count >= 5 else { continue }
 
             let artikelnummer = cols[0].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -43,11 +44,11 @@ struct ScharpeggeSeeder {
             guard !artikelnummer.isEmpty, !name.isEmpty else { continue }
 
             let entry = CDLexikonEntry(context: context)
-            entry.code        = artikelnummer
-            entry.name        = name
-            entry.kategorie   = "Scharpegge – \(kategorie)"
+            entry.code         = artikelnummer
+            entry.name         = name
+            entry.kategorie    = "Scharpegge: \(kategorie)"
             entry.beschreibung = beschreibung
-            entry.details     = gebinde
+            entry.details      = gebinde
             count += 1
         }
 
