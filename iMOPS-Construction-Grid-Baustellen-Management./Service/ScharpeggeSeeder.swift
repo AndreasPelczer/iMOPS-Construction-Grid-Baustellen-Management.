@@ -5,9 +5,6 @@ import CoreData
 struct ScharpeggeSeeder {
 
     static func seedIfNeeded(context: NSManagedObjectContext) {
-        let key = "scharpegge_seeded_v3"
-        guard !UserDefaults.standard.bool(forKey: key) else { return }
-
         print("🐟 Scharpegge Seeder startet")
 
         guard let url = Bundle.main.url(forResource: "scharpegge_katalog", withExtension: "csv") else {
@@ -28,8 +25,6 @@ struct ScharpeggeSeeder {
 
         print("🐟 CSV Zeilen (inkl. Header): \(lines.count)")
 
-        // Erste Zeile ist Header — überspringen
-        // maxSplits:4 → immer genau 5 Felder, Semikolons im letzten Feld bleiben erhalten
         var count = 0
         for line in lines.dropFirst() {
             let cols = line.split(separator: ";", maxSplits: 4, omittingEmptySubsequences: false).map(String.init)
@@ -56,7 +51,6 @@ struct ScharpeggeSeeder {
 
         do {
             try context.save()
-            UserDefaults.standard.set(true, forKey: key)
             print("🐟 Seeder erfolgreich abgeschlossen")
         } catch {
             print("🐟 Seeder Fehler beim Speichern: \(error)")
