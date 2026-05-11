@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import MessageUI
 
 // MARK: - LV Hauptansicht
 
@@ -84,7 +85,6 @@ struct LVView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    import MessageUI
                     if MFMailComposeViewController.canSendMail() {
                         showBestellliste = true
                     } else {
@@ -225,7 +225,6 @@ struct AddLVPositionView: View {
                     }
                     TextField("Bezeichnung *", text: $bezeichnung, axis: .vertical).lineLimit(2...4)
                 }
-
                 Section("Menge & Einheit") {
                     HStack {
                         TextField("0,00", text: $menge).keyboardType(.decimalPad).frame(maxWidth: 120)
@@ -235,7 +234,6 @@ struct AddLVPositionView: View {
                         .pickerStyle(.menu)
                     }
                 }
-
                 Section("DIN 276 Kostengruppe") {
                     NavigationLink {
                         KGPickerList(selected: $kg)
@@ -247,7 +245,6 @@ struct AddLVPositionView: View {
                         }
                     }
                 }
-
                 Section("Material / Lieferant (optional)") {
                     HStack {
                         TextField("Artikelnummer", text: $artikelNummer)
@@ -268,9 +265,7 @@ struct AddLVPositionView: View {
                     Button("Abbrechen") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Sichern") { save() }
-                        .disabled(!isValid)
-                        .tint(.orange)
+                    Button("Sichern") { save() }.disabled(!isValid).tint(.orange)
                 }
             }
             .onAppear { prefill() }
@@ -287,25 +282,25 @@ struct AddLVPositionView: View {
 
     private func prefill() {
         guard let p = editPosition else { return }
-        posNr        = p.posNr ?? ""
-        bezeichnung  = p.bezeichnung ?? ""
-        menge        = p.menge == 0 ? "" : String(format: "%.2f", p.menge).replacingOccurrences(of: ".", with: ",")
-        einheit      = p.einheit ?? "m²"
-        kg           = p.kostenGruppeNummer ?? "320"
+        posNr         = p.posNr ?? ""
+        bezeichnung   = p.bezeichnung ?? ""
+        menge         = p.menge == 0 ? "" : String(format: "%.2f", p.menge).replacingOccurrences(of: ".", with: ",")
+        einheit       = p.einheit ?? "m²"
+        kg            = p.kostenGruppeNummer ?? "320"
         artikelNummer = p.artikelNummer ?? ""
-        lieferant    = p.lieferant ?? ""
+        lieferant     = p.lieferant ?? ""
     }
 
     private func save() {
         let pos = editPosition ?? LVPosition(context: viewContext)
-        pos.posNr             = posNr.isEmpty ? nil : posNr
-        pos.bezeichnung       = bezeichnung
-        pos.menge             = Double(menge.replacingOccurrences(of: ",", with: ".")) ?? 0
-        pos.einheit           = einheit
+        pos.posNr              = posNr.isEmpty ? nil : posNr
+        pos.bezeichnung        = bezeichnung
+        pos.menge              = Double(menge.replacingOccurrences(of: ",", with: ".")) ?? 0
+        pos.einheit            = einheit
         pos.kostenGruppeNummer = kg
-        pos.artikelNummer     = artikelNummer.isEmpty ? nil : artikelNummer
-        pos.lieferant         = lieferant.isEmpty ? nil : lieferant
-        pos.event             = event
+        pos.artikelNummer      = artikelNummer.isEmpty ? nil : artikelNummer
+        pos.lieferant          = lieferant.isEmpty ? nil : lieferant
+        pos.event              = event
         try? viewContext.save()
         dismiss()
     }
@@ -339,9 +334,7 @@ struct KGPickerList: View {
                     Text("KG \(kg.nr)").font(.body.monospacedDigit()).foregroundStyle(.primary)
                     Text(kg.name).foregroundStyle(.secondary)
                     Spacer()
-                    if selected == kg.nr {
-                        Image(systemName: "checkmark").foregroundStyle(.orange)
-                    }
+                    if selected == kg.nr { Image(systemName: "checkmark").foregroundStyle(.orange) }
                 }
             }
         }
@@ -377,8 +370,7 @@ struct KatalogPickerSheet: View {
     }
 
     private var grouped: [(String, [CDLexikonEntry])] {
-        Dictionary(grouping: filtered, by: { $0.kategorie ?? "Sonstige" })
-            .sorted { $0.key < $1.key }
+        Dictionary(grouping: filtered, by: { $0.kategorie ?? "Sonstige" }).sorted { $0.key < $1.key }
     }
 
     var body: some View {
