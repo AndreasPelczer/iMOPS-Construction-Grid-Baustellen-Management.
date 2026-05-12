@@ -30,9 +30,19 @@ struct MangelListeView: View {
         return maengel.filter { $0.status == f }
     }
 
+    // MARK: - Statistik-Kennzahlen
+
+    private var anzahlOffen:      Int { maengel.filter { $0.status == .offen    }.count }
+    private var anzahlInArbeit:   Int { maengel.filter { $0.status == .inArbeit }.count }
+    private var anzahlBehoben:    Int { maengel.filter { $0.status == .behoben || $0.status == .abgenommen }.count }
+    private var anzahlUeberfaellig: Int { maengel.filter { $0.istUeberfaellig }.count }
+
     var body: some View {
         NavigationStack {
             List {
+                if !maengel.isEmpty {
+                    statistikKarte
+                }
                 filterPicker
                 if gefiltert.isEmpty {
                     leerHinweis
@@ -48,7 +58,7 @@ struct MangelListeView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("Mängel (\(maengel.count))")
+            .navigationTitle("M\u{00e4}ngel (\(maengel.count))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -85,6 +95,40 @@ struct MangelListeView: View {
             }
         }
     }
+
+    // MARK: - Statistik-Kachel
+
+    @ViewBuilder
+    private var statistikKarte: some View {
+        Section {
+            HStack(spacing: 0) {
+                statistikZelle(label: "Gesamt",     wert: maengel.count,      farbe: .primary)
+                Divider().frame(height: 32)
+                statistikZelle(label: "Offen",      wert: anzahlOffen,        farbe: .orange)
+                Divider().frame(height: 32)
+                statistikZelle(label: "In Arbeit",  wert: anzahlInArbeit,     farbe: .blue)
+                Divider().frame(height: 32)
+                statistikZelle(label: "Behoben",    wert: anzahlBehoben,      farbe: .green)
+                Divider().frame(height: 32)
+                statistikZelle(label: "Überfällig", wert: anzahlUeberfaellig, farbe: .red)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func statistikZelle(label: String, wert: Int, farbe: Color) -> some View {
+        VStack(spacing: 2) {
+            Text("\(wert)")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(wert > 0 ? farbe : Color.secondary)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Filter-Chips
 
     @ViewBuilder
     private var filterPicker: some View {
@@ -123,7 +167,7 @@ struct MangelListeView: View {
                 Image(systemName: "checkmark.seal")
                     .font(.title2).foregroundStyle(.green)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Keine Mängel")
+                    Text("Keine M\u{00e4}ngel")
                     Text("Tippe auf + um einen Mangel zu erfassen.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -136,7 +180,7 @@ struct MangelListeView: View {
         let data = MangelPDFExporter.generate(event: event, maengel: Array(maengel))
         let fmt  = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
-        let name = "Mängelprotokoll-\(fmt.string(from: Date()))-\(event.title ?? "Baustelle")"
+        let name = "M\u{00e4}ngelprotokoll-\(fmt.string(from: Date()))-\(event.title ?? "Baustelle")"
             .replacingOccurrences(of: " ", with: "-")
             .appending(".pdf")
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
