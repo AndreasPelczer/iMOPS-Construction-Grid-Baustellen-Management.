@@ -6,12 +6,13 @@ struct GlobalSearchView: View {
     @State private var query = ""
     @State private var foundEvents:     [Event]          = []
     @State private var foundPositionen: [LVPosition]     = []
+    @State private var foundMaengel:    [Mangel]         = []
     @State private var foundKatalog:    [CDLexikonEntry] = []
     @State private var foundAuftraege:  [Auftrag]        = []
 
     private var hasResults: Bool {
         !foundEvents.isEmpty || !foundPositionen.isEmpty ||
-        !foundKatalog.isEmpty || !foundAuftraege.isEmpty
+        !foundMaengel.isEmpty || !foundKatalog.isEmpty || !foundAuftraege.isEmpty
     }
 
     var body: some View {
@@ -20,7 +21,7 @@ struct GlobalSearchView: View {
                 ContentUnavailableView(
                     "Suchen",
                     systemImage: "magnifyingglass",
-                    description: Text("Baustellen, LV-Positionen, Katalog, Aufträge — alles auf einmal.")
+                    description: Text("Baustellen, LV-Positionen, Mängel, Katalog, Aufträge — alles auf einmal.")
                 )
             } else if !hasResults {
                 ContentUnavailableView.search(text: query)
@@ -68,6 +69,38 @@ struct GlobalSearchView: View {
                         }
                     }
                 }
+                if !foundMaengel.isEmpty {
+                    Section("Mängel (\(foundMaengel.count))") {
+                        ForEach(foundMaengel, id: \.objectID) { mangel in
+                            NavigationLink {
+                                MangelDetailView(mangel: mangel)
+                                    .environment(\.managedObjectContext, viewContext)
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: mangel.status.symbol)
+                                        .foregroundStyle(mangel.status.farbe)
+                                        .frame(width: 20)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(mangel.titel ?? "–").font(.body).lineLimit(1)
+                                        HStack(spacing: 4) {
+                                            if let ort = mangel.ort, !ort.isEmpty {
+                                                Text(ort).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                                Text("·").foregroundStyle(.secondary)
+                                            }
+                                            Text(mangel.status.displayName)
+                                                .font(.caption)
+                                                .foregroundStyle(mangel.status.farbe)
+                                            if let ev = mangel.event?.title {
+                                                Text("·").foregroundStyle(.secondary)
+                                                Text(ev).font(.caption).foregroundStyle(.orange).lineLimit(1)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 if !foundKatalog.isEmpty {
                     Section("Katalog (\(foundKatalog.count))") {
                         ForEach(foundKatalog, id: \.objectID) { entry in
@@ -104,7 +137,7 @@ struct GlobalSearchView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .searchable(text: $query, prompt: "Baustelle, Position, Artikel...")
+        .searchable(text: $query, prompt: "Baustelle, Mangel, Position, Artikel...")
         .navigationTitle("Suche")
         .onChange(of: query) { _, q in performSearch(q) }
     }
@@ -112,9 +145,11 @@ struct GlobalSearchView: View {
     private func performSearch(_ raw: String) {
         let q = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard q.count >= 2 else {
-            foundEvents = []; foundPositionen = []; foundKatalog = []; foundAuftraege = []
+            foundEvents = []; foundPositionen = []; foundMaengel = []
+            foundKatalog = []; foundAuftraege = []
             return
         }
+
         let eventReq: NSFetchRequest<Event> = Event.fetchRequest()
         eventReq.predicate = NSPredicate(
             format: "title CONTAINS[cd] %@ OR location CONTAINS[cd] %@ OR bauherr CONTAINS[cd] %@", q, q, q)
@@ -128,6 +163,14 @@ struct GlobalSearchView: View {
         posReq.sortDescriptors = [NSSortDescriptor(keyPath: \LVPosition.bezeichnung, ascending: true)]
         posReq.fetchLimit = 20
         foundPositionen = (try? viewContext.fetch(posReq)) ?? []
+
+        let mangelReq: NSFetchRequest<Mangel> = Mangel.fetchRequest()
+        mangelReq.predicate = NSPredicate(
+            format: "titel CONTAINS[cd] %@ OR beschreibung CONTAINS[cd] %@ OR ort CONTAINS[cd] %@ OR gewerk CONTAINS[cd] %@",
+            q, q, q, q)
+        mangelReq.sortDescriptors = [NSSortDescriptor(keyPath: \Mangel.titel, ascending: true)]
+        mangelReq.fetchLimit = 20
+        foundMaengel = (try? viewContext.fetch(mangelReq)) ?? []
 
         let katReq: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
         katReq.predicate = NSPredicate(

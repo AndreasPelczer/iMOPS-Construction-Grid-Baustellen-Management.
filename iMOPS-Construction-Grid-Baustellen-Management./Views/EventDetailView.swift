@@ -31,6 +31,8 @@ struct EventDetailView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @ObservedObject var event: Event
 
+    @StateObject private var fortStore = LVFortschrittStore.shared
+
     @State private var showingEditSheet = false
     @State private var showingAddJobSheet = false
     @State private var showingCADPicker = false
@@ -75,6 +77,16 @@ struct EventDetailView: View {
     }
 
     private var lvPositionenCount: Int { event.lvPositionen?.count ?? 0 }
+
+    private var lvGesamtFortschritt: Double {
+        let positionen = (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
+            .filter { !LVPositionHelper.isAlternative($0) }
+        guard !positionen.isEmpty else { return 0 }
+        let total = positionen.reduce(0) { sum, pos in
+            sum + (fortStore.fortschritt(for: pos.objectID.uriRepresentation().absoluteString)?.prozent ?? 0)
+        }
+        return Double(total) / Double(positionen.count) / 100.0
+    }
 
     var body: some View {
         ScrollView {
@@ -443,6 +455,17 @@ struct EventDetailView: View {
                              ? "Noch keine Positionen"
                              : "\(lvPositionenCount) Position\(lvPositionenCount == 1 ? "" : "en")")
                             .font(.caption).foregroundStyle(.secondary)
+                        if lvPositionenCount > 0 && lvGesamtFortschritt > 0 {
+                            HStack(spacing: 6) {
+                                ProgressView(value: lvGesamtFortschritt)
+                                    .tint(lvGesamtFortschritt >= 1.0 ? .green : .orange)
+                                Text("\(Int(lvGesamtFortschritt * 100)) %")
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 34, alignment: .trailing)
+                            }
+                            .padding(.top, 2)
+                        }
                     }
                     Spacer()
                     Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
