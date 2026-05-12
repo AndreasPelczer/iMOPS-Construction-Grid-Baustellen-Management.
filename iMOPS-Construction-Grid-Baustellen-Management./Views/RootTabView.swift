@@ -9,6 +9,7 @@ import SwiftUI
 
 struct RootTabView: View {
     @Environment(AppSession.self) private var session
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
         TabView {
@@ -76,5 +77,11 @@ struct RootTabView: View {
         }
         .tint(.orange)
         .environment(\.locale, session.locale)
+        .fullScreenCover(isPresented: Binding(
+            get: { !hasCompletedOnboarding },
+            set: { if !$0 { hasCompletedOnboarding = true } }
+        )) {
+            OnboardingView()
+        }
     }
 }

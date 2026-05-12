@@ -32,6 +32,7 @@ struct LVView: View {
         )
     }
 
+    // Positionen gruppiert nach KG, dann Basis vs. Alternative
     private var grouped: [(kg: String, items: [LVPosition])] {
         let dict = Dictionary(grouping: Array(positionen), by: { $0.kostenGruppeNummer ?? "—" })
         return dict.sorted { $0.key < $1.key }.map { (kg: $0.key, items: $0.value) }
@@ -43,7 +44,7 @@ struct LVView: View {
                 ContentUnavailableView(
                     "Kein LV vorhanden",
                     systemImage: "doc.text",
-                    description: Text("Tippe auf + um die erste Position anzulegen.")
+                    description: Text("Tippe auf + oder importiere ein PDF.")
                 )
             } else {
                 ForEach(grouped, id: \.kg) { gruppe in
@@ -62,6 +63,12 @@ struct LVView: View {
                                         Label("Bearbeiten", systemImage: "pencil")
                                     }
                                     .tint(.orange)
+                                    Button {
+                                        duplicateAsAlternative(pos)
+                                    } label: {
+                                        Label("Alternative", systemImage: "doc.on.doc")
+                                    }
+                                    .tint(.blue)
                                 }
                         }
                     } header: {
@@ -69,7 +76,14 @@ struct LVView: View {
                             Text("KG \(gruppe.kg) – \(dinBezeichnung(gruppe.kg))")
                                 .font(.caption.weight(.semibold))
                             Spacer()
-                            let summe = gruppe.items.reduce(0.0) { $0 + $1.menge }
+                            let basis   = gruppe.items.filter { !LVPositionHelper.isAlternative($0) }
+                            let altCount = gruppe.items.count - basis.count
+                            if altCount > 0 {
+                                Text("\(altCount) Alt.")
+                                    .font(.caption2).foregroundStyle(.blue)
+                                Text("·").foregroundStyle(.secondary).font(.caption2)
+                            }
+                            let summe = basis.reduce(0.0) { $0 + $1.menge }
                             Text("\(summe.formatted(.number.precision(.fractionLength(0...2)))) ges.")
                                 .font(.caption2).foregroundStyle(.secondary)
                         }
@@ -157,8 +171,26 @@ struct LVView: View {
         }
     }
 
+    // MARK: - Actions
+
     private func delete(_ pos: LVPosition) {
         viewContext.delete(pos)
+        try? viewContext.save()
+    }
+
+    /// Swipe-left → create an alternative position pre-filled from the base
+    private func duplicateAsAlternative(_ base: LVPosition) {
+        let alt = LVPosition(context: viewContext)
+        let baseNr = base.posNr ?? "1"
+        // Generate Alt-posNr: "1.2" → "1.2.A1", "1.2.A1" → "1.2.A2"
+        alt.posNr              = LVPositionHelper.nextAlternativeNr(for: baseNr, existing: Array(positionen))
+        alt.bezeichnung        = (base.bezeichnung ?? "") + " (Alternative)"
+        alt.menge              = base.menge
+        alt.einheit            = base.einheit
+        alt.kostenGruppeNummer = base.kostenGruppeNummer
+        alt.artikelNummer      = base.artikelNummer
+        alt.lieferant          = base.lieferant
+        alt.event              = event
         try? viewContext.save()
     }
 
@@ -190,6 +222,44 @@ struct LVView: View {
     }
 }
 
+// MARK: - Alternative Position Helper
+
+enum LVPositionHelper {
+    /// A position is an alternative if its posNr contains ".A" followed by a digit
+    static func isAlternative(_ pos: LVPosition) -> Bool {
+        guard let nr = pos.posNr else { return false }
+        return nr.range(of: #"\.A\d"#, options: .regularExpression) != nil
+    }
+
+    /// Returns the base posNr for an alternative (strips .A1 suffix)
+    static func baseNr(for nr: String) -> String {
+        guard let range = nr.range(of: #"\.A\d+$"#, options: .regularExpression) else { return nr }
+        return String(nr[nr.startIndex..<range.lowerBound])
+    }
+
+    /// Generates the next alternative posNr: "1.2" → "1.2.A1"; "1.2.A1" → "1.2.A2"
+    static func nextAlternativeNr(for baseNr: String, existing: [LVPosition]) -> String {
+        let rootNr = isAlternativeNr(baseNr) ? baseNr(for: baseNr) : baseNr
+        let existingAlts = existing
+            .compactMap { $0.posNr }
+            .filter { $0.hasPrefix(rootNr + ".A") }
+        let maxIndex = existingAlts.compactMap { nr -> Int? in
+            guard let range = nr.range(of: #"\.A(\d+)$"#, options: .regularExpression) else { return nil }
+            return Int(nr[range].dropFirst(2)) // drop ".A"
+        }.max() ?? 0
+        return "\(rootNr).A\(maxIndex + 1)"
+    }
+
+    private static func isAlternativeNr(_ nr: String) -> Bool {
+        nr.range(of: #"\.A\d"#, options: .regularExpression) != nil
+    }
+
+    private static func baseNr(for nr: String) -> String {
+        guard let range = nr.range(of: #"\.A\d+$"#, options: .regularExpression) else { return nr }
+        return String(nr[nr.startIndex..<range.lowerBound])
+    }
+}
+
 // MARK: - Position Row
 
 struct LVPositionRow: View {
@@ -200,19 +270,32 @@ struct LVPositionRow: View {
         position.objectID.uriRepresentation().absoluteString
     }
 
+    private var isAlt: Bool { LVPositionHelper.isAlternative(position) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
+                // Alternative badge
+                if isAlt {
+                    Text("ALT")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(Color.blue)
+                        .clipShape(Capsule())
+                }
                 Text(position.posNr ?? "–")
                     .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .frame(width: 52, alignment: .leading)
+                    .foregroundStyle(isAlt ? .blue : .secondary)
+                    .frame(width: isAlt ? nil : 52, alignment: .leading)
                 Text(position.bezeichnung ?? "–")
                     .font(.body)
                     .lineLimit(2)
+                    .foregroundStyle(isAlt ? .secondary : .primary)
                 Spacer()
                 Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "")")
                     .font(.footnote.monospacedDigit())
+                    .foregroundStyle(isAlt ? .secondary : .primary)
             }
             HStack(spacing: 6) {
                 if let art = position.artikelNummer, !art.isEmpty {
@@ -233,6 +316,7 @@ struct LVPositionRow: View {
             }
         }
         .padding(.vertical, 2)
+        .opacity(isAlt ? 0.85 : 1.0)
     }
 }
 
@@ -252,6 +336,7 @@ struct AddLVPositionView: View {
     @State private var kg = "320"
     @State private var artikelNummer = ""
     @State private var lieferant = ""
+    @State private var isAlternative = false
     @State private var showKatalog = false
 
     let einheiten = ["m²", "m³", "lfm", "Stück", "kg", "t", "Psch", "h"]
@@ -271,6 +356,15 @@ struct AddLVPositionView: View {
                         TextField("1.1.01", text: $posNr).keyboardType(.numbersAndPunctuation)
                     }
                     TextField("Bezeichnung *", text: $bezeichnung, axis: .vertical).lineLimit(2...4)
+                    Toggle(isOn: $isAlternative) {
+                        Label("Alternativposition", systemImage: "doc.on.doc")
+                            .foregroundStyle(isAlternative ? .blue : .primary)
+                    }
+                    .tint(.blue)
+                    if isAlternative {
+                        Text("Alternativpositionen ersetzen die Basisposition und werden mit .A1, .A2 … nummeriert.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 Section("Menge & Einheit") {
                     HStack {
@@ -339,11 +433,23 @@ struct AddLVPositionView: View {
         kg            = p.kostenGruppeNummer ?? "320"
         artikelNummer = p.artikelNummer ?? ""
         lieferant     = p.lieferant ?? ""
+        isAlternative = LVPositionHelper.isAlternative(p)
     }
 
     private func save() {
         let pos = editPosition ?? LVPosition(context: viewContext)
-        pos.posNr              = posNr.isEmpty ? nil : posNr
+        var nr = posNr.trimmingCharacters(in: .whitespacesAndNewlines)
+        // If marked as alternative but posNr doesn’t already follow the .A convention, auto-append
+        if isAlternative && !nr.isEmpty && !LVPositionHelper.isAlternative(pos) {
+            if !nr.contains(".A") {
+                // fetch siblings to determine next index
+                let req = NSFetchRequest<LVPosition>(entityName: "LVPosition")
+                req.predicate = NSPredicate(format: "event == %@", event)
+                let all = (try? viewContext.fetch(req)) ?? []
+                nr = LVPositionHelper.nextAlternativeNr(for: nr, existing: all)
+            }
+        }
+        pos.posNr              = nr.isEmpty ? nil : nr
         pos.bezeichnung        = bezeichnung
         pos.menge              = Double(menge.replacingOccurrences(of: ",", with: ".")) ?? 0
         pos.einheit            = einheit
@@ -484,24 +590,22 @@ struct LVHelpView: View {
                 Section("Positionen verwalten") {
                     Label("Tippe auf + um eine neue Position anzulegen", systemImage: "plus.circle")
                     Label("Wische links zum Bearbeiten, rechts zum Löschen", systemImage: "hand.point.left")
+                    Label("Wische links: zweite Aktion 'Alternative' erstellt Alternativposition", systemImage: "doc.on.doc")
                     Label("Positionen sind nach DIN 276 Kostengruppe sortiert", systemImage: "list.number")
+                }
+                Section("Alternativpositionen") {
+                    Label("Alternativpositionen ersetzen die Basisposition (GAEB-Standard)", systemImage: "doc.on.doc")
+                    Label("Nummerierung: 1.2 → 1.2.A1, 1.2.A2 …", systemImage: "number")
+                    Label("Blau markiert und leicht transparent dargestellt", systemImage: "circle.fill")
+                    Label("Bei neuer Position: 'Alternativposition'-Toggle aktivieren", systemImage: "toggle.on")
                 }
                 Section("PDF Import") {
                     Label("⋯-Menü → 'Aus PDF importieren': LV-Positionen aus PDF extrahieren", systemImage: "doc.text.magnifyingglass")
-                    Label("Unterstützt: Standard-LV, GAEB-Export, Planungsbüro-PDFs", systemImage: "doc.on.doc")
-                    Label("Alle erkannten Positionen vor dem Import prüfen und bearbeiten", systemImage: "checkmark.circle")
-                    Label("Nur Text-PDFs werden unterstützt (keine eingescannten Bilder)", systemImage: "info.circle")
+                    Label("Erkannte Positionen vor dem Import prüfen und bearbeiten", systemImage: "checkmark.circle")
                 }
                 Section("Bestellliste & Angebotsvergleich") {
                     Label("⋯-Menü: Bestellliste, Angebotsvergleich, LV als PDF", systemImage: "ellipsis.circle")
-                    Label("Bestellliste: pro Lieferant vorausgefüllte Preisanfrage-Mail", systemImage: "envelope.badge")
-                    Label("Angebotsvergleich: EP/GP pro Lieferant erfassen und vergleichen", systemImage: "chart.bar.doc.horizontal")
-                    Label("Günstigster Anbieter wird grün markiert und in der Liste angezeigt", systemImage: "star.fill")
-                }
-                Section("DIN 276 Kostengruppen") {
-                    Label("KG 300: Baukonstruktionen (Fundament, Wände, Decken)", systemImage: "building.2")
-                    Label("KG 400: Technische Anlagen (Sanitär, Heizung, Elektro)", systemImage: "bolt")
-                    Label("KG 500: Außenanlagen", systemImage: "tree")
+                    Label("Angebotsvergleich: EP/GP pro Lieferant, günstigster wird markiert", systemImage: "chart.bar.doc.horizontal")
                 }
             }
             .navigationTitle("Hilfe: Leistungsverzeichnis")
