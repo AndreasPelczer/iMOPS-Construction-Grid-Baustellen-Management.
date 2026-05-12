@@ -20,10 +20,13 @@ struct LVView: View {
     @State private var showHelp              = false
     @State private var showExportShare       = false
     @State private var exportURL: URL?
-    // Warnung wenn X84-Export Positionen ohne Preis hat
+    // GAEB X84 – Warnung wenn Preise fehlen
     @State private var showMissingPricesAlert = false
     @State private var missingPricesCount = 0
     @State private var pendingExportFormat: GAEBExportFormat?
+    // XRechnung – Warnung wenn Preise fehlen
+    @State private var showXRMissingAlert  = false
+    @State private var xrMissingCount      = 0
 
     @StateObject private var store = AngebotsStore.shared
 
@@ -135,6 +138,11 @@ struct LVView: View {
                     }
                     .disabled(positionen.isEmpty)
 
+                    Button { triggerXRechnungExport() } label: {
+                        Label("XRechnung exportieren", systemImage: "eurosign.circle")
+                    }
+                    .disabled(positionen.isEmpty)
+
                     Divider()
 
                     // --- Importieren ---
@@ -195,6 +203,12 @@ struct LVView: View {
         } message: {
             Text("\(missingPricesCount) Position\(missingPricesCount == 1 ? " hat" : "en haben") noch keinen Preis im Angebotsvergleich. Der X84 wird mit leeren EP-Feldern exportiert.")
         }
+        .alert("Fehlende Preise", isPresented: $showXRMissingAlert) {
+            Button("Trotzdem exportieren") { doXRechnungExport() }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            Text("\(xrMissingCount) Position\(xrMissingCount == 1 ? " hat" : "en haben") noch keinen Preis im Angebotsvergleich. Die XRechnung wird mit EP = 0,00 € exportiert.")
+        }
     }
 
     // MARK: - Actions
@@ -227,7 +241,6 @@ struct LVView: View {
 
     private func triggerGAEBExport(_ format: GAEBExportFormat) {
         if format.includePrices {
-            // Count positions without a price offer
             let missing = Array(positionen).filter { pos in
                 let id = pos.objectID.uriRepresentation().absoluteString
                 return store.guenstigster(for: id) == nil
@@ -253,6 +266,30 @@ struct LVView: View {
         let name  = "\(title)-\(format.filenameSuffix).xml"
         writeAndShare(data: data, filename: name)
         pendingExportFormat = nil
+    }
+
+    private func triggerXRechnungExport() {
+        let nonAlt = Array(positionen).filter { !LVPositionHelper.isAlternative($0) }
+        let missing = nonAlt.filter { pos in
+            let id = pos.objectID.uriRepresentation().absoluteString
+            return store.guenstigster(for: id) == nil
+        }.count
+        if missing > 0 {
+            xrMissingCount    = missing
+            showXRMissingAlert = true
+            return
+        }
+        doXRechnungExport()
+    }
+
+    private func doXRechnungExport() {
+        let data = XRechnungExporter.export(
+            event: event,
+            positionen: Array(positionen),
+            store: store
+        )
+        let title = (event.title ?? "Baustelle").replacingOccurrences(of: " ", with: "-")
+        writeAndShare(data: data, filename: "\(title)-XRechnung.xml")
     }
 
     private func writeAndShare(data: Data, filename: String) {
@@ -617,7 +654,7 @@ struct LVHelpView: View {
                     Text("Das Leistungsverzeichnis listet alle Bauleistungen strukturiert auf — mit Nummer, Beschreibung, Menge und Einheit.")
                 }
                 Section("Positionen") {
-                    Label("+ anlegen, Swipe-links bearbeiten, Swipe-rechts löschen", systemImage: "hand.point.left")
+                    Label("+  anlegen, Swipe-links bearbeiten, Swipe-rechts löschen", systemImage: "hand.point.left")
                     Label("Swipe-links: 'Alternative' erstellt Alternativposition (.A1, .A2 …)", systemImage: "doc.on.doc")
                     Label("Sortierung: DIN 276 Kostengruppe → Pos.-Nr.", systemImage: "list.number")
                 }
@@ -627,6 +664,13 @@ struct LVHelpView: View {
                     Label("Preisquelle für X84: günstigster Eintrag im Angebotsvergleich", systemImage: "tag.fill")
                     Label("Fehlende Preise → Warnung vor Export", systemImage: "exclamationmark.triangle")
                     Label("Encoding: UTF-8 und Windows-1252 werden erkannt", systemImage: "textformat")
+                }
+                Section("XRechnung (E-Rechnung)") {
+                    Label("⋯ → 'XRechnung exportieren': CII XML nach EN 16931 / XRechnung 2.2", systemImage: "eurosign.circle")
+                    Label("Preisquelle: günstigster Anbieter aus dem Angebotsvergleich", systemImage: "tag.fill")
+                    Label("MwSt. 19 % (Kategorie S), Währung EUR", systemImage: "percent")
+                    Label("Alternativpositionen werden nicht exportiert", systemImage: "doc.on.doc.fill")
+                    Label("Fehlende Preise → Warnung, Export mit EP = 0,00 € möglich", systemImage: "exclamationmark.triangle")
                 }
                 Section("PDF Import & Export") {
                     Label("⋯ → 'Aus PDF importieren': Heuristik-Parser für LV-PDFs", systemImage: "doc.text.magnifyingglass")
