@@ -8,8 +8,10 @@ struct MangelListeView: View {
     let event: Event
 
     @FetchRequest private var maengel: FetchedResults<Mangel>
-    @State private var zeigeErfassen = false
+    @State private var zeigeErfassen  = false
     @State private var statusFilter: MangelStatus? = nil
+    @State private var showPDFShare   = false
+    @State private var pdfURL: URL?
 
     init(event: Event) {
         self.event = event
@@ -49,6 +51,13 @@ struct MangelListeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { exportPDF() } label: {
+                        Image(systemName: "arrow.up.doc")
+                    }
+                    .tint(.red)
+                    .disabled(maengel.isEmpty)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         zeigeErfassen = true
                     } label: {
@@ -59,6 +68,9 @@ struct MangelListeView: View {
             .sheet(isPresented: $zeigeErfassen) {
                 MangelErfassenView(event: event)
                     .environment(\.managedObjectContext, ctx)
+            }
+            .sheet(isPresented: $showPDFShare) {
+                if let url = pdfURL { LVShareSheet(url: url).ignoresSafeArea() }
             }
         }
     }
@@ -106,6 +118,20 @@ struct MangelListeView: View {
                 }
             }
             .padding(.vertical, 6)
+        }
+    }
+
+    private func exportPDF() {
+        let data = MangelPDFExporter.generate(event: event, maengel: Array(maengel))
+        let fmt  = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        let name = "Mängelprotokoll-\(fmt.string(from: Date()))-\(event.title ?? "Baustelle")"
+            .replacingOccurrences(of: " ", with: "-")
+            .appending(".pdf")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        if (try? data.write(to: url)) != nil {
+            pdfURL = url
+            showPDFShare = true
         }
     }
 
