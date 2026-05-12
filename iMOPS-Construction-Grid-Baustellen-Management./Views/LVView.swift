@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreData
 import MessageUI
+import UIKit
 
 // MARK: - LV Hauptansicht
 
@@ -10,11 +11,13 @@ struct LVView: View {
 
     @FetchRequest private var positionen: FetchedResults<LVPosition>
 
-    @State private var showingAdd = false
+    @State private var showingAdd        = false
     @State private var editPosition: LVPosition?
-    @State private var showBestellliste = false
-    @State private var showHelp = false
+    @State private var showBestellliste  = false
+    @State private var showHelp          = false
     @State private var showMailUnavailable = false
+    @State private var showPDFShare      = false
+    @State private var generatedPDFURL: URL?
 
     init(event: Event) {
         self.event = event
@@ -96,6 +99,22 @@ struct LVView: View {
                 .disabled(positionen.isEmpty)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
+                    let name = "LV-\(event.title ?? "Baustelle")"
+                        .replacingOccurrences(of: " ", with: "-")
+                        .appending(".pdf")
+                    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+                    if (try? data.write(to: url)) != nil {
+                        generatedPDFURL = url
+                        showPDFShare    = true
+                    }
+                } label: {
+                    Label("PDF", systemImage: "arrow.up.doc")
+                }
+                .disabled(positionen.isEmpty)
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showingAdd = true } label: {
                     Image(systemName: "plus")
                 }
@@ -111,6 +130,11 @@ struct LVView: View {
         }
         .sheet(isPresented: $showBestellliste) {
             BestelllisteMailView(event: event, positionen: Array(positionen))
+        }
+        .sheet(isPresented: $showPDFShare) {
+            if let url = generatedPDFURL {
+                LVShareSheet(url: url).ignoresSafeArea()
+            }
         }
         .sheet(isPresented: $showHelp) {
             LVHelpView()
@@ -272,7 +296,7 @@ struct AddLVPositionView: View {
             .sheet(isPresented: $showKatalog) {
                 KatalogPickerSheet { entry in
                     artikelNummer = entry.code ?? ""
-                    if lieferant.isEmpty { lieferant = "Scharpegge" }
+                    if lieferant.isEmpty   { lieferant   = "Scharpegge" }
                     if bezeichnung.isEmpty { bezeichnung = entry.name ?? "" }
                 }
                 .environment(\.managedObjectContext, viewContext)
@@ -353,7 +377,7 @@ struct KatalogPickerSheet: View {
     @FetchRequest(
         sortDescriptors: [
             NSSortDescriptor(keyPath: \CDLexikonEntry.kategorie, ascending: true),
-            NSSortDescriptor(keyPath: \CDLexikonEntry.name, ascending: true)
+            NSSortDescriptor(keyPath: \CDLexikonEntry.name,      ascending: true)
         ]
     ) private var entries: FetchedResults<CDLexikonEntry>
 
@@ -363,8 +387,8 @@ struct KatalogPickerSheet: View {
         guard !search.isEmpty else { return Array(entries) }
         let q = search.lowercased()
         return entries.filter {
-            ($0.name ?? "").lowercased().contains(q) ||
-            ($0.code ?? "").lowercased().contains(q) ||
+            ($0.name      ?? "").lowercased().contains(q) ||
+            ($0.code      ?? "").lowercased().contains(q) ||
             ($0.kategorie ?? "").lowercased().contains(q)
         }
     }
@@ -410,6 +434,16 @@ struct KatalogPickerSheet: View {
     }
 }
 
+// MARK: - Share Sheet (PDF)
+
+struct LVShareSheet: UIViewControllerRepresentable {
+    let url: URL
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+}
+
 // MARK: - Hilfe LV
 
 struct LVHelpView: View {
@@ -435,9 +469,9 @@ struct LVHelpView: View {
                     Label("Tippe auf das Buch-Symbol um aus dem Scharpegge-Katalog zu wählen", systemImage: "books.vertical")
                     Label("Artikelnummer und Lieferant werden automatisch gefüllt", systemImage: "checkmark.circle")
                 }
-                Section("Bestellliste") {
-                    Label("Tippe auf ‘Bestellliste’ um eine Preisanfrage-Mail zu erstellen", systemImage: "envelope.badge")
-                    Label("Positionen werden nach Lieferant gruppiert", systemImage: "person.2")
+                Section("Bestellliste & PDF") {
+                    Label("Tippe auf 'Bestellliste' für eine Preisanfrage-Mail", systemImage: "envelope.badge")
+                    Label("Tippe auf 'PDF' um das LV als PDF zu exportieren und zu teilen", systemImage: "arrow.up.doc")
                     Label("Für Scharpegge: info@scharpegge.gmbh ist vorausgefüllt", systemImage: "envelope")
                 }
             }
