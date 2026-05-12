@@ -16,6 +16,7 @@ struct LVView: View {
     @State private var fortschrittPosition: LVPosition?
     @State private var showBestellliste      = false
     @State private var showAngebotsVergleich = false
+    @State private var showKostenübersicht   = false
     @State private var showImport            = false
     @State private var showGAEBImport        = false
     @State private var showHelp              = false
@@ -49,7 +50,6 @@ struct LVView: View {
         return dict.sorted { $0.key < $1.key }.map { (kg: $0.key, items: $0.value) }
     }
 
-    // Overall completion across all non-alternative positions (0–1)
     private var gesamtFortschritt: Double {
         let base = Array(positionen).filter { !LVPositionHelper.isAlternative($0) }
         guard !base.isEmpty else { return 0 }
@@ -77,7 +77,7 @@ struct LVView: View {
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(gesamtFortschritt >= 1 ? .green : .orange)
                                 Spacer()
-                                Text("\(Int(gesamtFortschritt * 100)) %")
+                                Text("\(Int(gesamtFortschritt * 100)) %")
                                     .font(.title3.weight(.bold).monospacedDigit())
                                     .foregroundStyle(gesamtFortschritt >= 1 ? .green : .orange)
                             }
@@ -143,6 +143,11 @@ struct LVView: View {
                         Label("Angebotsvergleich", systemImage: "chart.bar.doc.horizontal")
                     }
 
+                    Button { showKostenübersicht = true } label: {
+                        Label("Kostenzusammenfassung", systemImage: "chart.pie")
+                    }
+                    .disabled(positionen.isEmpty)
+
                     Divider()
 
                     // --- Exportieren ---
@@ -205,6 +210,9 @@ struct LVView: View {
         .sheet(isPresented: $showAngebotsVergleich) {
             AngebotsVergleichView(event: event, positionen: Array(positionen))
         }
+        .sheet(isPresented: $showKostenübersicht) {
+            KostenübersichtView(event: event, positionen: Array(positionen))
+        }
         .sheet(isPresented: $showImport) {
             LVImportView(event: event)
                 .environment(\.managedObjectContext, viewContext)
@@ -255,7 +263,6 @@ struct LVView: View {
             let summe = basis.reduce(0.0) { $0 + $1.menge }
             Text("\(summe.formatted(.number.precision(.fractionLength(0...2)))) ges.")
                 .font(.caption2).foregroundStyle(.secondary)
-            // KG average completion
             if !basis.isEmpty {
                 let avg = basis.map {
                     fortStore.fortschritt(
@@ -462,7 +469,6 @@ struct LVPositionRow: View {
                     Text(best.lieferant).font(.caption).foregroundStyle(.secondary)
                 }
             }
-            // Fortschritt bar
             if let f = fortStore.fortschritt(for: positionID), f.prozent > 0 {
                 HStack(spacing: 6) {
                     ProgressView(value: Double(f.prozent), total: 100)
@@ -524,7 +530,6 @@ struct LVFortschrittSheet: View {
                     }
                     .padding(.vertical, 4)
 
-                    // Quick-set Buttons
                     HStack(spacing: 6) {
                         ForEach([0, 25, 50, 75, 100], id: \.self) { v in
                             Button { prozent = Double(v) } label: {
@@ -830,13 +835,16 @@ struct LVHelpView: View {
                     Label("Fortschritt pro Position: Slider + Schnell-Buttons (0/25/50/75/100 %)", systemImage: "chart.bar.fill")
                     Label("Gesamtfortschritt-Banner oben in der Liste (Ø aller Positionen)", systemImage: "gauge.open.with.lines.needle.33percent")
                     Label("Ø-Fortschritt pro KG im Abschnitts-Header", systemImage: "list.number")
-                    Label("Gespeichert in lv_fortschritt.json (kein CoreData-Schema erforderlich)", systemImage: "externaldrive")
+                }
+                Section("Kostenzusammenfassung") {
+                    Label("⋯ → 'Kostenzusammenfassung': Netto/MwSt/Brutto + KG-Balken", systemImage: "chart.pie")
+                    Label("MwSt-Satz aus Settings (Standard: 19 %)", systemImage: "percent")
+                    Label("Fehlende Preise werden rot markiert", systemImage: "exclamationmark.triangle")
                 }
                 Section("GAEB DA XML 3.3") {
                     Label("⋯ → 'GAEB X83 importieren': Angebotsaufforderung einlesen", systemImage: "doc.badge.arrow.up")
                     Label("⋯ → 'GAEB X84 exportieren': bepreistes Angebot rausschreiben", systemImage: "signature")
                     Label("Preisquelle für X84: günstigster Eintrag im Angebotsvergleich", systemImage: "tag.fill")
-                    Label("Fehlende Preise → Warnung vor Export", systemImage: "exclamationmark.triangle")
                 }
                 Section("XRechnung (E-Rechnung)") {
                     Label("⋯ → 'XRechnung exportieren': CII XML nach EN 16931 / XRechnung 2.2", systemImage: "eurosign.circle")
