@@ -25,11 +25,9 @@ struct BuildIQView: View {
 
     var body: some View {
         ZStack {
-            // Kamera-Hintergrund
             ScannerDevicePreview(session: session)
                 .ignoresSafeArea()
 
-            // Scan-Rahmen
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(Color.orange, lineWidth: 3)
                 .frame(width: 300, height: 200)
@@ -43,14 +41,11 @@ struct BuildIQView: View {
                     alignment: .bottom
                 )
 
-            // Shutter-Blitz
             if shutterEffect {
                 Color.white.opacity(0.8).ignoresSafeArea()
             }
 
-            // UI-Ebene
             VStack {
-                // Header
                 HStack {
                     Button("Abbrechen") { dismiss() }
                         .padding(.horizontal, 14).padding(.vertical, 8)
@@ -85,7 +80,6 @@ struct BuildIQView: View {
 
                 Spacer()
 
-                // Analyse läuft
                 if isProcessing {
                     ProgressView("KI analysiert...")
                         .padding()
@@ -95,7 +89,6 @@ struct BuildIQView: View {
                         .padding(.bottom, 12)
                 }
 
-                // Fehlermeldung
                 if let err = errorMessage {
                     Text(err)
                         .font(.caption)
@@ -108,7 +101,6 @@ struct BuildIQView: View {
                         .padding(.bottom, 12)
                 }
 
-                // Ergebniskarte oder Auslöser
                 if let result = scanResult {
                     resultCard(result)
                         .padding(.horizontal)
@@ -228,7 +220,7 @@ struct BuildIQView: View {
         #if targetEnvironment(simulator)
         processText("Ytong Porenbeton PP2-0.4 240mm Wandbaustein Planblock Mauerwerk")
         #else
-        scannerVM.onImageCaptured = { image in
+        scannerVM.onImageCaptured = { (image: UIImage) in
             ocrService.performOCR(on: image) { observations in
                 let text = observations
                     .compactMap { $0.topCandidates(1).first?.string }

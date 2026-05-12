@@ -44,8 +44,7 @@ final class AddJobViewModel {
     var trainingMode: Bool = false
     var selectedTemplate: AuftragTemplate? = nil
 
-    // MARK: - Fehlerzustand (für die View)
-    /// Gesetzt wenn saveNewJob() oder die Validierung scheitert.
+    // MARK: - Fehlerzustand
     var lastViolation: RuleViolation? = nil
 
     init(event: Event, context: NSManagedObjectContext) {
@@ -65,12 +64,11 @@ final class AddJobViewModel {
         lineItems.removeAll { $0.id == item.id }
     }
 
-    /// Nutzt BauValidator statt manuellem String-Check.
     var isSaveButtonDisabled: Bool {
         if case .failure = BauValidator.validateAuftrag(
             id: orderNumber.isEmpty ? "_draft" : orderNumber,
             titel: taskSummary.trimmingCharacters(in: .whitespacesAndNewlines),
-            baustelle: event.eventName ?? station
+            baustelle: event.title ?? station
         ) { return true }
         return false
     }
@@ -80,11 +78,10 @@ final class AddJobViewModel {
     func saveNewJob() -> Bool {
         lastViolation = nil
 
-        // Validierung vor CoreData-Zugriff
         let validation = BauValidator.validateAuftrag(
             id: orderNumber.isEmpty ? "_draft" : orderNumber,
             titel: taskSummary.trimmingCharacters(in: .whitespacesAndNewlines),
-            baustelle: event.eventName ?? station
+            baustelle: event.title ?? station
         )
         if case .failure(let violation) = validation {
             lastViolation = violation

@@ -4,15 +4,12 @@
 //
 //  Created by Andreas Pelczer on 15.12.25.
 //
-//
 
 import Foundation
 import CoreData
 
-// FÜGEN SIE DIESE KLASSENDEFINITION HINZU
-@objc(Event) // Dies ist wichtig für Core Data
+@objc(Event)
 class Event: NSManagedObject {
-    // KEIN INHALT HIER, Properties kommen automatisch
 }
 
 extension Event {
@@ -37,6 +34,7 @@ extension Event {
     @NSManaged var baugenehmigungNr: String?
     @NSManaged var jobs: NSSet?
     @NSManaged var maengel: NSSet?
+    @NSManaged var lvPositionen: NSSet?
 
 }
 
@@ -74,6 +72,21 @@ extension Event {
 
 }
 
-extension Event : Identifiable {
+// MARK: Generated accessors for lvPositionen
+extension Event {
+
+    @objc(addLvPositionenObject:)
+    @NSManaged func addToLvPositionen(_ value: LVPosition)
+
+    @objc(removeLvPositionenObject:)
+    @NSManaged func removeFromLvPositionen(_ value: LVPosition)
+
+    @objc(addLvPositionen:)
+    @NSManaged func addToLvPositionen(_ values: NSSet)
+
+    @objc(removeLvPositionen:)
+    @NSManaged func removeFromLvPositionen(_ values: NSSet)
 
 }
+
+extension Event: Identifiable {}

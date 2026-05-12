@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Andreas Pelczer">
+    <meta name="description" content="iMOPS Construction Grid: Baustellen-Management-Software mit KI, DIN 276 Kostengruppen, Mängelmanagement und BuildIQ Scanner. Offline-First, iOS nativ.">
+    <meta name="keywords" content="Baustellen-Management, DIN 276, Kostengruppen, iOS, BuildIQ, Mängelmanagement, Bautagebuch, KI, Gemini">
+    <meta property="og:title" content="iMOPS Construction Grid – Baustellen-Management mit KI">
+    <meta property="og:description" content="Deterministisches Baustellen-Management für Menschen auf der Baustelle. Kein Büro-Tool – ein Steuerungssystem.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pelczer.de/baustellen-grid.html">
+    <title>iMOPS Construction Grid – Baustellen-Management mit KI</title>
+    <style>
+        :root {
+            --orange: #E8650A;
+            --orange-dark: #C4540A;
+            --orange-light: #FF8C42;
+            --black: #0A0A0A;
+            --dark: #111111;
+            --dark2: #1A1A1A;
+            --dark3: #242424;
+            --gray: #888888;
+            --gray-light: #CCCCCC;
+            --white: #F5F5F5;
+            --font-display: 'Georgia', 'Times New Roman', serif;
+            --font-mono: 'Courier New', monospace;
+            --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--black);
+            color: var(--white);
+            font-family: var(--font-body);
+            font-size: 16px;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        nav {
+            position: fixed; top: 0; width: 100%; z-index: 100;
+            background: rgba(10,10,10,0.95);
+            border-bottom: 1px solid var(--dark3);
+            padding: 0 2rem;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 56px; backdrop-filter: blur(10px);
+        }
+        .nav-brand { font-family: var(--font-mono); font-size: 0.85rem; color: var(--orange); text-decoration: none; letter-spacing: 0.05em; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a { color: var(--gray-light); text-decoration: none; font-size: 0.85rem; letter-spacing: 0.03em; transition: color 0.2s; }
+        .nav-links a:hover { color: var(--orange); }
+
+        .hero {
+            min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+            padding: 8rem 4rem 4rem; position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 80% 50%, rgba(232,101,10,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 60% at 10% 80%, rgba(232,101,10,0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .hero-tag { font-family: var(--font-mono); font-size: 0.75rem; color: var(--orange); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 1.5rem; opacity: 0; animation: fadeUp 0.6s ease forwards 0.2s; }
+        .hero h1 { font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 5rem); font-weight: normal; line-height: 1.1; max-width: 800px; margin-bottom: 1.5rem; opacity: 0; animation: fadeUp 0.6s ease forwards 0.4s; }
+        .hero h1 em { font-style: italic; color: var(--orange); }
+        .hero-sub { font-size: 1.1rem; color: var(--gray); max-width: 560px; margin-bottom: 3rem; opacity: 0; animation: fadeUp 0.6s ease forwards 0.6s; }
+        .badge-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 3rem; opacity: 0; animation: fadeUp 0.6s ease forwards 0.8s; }
+        .badge { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; padding: 0.3rem 0.8rem; border: 1px solid var(--dark3); color: var(--gray-light); background: var(--dark2); }
+        .badge.highlight { border-color: var(--orange); color: var(--orange); background: rgba(232,101,10,0.08); }
+        .cta-row { display: flex; gap: 1rem; flex-wrap: wrap; opacity: 0; animation: fadeUp 0.6s ease forwards 1s; }
+        .btn { display: inline-block; padding: 0.75rem 1.75rem; font-size: 0.85rem; letter-spacing: 0.05em; text-decoration: none; transition: all 0.2s; font-family: var(--font-mono); }
+        .btn-primary { background: var(--orange); color: var(--black); }
+        .btn-primary:hover { background: var(--orange-light); }
+        .btn-secondary { border: 1px solid var(--dark3); color: var(--gray-light); }
+        .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+
+        section { padding: 6rem 4rem; border-top: 1px solid var(--dark3); }
+        .section-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--orange); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 1rem; }
+        h2 { font-family: var(--font-display); font-size: clamp(1.8rem, 3vw, 2.8rem); font-weight: normal; margin-bottom: 1rem; }
+        .section-intro { color: var(--gray); max-width: 560px; margin-bottom: 4rem; font-size: 1rem; }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; max-width: 900px; }
+        .not-list, .is-list { list-style: none; }
+        .not-list h3 { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.1em; color: var(--gray); margin-bottom: 1rem; text-transform: uppercase; }
+        .is-list h3 { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.1em; color: var(--orange); margin-bottom: 1rem; text-transform: uppercase; }
+        .not-list li, .is-list li { padding: 0.5rem 0; border-bottom: 1px solid var(--dark3); font-size: 0.9rem; color: var(--gray-light); display: flex; align-items: center; gap: 0.5rem; }
+        .not-list li::before { content: '✗'; color: var(--gray); }
+        .is-list li::before { content: '✓'; color: var(--orange); }
+
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; background: var(--dark3); }
+        .feature-card { background: var(--dark); padding: 2.5rem; transition: background 0.2s; }
+        .feature-card:hover { background: var(--dark2); }
+        .feature-icon { font-size: 1.5rem; margin-bottom: 1.5rem; display: block; }
+        .feature-card h3 { font-family: var(--font-display); font-size: 1.1rem; font-weight: normal; margin-bottom: 0.75rem; }
+        .feature-card p { color: var(--gray); font-size: 0.875rem; line-height: 1.6; }
+
+        .arch-box { font-family: var(--font-mono); font-size: 0.8rem; background: var(--dark2); border: 1px solid var(--dark3); padding: 2rem; line-height: 1.8; color: var(--gray-light); max-width: 600px; margin-bottom: 3rem; white-space: pre; overflow-x: auto; }
+        .arch-box .hl { color: var(--orange); }
+
+        .phil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 800px; }
+        .phil-card { border: 1px solid var(--dark3); padding: 2rem; background: var(--dark2); }
+        .phil-card h3 { font-family: var(--font-mono); font-size: 0.8rem; color: var(--orange); letter-spacing: 0.08em; margin-bottom: 0.75rem; text-transform: uppercase; }
+        .phil-card p { color: var(--gray); font-size: 0.875rem; line-height: 1.7; }
+
+        .supplier-box { display: grid; grid-template-columns: 1fr 2fr; gap: 4rem; align-items: start; max-width: 900px; }
+        .supplier-info h3 { font-family: var(--font-display); font-size: 1.3rem; font-weight: normal; margin-bottom: 0.5rem; }
+        .supplier-info p { color: var(--gray); font-size: 0.875rem; margin-bottom: 1rem; }
+        .supplier-info a { color: var(--orange); font-size: 0.8rem; font-family: var(--font-mono); text-decoration: none; }
+        .supplier-cats { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .cat-tag { font-family: var(--font-mono); font-size: 0.7rem; padding: 0.25rem 0.6rem; border: 1px solid var(--dark3); color: var(--gray); letter-spacing: 0.05em; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; max-width: 900px; }
+        th { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray); padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--dark3); }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--dark3); color: var(--gray-light); }
+        td:first-child { color: var(--white); }
+        .status-ok { color: #4CAF50; font-family: var(--font-mono); font-size: 0.75rem; }
+        .status-wip { color: var(--orange); font-family: var(--font-mono); font-size: 0.75rem; }
+
+        .target-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--dark3); max-width: 900px; }
+        .target-card { background: var(--dark); padding: 2rem; text-align: center; }
+        .target-card .icon { font-size: 2rem; display: block; margin-bottom: 1rem; }
+        .target-card h3 { font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .target-card p { color: var(--gray); font-size: 0.8rem; }
+
+        .ki-flow { display: flex; flex-direction: column; gap: 0; max-width: 500px; margin-bottom: 3rem; }
+        .ki-node { background: var(--dark2); border: 1px solid var(--dark3); padding: 1.25rem 1.75rem; display: flex; align-items: center; gap: 1rem; }
+        .ki-node.highlight { border-color: var(--orange); background: rgba(232,101,10,0.05); }
+        .ki-node-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--orange); letter-spacing: 0.08em; text-transform: uppercase; min-width: 120px; }
+        .ki-node-desc { font-size: 0.85rem; color: var(--gray); }
+        .ki-arrow { text-align: center; font-size: 1.2rem; padding: 0.25rem 0; font-family: var(--font-mono); color: var(--gray); }
+
+        .cta-section { text-align: center; padding: 8rem 4rem; }
+        .cta-section h2 { margin-bottom: 1rem; }
+        .cta-section p { color: var(--gray); margin-bottom: 2.5rem; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+        footer { border-top: 1px solid var(--dark3); padding: 2rem 4rem; display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.75rem; color: var(--gray); }
+        footer a { color: var(--gray); text-decoration: none; }
+        footer a:hover { color: var(--orange); }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) {
+            nav { padding: 0 1rem; }
+            .nav-links { display: none; }
+            .hero { padding: 6rem 1.5rem 3rem; }
+            section { padding: 4rem 1.5rem; }
+            .two-col { grid-template-columns: 1fr; gap: 2rem; }
+            .phil-grid { grid-template-columns: 1fr; }
+            .supplier-box { grid-template-columns: 1fr; gap: 2rem; }
+            footer { flex-direction: column; gap: 1rem; text-align: center; }
+            .arch-box { font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="https://pelczer.de" class="nav-brand">iMOPS Construction Grid</a>
+    <ul class="nav-links">
+        <li><a href="#features">Funktionen</a></li>
+        <li><a href="#architektur">Architektur</a></li>
+        <li><a href="#philosophie">Philosophie</a></li>
+        <li><a href="#lieferanten">Lieferanten</a></li>
+        <li><a href="#compliance">Compliance</a></li>
+        <li><a href="https://pelczer.de/gastro-grid.html">Gastro Grid</a></li>
+        <li><a href="https://github.com/AndreasPelczer/iMOPS-Construction-Grid-Baustellen-Management">GitHub</a></li>
+    </ul>
+</nav>
+
+<section class="hero">
+    <p class="hero-tag">B.I.N.D.A. Verlag · iMOPS Series · 2026</p>
+    <h1>Baustellen-Management<br>für <em>Menschen unter Druck.</em></h1>
+    <p class="hero-sub">Kein Büro-Tool. Ein deterministisches Steuerungssystem — für Bauleiter, Poliere und Handwerker die lieber bauen als tippen.</p>
+    <div class="badge-row">
+        <span class="badge highlight">iOS nativ</span>
+        <span class="badge highlight">Offline-First</span>
+        <span class="badge highlight">DIN 276</span>
+        <span class="badge highlight">BuildIQ KI</span>
+        <span class="badge">100% Swift</span>
+        <span class="badge">CoreData v2</span>
+        <span class="badge">Gemini 2.0 Flash</span>
+        <span class="badge">PDF-Export</span>
+    </div>
+    <div class="cta-row">
+        <a href="https://github.com/AndreasPelczer/iMOPS-Construction-Grid-Baustellen-Management" class="btn btn-primary">GitHub Repository</a>
+        <a href="https://pelczer.de/gastro-grid.html" class="btn btn-secondary">Gastro Grid ansehen</a>
+        <a href="mailto:a.pelczer@outlook.de" class="btn btn-secondary">Kontakt</a>
+    </div>
+</section>
+
+<section id="was">
+    <p class="section-label">Grundprinzip</p>
+    <h2>Was ist iMOPS Construction Grid?</h2>
+    <p class="section-intro">Deterministisches Baustellen-Management für Menschen die draußen stehen, nicht im Büro.</p>
+    <div class="two-col">
+        <ul class="not-list">
+            <h3>Was es NICHT ist</h3>
+            <li>Kein Excel-Ersatz</li>
+            <li>Keine Papier-Digitalisierung</li>
+            <li>Kein Reporting-Tool für Chefs</li>
+            <li>Kein Überwachungssystem</li>
+        </ul>
+        <ul class="is-list">
+            <h3>Was es IST</h3>
+            <li>Deterministisches Steuerungssystem</li>
+            <li>KI-gestützte Materialdokumentation</li>
+            <li>Rechtssicheres Bautagebuch</li>
+            <li>Werkzeug das Arbeiter schützt</li>
+        </ul>
+    </div>
+</section>
+
+<section id="features">
+    <p class="section-label">Kernfunktionen</p>
+    <h2>Alles was eine Baustelle braucht.</h2>
+    <p class="section-intro">Von der Kostengruppe bis zum Mängelfoto — offline, auf dem iPhone, auf der Baustelle.</p>
+    <div class="features-grid">
+        <div class="feature-card"><span class="feature-icon">🏗️</span><h3>Baustellen-Management</h3><p>Baustellen anlegen mit Bauherr, Architekt, Baugenehmigungsnummer, Adresse und Zeitplan. Aufträge mit DIN 276 Kostengruppen, Status-Workflow und Deadlines. Echtzeit-Fortschrittsanzeige pro Baustelle.</p></div>
+        <div class="feature-card"><span class="feature-icon">🤖</span><h3>BuildIQ — KI-Scanner</h3><p>Kamera auf Lieferschein oder Material → Vision OCR liest den Text → Gemini 2.0 Flash erkennt das Material → DIN 276 Kostengruppe wird automatisch zugewiesen. Konfidenz-Anzeige hoch/mittel/niedrig.</p></div>
+        <div class="feature-card"><span class="feature-icon">📋</span><h3>Mängelmanagement</h3><p>Mängel mit Foto, Beschreibung, Schweregrad (Gering/Mittel/Kritisch), Gewerk und Frist erfassen. Status-Workflow: Offen → In Arbeit → Behoben → Abgenommen. Basis für Versicherungsdokumentation.</p></div>
+        <div class="feature-card"><span class="feature-icon">📖</span><h3>Bautagebuch</h3><p>Tageseintrag mit Wetter, Personal, erledigten Leistungen. Automatische Wetterwarnung bei kritischen Bedingungen (Wind ≥ 50 km/h, Frost, Hitze). Rechtssicher, exportierbar als PDF.</p></div>
+        <div class="feature-card"><span class="feature-icon">📄</span><h3>Leistungsverzeichnis (LV)</h3><p>LV-Positionen nach DIN 276 anlegen mit Pos.-Nr., Bezeichnung, Menge und Einheit. Direkt aus dem Scharpegge-Katalog befüllen. Bestellliste als strukturierte Preisanfrage-Mail an Lieferanten — ein Tipp.</p></div>
+        <div class="feature-card"><span class="feature-icon">☁️</span><h3>Wetterbericht</h3><p>OpenWeatherMap Integration mit Baustellen-Ampel: Grün/Gelb/Rot. Automatische Frühwarnung für alle Mitarbeiter bei gefährlichen Bedingungen. Bezug zu DIN-Arbeitsschutzregeln.</p></div>
+        <div class="feature-card"><span class="feature-icon">📚</span><h3>Material-Katalog</h3><p>255+ Artikel aus dem Scharpegge Katalog 2024/2025 eingebunden. Kategorien: Abdichtung, Dämmung, Fugenbänder, Kellerfenster, Lichtschächte, Isokorb und mehr. Suche und Filterung.</p></div>
+        <div class="feature-card"><span class="feature-icon">👷</span><h3>Crew-Planung</h3><p>Mitarbeiter verwalten mit Rolle, Telefon und Status. Aufträge direkt Mitarbeitern zuweisen. Push Notifications bei Mangel-Fristen, Auftrags-Deadlines und Fertigstellungsterminen.</p></div>
+        <div class="feature-card"><span class="feature-icon">🔔</span><h3>Push Notifications</h3><p>Automatische Erinnerungen: Mangel-Frist Tag vorher und am Tag (08:00 Uhr). Auftrags-Deadline Tag vorher. Baustellen-Fertigstellung 3 Tage vorher. Wird bei jedem CoreData-Save neu geplant.</p></div>
+    </div>
+</section>
+
+<section id="architektur">
+    <p class="section-label">Architektur</p>
+    <h2>CoreData v2. Kein Küchen-Code.</h2>
+    <p class="section-intro">Saubere Domain-Trennung. Baustellen-Logik von Grund auf — kein Umbau, kein Kompromiss.</p>
+    <div class="arch-box"><span class="hl">┌─────────────────────────────────────────────────┐</span>
+<span class="hl">│</span>              UI Layer (SwiftUI)                 <span class="hl">│</span>
+<span class="hl">│</span>   ContentView · EventDetail · BuildIQView       <span class="hl">│</span>
+<span class="hl">├─────────────────────────────────────────────────┤</span>
+<span class="hl">│</span>           ViewModels (MVVM)                      <span class="hl">│</span>
+<span class="hl">│</span>   EventListVM · AddJobVM · BuildIQService        <span class="hl">│</span>
+<span class="hl">├────────────────────┬────────────────────────────┤</span>
+<span class="hl">│</span>  CoreData v2       <span class="hl">│</span>  Services                  <span class="hl">│</span>
+<span class="hl">│</span>  Event / Auftrag   <span class="hl">│</span>  PDF · Notif · Wetter       <span class="hl">│</span>
+<span class="hl">│</span>  Mangel / LVPos    <span class="hl">│</span>  BuildIQ · Scharpegge      <span class="hl">│</span>
+<span class="hl">├────────────────────┴────────────────────────────┤</span>
+<span class="hl">│</span>         KI-Schicht (Hybrid)                      <span class="hl">│</span>
+<span class="hl">│</span>  Gemini 2.0 Flash · Der Mops · Claude API        <span class="hl">│</span>
+<span class="hl">└─────────────────────────────────────────────────┘</span></div>
+    <p style="color: var(--gray); font-size: 0.875rem; max-width: 560px;">100% Swift. Offline-First. CoreData v2 ohne Legacy-Ballast. KI-Hybrid: lokale Aufgaben über Der Mops (Phi-3 Mini), komplexe Analysen über Claude API — 90% kostenlos, 10% bezahlt.</p>
+</section>
+
+<section id="ki">
+    <p class="section-label">KI-Hybrid Architektur</p>
+    <h2>Der Mops trifft Claude.</h2>
+    <p class="section-intro">Zwei KI-Systeme. Einer entscheidet wer antwortet.</p>
+    <div class="ki-flow">
+        <div class="ki-node"><span class="ki-node-label">iMOPS App</span><span class="ki-node-desc">Anfrage vom Bauleiter oder Handwerker</span></div>
+        <div class="ki-arrow">↓</div>
+        <div class="ki-node highlight"><span class="ki-node-label">Der Mops</span><span class="ki-node-desc">Phi-3 Mini · lokal · offline · kostenlos</span></div>
+        <div class="ki-arrow">↓ wenn zu komplex</div>
+        <div class="ki-node"><span class="ki-node-label">Claude API</span><span class="ki-node-desc">claude-sonnet-4-6 · komplexe Analysen</span></div>
+        <div class="ki-arrow">↓</div>
+        <div class="ki-node"><span class="ki-node-label">Antwort</span><span class="ki-node-desc">Zurück in die App · persistent gespeichert</span></div>
+    </div>
+    <p style="color: var(--gray); font-size: 0.875rem; max-width: 560px;">Der Mops läuft auf dem lokalen Gaming-PC (i5-3470, 16GB RAM). Er entscheidet selbst ob er antwortet oder eskaliert — Router-Pattern, keine feste Regel.</p>
+</section>
+
+<section id="philosophie">
+    <p class="section-label">Philosophie</p>
+    <h2>Systeme die schützen, nicht überwachen.</h2>
+    <p class="section-intro">Dieselbe Philosophie wie im Gastro Grid — andere Domäne, selbe Haltung.</p>
+    <div class="phil-grid">
+        <div class="phil-card"><h3>BourdainGuard</h3><p>Erkennt Erschöpfungs-Muster. Wer 6 Tage am Stück arbeitet, wer immer auf schwere Gewerke gesetzt wird, wer Überstunden häuft — bekommt eine stille Warnung. Nicht der Chef. Der Mitarbeiter selbst. Krisennummer direkt in der App.</p></div>
+        <div class="phil-card"><h3>MenschMeierModus</h3><p>Absichtliche Ungenauigkeit in der Zeiterfassung. ±15 Minuten Jitter — niemand wird aufs Klo getimert. Stundenzettel werden auf halbe Stunden gerundet. Würde des Arbeiters schlägt Effizienz-Optimierung.</p></div>
+        <div class="phil-card"><h3>MUMPS-Erbe</h3><p>Inspiriert von MUMPS/Globals — der Datenbankarchitektur aus dem Krankenhaus-Mainframe. Der Vater war Programmierer. iMOPS trägt das in sich: deterministisch, persistent, ausfallsicher.</p></div>
+        <div class="phil-card"><h3>Offline-First</h3><p>Auf der Baustelle gibt es kein WLAN. Deshalb funktioniert alles offline. BuildIQ läuft auf dem Gerät. Der Mops läuft lokal. Keine Cloud-Abhängigkeit für Kernfunktionen.</p></div>
+    </div>
+</section>
+
+<section id="lieferanten">
+    <p class="section-label">Material-Katalog</p>
+    <h2>Scharpegge 2024/2025 — vollständig eingebunden.</h2>
+    <p class="section-intro">255+ Artikel direkt in der App. Kein Blättern im PDF-Katalog.</p>
+    <div class="supplier-box">
+        <div class="supplier-info">
+            <h3>M. Juls Scharpegge</h3>
+            <p>Bautenschutz &amp; Isolierstoffe<br>Am Grundlosen Brunnen 1<br>63916 Amorbach</p>
+            <a href="https://bautenschutz-scharpegge.de" target="_blank">bautenschutz-scharpegge.de →</a>
+        </div>
+        <div class="supplier-cats">
+            <span class="cat-tag">Abdichtung</span><span class="cat-tag">Dichtschlämmen</span><span class="cat-tag">Vergussmörtel</span><span class="cat-tag">Fugenbleche</span><span class="cat-tag">Fugenbänder</span><span class="cat-tag">Quellbänder</span><span class="cat-tag">Injektionsmittel</span><span class="cat-tag">Trennmittel</span><span class="cat-tag">Betonsanierung</span><span class="cat-tag">Rohrdurchführungen</span><span class="cat-tag">Hauseinführungen</span><span class="cat-tag">Elastomerlager</span><span class="cat-tag">Kellerfenster</span><span class="cat-tag">Lichtschächte</span><span class="cat-tag">Isokörbe</span><span class="cat-tag">Abstandhalter</span><span class="cat-tag">LOHR-Elemente</span><span class="cat-tag">Geotextilien</span><span class="cat-tag">Erdungsband</span><span class="cat-tag">Styrodur/EPS</span><span class="cat-tag">Schalrohre</span><span class="cat-tag">Betonnachbehandlung</span>
+        </div>
+    </div>
+</section>
+
+<section id="compliance">
+    <p class="section-label">Standards &amp; Normen</p>
+    <h2>DIN 276. VOB. Baurecht.</h2>
+    <p class="section-intro">Alle relevanten Standards für die deutsche Baustelle.</p>
+    <table>
+        <thead><tr><th>Standard / Anforderung</th><th>Status</th><th>Details</th></tr></thead>
+        <tbody>
+            <tr><td>DIN 276 Kostengruppen</td><td><span class="status-ok">✓ Erfüllt</span></td><td>KG 100–700 vollständig, BuildIQ-Erkennung</td></tr>
+            <tr><td>Bautagebuch (VOB)</td><td><span class="status-ok">✓ Erfüllt</span></td><td>Tageseintrag, Wetter, Personal, PDF-Export</td></tr>
+            <tr><td>Mängeldokumentation</td><td><span class="status-ok">✓ Erfüllt</span></td><td>Foto, Frist, Status-Workflow, PDF-Export</td></tr>
+            <tr><td>Leistungsverzeichnis (LV)</td><td><span class="status-ok">✓ Erfüllt</span></td><td>DIN 276 Positionen, Bestellliste, Katalog-Zuordnung</td></tr>
+            <tr><td>Push Notifications Fristen</td><td><span class="status-ok">✓ Erfüllt</span></td><td>Mangel, Deadline, Fertigstellung</td></tr>
+            <tr><td>Offline-Fähigkeit</td><td><span class="status-ok">✓ Erfüllt</span></td><td>Alle Kernfunktionen ohne WLAN</td></tr>
+            <tr><td>Wetter-Arbeitsschutz</td><td><span class="status-ok">✓ Erfüllt</span></td><td>DIN-Grenzwerte, Ampel-System, Frühwarnung</td></tr>
+            <tr><td>BourdainGuard</td><td><span class="status-wip">⧖ In Arbeit</span></td><td>Erschöpfungs-Erkennung, Krisennummer</td></tr>
+            <tr><td>MenschMeierModus</td><td><span class="status-wip">⧖ In Arbeit</span></td><td>Jitter ±15 Min, Halbstunden-Rundung</td></tr>
+            <tr><td>DSGVO-Konformität</td><td><span class="status-wip">⧖ In Arbeit</span></td><td>Datenschutzerklärung, Löschrechte</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<section id="fuer-wen">
+    <p class="section-label">Zielgruppe</p>
+    <h2>Für wen?</h2>
+    <p class="section-intro">Für alle die draußen stehen und nicht im Büro tippen wollen.</p>
+    <div class="target-grid">
+        <div class="target-card"><span class="icon">👷</span><h3>Bauleiter</h3><p>Aufträge, Mängel, Bautagebuch — alles auf dem iPhone</p></div>
+        <div class="target-card"><span class="icon">🏗️</span><h3>Poliere</h3><p>Crew-Planung, Stundenzettel, KG-Zuordnung</p></div>
+        <div class="target-card"><span class="icon">🏢</span><h3>Architekturbüros</h3><p>Kostenkontrolle DIN 276, Mängelmanagement</p></div>
+        <div class="target-card"><span class="icon">🔨</span><h3>Handwerker</h3><p>Material scannen, Auftrag anlegen, fertig</p></div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <p class="section-label">Jetzt starten</p>
+    <h2>Bereit für die Baustelle?</h2>
+    <p>iMOPS Construction Grid ist in aktiver Entwicklung. Melde dich direkt für mehr Informationen oder schau ins Repository.</p>
+    <div class="cta-row" style="justify-content: center;">
+        <a href="https://github.com/AndreasPelczer/iMOPS-Construction-Grid-Baustellen-Management" class="btn btn-primary">GitHub Repository</a>
+        <a href="mailto:a.pelczer@outlook.de" class="btn btn-secondary">Kontakt aufnehmen</a>
+        <a href="https://pelczer.de/gastro-grid.html" class="btn btn-secondary">Gastro Grid →</a>
+    </div>
+</section>
+
+<footer>
+    <span>&copy; 2026 Andreas Pelczer · B.I.N.D.A. Verlag · Wertheim 97877</span>
+    <span><a href="https://pelczer.de">pelczer.de</a> · <a href="https://github.com/AndreasPelczer">GitHub</a> · <a href="mailto:a.pelczer@outlook.de">a.pelczer@outlook.de</a></span>
+</footer>
+
+</body>
+</html>

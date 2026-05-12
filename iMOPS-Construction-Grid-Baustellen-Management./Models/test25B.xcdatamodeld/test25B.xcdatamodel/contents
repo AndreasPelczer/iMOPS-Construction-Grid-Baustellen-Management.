@@ -71,6 +71,17 @@
         <attribute name="baugenehmigungNr" optional="YES" attributeType="String"/>
         <relationship name="jobs" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="event" inverseEntity="Auftrag"/>
         <relationship name="maengel" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Mangel" inverseName="event" inverseEntity="Mangel"/>
+        <relationship name="lvPositionen" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="LVPosition" inverseName="event" inverseEntity="LVPosition"/>
+    </entity>
+    <entity name="LVPosition" representedClassName="LVPosition" syncable="YES">
+        <attribute name="posNr" optional="YES" attributeType="String"/>
+        <attribute name="bezeichnung" optional="YES" attributeType="String"/>
+        <attribute name="menge" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
+        <attribute name="artikelNummer" optional="YES" attributeType="String"/>
+        <attribute name="lieferant" optional="YES" attributeType="String"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="lvPositionen" inverseEntity="Event"/>
     </entity>
     <entity name="Mangel" representedClassName="Mangel" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
