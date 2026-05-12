@@ -13,6 +13,7 @@ struct LVView: View {
 
     @State private var showingAdd            = false
     @State private var editPosition: LVPosition?
+    @State private var fortschrittPosition: LVPosition?
     @State private var showBestellliste      = false
     @State private var showAngebotsVergleich = false
     @State private var showImport            = false
@@ -22,13 +23,14 @@ struct LVView: View {
     @State private var exportURL: URL?
     // GAEB X84 – Warnung wenn Preise fehlen
     @State private var showMissingPricesAlert = false
-    @State private var missingPricesCount = 0
+    @State private var missingPricesCount    = 0
     @State private var pendingExportFormat: GAEBExportFormat?
     // XRechnung – Warnung wenn Preise fehlen
-    @State private var showXRMissingAlert  = false
-    @State private var xrMissingCount      = 0
+    @State private var showXRMissingAlert    = false
+    @State private var xrMissingCount        = 0
 
-    @StateObject private var store = AngebotsStore.shared
+    @StateObject private var store      = AngebotsStore.shared
+    @StateObject private var fortStore  = LVFortschrittStore.shared
 
     init(event: Event) {
         self.event = event
@@ -47,6 +49,16 @@ struct LVView: View {
         return dict.sorted { $0.key < $1.key }.map { (kg: $0.key, items: $0.value) }
     }
 
+    // Overall completion across all non-alternative positions (0–1)
+    private var gesamtFortschritt: Double {
+        let base = Array(positionen).filter { !LVPositionHelper.isAlternative($0) }
+        guard !base.isEmpty else { return 0 }
+        let sum = base.map {
+            fortStore.fortschritt(for: $0.objectID.uriRepresentation().absoluteString)?.prozent ?? 0
+        }.reduce(0, +)
+        return Double(sum) / Double(base.count) / 100.0
+    }
+
     var body: some View {
         List {
             if positionen.isEmpty {
@@ -56,6 +68,27 @@ struct LVView: View {
                     description: Text("Tippe auf + oder importiere ein LV.")
                 )
             } else {
+                // Gesamtfortschritt banner
+                if gesamtFortschritt > 0 {
+                    Section {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Label("Gesamtfortschritt", systemImage: "chart.bar.fill")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(gesamtFortschritt >= 1 ? .green : .orange)
+                                Spacer()
+                                Text("\(Int(gesamtFortschritt * 100)) %")
+                                    .font(.title3.weight(.bold).monospacedDigit())
+                                    .foregroundStyle(gesamtFortschritt >= 1 ? .green : .orange)
+                            }
+                            ProgressView(value: gesamtFortschritt)
+                                .progressViewStyle(.linear)
+                                .tint(gesamtFortschritt >= 1 ? .green : .orange)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
                 ForEach(grouped, id: \.kg) { gruppe in
                     Section {
                         ForEach(gruppe.items, id: \.objectID) { pos in
@@ -76,24 +109,14 @@ struct LVView: View {
                                         Label("Alternative", systemImage: "doc.on.doc")
                                     }
                                     .tint(.blue)
+                                    Button { fortschrittPosition = pos } label: {
+                                        Label("Fortschritt", systemImage: "chart.bar")
+                                    }
+                                    .tint(.green)
                                 }
                         }
                     } header: {
-                        HStack {
-                            Text("KG \(gruppe.kg) – \(dinBezeichnung(gruppe.kg))")
-                                .font(.caption.weight(.semibold))
-                            Spacer()
-                            let basis    = gruppe.items.filter { !LVPositionHelper.isAlternative($0) }
-                            let altCount = gruppe.items.count - basis.count
-                            if altCount > 0 {
-                                Text("\(altCount) Alt.")
-                                    .font(.caption2).foregroundStyle(.blue)
-                                Text("·").foregroundStyle(.secondary).font(.caption2)
-                            }
-                            let summe = basis.reduce(0.0) { $0 + $1.menge }
-                            Text("\(summe.formatted(.number.precision(.fractionLength(0...2)))) ges.")
-                                .font(.caption2).foregroundStyle(.secondary)
-                        }
+                        kgHeader(gruppe)
                     }
                 }
             }
@@ -173,6 +196,9 @@ struct LVView: View {
             AddLVPositionView(event: event, editPosition: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
+        .sheet(item: $fortschrittPosition) { pos in
+            LVFortschrittSheet(position: pos)
+        }
         .sheet(isPresented: $showBestellliste) {
             LieferantenBestelllisteView(event: event, positionen: Array(positionen))
         }
@@ -208,6 +234,40 @@ struct LVView: View {
             Button("Abbrechen", role: .cancel) { }
         } message: {
             Text("\(xrMissingCount) Position\(xrMissingCount == 1 ? " hat" : "en haben") noch keinen Preis im Angebotsvergleich. Die XRechnung wird mit EP = 0,00 € exportiert.")
+        }
+    }
+
+    // MARK: - KG Section Header
+
+    @ViewBuilder
+    private func kgHeader(_ gruppe: (kg: String, items: [LVPosition])) -> some View {
+        HStack {
+            Text("KG \(gruppe.kg) – \(dinBezeichnung(gruppe.kg))")
+                .font(.caption.weight(.semibold))
+            Spacer()
+            let basis    = gruppe.items.filter { !LVPositionHelper.isAlternative($0) }
+            let altCount = gruppe.items.count - basis.count
+            if altCount > 0 {
+                Text("\(altCount) Alt.")
+                    .font(.caption2).foregroundStyle(.blue)
+                Text("·").foregroundStyle(.secondary).font(.caption2)
+            }
+            let summe = basis.reduce(0.0) { $0 + $1.menge }
+            Text("\(summe.formatted(.number.precision(.fractionLength(0...2)))) ges.")
+                .font(.caption2).foregroundStyle(.secondary)
+            // KG average completion
+            if !basis.isEmpty {
+                let avg = basis.map {
+                    fortStore.fortschritt(
+                        for: $0.objectID.uriRepresentation().absoluteString)?.prozent ?? 0
+                }.reduce(0, +) / basis.count
+                if avg > 0 {
+                    Text("·").foregroundStyle(.secondary).font(.caption2)
+                    Text("ø \(avg)%")
+                        .font(.caption2)
+                        .foregroundStyle(avg == 100 ? .green : .orange)
+                }
+            }
         }
     }
 
@@ -358,7 +418,8 @@ enum LVPositionHelper {
 
 struct LVPositionRow: View {
     @ObservedObject var position: LVPosition
-    @StateObject private var store = AngebotsStore.shared
+    @StateObject private var store      = AngebotsStore.shared
+    @StateObject private var fortStore  = LVFortschrittStore.shared
 
     private var positionID: String { position.objectID.uriRepresentation().absoluteString }
     private var isAlt: Bool { LVPositionHelper.isAlternative(position) }
@@ -401,9 +462,115 @@ struct LVPositionRow: View {
                     Text(best.lieferant).font(.caption).foregroundStyle(.secondary)
                 }
             }
+            // Fortschritt bar
+            if let f = fortStore.fortschritt(for: positionID), f.prozent > 0 {
+                HStack(spacing: 6) {
+                    ProgressView(value: Double(f.prozent), total: 100)
+                        .progressViewStyle(.linear)
+                        .tint(f.prozent == 100 ? .green : .orange)
+                    Text("\(f.prozent) %")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(f.prozent == 100 ? .green : .orange)
+                        .frame(width: 38, alignment: .trailing)
+                }
+            }
         }
         .padding(.vertical, 2)
         .opacity(isAlt ? 0.85 : 1.0)
+    }
+}
+
+// MARK: - Fortschritt Sheet
+
+struct LVFortschrittSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let position: LVPosition
+    @StateObject private var store = LVFortschrittStore.shared
+
+    @State private var prozent:   Double
+    @State private var bemerkung: String
+
+    init(position: LVPosition) {
+        self.position = position
+        let id = position.objectID.uriRepresentation().absoluteString
+        let existing = LVFortschrittStore.shared.fortschritt(for: id)
+        _prozent   = State(initialValue: Double(existing?.prozent ?? 0))
+        _bemerkung = State(initialValue: existing?.bemerkung ?? "")
+    }
+
+    private var farbe: Color {
+        Int(prozent) == 100 ? .green : Int(prozent) > 0 ? .orange : .secondary
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(position.bezeichnung ?? "–")
+                            .font(.body).lineLimit(3)
+                        HStack {
+                            Text(position.posNr ?? "").font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            Text("\(Int(prozent)) %")
+                                .font(.title.weight(.bold).monospacedDigit())
+                                .foregroundStyle(farbe)
+                        }
+                        ProgressView(value: prozent, total: 100)
+                            .progressViewStyle(.linear)
+                            .tint(farbe)
+                        Slider(value: $prozent, in: 0...100, step: 5)
+                            .tint(farbe)
+                    }
+                    .padding(.vertical, 4)
+
+                    // Quick-set Buttons
+                    HStack(spacing: 6) {
+                        ForEach([0, 25, 50, 75, 100], id: \.self) { v in
+                            Button { prozent = Double(v) } label: {
+                                Text("\(v) %")
+                                    .font(.caption)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 7)
+                                    .background(Int(prozent) == v ? farbe : Color(.tertiarySystemFill))
+                                    .foregroundStyle(Int(prozent) == v ? .white : .primary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                } header: { Text("Fertigstellungsgrad") }
+
+                Section("Bemerkung (optional)") {
+                    HStack(alignment: .top, spacing: 8) {
+                        TextField("Status-Notiz...", text: $bemerkung, axis: .vertical)
+                            .lineLimit(2...4)
+                        VoiceInputButton(text: $bemerkung).padding(.top, 2)
+                    }
+                }
+            }
+            .navigationTitle("Fortschritt")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Sichern") { save() }.tint(.orange)
+                }
+            }
+        }
+    }
+
+    private func save() {
+        let id = position.objectID.uriRepresentation().absoluteString
+        if Int(prozent) == 0 {
+            store.remove(for: id)
+        } else {
+            store.setFortschritt(
+                LVFortschritt(prozent: Int(prozent), bemerkung: bemerkung), for: id)
+        }
+        dismiss()
     }
 }
 
@@ -656,21 +823,24 @@ struct LVHelpView: View {
                 Section("Positionen") {
                     Label("+  anlegen, Swipe-links bearbeiten, Swipe-rechts löschen", systemImage: "hand.point.left")
                     Label("Swipe-links: 'Alternative' erstellt Alternativposition (.A1, .A2 …)", systemImage: "doc.on.doc")
+                    Label("Swipe-links: 'Fortschritt' → Fertigstellungsgrad 0–100 %", systemImage: "chart.bar")
                     Label("Sortierung: DIN 276 Kostengruppe → Pos.-Nr.", systemImage: "list.number")
+                }
+                Section("Fortschrittserfassung") {
+                    Label("Fortschritt pro Position: Slider + Schnell-Buttons (0/25/50/75/100 %)", systemImage: "chart.bar.fill")
+                    Label("Gesamtfortschritt-Banner oben in der Liste (Ø aller Positionen)", systemImage: "gauge.open.with.lines.needle.33percent")
+                    Label("Ø-Fortschritt pro KG im Abschnitts-Header", systemImage: "list.number")
+                    Label("Gespeichert in lv_fortschritt.json (kein CoreData-Schema erforderlich)", systemImage: "externaldrive")
                 }
                 Section("GAEB DA XML 3.3") {
                     Label("⋯ → 'GAEB X83 importieren': Angebotsaufforderung einlesen", systemImage: "doc.badge.arrow.up")
                     Label("⋯ → 'GAEB X84 exportieren': bepreistes Angebot rausschreiben", systemImage: "signature")
                     Label("Preisquelle für X84: günstigster Eintrag im Angebotsvergleich", systemImage: "tag.fill")
                     Label("Fehlende Preise → Warnung vor Export", systemImage: "exclamationmark.triangle")
-                    Label("Encoding: UTF-8 und Windows-1252 werden erkannt", systemImage: "textformat")
                 }
                 Section("XRechnung (E-Rechnung)") {
                     Label("⋯ → 'XRechnung exportieren': CII XML nach EN 16931 / XRechnung 2.2", systemImage: "eurosign.circle")
-                    Label("Preisquelle: günstigster Anbieter aus dem Angebotsvergleich", systemImage: "tag.fill")
-                    Label("MwSt. 19 % (Kategorie S), Währung EUR", systemImage: "percent")
-                    Label("Alternativpositionen werden nicht exportiert", systemImage: "doc.on.doc.fill")
-                    Label("Fehlende Preise → Warnung, Export mit EP = 0,00 € möglich", systemImage: "exclamationmark.triangle")
+                    Label("Firmendaten & MwSt-Satz in Settings konfigurierbar", systemImage: "gearshape")
                 }
                 Section("PDF Import & Export") {
                     Label("⋯ → 'Aus PDF importieren': Heuristik-Parser für LV-PDFs", systemImage: "doc.text.magnifyingglass")
