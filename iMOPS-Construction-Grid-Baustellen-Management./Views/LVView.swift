@@ -11,12 +11,13 @@ struct LVView: View {
 
     @FetchRequest private var positionen: FetchedResults<LVPosition>
 
-    @State private var showingAdd           = false
+    @State private var showingAdd            = false
     @State private var editPosition: LVPosition?
-    @State private var showBestellliste     = false
+    @State private var showBestellliste      = false
     @State private var showAngebotsVergleich = false
-    @State private var showHelp             = false
-    @State private var showPDFShare         = false
+    @State private var showImport            = false
+    @State private var showHelp              = false
+    @State private var showPDFShare          = false
     @State private var generatedPDFURL: URL?
 
     init(event: Event) {
@@ -88,17 +89,17 @@ struct LVView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    Button {
-                        showBestellliste = true
-                    } label: {
+                    Button { showBestellliste = true } label: {
                         Label("Bestellliste", systemImage: "envelope.badge")
                     }
-                    Button {
-                        showAngebotsVergleich = true
-                    } label: {
+                    .disabled(positionen.isEmpty)
+
+                    Button { showAngebotsVergleich = true } label: {
                         Label("Angebotsvergleich", systemImage: "chart.bar.doc.horizontal")
                     }
+
                     Divider()
+
                     Button {
                         let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
                         let name = "LV-\(event.title ?? "Baustelle")"
@@ -112,11 +113,15 @@ struct LVView: View {
                     } label: {
                         Label("LV als PDF", systemImage: "arrow.up.doc")
                     }
+                    .disabled(positionen.isEmpty)
+
+                    Button { showImport = true } label: {
+                        Label("Aus PDF importieren", systemImage: "doc.text.magnifyingglass")
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
                 .tint(.orange)
-                .disabled(positionen.isEmpty)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showingAdd = true } label: {
@@ -137,6 +142,10 @@ struct LVView: View {
         }
         .sheet(isPresented: $showAngebotsVergleich) {
             AngebotsVergleichView(event: event, positionen: Array(positionen))
+        }
+        .sheet(isPresented: $showImport) {
+            LVImportView(event: event)
+                .environment(\.managedObjectContext, viewContext)
         }
         .sheet(isPresented: $showPDFShare) {
             if let url = generatedPDFURL {
@@ -215,12 +224,11 @@ struct LVPositionRow: View {
                     }
                     Text("·").foregroundStyle(.secondary)
                 }
-                // Bestes Angebot anzeigen wenn vorhanden
                 if let best = store.guenstigster(for: positionID) {
                     Image(systemName: "tag.fill").font(.caption2).foregroundStyle(.green)
                     Text(best.einzelpreis, format: .currency(code: "EUR"))
                         .font(.caption.monospacedDigit()).foregroundStyle(.green)
-                    Text("\(best.lieferant)").font(.caption).foregroundStyle(.secondary)
+                    Text(best.lieferant).font(.caption).foregroundStyle(.secondary)
                 }
             }
         }
@@ -478,21 +486,22 @@ struct LVHelpView: View {
                     Label("Wische links zum Bearbeiten, rechts zum Löschen", systemImage: "hand.point.left")
                     Label("Positionen sind nach DIN 276 Kostengruppe sortiert", systemImage: "list.number")
                 }
-                Section("DIN 276 Kostengruppen") {
-                    Label("KG 300: Baukonstruktionen (Fundament, Wände, Decken)", systemImage: "building.2")
-                    Label("KG 400: Technische Anlagen (Sanitär, Heizung, Elektro)", systemImage: "bolt")
-                    Label("KG 500: Außenanlagen", systemImage: "tree")
-                }
-                Section("Artikelzuordnung") {
-                    Label("Tippe auf das Buch-Symbol um aus dem Katalog zu wählen", systemImage: "books.vertical")
-                    Label("Scharpegge & Hauff als Lieferanten verfügbar", systemImage: "building.2.crop.circle")
-                    Label("Lieferant wird beim Katalog-Import automatisch gesetzt", systemImage: "checkmark.circle")
+                Section("PDF Import") {
+                    Label("⋯-Menü → 'Aus PDF importieren': LV-Positionen aus PDF extrahieren", systemImage: "doc.text.magnifyingglass")
+                    Label("Unterstützt: Standard-LV, GAEB-Export, Planungsbüro-PDFs", systemImage: "doc.on.doc")
+                    Label("Alle erkannten Positionen vor dem Import prüfen und bearbeiten", systemImage: "checkmark.circle")
+                    Label("Nur Text-PDFs werden unterstützt (keine eingescannten Bilder)", systemImage: "info.circle")
                 }
                 Section("Bestellliste & Angebotsvergleich") {
                     Label("⋯-Menü: Bestellliste, Angebotsvergleich, LV als PDF", systemImage: "ellipsis.circle")
                     Label("Bestellliste: pro Lieferant vorausgefüllte Preisanfrage-Mail", systemImage: "envelope.badge")
                     Label("Angebotsvergleich: EP/GP pro Lieferant erfassen und vergleichen", systemImage: "chart.bar.doc.horizontal")
                     Label("Günstigster Anbieter wird grün markiert und in der Liste angezeigt", systemImage: "star.fill")
+                }
+                Section("DIN 276 Kostengruppen") {
+                    Label("KG 300: Baukonstruktionen (Fundament, Wände, Decken)", systemImage: "building.2")
+                    Label("KG 400: Technische Anlagen (Sanitär, Heizung, Elektro)", systemImage: "bolt")
+                    Label("KG 500: Außenanlagen", systemImage: "tree")
                 }
             }
             .navigationTitle("Hilfe: Leistungsverzeichnis")
