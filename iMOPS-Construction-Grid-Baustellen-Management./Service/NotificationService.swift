@@ -1,4 +1,5 @@
 import UserNotifications
+import CoreData
 
 final class NotificationService {
     static let shared = NotificationService()
@@ -53,5 +54,17 @@ final class NotificationService {
         let id = mangel.id?.uuidString ?? ""
         UNUserNotificationCenter.current()
             .removePendingNotificationRequests(withIdentifiers: ["\(id)_frist", "\(id)_vorher"])
+    }
+
+    // Sets the app badge to the number of overdue open Mängel.
+    func updateBadge(context: NSManagedObjectContext) {
+        let req: NSFetchRequest<Mangel> = Mangel.fetchRequest()
+        req.predicate = NSPredicate(
+            format: "frist != nil AND frist < %@ AND statusRawValue != %@ AND statusRawValue != %@",
+            Date() as CVarArg,
+            MangelStatus.behoben.rawValue,
+            MangelStatus.abgenommen.rawValue)
+        let count = (try? context.count(for: req)) ?? 0
+        UNUserNotificationCenter.current().setBadgeCount(count) { _ in }
     }
 }

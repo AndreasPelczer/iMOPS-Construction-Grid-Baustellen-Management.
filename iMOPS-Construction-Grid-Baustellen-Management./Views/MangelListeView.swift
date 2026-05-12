@@ -12,6 +12,7 @@ struct MangelListeView: View {
     @State private var statusFilter: MangelStatus? = nil
     @State private var showPDFShare   = false
     @State private var pdfURL: URL?
+    @State private var showFristen    = false
 
     init(event: Event) {
         self.event = event
@@ -51,6 +52,12 @@ struct MangelListeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { showFristen = true } label: {
+                        Image(systemName: "calendar.badge.clock")
+                    }
+                    .tint(.orange)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button { exportPDF() } label: {
                         Image(systemName: "arrow.up.doc")
                     }
@@ -71,6 +78,10 @@ struct MangelListeView: View {
             }
             .sheet(isPresented: $showPDFShare) {
                 if let url = pdfURL { LVShareSheet(url: url).ignoresSafeArea() }
+            }
+            .sheet(isPresented: $showFristen) {
+                FristenView()
+                    .environment(\.managedObjectContext, ctx)
             }
         }
     }
@@ -141,6 +152,7 @@ struct MangelListeView: View {
             if let pfad = m.fotoPfad {
                 try? FileManager.default.removeItem(atPath: pfad)
             }
+            NotificationService.shared.cancel(for: m)
             ctx.delete(m)
         }
         try? ctx.save()
