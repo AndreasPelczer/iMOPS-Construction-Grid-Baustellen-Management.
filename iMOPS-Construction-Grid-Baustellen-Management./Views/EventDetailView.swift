@@ -45,6 +45,7 @@ struct EventDetailView: View {
     @State private var showHelp = false
     @State private var showLVPDFShare = false
     @State private var lvPDFURL: URL?
+    @State private var showBautagesbericht = false
 
     @State private var isConverting = false
     @State private var conversionError: String?
@@ -100,10 +101,22 @@ struct EventDetailView: View {
                 .tint(.orange)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { generateLVPDF() } label: {
+                Menu {
+                    Button {
+                        generateLVPDF()
+                    } label: {
+                        Label("LV als PDF", systemImage: "doc.text")
+                    }
+                    .disabled(lvPositionenCount == 0)
+
+                    Button {
+                        showBautagesbericht = true
+                    } label: {
+                        Label("Bautagesbericht", systemImage: "calendar.badge.clock")
+                    }
+                } label: {
                     Image(systemName: "arrow.up.doc")
                 }
-                .disabled(lvPositionenCount == 0)
                 .tint(.orange)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -143,6 +156,10 @@ struct EventDetailView: View {
             if let url = lvPDFURL {
                 LVShareSheet(url: url).ignoresSafeArea()
             }
+        }
+        .sheet(isPresented: $showBautagesbericht) {
+            BautagesberichtView(event: event)
+                .environment(\.managedObjectContext, viewContext)
         }
         .overlay {
             if isConverting {
@@ -827,9 +844,13 @@ struct EventDetailHelpView: View {
                 }
                 Section("LV & PDF") {
                     Label("Tippe auf die LV-Karte um das Leistungsverzeichnis zu öffnen", systemImage: "arrow.right.circle")
-                    Label("Tippe auf das PDF-Symbol (↑) auf der LV-Karte oder in der Toolbar um das LV als PDF zu exportieren", systemImage: "arrow.up.doc")
+                    Label("Tippe auf das ↑-Menü in der Toolbar: LV als PDF oder Bautagesbericht exportieren", systemImage: "arrow.up.doc")
                     Label("Positionen anlegen, nach DIN 276 KG gruppiert", systemImage: "list.number")
                     Label("Bestellliste: strukturierte Mail an Lieferanten erstellen", systemImage: "envelope.badge")
+                }
+                Section("Bautagesbericht") {
+                    Label("Toolbar-Menü (↑) → Bautagesbericht: Datum, Notizen, Aufträge/LV/Mängel als PDF", systemImage: "calendar.badge.clock")
+                    Label("Spracheingabe: Notizen per Mikrofon diktieren — Verarbeitung lokal auf dem Gerät", systemImage: "mic.fill")
                 }
                 Section("Checkliste") {
                     Label("Schritte manuell eingeben oder Vorlage (✶) für ein Gewerk laden", systemImage: "wand.and.stars")
