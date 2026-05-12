@@ -36,8 +36,12 @@ struct MangelErfassenView: View {
             Form {
                 Section("Mangelbeschreibung") {
                     TextField("Kurztitel (Pflicht)", text: $titel)
-                    TextField("Details", text: $beschreibung, axis: .vertical)
-                        .lineLimit(3...6)
+                    HStack(alignment: .top, spacing: 8) {
+                        TextField("Details", text: $beschreibung, axis: .vertical)
+                            .lineLimit(3...6)
+                        VoiceInputButton(text: $beschreibung)
+                            .padding(.top, 2)
+                    }
                 }
 
                 Section("Ort & Gewerk") {
@@ -142,9 +146,7 @@ struct MangelErfassenView: View {
             ) {
                 Button("OK") { lastViolation = nil }
             } message: {
-                if let v = lastViolation {
-                    Text(v.reason)
-                }
+                if let v = lastViolation { Text(v.reason) }
             }
         }
     }
@@ -153,25 +155,20 @@ struct MangelErfassenView: View {
 
     private func speichern() {
         lastViolation = nil
-
         let mangel = Mangel(context: ctx)
-        mangel.id = UUID()
-        mangel.titel = titel.trimmingCharacters(in: .whitespaces)
+        mangel.id           = UUID()
+        mangel.titel        = titel.trimmingCharacters(in: .whitespaces)
         mangel.beschreibung = beschreibung.trimmingCharacters(in: .whitespaces)
-        mangel.ort = ort.trimmingCharacters(in: .whitespaces)
-        mangel.gewerk = gewerk
+        mangel.ort          = ort.trimmingCharacters(in: .whitespaces)
+        mangel.gewerk       = gewerk
         mangel.kostenGruppeNummer = selectedKG?.nummer
-        mangel.status = .offen
+        mangel.status       = .offen
         mangel.mangelSchwere = schwere
-        mangel.frist = hatFrist ? frist : nil
-        mangel.erfasstAm = Date()
-        mangel.erfasstVon = erfasstVon.trimmingCharacters(in: .whitespaces)
-        mangel.event = event
-
-        if let img = fotoImage {
-            mangel.fotoPfad = speicherFoto(img, id: mangel.id!)
-        }
-
+        mangel.frist        = hatFrist ? frist : nil
+        mangel.erfasstAm    = Date()
+        mangel.erfasstVon   = erfasstVon.trimmingCharacters(in: .whitespaces)
+        mangel.event        = event
+        if let img = fotoImage { mangel.fotoPfad = speicherFoto(img, id: mangel.id!) }
         do {
             try ctx.save()
             dismiss()
@@ -187,9 +184,9 @@ struct MangelErfassenView: View {
     private func speicherFoto(_ image: UIImage, id: UUID) -> String? {
         guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let dir = docs.appendingPathComponent("Maengel", isDirectory: true)
+        let dir  = docs.appendingPathComponent("Maengel", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let url = dir.appendingPathComponent("\(id.uuidString).jpg")
+        let url  = dir.appendingPathComponent("\(id.uuidString).jpg")
         try? data.write(to: url)
         return url.path
     }
@@ -207,24 +204,19 @@ struct KameraView: UIViewControllerRepresentable {
         picker.delegate = context.coordinator
         return picker
     }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
+    func updateUIViewController(_ vc: UIImagePickerController, context: Context) {}
     func makeCoordinator() -> Coordinator { Coordinator(onFoto: onFoto, dismiss: dismiss) }
 
     class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
         let onFoto: (UIImage) -> Void
         let dismiss: DismissAction
-
         init(onFoto: @escaping (UIImage) -> Void, dismiss: DismissAction) {
             self.onFoto = onFoto; self.dismiss = dismiss
         }
-
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             if let img = info[.originalImage] as? UIImage { onFoto(img) }
             dismiss()
         }
-
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { dismiss() }
     }
 }
@@ -233,46 +225,36 @@ struct KameraView: UIViewControllerRepresentable {
 
 struct MangelHelpView: View {
     @Environment(\.dismiss) var dismiss
-
     var body: some View {
         NavigationStack {
             List {
                 Section("Was ist ein Mangel?") {
-                    Text("Ein Mangel ist eine Abweichung von der vereinbarten Leistung – z.B. ein Riss im Putz, falsch verlegte Leitungen, oder fehlende Dämmung. Mängel werden dokumentiert, bewertet und bis zur Behebung verfolgt.")
+                    Text("Ein Mangel ist eine Abweichung von der vereinbarten Leistung – z.B. ein Riss im Putz, falsch verlegte Leitungen, oder fehlende Dämmung.")
                 }
                 Section("Schwere-Stufen") {
-                    Label("Kritisch – sofortige Behebung erforderlich, Sicherheitsrisiko", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
-                    Label("Hoch – Behebung innerhalb weniger Tage", systemImage: "exclamationmark.circle.fill")
-                        .foregroundStyle(.orange)
-                    Label("Mittel – Standardfrist (14 Tage)", systemImage: "minus.circle.fill")
-                        .foregroundStyle(.yellow)
-                    Label("Niedrig – bei nächster Gelegenheit", systemImage: "arrow.down.circle.fill")
-                        .foregroundStyle(.blue)
+                    Label("Kritisch – sofortige Behebung, Sicherheitsrisiko", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                    Label("Hoch – Behebung innerhalb weniger Tage", systemImage: "exclamationmark.circle.fill").foregroundStyle(.orange)
+                    Label("Mittel – Standardfrist (14 Tage)", systemImage: "minus.circle.fill").foregroundStyle(.yellow)
+                    Label("Niedrig – bei nächster Gelegenheit", systemImage: "arrow.down.circle.fill").foregroundStyle(.blue)
                 }
-                Section("Frist") {
-                    Text("Frist = Datum bis zur vollständigen Mängelbehebung. Nach Ablauf wird der Mangel als überfällig markiert. Standard: 14 Tage ab Erfassung.")
-                }
-                Section("Kostengruppe (DIN 276)") {
-                    Text("Ordnet den Mangel einer DIN 276 Kostengruppe zu. Wichtig für die Abrechnung und für die Zuordnung zu Nachunternehmern. Optional – kann auch später ergänzt werden.")
+                Section("Spracheingabe") {
+                    Label("Tippe auf den Mic-Button neben \"Details\" um zu diktieren", systemImage: "mic.circle")
+                    Label("Tippe erneut auf Stop um die Aufnahme zu beenden", systemImage: "stop.circle.fill")
+                    Label("Spracherkennung läuft lokal auf deinem Gerät — keine Daten werden übertragen", systemImage: "lock.shield")
                 }
                 Section("Foto") {
-                    Label("Foto als Beweis und Dokumentation – wichtig bei Gewährleistungsansprüchen", systemImage: "camera.fill")
-                    Label("Kamera: direkt fotografieren · Bibliothek: vorhandenes Bild auswählen", systemImage: "photo")
-                    Label("Tippe auf das Foto um es zu entfernen und neu aufzunehmen", systemImage: "hand.tap")
+                    Label("Foto als Beweis – wichtig bei Gewährleistungsansprüchen", systemImage: "camera.fill")
+                    Label("Tippe auf das Foto um es zu entfernen", systemImage: "hand.tap")
                 }
                 Section("Status-Ablauf") {
                     Label("Offen → In Arbeit → Behoben", systemImage: "arrow.right.circle")
-                    Text("Status kann in der Mängelliste geändert werden.")
-                        .font(.footnote).foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Hilfe: Mangel erfassen")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Fertig") { dismiss() }
-                        .tint(.orange)
+                    Button("Fertig") { dismiss() }.tint(.orange)
                 }
             }
         }
