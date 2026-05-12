@@ -16,9 +16,16 @@ struct LVView: View {
     @State private var showBestellliste      = false
     @State private var showAngebotsVergleich = false
     @State private var showImport            = false
+    @State private var showGAEBImport        = false
     @State private var showHelp              = false
-    @State private var showPDFShare          = false
-    @State private var generatedPDFURL: URL?
+    @State private var showExportShare       = false
+    @State private var exportURL: URL?
+    // Warnung wenn X84-Export Positionen ohne Preis hat
+    @State private var showMissingPricesAlert = false
+    @State private var missingPricesCount = 0
+    @State private var pendingExportFormat: GAEBExportFormat?
+
+    @StateObject private var store = AngebotsStore.shared
 
     init(event: Event) {
         self.event = event
@@ -32,7 +39,6 @@ struct LVView: View {
         )
     }
 
-    // Positionen gruppiert nach KG, dann Basis vs. Alternative
     private var grouped: [(kg: String, items: [LVPosition])] {
         let dict = Dictionary(grouping: Array(positionen), by: { $0.kostenGruppeNummer ?? "—" })
         return dict.sorted { $0.key < $1.key }.map { (kg: $0.key, items: $0.value) }
@@ -44,7 +50,7 @@ struct LVView: View {
                 ContentUnavailableView(
                     "Kein LV vorhanden",
                     systemImage: "doc.text",
-                    description: Text("Tippe auf + oder importiere ein PDF.")
+                    description: Text("Tippe auf + oder importiere ein LV.")
                 )
             } else {
                 ForEach(grouped, id: \.kg) { gruppe in
@@ -63,9 +69,7 @@ struct LVView: View {
                                         Label("Bearbeiten", systemImage: "pencil")
                                     }
                                     .tint(.orange)
-                                    Button {
-                                        duplicateAsAlternative(pos)
-                                    } label: {
+                                    Button { duplicateAsAlternative(pos) } label: {
                                         Label("Alternative", systemImage: "doc.on.doc")
                                     }
                                     .tint(.blue)
@@ -76,7 +80,7 @@ struct LVView: View {
                             Text("KG \(gruppe.kg) – \(dinBezeichnung(gruppe.kg))")
                                 .font(.caption.weight(.semibold))
                             Spacer()
-                            let basis   = gruppe.items.filter { !LVPositionHelper.isAlternative($0) }
+                            let basis    = gruppe.items.filter { !LVPositionHelper.isAlternative($0) }
                             let altCount = gruppe.items.count - basis.count
                             if altCount > 0 {
                                 Text("\(altCount) Alt.")
@@ -103,6 +107,7 @@ struct LVView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
+                    // --- Lieferanten & Preise ---
                     Button { showBestellliste = true } label: {
                         Label("Bestellliste", systemImage: "envelope.badge")
                     }
@@ -114,24 +119,33 @@ struct LVView: View {
 
                     Divider()
 
-                    Button {
-                        let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
-                        let name = "LV-\(event.title ?? "Baustelle")"
-                            .replacingOccurrences(of: " ", with: "-")
-                            .appending(".pdf")
-                        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-                        if (try? data.write(to: url)) != nil {
-                            generatedPDFURL = url
-                            showPDFShare    = true
-                        }
-                    } label: {
+                    // --- Exportieren ---
+                    Button { generatePDF() } label: {
                         Label("LV als PDF", systemImage: "arrow.up.doc")
                     }
                     .disabled(positionen.isEmpty)
 
+                    Button { triggerGAEBExport(.x83_v33) } label: {
+                        Label("GAEB X83 exportieren", systemImage: "arrow.up.doc.fill")
+                    }
+                    .disabled(positionen.isEmpty)
+
+                    Button { triggerGAEBExport(.x84_v33) } label: {
+                        Label("GAEB X84 exportieren (Angebot)", systemImage: "signature")
+                    }
+                    .disabled(positionen.isEmpty)
+
+                    Divider()
+
+                    // --- Importieren ---
                     Button { showImport = true } label: {
                         Label("Aus PDF importieren", systemImage: "doc.text.magnifyingglass")
                     }
+
+                    Button { showGAEBImport = true } label: {
+                        Label("GAEB X83 importieren", systemImage: "doc.badge.arrow.up")
+                    }
+
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -161,13 +175,25 @@ struct LVView: View {
             LVImportView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showPDFShare) {
-            if let url = generatedPDFURL {
+        .sheet(isPresented: $showGAEBImport) {
+            GAEBImportView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showExportShare) {
+            if let url = exportURL {
                 LVShareSheet(url: url).ignoresSafeArea()
             }
         }
         .sheet(isPresented: $showHelp) {
             LVHelpView()
+        }
+        .alert("Fehlende Preise", isPresented: $showMissingPricesAlert) {
+            Button("Trotzdem exportieren") {
+                if let fmt = pendingExportFormat { doGAEBExport(fmt) }
+            }
+            Button("Abbrechen", role: .cancel) { pendingExportFormat = nil }
+        } message: {
+            Text("\(missingPricesCount) Position\(missingPricesCount == 1 ? " hat" : "en haben") noch keinen Preis im Angebotsvergleich. Der X84 wird mit leeren EP-Feldern exportiert.")
         }
     }
 
@@ -178,11 +204,9 @@ struct LVView: View {
         try? viewContext.save()
     }
 
-    /// Swipe-left → create an alternative position pre-filled from the base
     private func duplicateAsAlternative(_ base: LVPosition) {
         let alt = LVPosition(context: viewContext)
         let baseNr = base.posNr ?? "1"
-        // Generate Alt-posNr: "1.2" → "1.2.A1", "1.2.A1" → "1.2.A2"
         alt.posNr              = LVPositionHelper.nextAlternativeNr(for: baseNr, existing: Array(positionen))
         alt.bezeichnung        = (base.bezeichnung ?? "") + " (Alternative)"
         alt.menge              = base.menge
@@ -192,6 +216,51 @@ struct LVView: View {
         alt.lieferant          = base.lieferant
         alt.event              = event
         try? viewContext.save()
+    }
+
+    private func generatePDF() {
+        let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
+        let name = "LV-\(event.title ?? "Baustelle")"
+            .replacingOccurrences(of: " ", with: "-").appending(".pdf")
+        writeAndShare(data: data, filename: name)
+    }
+
+    private func triggerGAEBExport(_ format: GAEBExportFormat) {
+        if format.includePrices {
+            // Count positions without a price offer
+            let missing = Array(positionen).filter { pos in
+                let id = pos.objectID.uriRepresentation().absoluteString
+                return store.guenstigster(for: id) == nil
+            }.count
+            if missing > 0 {
+                missingPricesCount  = missing
+                pendingExportFormat = format
+                showMissingPricesAlert = true
+                return
+            }
+        }
+        doGAEBExport(format)
+    }
+
+    private func doGAEBExport(_ format: GAEBExportFormat) {
+        let data = GAEBExporter.export(
+            event: event,
+            positionen: Array(positionen),
+            format: format,
+            store: store
+        )
+        let title = (event.title ?? "Baustelle").replacingOccurrences(of: " ", with: "-")
+        let name  = "\(title)-\(format.filenameSuffix).xml"
+        writeAndShare(data: data, filename: name)
+        pendingExportFormat = nil
+    }
+
+    private func writeAndShare(data: Data, filename: String) {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        if (try? data.write(to: url)) != nil {
+            exportURL = url
+            showExportShare = true
+        }
     }
 
     private func dinBezeichnung(_ kg: String) -> String {
@@ -225,38 +294,26 @@ struct LVView: View {
 // MARK: - Alternative Position Helper
 
 enum LVPositionHelper {
-    /// A position is an alternative if its posNr contains ".A" followed by a digit
     static func isAlternative(_ pos: LVPosition) -> Bool {
         guard let nr = pos.posNr else { return false }
         return nr.range(of: #"\.A\d"#, options: .regularExpression) != nil
     }
-
-    /// Returns the base posNr for an alternative (strips .A1 suffix)
     static func baseNr(for nr: String) -> String {
         guard let range = nr.range(of: #"\.A\d+$"#, options: .regularExpression) else { return nr }
         return String(nr[nr.startIndex..<range.lowerBound])
     }
-
-    /// Generates the next alternative posNr: "1.2" → "1.2.A1"; "1.2.A1" → "1.2.A2"
     static func nextAlternativeNr(for baseNr: String, existing: [LVPosition]) -> String {
-        let rootNr = isAlternativeNr(baseNr) ? baseNr(for: baseNr) : baseNr
-        let existingAlts = existing
-            .compactMap { $0.posNr }
+        let rootNr = isAlternativeNr(baseNr) ? Self.baseNr(for: baseNr) : baseNr
+        let maxIdx = existing.compactMap { $0.posNr }
             .filter { $0.hasPrefix(rootNr + ".A") }
-        let maxIndex = existingAlts.compactMap { nr -> Int? in
-            guard let range = nr.range(of: #"\.A(\d+)$"#, options: .regularExpression) else { return nil }
-            return Int(nr[range].dropFirst(2)) // drop ".A"
-        }.max() ?? 0
-        return "\(rootNr).A\(maxIndex + 1)"
+            .compactMap { nr -> Int? in
+                guard let r = nr.range(of: #"\.A(\d+)$"#, options: .regularExpression) else { return nil }
+                return Int(nr[r].dropFirst(2))
+            }.max() ?? 0
+        return "\(rootNr).A\(maxIdx + 1)"
     }
-
     private static func isAlternativeNr(_ nr: String) -> Bool {
         nr.range(of: #"\.A\d"#, options: .regularExpression) != nil
-    }
-
-    private static func baseNr(for nr: String) -> String {
-        guard let range = nr.range(of: #"\.A\d+$"#, options: .regularExpression) else { return nr }
-        return String(nr[nr.startIndex..<range.lowerBound])
     }
 }
 
@@ -266,31 +323,24 @@ struct LVPositionRow: View {
     @ObservedObject var position: LVPosition
     @StateObject private var store = AngebotsStore.shared
 
-    private var positionID: String {
-        position.objectID.uriRepresentation().absoluteString
-    }
-
+    private var positionID: String { position.objectID.uriRepresentation().absoluteString }
     private var isAlt: Bool { LVPositionHelper.isAlternative(position) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                // Alternative badge
                 if isAlt {
                     Text("ALT")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
                         .padding(.horizontal, 5).padding(.vertical, 2)
-                        .background(Color.blue)
-                        .clipShape(Capsule())
+                        .background(Color.blue).clipShape(Capsule())
                 }
                 Text(position.posNr ?? "–")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(isAlt ? .blue : .secondary)
                     .frame(width: isAlt ? nil : 52, alignment: .leading)
                 Text(position.bezeichnung ?? "–")
-                    .font(.body)
-                    .lineLimit(2)
+                    .font(.body).lineLimit(2)
                     .foregroundStyle(isAlt ? .secondary : .primary)
                 Spacer()
                 Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "")")
@@ -339,7 +389,7 @@ struct AddLVPositionView: View {
     @State private var isAlternative = false
     @State private var showKatalog = false
 
-    let einheiten = ["m²", "m³", "lfm", "Stück", "kg", "t", "Psch", "h"]
+    let einheiten  = ["m²", "m³", "lfm", "Stück", "kg", "t", "Psch", "h"]
     let lieferanten = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
 
     var isValid: Bool {
@@ -362,7 +412,7 @@ struct AddLVPositionView: View {
                     }
                     .tint(.blue)
                     if isAlternative {
-                        Text("Alternativpositionen ersetzen die Basisposition und werden mit .A1, .A2 … nummeriert.")
+                        Text("Wird als .A1, .A2 … an die Basisposition angehängt.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -371,19 +421,12 @@ struct AddLVPositionView: View {
                         TextField("0,00", text: $menge).keyboardType(.decimalPad).frame(maxWidth: 120)
                         Picker("Einheit", selection: $einheit) {
                             ForEach(einheiten, id: \.self) { Text($0) }
-                        }
-                        .pickerStyle(.menu)
+                        }.pickerStyle(.menu)
                     }
                 }
                 Section("DIN 276 Kostengruppe") {
-                    NavigationLink {
-                        KGPickerList(selected: $kg)
-                    } label: {
-                        HStack {
-                            Text("KG")
-                            Spacer()
-                            Text(kg).foregroundStyle(.orange)
-                        }
+                    NavigationLink { KGPickerList(selected: $kg) } label: {
+                        HStack { Text("KG"); Spacer(); Text(kg).foregroundStyle(.orange) }
                     }
                 }
                 Section("Material / Lieferant (optional)") {
@@ -402,9 +445,7 @@ struct AddLVPositionView: View {
             .navigationTitle(editPosition == nil ? "Neue Position" : "Position bearbeiten")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
-                }
+                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Sichern") { save() }.disabled(!isValid).tint(.orange)
                 }
@@ -438,16 +479,12 @@ struct AddLVPositionView: View {
 
     private func save() {
         let pos = editPosition ?? LVPosition(context: viewContext)
-        var nr = posNr.trimmingCharacters(in: .whitespacesAndNewlines)
-        // If marked as alternative but posNr doesn’t already follow the .A convention, auto-append
-        if isAlternative && !nr.isEmpty && !LVPositionHelper.isAlternative(pos) {
-            if !nr.contains(".A") {
-                // fetch siblings to determine next index
-                let req = NSFetchRequest<LVPosition>(entityName: "LVPosition")
-                req.predicate = NSPredicate(format: "event == %@", event)
-                let all = (try? viewContext.fetch(req)) ?? []
-                nr = LVPositionHelper.nextAlternativeNr(for: nr, existing: all)
-            }
+        var nr  = posNr.trimmingCharacters(in: .whitespacesAndNewlines)
+        if isAlternative && !nr.isEmpty && !nr.contains(".A") {
+            let req = NSFetchRequest<LVPosition>(entityName: "LVPosition")
+            req.predicate = NSPredicate(format: "event == %@", event)
+            let all = (try? viewContext.fetch(req)) ?? []
+            nr = LVPositionHelper.nextAlternativeNr(for: nr, existing: all)
         }
         pos.posNr              = nr.isEmpty ? nil : nr
         pos.bezeichnung        = bezeichnung
@@ -482,10 +519,7 @@ struct KGPickerList: View {
 
     var body: some View {
         List(kgs, id: \.nr) { kg in
-            Button {
-                selected = kg.nr
-                dismiss()
-            } label: {
+            Button { selected = kg.nr; dismiss() } label: {
                 HStack {
                     Text("KG \(kg.nr)").font(.body.monospacedDigit()).foregroundStyle(.primary)
                     Text(kg.name).foregroundStyle(.secondary)
@@ -509,7 +543,7 @@ struct KatalogPickerSheet: View {
     @FetchRequest(
         sortDescriptors: [
             NSSortDescriptor(keyPath: \CDLexikonEntry.kategorie, ascending: true),
-            NSSortDescriptor(keyPath: \CDLexikonEntry.name,      ascending: true)
+            NSSortDescriptor(keyPath: \CDLexikonEntry.name, ascending: true)
         ]
     ) private var entries: FetchedResults<CDLexikonEntry>
 
@@ -519,8 +553,8 @@ struct KatalogPickerSheet: View {
         guard !search.isEmpty else { return Array(entries) }
         let q = search.lowercased()
         return entries.filter {
-            ($0.name      ?? "").lowercased().contains(q) ||
-            ($0.code      ?? "").lowercased().contains(q) ||
+            ($0.name ?? "").lowercased().contains(q) ||
+            ($0.code ?? "").lowercased().contains(q) ||
             ($0.kategorie ?? "").lowercased().contains(q)
         }
     }
@@ -535,10 +569,7 @@ struct KatalogPickerSheet: View {
                 ForEach(grouped, id: \.0) { kat, items in
                     Section(kat) {
                         ForEach(items, id: \.objectID) { entry in
-                            Button {
-                                onSelect(entry)
-                                dismiss()
-                            } label: {
+                            Button { onSelect(entry); dismiss() } label: {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(entry.name ?? "").foregroundStyle(.primary)
                                     HStack(spacing: 4) {
@@ -558,15 +589,13 @@ struct KatalogPickerSheet: View {
             .navigationTitle("Katalog")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
-                }
+                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
             }
         }
     }
 }
 
-// MARK: - Share Sheet (PDF)
+// MARK: - Share Sheet
 
 struct LVShareSheet: UIViewControllerRepresentable {
     let url: URL
@@ -585,27 +614,27 @@ struct LVHelpView: View {
         NavigationStack {
             List {
                 Section("Was ist das LV?") {
-                    Text("Das Leistungsverzeichnis (LV) listet alle Bauleistungen einer Baustelle strukturiert auf. Jede Position hat Nummer, Beschreibung, Menge und Einheit.")
+                    Text("Das Leistungsverzeichnis listet alle Bauleistungen strukturiert auf — mit Nummer, Beschreibung, Menge und Einheit.")
                 }
-                Section("Positionen verwalten") {
-                    Label("Tippe auf + um eine neue Position anzulegen", systemImage: "plus.circle")
-                    Label("Wische links zum Bearbeiten, rechts zum Löschen", systemImage: "hand.point.left")
-                    Label("Wische links: zweite Aktion 'Alternative' erstellt Alternativposition", systemImage: "doc.on.doc")
-                    Label("Positionen sind nach DIN 276 Kostengruppe sortiert", systemImage: "list.number")
+                Section("Positionen") {
+                    Label("+ anlegen, Swipe-links bearbeiten, Swipe-rechts löschen", systemImage: "hand.point.left")
+                    Label("Swipe-links: 'Alternative' erstellt Alternativposition (.A1, .A2 …)", systemImage: "doc.on.doc")
+                    Label("Sortierung: DIN 276 Kostengruppe → Pos.-Nr.", systemImage: "list.number")
                 }
-                Section("Alternativpositionen") {
-                    Label("Alternativpositionen ersetzen die Basisposition (GAEB-Standard)", systemImage: "doc.on.doc")
-                    Label("Nummerierung: 1.2 → 1.2.A1, 1.2.A2 …", systemImage: "number")
-                    Label("Blau markiert und leicht transparent dargestellt", systemImage: "circle.fill")
-                    Label("Bei neuer Position: 'Alternativposition'-Toggle aktivieren", systemImage: "toggle.on")
+                Section("GAEB DA XML 3.3") {
+                    Label("⋯ → 'GAEB X83 importieren': Angebotsaufforderung einlesen", systemImage: "doc.badge.arrow.up")
+                    Label("⋯ → 'GAEB X84 exportieren': bepreistes Angebot rausschreiben", systemImage: "signature")
+                    Label("Preisquelle für X84: günstigster Eintrag im Angebotsvergleich", systemImage: "tag.fill")
+                    Label("Fehlende Preise → Warnung vor Export", systemImage: "exclamationmark.triangle")
+                    Label("Encoding: UTF-8 und Windows-1252 werden erkannt", systemImage: "textformat")
                 }
-                Section("PDF Import") {
-                    Label("⋯-Menü → 'Aus PDF importieren': LV-Positionen aus PDF extrahieren", systemImage: "doc.text.magnifyingglass")
-                    Label("Erkannte Positionen vor dem Import prüfen und bearbeiten", systemImage: "checkmark.circle")
+                Section("PDF Import & Export") {
+                    Label("⋯ → 'Aus PDF importieren': Heuristik-Parser für LV-PDFs", systemImage: "doc.text.magnifyingglass")
+                    Label("⋯ → 'LV als PDF': formatiertes PDF nach DIN 276", systemImage: "arrow.up.doc")
                 }
                 Section("Bestellliste & Angebotsvergleich") {
-                    Label("⋯-Menü: Bestellliste, Angebotsvergleich, LV als PDF", systemImage: "ellipsis.circle")
-                    Label("Angebotsvergleich: EP/GP pro Lieferant, günstigster wird markiert", systemImage: "chart.bar.doc.horizontal")
+                    Label("Bestellliste: vorausgefüllte Preisanfrage-Mail pro Lieferant", systemImage: "envelope.badge")
+                    Label("Angebotsvergleich: EP/GP erfassen, günstigster grün markiert", systemImage: "chart.bar.doc.horizontal")
                 }
             }
             .navigationTitle("Hilfe: Leistungsverzeichnis")
