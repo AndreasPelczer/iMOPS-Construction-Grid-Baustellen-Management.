@@ -15,7 +15,6 @@ struct LVView: View {
     @State private var editPosition: LVPosition?
     @State private var showBestellliste  = false
     @State private var showHelp          = false
-    @State private var showMailUnavailable = false
     @State private var showPDFShare      = false
     @State private var generatedPDFURL: URL?
 
@@ -87,13 +86,7 @@ struct LVView: View {
                 .tint(.orange)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    if MFMailComposeViewController.canSendMail() {
-                        showBestellliste = true
-                    } else {
-                        showMailUnavailable = true
-                    }
-                } label: {
+                Button { showBestellliste = true } label: {
                     Label("Bestellliste", systemImage: "envelope.badge")
                 }
                 .disabled(positionen.isEmpty)
@@ -129,7 +122,7 @@ struct LVView: View {
                 .environment(\.managedObjectContext, viewContext)
         }
         .sheet(isPresented: $showBestellliste) {
-            BestelllisteMailView(event: event, positionen: Array(positionen))
+            LieferantenBestelllisteView(event: event, positionen: Array(positionen))
         }
         .sheet(isPresented: $showPDFShare) {
             if let url = generatedPDFURL {
@@ -138,11 +131,6 @@ struct LVView: View {
         }
         .sheet(isPresented: $showHelp) {
             LVHelpView()
-        }
-        .alert("Mail nicht verfügbar", isPresented: $showMailUnavailable) {
-            Button("OK") {}
-        } message: {
-            Text("Auf diesem Gerät ist kein Mail-Account eingerichtet.")
         }
     }
 
@@ -232,7 +220,7 @@ struct AddLVPositionView: View {
     @State private var showKatalog = false
 
     let einheiten = ["m²", "m³", "lfm", "Stück", "kg", "t", "Psch", "h"]
-    let lieferanten = ["Scharpegge", "Baumarkt", "Sonstige"]
+    let lieferanten = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
 
     var isValid: Bool {
         !bezeichnung.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -296,7 +284,11 @@ struct AddLVPositionView: View {
             .sheet(isPresented: $showKatalog) {
                 KatalogPickerSheet { entry in
                     artikelNummer = entry.code ?? ""
-                    if lieferant.isEmpty   { lieferant   = "Scharpegge" }
+                    // Lieferant aus Kategorie-Prefix ableiten
+                    if lieferant.isEmpty {
+                        if (entry.kategorie ?? "").hasPrefix("Scharpegge") { lieferant = "Scharpegge" }
+                        else if (entry.kategorie ?? "").hasPrefix("Hauff") { lieferant = "Hauff" }
+                    }
                     if bezeichnung.isEmpty { bezeichnung = entry.name ?? "" }
                 }
                 .environment(\.managedObjectContext, viewContext)
@@ -466,13 +458,18 @@ struct LVHelpView: View {
                     Label("KG 500: Außenanlagen", systemImage: "tree")
                 }
                 Section("Artikelzuordnung") {
-                    Label("Tippe auf das Buch-Symbol um aus dem Scharpegge-Katalog zu wählen", systemImage: "books.vertical")
-                    Label("Artikelnummer und Lieferant werden automatisch gefüllt", systemImage: "checkmark.circle")
+                    Label("Tippe auf das Buch-Symbol um aus dem Katalog zu wählen", systemImage: "books.vertical")
+                    Label("Scharpegge & Hauff als Lieferanten verfügbar", systemImage: "building.2.crop.circle")
+                    Label("Lieferant wird beim Katalog-Import automatisch gesetzt", systemImage: "checkmark.circle")
                 }
-                Section("Bestellliste & PDF") {
-                    Label("Tippe auf 'Bestellliste' für eine Preisanfrage-Mail", systemImage: "envelope.badge")
+                Section("Bestellliste (Multi-Lieferant)") {
+                    Label("Tippe auf 'Bestellliste' um Positionen nach Lieferant gruppiert zu sehen", systemImage: "envelope.badge")
+                    Label("Pro Lieferant: 'Mail senden' erzeugt vorausgefüllte Preisanfrage", systemImage: "envelope")
+                    Label("Scharpegge und Hauff haben vorkonfigurierte Mailadressen", systemImage: "at")
+                }
+                Section("PDF Export") {
                     Label("Tippe auf 'PDF' um das LV als PDF zu exportieren und zu teilen", systemImage: "arrow.up.doc")
-                    Label("Für Scharpegge: info@scharpegge.gmbh ist vorausgefüllt", systemImage: "envelope")
+                    Label("Oder über das ↑-Menü in der Baustellen-Übersicht", systemImage: "arrow.up.doc.fill")
                 }
             }
             .navigationTitle("Hilfe: Leistungsverzeichnis")
