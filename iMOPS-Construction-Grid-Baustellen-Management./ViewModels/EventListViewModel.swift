@@ -62,19 +62,32 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
     // MARK: - Filter
 
     func applyFilter(filter: EventFilter) {
+        applyFilterAndSearch(filter: filter, query: "")
+    }
+
+    func applyFilterAndSearch(filter: EventFilter, query: String) {
         let now = Date()
-        let predicate: NSPredicate?
+        var predicates: [NSPredicate] = []
 
         switch filter {
         case .upcoming:
-            predicate = NSPredicate(format: "eventEndTime == nil OR eventEndTime >= %@", now as NSDate)
+            predicates.append(NSPredicate(format: "eventEndTime == nil OR eventEndTime >= %@", now as NSDate))
         case .past:
-            predicate = NSPredicate(format: "eventEndTime < %@", now as NSDate)
+            predicates.append(NSPredicate(format: "eventEndTime < %@", now as NSDate))
         case .all:
-            predicate = nil
+            break
         }
 
-        fetchedResultsController.fetchRequest.predicate = predicate
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !q.isEmpty {
+            predicates.append(NSPredicate(
+                format: "title CONTAINS[cd] %@ OR location CONTAINS[cd] %@ OR bauherr CONTAINS[cd] %@ OR eventNumber CONTAINS[cd] %@",
+                q, q, q, q))
+        }
+
+        fetchedResultsController.fetchRequest.predicate = predicates.isEmpty
+            ? nil
+            : NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
 
         do {
             try fetchedResultsController.performFetch()
@@ -82,7 +95,7 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
                 self.events = self.prioritizeEvents(fetched)
             }
         } catch {
-            lastError = "Filter fehlgeschlagen: \(error.localizedDescription)"
+            lastError = "Suche fehlgeschlagen: \(error.localizedDescription)"
         }
     }
 

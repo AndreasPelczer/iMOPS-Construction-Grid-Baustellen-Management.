@@ -10,6 +10,7 @@ struct ContentView: View {
     @EnvironmentObject var eventListVM: EventListViewModel
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedFilter: EventFilter = .upcoming
+    @State private var searchText = ""
     @State private var showingAddEventSheet = false
     @State private var showHelp = false
 
@@ -32,6 +33,7 @@ struct ContentView: View {
                 )
             }
         }
+        .searchable(text: $searchText, prompt: "Baustelle, Ort, Bauherr...")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarLeading) {
@@ -62,11 +64,14 @@ struct ContentView: View {
             BaustellenListeHelpView()
         }
         .onChange(of: selectedFilter) { _, newFilter in
-            withAnimation { eventListVM.applyFilter(filter: newFilter) }
+            withAnimation { eventListVM.applyFilterAndSearch(filter: newFilter, query: searchText) }
+        }
+        .onChange(of: searchText) { _, q in
+            eventListVM.applyFilterAndSearch(filter: selectedFilter, query: q)
         }
         .onAppear {
             DebugSeeder.seedIfNeeded(context: viewContext)
-            eventListVM.applyFilter(filter: selectedFilter)
+            eventListVM.applyFilterAndSearch(filter: selectedFilter, query: searchText)
         }
         .alert(
             "Datenfehler",
@@ -110,11 +115,14 @@ struct BaustellenListeHelpView: View {
                 Section("Baustellen-Übersicht") {
                     Text("Hier siehst du alle deine Baustellen (Projekte). Jede Baustelle enthält Aufträge, Mängel, Pläne, Checklisten und Wetterdaten.")
                 }
+                Section("Suche") {
+                    Label("Suchfeld oben: filtert nach Name, Ort, Bauherr und Projektnummer", systemImage: "magnifyingglass")
+                    Label("Suche und Filterreiter arbeiten zusammen", systemImage: "slider.horizontal.3")
+                }
                 Section("Filter") {
-                    Label("Bevorstehend – geplante Baustellen, noch nicht gestartet", systemImage: "calendar.badge.clock")
-                    Label("Laufend – Baustellen im aktiven Zeitraum", systemImage: "play.circle.fill")
-                    Label("Alle – gesamte Übersicht ohne Zeitfilter", systemImage: "list.bullet")
+                    Label("Aktiv – laufende und geplante Baustellen (Standard)", systemImage: "play.circle.fill")
                     Label("Abgeschlossen – beendete Projekte", systemImage: "checkmark.circle.fill")
+                    Label("Alle – gesamte Übersicht ohne Zeitfilter", systemImage: "list.bullet")
                 }
                 Section("Neue Baustelle") {
                     Label("Tippe auf das + rechts oben um eine neue Baustelle anzulegen", systemImage: "plus.circle.fill")
