@@ -125,10 +125,22 @@ struct GlobalSearchView: View {
                     Section("Aufträge (\(foundAuftraege.count))") {
                         ForEach(foundAuftraege, id: \.objectID) { job in
                             NavigationLink { AuftragDetailView(job: job) } label: {
-                                HStack {
+                                HStack(spacing: 10) {
                                     Image(systemName: job.isCompleted ? "checkmark.circle.fill" : "circle")
                                         .foregroundStyle(job.isCompleted ? .green : .orange)
-                                    Text(job.employeeName ?? "–").font(.body)
+                                        .frame(width: 20)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(job.employeeName ?? "–").font(.body).lineLimit(1)
+                                        HStack(spacing: 6) {
+                                            if let kg = job.kostenGruppeBezeichnung, !kg.isEmpty {
+                                                Text(kg).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                                Text("·").foregroundStyle(.secondary)
+                                            }
+                                            if let ev = job.event?.title {
+                                                Text(ev).font(.caption).foregroundStyle(.orange).lineLimit(1)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -137,7 +149,7 @@ struct GlobalSearchView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .searchable(text: $query, prompt: "Baustelle, Mangel, Position, Artikel...")
+        .searchable(text: $query, prompt: "Baustelle, Mangel, Position, Artikel, Auftrag...")
         .navigationTitle("Suche")
         .onChange(of: query) { _, q in performSearch(q) }
     }
@@ -180,7 +192,9 @@ struct GlobalSearchView: View {
         foundKatalog = (try? viewContext.fetch(katReq)) ?? []
 
         let jobReq: NSFetchRequest<Auftrag> = Auftrag.fetchRequest()
-        jobReq.predicate = NSPredicate(format: "employeeName CONTAINS[cd] %@", q)
+        jobReq.predicate = NSPredicate(
+            format: "employeeName CONTAINS[cd] %@ OR kostenGruppeBezeichnung CONTAINS[cd] %@ OR kostenGruppeNummer CONTAINS[cd] %@ OR processingDetails CONTAINS[cd] %@ OR storageLocation CONTAINS[cd] %@",
+            q, q, q, q, q)
         jobReq.sortDescriptors = [NSSortDescriptor(key: "employeeName", ascending: true)]
         jobReq.fetchLimit = 20
         foundAuftraege = (try? viewContext.fetch(jobReq)) ?? []

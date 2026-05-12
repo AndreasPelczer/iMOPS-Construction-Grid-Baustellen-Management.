@@ -15,7 +15,17 @@ struct SettingsView: View {
     @AppStorage(FirmenSettings.Keys.ustIdNr)  private var ustIdNr      = ""
     @AppStorage(FirmenSettings.Keys.mwstSatz) private var mwstSatz     = 19.0
 
+    // Benachrichtigungen
+    @AppStorage(NotificationService.Keys.fristenEnabled) private var notifsEnabled = true
+    @AppStorage(NotificationService.Keys.vorwarnTage)    private var vorwarnTage   = 1
+
     private let mwstOptionen: [Double] = [19.0, 7.0, 0.0]
+    private let vorwarnOptionen: [(label: String, tage: Int)] = [
+        ("1 Tag vorher", 1),
+        ("2 Tage vorher", 2),
+        ("3 Tage vorher", 3),
+        ("7 Tage vorher", 7)
+    ]
 
     var body: some View {
         @Bindable var session = session
@@ -52,6 +62,30 @@ struct SettingsView: View {
                 Text("Firmendaten")
             } footer: {
                 Text("Werden für XRechnung-Export (Rechnungsaussteller) und Bautagesbericht verwendet.")
+                    .font(.caption)
+            }
+
+            // --- Benachrichtigungen ---
+            Section {
+                Toggle(isOn: $notifsEnabled) {
+                    Label("Fristen-Erinnerungen", systemImage: "bell.badge")
+                }
+                if notifsEnabled {
+                    Picker(selection: $vorwarnTage) {
+                        ForEach(vorwarnOptionen, id: \.tage) { opt in
+                            Text(opt.label).tag(opt.tage)
+                        }
+                    } label: {
+                        Label("Vorwarnung", systemImage: "clock")
+                    }
+                    .pickerStyle(.menu)
+                }
+            } header: {
+                Text("Benachrichtigungen")
+            } footer: {
+                Text(notifsEnabled
+                    ? "Benachrichtigungen werden am Frist-Tag und \(vorwarnTage == 1 ? "1 Tag" : "\(vorwarnTage) Tage") vorher um 08:00 Uhr gesendet."
+                    : "Keine Frist-Erinnerungen. Bestehende Benachrichtigungen werden beim nächsten Speichern entfernt.")
                     .font(.caption)
             }
 
