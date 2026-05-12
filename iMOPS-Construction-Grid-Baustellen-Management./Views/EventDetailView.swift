@@ -43,6 +43,8 @@ struct EventDetailView: View {
     @State private var showingMaengelListe = false
     @State private var refreshID = UUID()
     @State private var showHelp = false
+    @State private var showLVPDFShare = false
+    @State private var lvPDFURL: URL?
 
     @State private var isConverting = false
     @State private var conversionError: String?
@@ -71,6 +73,8 @@ struct EventDetailView: View {
         return Double(checklistDoneCount) / Double(checklistTotalCount)
     }
 
+    private var lvPositionenCount: Int { event.lvPositionen?.count ?? 0 }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -93,6 +97,13 @@ struct EventDetailView: View {
                 Button { showHelp = true } label: {
                     Image(systemName: "questionmark.circle")
                 }
+                .tint(.orange)
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { generateLVPDF() } label: {
+                    Image(systemName: "arrow.up.doc")
+                }
+                .disabled(lvPositionenCount == 0)
                 .tint(.orange)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -127,6 +138,11 @@ struct EventDetailView: View {
                     }
                 }
             )
+        }
+        .sheet(isPresented: $showLVPDFShare) {
+            if let url = lvPDFURL {
+                LVShareSheet(url: url).ignoresSafeArea()
+            }
         }
         .overlay {
             if isConverting {
@@ -394,31 +410,58 @@ struct EventDetailView: View {
 
     // MARK: - LV CARD
     private var lvCard: some View {
-        NavigationLink {
-            LVView(event: event)
-                .environment(\.managedObjectContext, viewContext)
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "doc.text.fill")
-                    .font(.title2)
-                    .foregroundStyle(.orange)
-                    .frame(width: 36)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Leistungsverzeichnis").font(.headline).foregroundStyle(.primary)
-                    let anzahl = event.lvPositionen?.count ?? 0
-                    Text(anzahl == 0
-                         ? "Noch keine Positionen"
-                         : "\(anzahl) Position\(anzahl == 1 ? "" : "en")")
-                        .font(.caption).foregroundStyle(.secondary)
+        HStack(spacing: 14) {
+            NavigationLink {
+                LVView(event: event)
+                    .environment(\.managedObjectContext, viewContext)
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "doc.text.fill")
+                        .font(.title2)
+                        .foregroundStyle(.orange)
+                        .frame(width: 36)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Leistungsverzeichnis").font(.headline).foregroundStyle(.primary)
+                        Text(lvPositionenCount == 0
+                             ? "Noch keine Positionen"
+                             : "\(lvPositionenCount) Position\(lvPositionenCount == 1 ? "" : "en")")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
                 }
-                Spacer()
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
             }
-            .padding()
-            .background(Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .buttonStyle(.plain)
+
+            if lvPositionenCount > 0 {
+                Button { generateLVPDF() } label: {
+                    Image(systemName: "arrow.up.doc")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.orange)
+                        .padding(8)
+                        .background(Color.orange.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
         }
-        .buttonStyle(.plain)
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func generateLVPDF() {
+        let positionen = (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
+            .sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }
+        let data = LVPDFExporter.generate(event: event, positionen: positionen)
+        let name = "LV-\(event.title ?? "Baustelle")"
+            .replacingOccurrences(of: " ", with: "-")
+            .appending(".pdf")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        if (try? data.write(to: url)) != nil {
+            lvPDFURL = url
+            showLVPDFShare = true
+        }
     }
 
     // MARK: - CHECKLIST CARD
@@ -782,8 +825,9 @@ struct EventDetailHelpView: View {
                     Label("Mängel: Qualitätsprobleme erfassen und verfolgen", systemImage: "exclamationmark.triangle")
                     Label("Aufträge: Einzelaufgaben anlegen und Mitarbeitern zuweisen", systemImage: "list.bullet.clipboard")
                 }
-                Section("LV") {
+                Section("LV & PDF") {
                     Label("Tippe auf die LV-Karte um das Leistungsverzeichnis zu öffnen", systemImage: "arrow.right.circle")
+                    Label("Tippe auf das PDF-Symbol (↑) auf der LV-Karte oder in der Toolbar um das LV als PDF zu exportieren", systemImage: "arrow.up.doc")
                     Label("Positionen anlegen, nach DIN 276 KG gruppiert", systemImage: "list.number")
                     Label("Bestellliste: strukturierte Mail an Lieferanten erstellen", systemImage: "envelope.badge")
                 }
