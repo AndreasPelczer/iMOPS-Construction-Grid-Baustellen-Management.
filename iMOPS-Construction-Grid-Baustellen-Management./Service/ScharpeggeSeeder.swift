@@ -5,6 +5,12 @@ import CoreData
 struct ScharpeggeSeeder {
 
     static func seedIfNeeded(context: NSManagedObjectContext) {
+        let key = "scharpegge_seeded_v3"
+        guard !UserDefaults.standard.bool(forKey: key) else {
+            print("🐟 Scharpegge Katalog bereits importiert (v3) — überspringe")
+            return
+        }
+
         print("🐟 Scharpegge Seeder startet")
 
         // Alle bestehenden Einträge löschen damit kein alter Datenmüll bleibt
@@ -64,7 +70,8 @@ struct ScharpeggeSeeder {
 
         do {
             try context.save()
-            print("🐟 Seeder erfolgreich abgeschlossen")
+            UserDefaults.standard.set(true, forKey: key)
+            print("🐟 Seeder erfolgreich abgeschlossen — Key gesetzt: \(key)")
         } catch {
             print("🐟 Seeder Fehler beim Speichern: \(error)")
             context.rollback()

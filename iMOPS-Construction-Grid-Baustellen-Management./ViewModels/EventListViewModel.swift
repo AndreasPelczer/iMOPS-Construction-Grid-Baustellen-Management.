@@ -1,5 +1,3 @@
-// ViewModels/EventListViewModel.swift
-
 import Foundation
 import CoreData
 import Combine
@@ -11,22 +9,42 @@ enum EventFilter: String, CaseIterable, Identifiable {
     case upcoming = "Aktiv"
     case past = "Abgeschlossen"
     case all = "Alle"
-
     var id: String { self.rawValue }
+}
+
+// MARK: - EventSortOrder
+
+enum EventSortOrder: String, CaseIterable, Identifiable {
+    case datumNeuAlt   = "Datum (neu → alt)"
+    case datumAltNeu   = "Datum (alt → neu)"
+    case nameAZ        = "Name (A → Z)"
+    case offeneMaengel = "Offene Mängel"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .datumNeuAlt:   return "arrow.down.calendar"
+        case .datumAltNeu:   return "arrow.up.calendar"
+        case .nameAZ:        return "textformat.abc"
+        case .offeneMaengel: return "exclamationmark.triangle"
+        }
+    }
 }
 
 // MARK: - EventListViewModel
 
 class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsControllerDelegate {
 
-    // MARK: - Properties
     @Published var events: [Event] = []
     @Published var lastError: String? = nil
 
+    private(set) var currentSortOrder: EventSortOrder = .datumNeuAlt
+    private var currentFilter: EventFilter = .upcoming
+    private var currentQuery: String = ""
+
     private let viewContext: NSManagedObjectContext
     private var fetchedResultsController: NSFetchedResultsController<Event>!
-
-    // MARK: - Initializer
 
     init(context: NSManagedObjectContext) {
         self.viewContext = context
@@ -38,8 +56,7 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
 
     private func setupFetchedResultsController() {
         let request: NSFetchRequest<Event> = Event.fetchRequest()
-        let dateSort = NSSortDescriptor(key: "eventStartTime", ascending: true)
-        request.sortDescriptors = [dateSort]
+        request.sortDescriptors = [NSSortDescriptor(key: "eventStartTime", ascending: true)]
 
         fetchedResultsController = NSFetchedResultsController(
             fetchRequest: request,
@@ -52,49 +69,83 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
         do {
             try fetchedResultsController.performFetch()
             if let fetched = fetchedResultsController.fetchedObjects {
-                self.events = self.prioritizeEvents(fetched)
+                self.events = self.sortEvents(fetched, sort: currentSortOrder)
             }
         } catch {
             lastError = "Laden fehlgeschlagen: \(error.localizedDescription)"
         }
     }
 
-    // MARK: - Filter
+    // MARK: - Filter + Suche + Sortierung
 
     func applyFilter(filter: EventFilter) {
+        applyFilterAndSearch(filter: filter, query: "", sort: currentSortOrder)
+    }
+
+    func applyFilterAndSearch(filter: EventFilter, query: String, sort: EventSortOrder) {
+        currentFilter    = filter
+        currentQuery     = query
+        currentSortOrder = sort
+
         let now = Date()
-        let predicate: NSPredicate?
+        var predicates: [NSPredicate] = []
 
         switch filter {
         case .upcoming:
-            predicate = NSPredicate(format: "eventEndTime == nil OR eventEndTime >= %@", now as NSDate)
+            predicates.append(NSPredicate(format: "eventEndTime == nil OR eventEndTime >= %@", now as NSDate))
         case .past:
-            predicate = NSPredicate(format: "eventEndTime < %@", now as NSDate)
+            predicates.append(NSPredicate(format: "eventEndTime < %@", now as NSDate))
         case .all:
-            predicate = nil
+            break
         }
 
-        fetchedResultsController.fetchRequest.predicate = predicate
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !q.isEmpty {
+            predicates.append(NSPredicate(
+                format: "title CONTAINS[cd] %@ OR location CONTAINS[cd] %@ OR bauherr CONTAINS[cd] %@ OR eventNumber CONTAINS[cd] %@",
+                q, q, q, q))
+        }
+
+        fetchedResultsController.fetchRequest.predicate = predicates.isEmpty
+            ? nil
+            : NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
 
         do {
             try fetchedResultsController.performFetch()
             if let fetched = fetchedResultsController.fetchedObjects {
-                self.events = self.prioritizeEvents(fetched)
+                self.events = self.sortEvents(fetched, sort: sort)
             }
         } catch {
-            lastError = "Filter fehlgeschlagen: \(error.localizedDescription)"
+            lastError = "Suche fehlgeschlagen: \(error.localizedDescription)"
         }
     }
 
-    // MARK: - Priorisierung
+    // MARK: - Sortierung (in-memory)
 
-    private func prioritizeEvents(_ fetchedEvents: [Event]) -> [Event] {
-        return fetchedEvents.sorted { (a: Event, b: Event) -> Bool in
-            let activeA = hasActiveJobs(event: a)
-            let activeB = hasActiveJobs(event: b)
-            if activeA != activeB { return activeA }
-            return (a.eventStartTime ?? Date()) < (b.eventStartTime ?? Date())
+    private func sortEvents(_ input: [Event], sort: EventSortOrder) -> [Event] {
+        switch sort {
+        case .datumNeuAlt:
+            return input.sorted {
+                ($0.eventStartTime ?? .distantPast) > ($1.eventStartTime ?? .distantPast)
+            }
+        case .datumAltNeu:
+            return input.sorted {
+                ($0.eventStartTime ?? .distantFuture) < ($1.eventStartTime ?? .distantFuture)
+            }
+        case .nameAZ:
+            return input.sorted {
+                ($0.title ?? "") < ($1.title ?? "")
+            }
+        case .offeneMaengel:
+            return input.sorted {
+                offeneMaengelCount($0) > offeneMaengelCount($1)
+            }
         }
+    }
+
+    private func offeneMaengelCount(_ event: Event) -> Int {
+        (event.maengel?.allObjects as? [Mangel] ?? [])
+            .filter { $0.status != .behoben && $0.status != .abgenommen }.count
     }
 
     func hasActiveJobs(event: Event) -> Bool {
@@ -116,7 +167,7 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         if let fetched = controller.fetchedObjects as? [Event] {
             DispatchQueue.main.async {
-                self.events = self.prioritizeEvents(fetched)
+                self.events = self.sortEvents(fetched, sort: self.currentSortOrder)
             }
         }
     }

@@ -8,8 +8,12 @@ struct MangelListeView: View {
     let event: Event
 
     @FetchRequest private var maengel: FetchedResults<Mangel>
-    @State private var zeigeErfassen = false
+    @State private var zeigeErfassen  = false
     @State private var statusFilter: MangelStatus? = nil
+    @State private var gewerkFilter: String?        = nil
+    @State private var showPDFShare   = false
+    @State private var pdfURL: URL?
+    @State private var showFristen    = false
 
     init(event: Event) {
         self.event = event
@@ -22,15 +26,37 @@ struct MangelListeView: View {
         )
     }
 
-    private var gefiltert: [Mangel] {
-        guard let f = statusFilter else { return Array(maengel) }
-        return maengel.filter { $0.status == f }
+    // MARK: - Gewerk-Liste (eindeutig, sortiert)
+    private var verfuegbareGewerke: [String] {
+        let gewerke = maengel.compactMap { $0.gewerk }.filter { !$0.isEmpty }
+        return Array(Set(gewerke)).sorted()
     }
+
+    // MARK: - Gefilterte Liste (Status + Gewerk)
+    private var gefiltert: [Mangel] {
+        maengel.filter { mangel in
+            let statusOK = statusFilter == nil || mangel.status == statusFilter
+            let gewerkOK = gewerkFilter == nil || mangel.gewerk == gewerkFilter
+            return statusOK && gewerkOK
+        }
+    }
+
+    // MARK: - Statistik-Kennzahlen (immer über alle Mängel)
+    private var anzahlOffen:        Int { maengel.filter { $0.status == .offen    }.count }
+    private var anzahlInArbeit:     Int { maengel.filter { $0.status == .inArbeit }.count }
+    private var anzahlBehoben:      Int { maengel.filter { $0.status == .behoben || $0.status == .abgenommen }.count }
+    private var anzahlUeberfaellig: Int { maengel.filter { $0.istUeberfaellig }.count }
 
     var body: some View {
         NavigationStack {
             List {
+                if !maengel.isEmpty {
+                    statistikKarte
+                }
                 filterPicker
+                if !verfuegbareGewerke.isEmpty && verfuegbareGewerke.count >= 2 {
+                    gewerkPicker
+                }
                 if gefiltert.isEmpty {
                     leerHinweis
                 } else {
@@ -49,9 +75,20 @@ struct MangelListeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        zeigeErfassen = true
-                    } label: {
+                    Button { showFristen = true } label: {
+                        Image(systemName: "calendar.badge.clock")
+                    }
+                    .tint(.orange)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { exportPDF() } label: {
+                        Image(systemName: "arrow.up.doc")
+                    }
+                    .tint(.red)
+                    .disabled(maengel.isEmpty)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { zeigeErfassen = true } label: {
                         Image(systemName: "plus")
                     }
                 }
@@ -60,8 +97,49 @@ struct MangelListeView: View {
                 MangelErfassenView(event: event)
                     .environment(\.managedObjectContext, ctx)
             }
+            .sheet(isPresented: $showPDFShare) {
+                if let url = pdfURL { LVShareSheet(url: url).ignoresSafeArea() }
+            }
+            .sheet(isPresented: $showFristen) {
+                FristenView()
+                    .environment(\.managedObjectContext, ctx)
+            }
         }
     }
+
+    // MARK: - Statistik-Kachel
+
+    @ViewBuilder
+    private var statistikKarte: some View {
+        Section {
+            HStack(spacing: 0) {
+                statistikZelle(label: "Gesamt",     wert: maengel.count,      farbe: .primary)
+                Divider().frame(height: 32)
+                statistikZelle(label: "Offen",      wert: anzahlOffen,        farbe: .orange)
+                Divider().frame(height: 32)
+                statistikZelle(label: "In Arbeit",  wert: anzahlInArbeit,     farbe: .blue)
+                Divider().frame(height: 32)
+                statistikZelle(label: "Behoben",    wert: anzahlBehoben,      farbe: .green)
+                Divider().frame(height: 32)
+                statistikZelle(label: "Überfällig", wert: anzahlUeberfaellig, farbe: .red)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func statistikZelle(label: String, wert: Int, farbe: Color) -> some View {
+        VStack(spacing: 2) {
+            Text("\(wert)")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(wert > 0 ? farbe : Color.secondary)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Status-Filter-Chips
 
     @ViewBuilder
     private var filterPicker: some View {
@@ -94,18 +172,76 @@ struct MangelListeView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: - Gewerk-Filter-Chips
+
+    @ViewBuilder
+    private var gewerkPicker: some View {
+        Section {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    gewerkChip(label: "Alle Gewerke", gewerk: nil)
+                    ForEach(verfuegbareGewerke, id: \.self) { g in
+                        gewerkChip(label: g, gewerk: g)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        } header: {
+            Text("Gewerk")
+        }
+        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+    }
+
+    private func gewerkChip(label: String, gewerk: String?) -> some View {
+        let aktiv = gewerkFilter == gewerk
+        return Button {
+            gewerkFilter = gewerk
+        } label: {
+            Text(label)
+                .font(.subheadline.weight(aktiv ? .semibold : .regular))
+                .padding(.horizontal, 14).padding(.vertical, 6)
+                .background(aktiv ? Color.purple : Color(.tertiarySystemFill))
+                .foregroundStyle(aktiv ? .white : .primary)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Leer-Hinweis
+
     private var leerHinweis: some View {
         Section {
             HStack(spacing: 14) {
-                Image(systemName: "checkmark.seal")
-                    .font(.title2).foregroundStyle(.green)
+                Image(systemName: statusFilter == nil && gewerkFilter == nil
+                      ? "checkmark.seal" : "line.3.horizontal.decrease.circle")
+                    .font(.title2)
+                    .foregroundStyle(statusFilter == nil && gewerkFilter == nil ? .green : .orange)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Keine Mängel")
-                    Text("Tippe auf + um einen Mangel zu erfassen.")
+                    Text(statusFilter == nil && gewerkFilter == nil
+                         ? "Keine Mängel" : "Keine Mängel für diesen Filter")
+                    Text(statusFilter == nil && gewerkFilter == nil
+                         ? "Tippe auf + um einen Mangel zu erfassen."
+                         : "Filter zurücksetzen um alle Mängel zu sehen.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
             .padding(.vertical, 6)
+        }
+    }
+
+    // MARK: - Export + Löschen
+
+    private func exportPDF() {
+        let data = MangelPDFExporter.generate(event: event, maengel: Array(maengel))
+        let fmt  = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        let name = "Mängelprotokoll-\(fmt.string(from: Date()))-\(event.title ?? "Baustelle")"
+            .replacingOccurrences(of: " ", with: "-")
+            .appending(".pdf")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        if (try? data.write(to: url)) != nil {
+            pdfURL = url
+            showPDFShare = true
         }
     }
 
@@ -115,6 +251,7 @@ struct MangelListeView: View {
             if let pfad = m.fotoPfad {
                 try? FileManager.default.removeItem(atPath: pfad)
             }
+            NotificationService.shared.cancel(for: m)
             ctx.delete(m)
         }
         try? ctx.save()

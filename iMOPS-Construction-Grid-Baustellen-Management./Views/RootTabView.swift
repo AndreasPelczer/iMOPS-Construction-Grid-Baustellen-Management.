@@ -9,6 +9,7 @@ import SwiftUI
 
 struct RootTabView: View {
     @Environment(AppSession.self) private var session
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
         TabView {
@@ -20,7 +21,15 @@ struct RootTabView: View {
                 Label("Baustellen", systemImage: "building.2")
             }
 
-            // TAB 2: Haus-Konfigurator (nur fuer Disponent / Leitung)
+            // TAB 2: Suche
+            NavigationStack {
+                GlobalSearchView()
+            }
+            .tabItem {
+                Label("Suche", systemImage: "magnifyingglass")
+            }
+
+            // TAB 3: Haus-Konfigurator (nur fuer Disponent / Leitung)
             if session.role == .dispatcher || session.role == .director {
                 NavigationStack {
                     HouseConfiguratorView()
@@ -30,7 +39,7 @@ struct RootTabView: View {
                 }
             }
 
-            // TAB 3: Katalog (Material-Lexikon)
+            // TAB 4: Katalog (Material-Lexikon)
             NavigationStack {
                 MaterialLexikonView()
             }
@@ -38,7 +47,7 @@ struct RootTabView: View {
                 Label("Katalog", systemImage: "books.vertical")
             }
 
-            // TAB 4: Crew (nur für Disponent / Leitung)
+            // TAB 5: Crew (nur für Disponent / Leitung)
             if session.role == .dispatcher || session.role == .director {
                 NavigationStack {
                     CrewPlanningView()
@@ -48,7 +57,7 @@ struct RootTabView: View {
                 }
             }
 
-            // TAB 5: BuildIQ KI-Scanner (nur iOS, kein macCatalyst)
+            // TAB 6: BuildIQ KI-Scanner (nur iOS, kein macCatalyst)
             #if !targetEnvironment(macCatalyst)
             NavigationStack {
                 BuildIQLandingView()
@@ -58,7 +67,7 @@ struct RootTabView: View {
             }
             #endif
 
-            // TAB 6: Settings
+            // TAB 7: Settings
             NavigationStack {
                 SettingsView()
             }
@@ -68,5 +77,11 @@ struct RootTabView: View {
         }
         .tint(.orange)
         .environment(\.locale, session.locale)
+        .fullScreenCover(isPresented: Binding(
+            get: { !hasCompletedOnboarding },
+            set: { if !$0 { hasCompletedOnboarding = true } }
+        )) {
+            OnboardingView()
+        }
     }
 }

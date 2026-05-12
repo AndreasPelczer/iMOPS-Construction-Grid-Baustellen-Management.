@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreData
+import Combine
 
 @main
 struct iMOPSApp: App {
@@ -25,6 +26,13 @@ struct iMOPSApp: App {
                 )
                 .task {
                     ScharpeggeSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    NotificationService.shared.requestAuthorization()
+                    NotificationService.shared.updateBadge(context: persistence.container.viewContext)
+                }
+                .onReceive(
+                    NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
+                ) { _ in
+                    NotificationService.shared.updateBadge(context: persistence.container.viewContext)
                 }
                 .onOpenURL { url in
                     importedFileHandler.handleIncomingFile(url: url)

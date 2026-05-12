@@ -1,74 +1,69 @@
-// Views/EventRowView.swift (NEU: Mit Fortschrittsbalken-Logik)
-
 import SwiftUI
 
 struct EventRowView: View {
     @ObservedObject var event: Event
-    
-    // Kommentar: ViewModel-Helper zur Berechnung der Fortschrittszahlen
+
     private var progress: EventJobProgressData {
         EventJobProgressData(event: event)
     }
-    
-    // Hilfsfunktion zur Berechnung der Breite des Balkens
+
     private func widthRatio(for count: Int) -> CGFloat {
         guard progress.totalJobs > 0 else { return 0 }
         return CGFloat(count) / CGFloat(progress.totalJobs)
     }
-    
+
+    private var offeneMaengel: [Mangel] {
+        (event.maengel?.allObjects as? [Mangel] ?? [])
+            .filter { $0.status != .behoben && $0.status != .abgenommen }
+    }
+
+    private var hatUeberfaellige: Bool {
+        offeneMaengel.contains { $0.istUeberfaellig }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            // MARK: - Baustellen-Details
             HStack {
-                            Text(event.title ?? "Unbenannte Baustelle")
-                                .font(.headline)
-                            Spacer()
-                            // Kommentar: Verwenden Sie eventStartTime wie in ContentView definiert
-                            Text(event.eventStartTime ?? Date(), style: .date) // <--- eventStartTime verwenden
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-            
-            // MARK: - Fortschrittsbalken (Hauptelement)
-            // Kommentar: Zeigt den Fortschritt des Events an
-            if progress.totalJobs > 0 {
-                HStack(spacing: 0) {
-                    GeometryReader { proxy in
-                        HStack(spacing: 0) {
-                            let totalWidth = proxy.size.width
-                            
-                            // 1. Abgeschlossene Aufträge (Grün)
-                            // Kommentar: Balken für abgeschlossene Jobs
-                            Color.green
-                                .frame(width: totalWidth * widthRatio(for: progress.completedCount))
-                            
-                            // 2. In Bearbeitung (Orange)
-                            // Kommentar: Balken für aktuell laufende Jobs
-                            Color.orange
-                                .frame(width: totalWidth * widthRatio(for: progress.inProgressCount))
-                            
-                            // 3. Pausiert (Rot)
-                            // Kommentar: Balken für pausierte Jobs
-                            Color.red
-                                .frame(width: totalWidth * widthRatio(for: progress.onHoldCount))
-                            
-                            // 4. Neu/Pending (Blau)
-                            // Kommentar: Balken für neue/wartende Jobs
-                            Color.blue
-                                .frame(width: totalWidth * widthRatio(for: progress.pendingCount))
-                            
-                            // 5. Restlicher Platz (Grau) - Nur als Fallback, falls die Summe < 1.0 ist
-                            Color(.systemGray5)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                Text(event.title ?? "Unbenannte Baustelle")
+                    .font(.headline)
+                Spacer()
+                if offeneMaengel.count > 0 {
+                    HStack(spacing: 3) {
+                        Image(systemName: hatUeberfaellige
+                              ? "exclamationmark.triangle.fill"
+                              : "exclamationmark.circle.fill")
+                            .font(.caption2)
+                        Text("\(offeneMaengel.count)")
+                            .font(.caption.monospacedDigit().weight(.semibold))
                     }
-                    .frame(height: 6)
+                    .foregroundStyle(hatUeberfaellige ? .red : .orange)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background((hatUeberfaellige ? Color.red : Color.orange).opacity(0.12))
+                    .clipShape(Capsule())
                 }
+                Text(event.eventStartTime ?? Date(), style: .date)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            if progress.totalJobs > 0 {
+                GeometryReader { proxy in
+                    HStack(spacing: 0) {
+                        let w = proxy.size.width
+                        Color.green  .frame(width: w * widthRatio(for: progress.completedCount))
+                        Color.orange .frame(width: w * widthRatio(for: progress.inProgressCount))
+                        Color.red    .frame(width: w * widthRatio(for: progress.onHoldCount))
+                        Color.blue   .frame(width: w * widthRatio(for: progress.pendingCount))
+                        Color(.systemGray5)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+                .frame(height: 6)
             } else {
-                // Kommentar: Meldung, wenn keine Aufträge vorhanden sind
-                Text("Keine Aufträge vorhanden")
+                Text("Keine Auftr\u{00e4}ge vorhanden")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)

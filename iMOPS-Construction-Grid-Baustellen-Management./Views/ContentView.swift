@@ -1,5 +1,3 @@
-// Views/ContentView.swift
-
 import SwiftUI
 import CoreData
 
@@ -10,15 +8,10 @@ struct ContentView: View {
     @EnvironmentObject var eventListVM: EventListViewModel
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedFilter: EventFilter = .upcoming
+    @State private var sortOrder: EventSortOrder = .datumNeuAlt
+    @State private var searchText = ""
     @State private var showingAddEventSheet = false
     @State private var showHelp = false
-
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .none
-        return formatter
-    }()
 
     var body: some View {
         List {
@@ -32,12 +25,25 @@ struct ContentView: View {
                 )
             }
         }
+        .searchable(text: $searchText, prompt: "Baustelle, Ort, Bauherr...")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarLeading) {
                 EditButton()
                 Button { showHelp = true } label: {
                     Image(systemName: "questionmark.circle")
+                }
+                .tint(.orange)
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Picker("Sortierung", selection: $sortOrder) {
+                        ForEach(EventSortOrder.allCases) { order in
+                            Label(order.rawValue, systemImage: order.icon).tag(order)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
                 }
                 .tint(.orange)
             }
@@ -62,11 +68,17 @@ struct ContentView: View {
             BaustellenListeHelpView()
         }
         .onChange(of: selectedFilter) { _, newFilter in
-            withAnimation { eventListVM.applyFilter(filter: newFilter) }
+            withAnimation { eventListVM.applyFilterAndSearch(filter: newFilter, query: searchText, sort: sortOrder) }
+        }
+        .onChange(of: searchText) { _, q in
+            eventListVM.applyFilterAndSearch(filter: selectedFilter, query: q, sort: sortOrder)
+        }
+        .onChange(of: sortOrder) { _, newSort in
+            withAnimation { eventListVM.applyFilterAndSearch(filter: selectedFilter, query: searchText, sort: newSort) }
         }
         .onAppear {
             DebugSeeder.seedIfNeeded(context: viewContext)
-            eventListVM.applyFilter(filter: selectedFilter)
+            eventListVM.applyFilterAndSearch(filter: selectedFilter, query: searchText, sort: sortOrder)
         }
         .alert(
             "Datenfehler",
@@ -86,8 +98,6 @@ struct ContentView: View {
     private func deleteEvents(offsets: IndexSet) {
         eventListVM.deleteEvents(offsets: offsets)
     }
-
-    // MARK: - Preview
 
     struct ContentView_Previews: PreviewProvider {
         static var previews: some View {
@@ -110,27 +120,29 @@ struct BaustellenListeHelpView: View {
                 Section("Baustellen-Übersicht") {
                     Text("Hier siehst du alle deine Baustellen (Projekte). Jede Baustelle enthält Aufträge, Mängel, Pläne, Checklisten und Wetterdaten.")
                 }
+                Section("Suche") {
+                    Label("Suchfeld oben: filtert nach Name, Ort, Bauherr und Projektnummer", systemImage: "magnifyingglass")
+                    Label("Suche und Filterreiter arbeiten zusammen", systemImage: "slider.horizontal.3")
+                }
                 Section("Filter") {
-                    Label("Bevorstehend – geplante Baustellen, noch nicht gestartet", systemImage: "calendar.badge.clock")
-                    Label("Laufend – Baustellen im aktiven Zeitraum", systemImage: "play.circle.fill")
-                    Label("Alle – gesamte Übersicht ohne Zeitfilter", systemImage: "list.bullet")
+                    Label("Aktiv – laufende und geplante Baustellen (Standard)", systemImage: "play.circle.fill")
                     Label("Abgeschlossen – beendete Projekte", systemImage: "checkmark.circle.fill")
+                    Label("Alle – gesamte Übersicht ohne Zeitfilter", systemImage: "list.bullet")
+                }
+                Section("Sortierung") {
+                    Label("Tippe auf ↕ in der Toolbar um die Sortierung zu ändern", systemImage: "arrow.up.arrow.down")
+                    Label("Datum (neu → alt): neueste Baustellen zuerst", systemImage: "arrow.down.calendar")
+                    Label("Datum (alt → neu): älteste Baustellen zuerst", systemImage: "arrow.up.calendar")
+                    Label("Name (A → Z): alphabetisch", systemImage: "textformat.abc")
+                    Label("Offene Mängel: Baustellen mit den meisten offenen Mängeln zuerst", systemImage: "exclamationmark.triangle")
                 }
                 Section("Neue Baustelle") {
                     Label("Tippe auf das + rechts oben um eine neue Baustelle anzulegen", systemImage: "plus.circle.fill")
                     Label("Felder: Name, Ort, Bauherr, Architekt, Baugenehmigungsnummer, Zeitraum", systemImage: "doc.text")
                 }
-                Section("Demo-Daten") {
-                    Label("Der Zauberstab-Button lädt Beispiel-Baustellen zum Ausprobieren", systemImage: "wand.and.stars")
-                    Label("Demo-Daten können jederzeit gelöscht werden (Wischen nach links)", systemImage: "trash")
-                }
                 Section("Löschen") {
                     Label("Wische eine Baustelle nach links → Löschen", systemImage: "trash")
                     Label("Oder tippe auf Bearbeiten (links oben) für Mehrfach-Auswahl", systemImage: "pencil")
-                }
-                Section("Navigation") {
-                    Label("Tippe auf eine Baustelle → Detailansicht mit allen Informationen", systemImage: "chevron.right")
-                    Label("BuildIQ-Tab: KI-Scanner für Baumaterialien → DIN 276 Zuordnung", systemImage: "brain.head.profile")
                 }
             }
             .navigationTitle("Hilfe: Baustellen")

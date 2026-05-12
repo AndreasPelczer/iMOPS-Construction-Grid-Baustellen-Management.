@@ -126,5 +126,10 @@
 	<true/>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+	<!-- Spracherkennung: lokal auf Gerät, keine Cloud-Übertragung -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>iMOPS nutzt die Spracherkennung lokal auf deinem Gerät für Baustellenberichte und Mängelerfassung. Es werden keine Sprachdaten an externe Server übertragen.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Das Mikrofon wird für die Spracheingabe bei Berichten und Mängelerfassung benötigt. Die Verarbeitung erfolgt lokal auf deinem Gerät.</string>
 </dict>
 </plist>

@@ -31,6 +31,8 @@ struct EventDetailView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @ObservedObject var event: Event
 
+    @StateObject private var fortStore = LVFortschrittStore.shared
+
     @State private var showingEditSheet = false
     @State private var showingAddJobSheet = false
     @State private var showingCADPicker = false
@@ -41,10 +43,14 @@ struct EventDetailView: View {
     @State private var pinnedMaterials: [CDLexikonEntry] = []
     @State private var newStepText: String = ""
     @State private var showingMaengelListe = false
+    @State private var showMangelErfassen  = false
     @State private var refreshID = UUID()
     @State private var showHelp = false
     @State private var showLVPDFShare = false
     @State private var lvPDFURL: URL?
+    @State private var showLVCSVShare = false
+    @State private var lvCSVURL: URL?
+    @State private var showBautagesbericht = false
 
     @State private var isConverting = false
     @State private var conversionError: String?
@@ -75,6 +81,32 @@ struct EventDetailView: View {
 
     private var lvPositionenCount: Int { event.lvPositionen?.count ?? 0 }
 
+    private var lvGesamtFortschritt: Double {
+        let positionen = (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
+            .filter { !LVPositionHelper.isAlternative($0) }
+        guard !positionen.isEmpty else { return 0 }
+        let total = positionen.reduce(0) { sum, pos in
+            sum + (fortStore.fortschritt(for: pos.objectID.uriRepresentation().absoluteString)?.prozent ?? 0)
+        }
+        return Double(total) / Double(positionen.count) / 100.0
+    }
+
+    // MARK: Mängel-Kennzahlen
+    private var maengelAnzahl: Int { event.maengel?.count ?? 0 }
+    private var maengelOffen: Int {
+        (event.maengel?.allObjects as? [Mangel] ?? []).filter { $0.status == .offen }.count
+    }
+    private var maengelInArbeit: Int {
+        (event.maengel?.allObjects as? [Mangel] ?? []).filter { $0.status == .inArbeit }.count
+    }
+    private var maengelBehoben: Int {
+        (event.maengel?.allObjects as? [Mangel] ?? [])
+            .filter { $0.status == .behoben || $0.status == .abgenommen }.count
+    }
+    private var maengelUeberfaellig: Int {
+        (event.maengel?.allObjects as? [Mangel] ?? []).filter { $0.istUeberfaellig }.count
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -100,10 +132,29 @@ struct EventDetailView: View {
                 .tint(.orange)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { generateLVPDF() } label: {
+                Menu {
+                    Button {
+                        generateLVPDF()
+                    } label: {
+                        Label("LV als PDF", systemImage: "doc.text")
+                    }
+                    .disabled(lvPositionenCount == 0)
+
+                    Button {
+                        generateLVCSV()
+                    } label: {
+                        Label("LV als CSV", systemImage: "tablecells")
+                    }
+                    .disabled(lvPositionenCount == 0)
+
+                    Button {
+                        showBautagesbericht = true
+                    } label: {
+                        Label("Bautagesbericht", systemImage: "calendar.badge.clock")
+                    }
+                } label: {
                     Image(systemName: "arrow.up.doc")
                 }
-                .disabled(lvPositionenCount == 0)
                 .tint(.orange)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -143,6 +194,22 @@ struct EventDetailView: View {
             if let url = lvPDFURL {
                 LVShareSheet(url: url).ignoresSafeArea()
             }
+        }
+        .sheet(isPresented: $showLVCSVShare) {
+            if let url = lvCSVURL {
+                LVShareSheet(url: url).ignoresSafeArea()
+            }
+        }
+        .sheet(isPresented: $showBautagesbericht) {
+            BautagesberichtView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showingMaengelListe) {
+            MangelListeView(event: event).environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showMangelErfassen) {
+            MangelErfassenView(event: event)
+                .environment(\.managedObjectContext, viewContext)
         }
         .overlay {
             if isConverting {
@@ -426,6 +493,17 @@ struct EventDetailView: View {
                              ? "Noch keine Positionen"
                              : "\(lvPositionenCount) Position\(lvPositionenCount == 1 ? "" : "en")")
                             .font(.caption).foregroundStyle(.secondary)
+                        if lvPositionenCount > 0 && lvGesamtFortschritt > 0 {
+                            HStack(spacing: 6) {
+                                ProgressView(value: lvGesamtFortschritt)
+                                    .tint(lvGesamtFortschritt >= 1.0 ? .green : .orange)
+                                Text("\(Int(lvGesamtFortschritt * 100)) %")
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 34, alignment: .trailing)
+                            }
+                            .padding(.top, 2)
+                        }
                     }
                     Spacer()
                     Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
@@ -461,6 +539,19 @@ struct EventDetailView: View {
         if (try? data.write(to: url)) != nil {
             lvPDFURL = url
             showLVPDFShare = true
+        }
+    }
+
+    private func generateLVCSV() {
+        let positionen = (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
+        let data = LVCSVExporter.generate(event: event, positionen: positionen)
+        let name = "LV-\(event.title ?? "Baustelle")"
+            .replacingOccurrences(of: " ", with: "-")
+            .appending(".csv")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        if (try? data.write(to: url)) != nil {
+            lvCSVURL = url
+            showLVCSVShare = true
         }
     }
 
@@ -528,48 +619,39 @@ struct EventDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: - MAENGEL CARD
-    private var maengelAnzahl: Int { event.maengel?.count ?? 0 }
-    private var maengelOffenAnzahl: Int {
-        guard let set = event.maengel else { return 0 }
-        return set.compactMap { $0 as? Mangel }.filter { $0.status == .offen || $0.status == .inArbeit }.count
-    }
-
+    // MARK: - MÄNGEL CARD
     private var maengelCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Maengel (\(maengelAnzahl))").font(.headline)
+                Text("Mängel (\(maengelAnzahl))").font(.headline)
                 Spacer()
+                Button { showMangelErfassen = true } label: {
+                    Image(systemName: "plus.circle.fill").font(.title3).foregroundStyle(.orange)
+                }
                 Button { showingMaengelListe = true } label: {
-                    Label("Alle anzeigen", systemImage: "list.bullet").font(.subheadline)
+                    Label("Alle", systemImage: "list.bullet").font(.subheadline)
                 }
             }
             if maengelAnzahl == 0 {
                 HStack(spacing: 10) {
                     Image(systemName: "checkmark.seal").font(.title2).foregroundStyle(.green)
                     VStack(alignment: .leading) {
-                        Text("Keine Maengel erfasst").font(.subheadline)
-                        Text("Maengel direkt vor Ort erfassen und verwalten.").font(.caption).foregroundStyle(.secondary)
+                        Text("Keine Mängel erfasst").font(.subheadline)
+                        Text("Tippe auf + um einen Mangel direkt zu erfassen.").font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 .padding(.top, 4)
             } else {
-                HStack(spacing: 20) {
-                    VStack(spacing: 2) {
-                        Text("\(maengelOffenAnzahl)").font(.title2.bold()).foregroundStyle(maengelOffenAnzahl > 0 ? .red : .primary)
-                        Text("Offen").font(.caption).foregroundStyle(.secondary)
-                    }
-                    VStack(spacing: 2) {
-                        Text("\(maengelAnzahl - maengelOffenAnzahl)").font(.title2.bold()).foregroundStyle(.green)
-                        Text("Erledigt").font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button { showingMaengelListe = true } label: {
-                        Text("Details").font(.subheadline.weight(.medium))
-                            .padding(.horizontal, 14).padding(.vertical, 7)
-                            .background(Color(.tertiarySystemFill)).clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
+                HStack(spacing: 0) {
+                    maengelStatZelle(label: "Gesamt",     wert: maengelAnzahl,      farbe: .primary)
+                    Divider().frame(height: 32)
+                    maengelStatZelle(label: "Offen",      wert: maengelOffen,       farbe: .orange)
+                    Divider().frame(height: 32)
+                    maengelStatZelle(label: "In Arbeit",  wert: maengelInArbeit,    farbe: .blue)
+                    Divider().frame(height: 32)
+                    maengelStatZelle(label: "Behoben",    wert: maengelBehoben,     farbe: .green)
+                    Divider().frame(height: 32)
+                    maengelStatZelle(label: "Überfällig", wert: maengelUeberfaellig, farbe: .red)
                 }
                 .padding(.vertical, 4)
             }
@@ -577,9 +659,18 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .sheet(isPresented: $showingMaengelListe) {
-            MangelListeView(event: event).environment(\.managedObjectContext, viewContext)
+    }
+
+    private func maengelStatZelle(label: String, wert: Int, farbe: Color) -> some View {
+        VStack(spacing: 2) {
+            Text("\(wert)")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(wert > 0 ? farbe : Color.secondary)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - JOBS CARD
@@ -825,24 +916,19 @@ struct EventDetailHelpView: View {
                     Label("Mängel: Qualitätsprobleme erfassen und verfolgen", systemImage: "exclamationmark.triangle")
                     Label("Aufträge: Einzelaufgaben anlegen und Mitarbeitern zuweisen", systemImage: "list.bullet.clipboard")
                 }
-                Section("LV & PDF") {
+                Section("LV & Export") {
                     Label("Tippe auf die LV-Karte um das Leistungsverzeichnis zu öffnen", systemImage: "arrow.right.circle")
-                    Label("Tippe auf das PDF-Symbol (↑) auf der LV-Karte oder in der Toolbar um das LV als PDF zu exportieren", systemImage: "arrow.up.doc")
-                    Label("Positionen anlegen, nach DIN 276 KG gruppiert", systemImage: "list.number")
-                    Label("Bestellliste: strukturierte Mail an Lieferanten erstellen", systemImage: "envelope.badge")
-                }
-                Section("Checkliste") {
-                    Label("Schritte manuell eingeben oder Vorlage (✶) für ein Gewerk laden", systemImage: "wand.and.stars")
-                    Label("Fortschrittsanzeige oben rechts: % der erledigten Schritte", systemImage: "chart.bar.fill")
+                    Label("↑-Menü in der Toolbar: LV als PDF, LV als CSV oder Bautagesbericht exportieren", systemImage: "arrow.up.doc")
+                    Label("CSV eignet sich für Excel/Numbers: PosNr, Bezeichnung, Menge, Einheit, KG-Nr, ArtikelNr, Lieferant", systemImage: "tablecells")
                 }
                 Section("Mängel") {
-                    Label("Mängel = Abweichungen von der vereinbarten Leistung", systemImage: "exclamationmark.triangle.fill")
-                    Label("Tippe auf \"Alle anzeigen\" → Mängelliste mit Fotos und Status", systemImage: "list.bullet")
+                    Label("Tippe auf + direkt in der Mängel-Karte zum schnellen Erfassen", systemImage: "plus.circle.fill")
+                    Label("5 Kennzahlen: Gesamt, Offen, In Arbeit, Behoben, Überfällig", systemImage: "chart.bar.fill")
+                    Label("Tippe auf 'Alle' für vollständige Liste mit Filter + PDF-Export", systemImage: "list.bullet")
                 }
-                Section("CAD / Pläne") {
-                    Label("USDZ und OBJ: 3D-Vorschau direkt in der App", systemImage: "cube.fill")
-                    Label("SKP (SketchUp): öffnet SketchUp Web in Safari", systemImage: "safari")
-                    Label("FBX, STL, glTF: automatische Server-Konvertierung zu USDZ", systemImage: "arrow.triangle.2.circlepath")
+                Section("Bautagesbericht") {
+                    Label("Toolbar-Menü (↑) → Bautagesbericht: Datum, Notizen, Aufträge/LV/Mängel als PDF", systemImage: "calendar.badge.clock")
+                    Label("Spracheingabe: Notizen per Mikrofon diktieren", systemImage: "mic.fill")
                 }
             }
             .navigationTitle("Hilfe: Baustellen-Detail")
