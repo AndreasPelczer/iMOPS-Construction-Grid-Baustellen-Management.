@@ -11,11 +11,12 @@ struct LVView: View {
 
     @FetchRequest private var positionen: FetchedResults<LVPosition>
 
-    @State private var showingAdd        = false
+    @State private var showingAdd           = false
     @State private var editPosition: LVPosition?
-    @State private var showBestellliste  = false
-    @State private var showHelp          = false
-    @State private var showPDFShare      = false
+    @State private var showBestellliste     = false
+    @State private var showAngebotsVergleich = false
+    @State private var showHelp             = false
+    @State private var showPDFShare         = false
     @State private var generatedPDFURL: URL?
 
     init(event: Event) {
@@ -86,25 +87,35 @@ struct LVView: View {
                 .tint(.orange)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showBestellliste = true } label: {
-                    Label("Bestellliste", systemImage: "envelope.badge")
-                }
-                .disabled(positionen.isEmpty)
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
-                    let name = "LV-\(event.title ?? "Baustelle")"
-                        .replacingOccurrences(of: " ", with: "-")
-                        .appending(".pdf")
-                    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-                    if (try? data.write(to: url)) != nil {
-                        generatedPDFURL = url
-                        showPDFShare    = true
+                Menu {
+                    Button {
+                        showBestellliste = true
+                    } label: {
+                        Label("Bestellliste", systemImage: "envelope.badge")
+                    }
+                    Button {
+                        showAngebotsVergleich = true
+                    } label: {
+                        Label("Angebotsvergleich", systemImage: "chart.bar.doc.horizontal")
+                    }
+                    Divider()
+                    Button {
+                        let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
+                        let name = "LV-\(event.title ?? "Baustelle")"
+                            .replacingOccurrences(of: " ", with: "-")
+                            .appending(".pdf")
+                        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+                        if (try? data.write(to: url)) != nil {
+                            generatedPDFURL = url
+                            showPDFShare    = true
+                        }
+                    } label: {
+                        Label("LV als PDF", systemImage: "arrow.up.doc")
                     }
                 } label: {
-                    Label("PDF", systemImage: "arrow.up.doc")
+                    Image(systemName: "ellipsis.circle")
                 }
+                .tint(.orange)
                 .disabled(positionen.isEmpty)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -123,6 +134,9 @@ struct LVView: View {
         }
         .sheet(isPresented: $showBestellliste) {
             LieferantenBestelllisteView(event: event, positionen: Array(positionen))
+        }
+        .sheet(isPresented: $showAngebotsVergleich) {
+            AngebotsVergleichView(event: event, positionen: Array(positionen))
         }
         .sheet(isPresented: $showPDFShare) {
             if let url = generatedPDFURL {
@@ -171,6 +185,11 @@ struct LVView: View {
 
 struct LVPositionRow: View {
     @ObservedObject var position: LVPosition
+    @StateObject private var store = AngebotsStore.shared
+
+    private var positionID: String {
+        position.objectID.uriRepresentation().absoluteString
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -186,14 +205,22 @@ struct LVPositionRow: View {
                 Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "")")
                     .font(.footnote.monospacedDigit())
             }
-            if let art = position.artikelNummer, !art.isEmpty {
-                HStack(spacing: 6) {
+            HStack(spacing: 6) {
+                if let art = position.artikelNummer, !art.isEmpty {
                     Image(systemName: "barcode").font(.caption2).foregroundStyle(.secondary)
                     Text(art).font(.caption).foregroundStyle(.secondary)
                     if let lief = position.lieferant, !lief.isEmpty {
                         Text("·").foregroundStyle(.secondary)
                         Text(lief).font(.caption).foregroundStyle(.orange)
                     }
+                    Text("·").foregroundStyle(.secondary)
+                }
+                // Bestes Angebot anzeigen wenn vorhanden
+                if let best = store.guenstigster(for: positionID) {
+                    Image(systemName: "tag.fill").font(.caption2).foregroundStyle(.green)
+                    Text(best.einzelpreis, format: .currency(code: "EUR"))
+                        .font(.caption.monospacedDigit()).foregroundStyle(.green)
+                    Text("\(best.lieferant)").font(.caption).foregroundStyle(.secondary)
                 }
             }
         }
@@ -284,7 +311,6 @@ struct AddLVPositionView: View {
             .sheet(isPresented: $showKatalog) {
                 KatalogPickerSheet { entry in
                     artikelNummer = entry.code ?? ""
-                    // Lieferant aus Kategorie-Prefix ableiten
                     if lieferant.isEmpty {
                         if (entry.kategorie ?? "").hasPrefix("Scharpegge") { lieferant = "Scharpegge" }
                         else if (entry.kategorie ?? "").hasPrefix("Hauff") { lieferant = "Hauff" }
@@ -462,14 +488,11 @@ struct LVHelpView: View {
                     Label("Scharpegge & Hauff als Lieferanten verfügbar", systemImage: "building.2.crop.circle")
                     Label("Lieferant wird beim Katalog-Import automatisch gesetzt", systemImage: "checkmark.circle")
                 }
-                Section("Bestellliste (Multi-Lieferant)") {
-                    Label("Tippe auf 'Bestellliste' um Positionen nach Lieferant gruppiert zu sehen", systemImage: "envelope.badge")
-                    Label("Pro Lieferant: 'Mail senden' erzeugt vorausgefüllte Preisanfrage", systemImage: "envelope")
-                    Label("Scharpegge und Hauff haben vorkonfigurierte Mailadressen", systemImage: "at")
-                }
-                Section("PDF Export") {
-                    Label("Tippe auf 'PDF' um das LV als PDF zu exportieren und zu teilen", systemImage: "arrow.up.doc")
-                    Label("Oder über das ↑-Menü in der Baustellen-Übersicht", systemImage: "arrow.up.doc.fill")
+                Section("Bestellliste & Angebotsvergleich") {
+                    Label("⋯-Menü: Bestellliste, Angebotsvergleich, LV als PDF", systemImage: "ellipsis.circle")
+                    Label("Bestellliste: pro Lieferant vorausgefüllte Preisanfrage-Mail", systemImage: "envelope.badge")
+                    Label("Angebotsvergleich: EP/GP pro Lieferant erfassen und vergleichen", systemImage: "chart.bar.doc.horizontal")
+                    Label("Günstigster Anbieter wird grün markiert und in der Liste angezeigt", systemImage: "star.fill")
                 }
             }
             .navigationTitle("Hilfe: Leistungsverzeichnis")
