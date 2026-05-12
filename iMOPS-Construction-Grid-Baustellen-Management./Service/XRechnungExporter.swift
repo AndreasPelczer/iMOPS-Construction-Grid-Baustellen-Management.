@@ -2,7 +2,8 @@ import Foundation
 import CoreData
 
 // Generates a CII-based XRechnung 2.2 XML (EN 16931).
-// TypeCode 380 = Handelsrechnung; VAT 19 % (S-category, DE standard).
+// TypeCode 380 = Handelsrechnung.
+// Seller info + MwSt-Satz come from FirmenSettings (configured in Settings tab).
 // Unit codes: UN/ECE Rec 20 (MTK, MTQ, MTR, C62, …)
 struct XRechnungExporter {
 
@@ -30,6 +31,12 @@ struct XRechnungExporter {
         let title     = event.title ?? "Baustelle"
         let invoiceNr = "RE-\(dateStr)-001"
 
+        // Firm settings
+        let sellerName = FirmenSettings.name
+        let mwst       = FirmenSettings.mwstSatz
+        let vatCat     = FirmenSettings.vatCategory
+        let ustId      = FirmenSettings.ustIdNr
+
         // Only non-alternative positions; fall back to 0 EP if no offer stored
         let items: [(pos: LVPosition, ep: Double, gp: Double)] = positionen
             .filter { !LVPositionHelper.isAlternative($0) }
@@ -40,7 +47,7 @@ struct XRechnungExporter {
             }
 
         let netto  = items.reduce(0.0) { $0 + $1.gp }
-        let vat    = netto * 0.19
+        let vat    = netto * mwst / 100.0
         let brutto = netto + vat
 
         var out = ""
@@ -51,7 +58,7 @@ struct XRechnungExporter {
         out += "  xmlns:udt=\"urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100\"\n"
         out += "  xmlns:qdt=\"urn:un:unece:uncefact:data:standard:QualifiedDataType:100\">\n"
 
-        // BT-24 – Specification identifier
+        // BT-24 Specification identifier
         out += "  <rsm:ExchangedDocumentContext>\n"
         out += "    <ram:GuidelineSpecifiedDocumentContextParameter>\n"
         out += "      <ram:ID>urn:cen.eu:en16931:2017#compliant#urn:xoev-de:kosit:standard:xrechnung_2.2</ram:ID>\n"
@@ -75,15 +82,34 @@ struct XRechnungExporter {
 
         // Line items (BG-25)
         for (idx, item) in items.enumerated() {
-            out += lineItem(nr: idx + 1, pos: item.pos, ep: item.ep, gp: item.gp)
+            out += lineItem(nr: idx + 1, pos: item.pos, ep: item.ep, gp: item.gp,
+                            mwst: mwst, vatCat: vatCat)
         }
 
-        // BG-4 Seller / BG-7 Buyer
+        // BG-4 Seller
         out += "    <ram:ApplicableHeaderTradeAgreement>\n"
         out += "      <ram:SellerTradeParty>\n"
-        out += "        <ram:Name>iMOPS Bauleitung</ram:Name>\n"
-        out += "        <ram:PostalTradeAddress><ram:CountryID>DE</ram:CountryID></ram:PostalTradeAddress>\n"
+        out += "        <ram:Name>\(esc(sellerName))</ram:Name>\n"
+        // USt-IdNr if configured
+        if !ustId.isEmpty {
+            out += "        <ram:SpecifiedTaxRegistration>\n"
+            out += "          <ram:ID schemeID=\"VA\">\(esc(ustId))</ram:ID>\n"
+            out += "        </ram:SpecifiedTaxRegistration>\n"
+        }
+        out += "        <ram:PostalTradeAddress>\n"
+        if !FirmenSettings.strasse.isEmpty {
+            out += "          <ram:LineOne>\(esc(FirmenSettings.strasse))</ram:LineOne>\n"
+        }
+        if !FirmenSettings.plz.isEmpty {
+            out += "          <ram:PostcodeCode>\(esc(FirmenSettings.plz))</ram:PostcodeCode>\n"
+        }
+        if !FirmenSettings.ort.isEmpty {
+            out += "          <ram:CityName>\(esc(FirmenSettings.ort))</ram:CityName>\n"
+        }
+        out += "          <ram:CountryID>DE</ram:CountryID>\n"
+        out += "        </ram:PostalTradeAddress>\n"
         out += "      </ram:SellerTradeParty>\n"
+        // BG-7 Buyer
         out += "      <ram:BuyerTradeParty>\n"
         out += "        <ram:Name>\(esc(title))</ram:Name>\n"
         out += "        <ram:PostalTradeAddress><ram:CountryID>DE</ram:CountryID></ram:PostalTradeAddress>\n"
@@ -103,8 +129,8 @@ struct XRechnungExporter {
         out += "        <ram:CalculatedAmount>\(amt(vat))</ram:CalculatedAmount>\n"
         out += "        <ram:TypeCode>VAT</ram:TypeCode>\n"
         out += "        <ram:BasisAmount>\(amt(netto))</ram:BasisAmount>\n"
-        out += "        <ram:CategoryCode>S</ram:CategoryCode>\n"
-        out += "        <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>\n"
+        out += "        <ram:CategoryCode>\(vatCat)</ram:CategoryCode>\n"
+        out += "        <ram:RateApplicablePercent>\(amt(mwst))</ram:RateApplicablePercent>\n"
         out += "      </ram:ApplicableTradeTax>\n"
         out += "      <ram:SpecifiedTradePaymentTerms>\n"
         out += "        <ram:Description>Zahlbar innerhalb von 30 Tagen ohne Abzug.</ram:Description>\n"
@@ -123,7 +149,8 @@ struct XRechnungExporter {
         return out
     }
 
-    private static func lineItem(nr: Int, pos: LVPosition, ep: Double, gp: Double) -> String {
+    private static func lineItem(nr: Int, pos: LVPosition, ep: Double, gp: Double,
+                                  mwst: Double, vatCat: String) -> String {
         let name   = esc(pos.bezeichnung ?? "Position")
         let posNr  = esc(pos.posNr ?? "\(nr)")
         let unit   = xrUnit(pos.einheit ?? "")
@@ -147,8 +174,8 @@ struct XRechnungExporter {
         s += "      <ram:SpecifiedLineTradeSettlement>\n"
         s += "        <ram:ApplicableTradeTax>\n"
         s += "          <ram:TypeCode>VAT</ram:TypeCode>\n"
-        s += "          <ram:CategoryCode>S</ram:CategoryCode>\n"
-        s += "          <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>\n"
+        s += "          <ram:CategoryCode>\(vatCat)</ram:CategoryCode>\n"
+        s += "          <ram:RateApplicablePercent>\(amt(mwst))</ram:RateApplicablePercent>\n"
         s += "        </ram:ApplicableTradeTax>\n"
         s += "        <ram:SpecifiedTradeSettlementLineMonetarySummation>\n"
         s += "          <ram:LineTotalAmount>\(amt(gp))</ram:LineTotalAmount>\n"

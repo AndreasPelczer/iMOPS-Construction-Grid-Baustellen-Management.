@@ -1,11 +1,3 @@
-//
-//  SettingsView.swift
-//  test25B
-//
-//  Created by Andreas Pelczer on 12.01.26.
-//
-
-
 import SwiftUI
 
 struct SettingsView: View {
@@ -15,9 +7,55 @@ struct SettingsView: View {
     @State private var isCheckingServer = false
     @State private var wetterApiKey: String = UserDefaults.standard.string(forKey: WetterService.apiKeyUserDefaultsKey) ?? ""
 
+    // Firmendaten (XRechnung Seller / Bautagesbericht)
+    @AppStorage(FirmenSettings.Keys.name)     private var firmaName    = ""
+    @AppStorage(FirmenSettings.Keys.strasse)  private var strasse      = ""
+    @AppStorage(FirmenSettings.Keys.plz)      private var plz          = ""
+    @AppStorage(FirmenSettings.Keys.ort)      private var ort          = ""
+    @AppStorage(FirmenSettings.Keys.ustIdNr)  private var ustIdNr      = ""
+    @AppStorage(FirmenSettings.Keys.mwstSatz) private var mwstSatz     = 19.0
+
+    private let mwstOptionen: [Double] = [19.0, 7.0, 0.0]
+
     var body: some View {
         @Bindable var session = session
         Form {
+
+            // --- Firmendaten ---
+            Section {
+                TextField("Firmenname", text: $firmaName)
+                TextField("Straße & Hausnummer", text: $strasse)
+                HStack(spacing: 8) {
+                    TextField("PLZ", text: $plz)
+                        .frame(maxWidth: 80)
+                        .keyboardType(.numberPad)
+                    TextField("Ort", text: $ort)
+                }
+                HStack {
+                    Text("USt-IdNr.").foregroundStyle(.secondary).frame(width: 90, alignment: .leading)
+                    TextField("DE123456789", text: $ustIdNr)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                }
+                HStack {
+                    Text("MwSt-Satz").foregroundStyle(.secondary).frame(width: 90, alignment: .leading)
+                    Spacer()
+                    Picker("MwSt", selection: $mwstSatz) {
+                        ForEach(mwstOptionen, id: \.self) { satz in
+                            Text(satz == 0 ? "0 % (steuerfrei)" : "\(Int(satz)) %")
+                                .tag(satz)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+            } header: {
+                Text("Firmendaten")
+            } footer: {
+                Text("Werden für XRechnung-Export (Rechnungsaussteller) und Bautagesbericht verwendet.")
+                    .font(.caption)
+            }
+
+            // --- Rolle ---
             Section("Rolle") {
                 Picker("Aktive Rolle", selection: $session.role) {
                     ForEach(AppSession.Role.allCases) { role in
@@ -27,6 +65,7 @@ struct SettingsView: View {
                 .pickerStyle(.inline)
             }
 
+            // --- Sprache ---
             Section("Sprache") {
                 Picker("Language", selection: $session.languageCode) {
                     Text("Deutsch").tag("de")
@@ -36,6 +75,7 @@ struct SettingsView: View {
                 }
             }
 
+            // --- Wetter ---
             Section("Wetter") {
                 SecureField("OpenWeatherMap API-Key", text: $wetterApiKey)
                     .textInputAutocapitalization(.never)
@@ -52,6 +92,7 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
 
+            // --- SKP-Server ---
             Section("SKP-Konvertierungsserver") {
                 TextField("Server-URL", text: $serverURL)
                     .textInputAutocapitalization(.never)
@@ -60,17 +101,12 @@ struct SettingsView: View {
                     .onChange(of: serverURL) { _, newValue in
                         SKPConversionService.shared.serverURL = newValue
                     }
-
                 HStack {
-                    Button {
-                        checkServer()
-                    } label: {
+                    Button { checkServer() } label: {
                         Label("Verbindung testen", systemImage: "network")
                     }
                     .disabled(isCheckingServer)
-
                     Spacer()
-
                     if isCheckingServer {
                         ProgressView()
                     } else if !serverStatus.isEmpty {
@@ -79,16 +115,13 @@ struct SettingsView: View {
                             .foregroundStyle(serverStatus.contains("OK") ? .green : .red)
                     }
                 }
-
                 Text("Der Server konvertiert SKP-Dateien (SketchUp) automatisch in USDZ fuer den CAD-Viewer.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(.secondary)
             }
 
             Section {
                 Text("Baustelle = Event (CoreData). Auftraege werden pro Baustelle verwaltet. CAD-Viewer und Gewerke-Vorlagen sind integriert.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.secondary)
             }
         }
         .navigationTitle("Settings")
@@ -97,18 +130,12 @@ struct SettingsView: View {
     private func checkServer() {
         isCheckingServer = true
         serverStatus = ""
-
         Task {
             let health = await SKPConversionService.shared.checkHealth()
-
             await MainActor.run {
                 isCheckingServer = false
-                if let health = health {
-                    if health.blenderAvailable {
-                        serverStatus = "OK - Blender verfuegbar"
-                    } else {
-                        serverStatus = "OK - Blender fehlt!"
-                    }
+                if let h = health {
+                    serverStatus = h.blenderAvailable ? "OK - Blender verfügbar" : "OK - Blender fehlt!"
                 } else {
                     serverStatus = "Nicht erreichbar"
                 }
