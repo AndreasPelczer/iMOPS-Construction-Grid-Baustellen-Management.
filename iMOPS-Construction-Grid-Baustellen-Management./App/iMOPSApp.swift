@@ -25,6 +25,7 @@ struct iMOPSApp: App {
                 )
                 .task {
                     ScharpeggeSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    NotificationService.shared.requestAuthorization()
                 }
                 .onOpenURL { url in
                     importedFileHandler.handleIncomingFile(url: url)

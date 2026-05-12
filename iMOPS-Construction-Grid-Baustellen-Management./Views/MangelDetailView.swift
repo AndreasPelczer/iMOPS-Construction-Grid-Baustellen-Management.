@@ -142,6 +142,11 @@ struct MangelDetailView: View {
                     Button {
                         mangel.status = s
                         try? ctx.save()
+                        if s == .behoben || s == .abgenommen {
+                            NotificationService.shared.cancel(for: mangel)
+                        } else {
+                            NotificationService.shared.schedule(for: mangel)
+                        }
                     } label: {
                         VStack(spacing: 4) {
                             Image(systemName: s.symbol)
@@ -250,15 +255,20 @@ struct MangelBearbeitenView: View {
     }
 
     private func speichern() {
-        mangel.titel       = titel.trimmingCharacters(in: .whitespaces)
+        mangel.titel        = titel.trimmingCharacters(in: .whitespaces)
         mangel.beschreibung = beschreibung.trimmingCharacters(in: .whitespaces)
-        mangel.ort         = ort.trimmingCharacters(in: .whitespaces)
-        mangel.gewerk      = gewerk
+        mangel.ort          = ort.trimmingCharacters(in: .whitespaces)
+        mangel.gewerk       = gewerk
         mangel.mangelSchwere = schwere
-        mangel.status      = status
-        mangel.frist       = hatFrist ? frist : nil
-        mangel.erfasstVon  = erfasstVon.trimmingCharacters(in: .whitespaces)
+        mangel.status       = status
+        mangel.frist        = hatFrist ? frist : nil
+        mangel.erfasstVon   = erfasstVon.trimmingCharacters(in: .whitespaces)
         try? ctx.save()
+        if mangel.status == .behoben || mangel.status == .abgenommen {
+            NotificationService.shared.cancel(for: mangel)
+        } else {
+            NotificationService.shared.schedule(for: mangel)
+        }
         dismiss()
     }
 }

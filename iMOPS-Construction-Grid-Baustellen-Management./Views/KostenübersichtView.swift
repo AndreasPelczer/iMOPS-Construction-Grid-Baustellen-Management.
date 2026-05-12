@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreData
 
-struct Kostenübersicht View: View {
+struct KostenübersichtView: View {
     @Environment(\.dismiss) private var dismiss
     let event: Event
     let positionen: [LVPosition]
@@ -50,7 +50,7 @@ struct Kostenübersicht View: View {
                 Section("Gesamtkosten") {
                     VStack(alignment: .leading, spacing: 10) {
                         row("Netto", value: gesamtNetto, font: .body)
-                        row("MwSt. \(Int(mwstSatz)) %",
+                        row("MwSt. \(Int(mwstSatz)) %",
                             value: mwstBetrag,
                             font: .body,
                             color: .secondary)
@@ -117,7 +117,6 @@ struct Kostenübersicht View: View {
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(kg.gesamtGP == 0 ? .secondary : .primary)
             }
-            // Proportional bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color(.systemGray5))
@@ -138,7 +137,7 @@ struct Kostenübersicht View: View {
                 }
                 Spacer()
                 if gesamtNetto > 0 {
-                    Text("\(Int((kg.gesamtGP / gesamtNetto) * 100)) %")
+                    Text("\(Int((kg.gesamtGP / gesamtNetto) * 100)) %")
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }

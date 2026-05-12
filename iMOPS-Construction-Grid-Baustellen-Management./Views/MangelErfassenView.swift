@@ -171,6 +171,7 @@ struct MangelErfassenView: View {
         if let img = fotoImage { mangel.fotoPfad = speicherFoto(img, id: mangel.id!) }
         do {
             try ctx.save()
+            NotificationService.shared.schedule(for: mangel)
             dismiss()
         } catch {
             lastViolation = RuleViolation(
