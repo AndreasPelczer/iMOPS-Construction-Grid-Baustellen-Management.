@@ -10,6 +10,7 @@ struct MangelListeView: View {
     @FetchRequest private var maengel: FetchedResults<Mangel>
     @State private var zeigeErfassen  = false
     @State private var statusFilter: MangelStatus? = nil
+    @State private var gewerkFilter: String?        = nil
     @State private var showPDFShare   = false
     @State private var pdfURL: URL?
     @State private var showFristen    = false
@@ -25,16 +26,25 @@ struct MangelListeView: View {
         )
     }
 
-    private var gefiltert: [Mangel] {
-        guard let f = statusFilter else { return Array(maengel) }
-        return maengel.filter { $0.status == f }
+    // MARK: - Gewerk-Liste (eindeutig, sortiert)
+    private var verfuegbareGewerke: [String] {
+        let gewerke = maengel.compactMap { $0.gewerk }.filter { !$0.isEmpty }
+        return Array(Set(gewerke)).sorted()
     }
 
-    // MARK: - Statistik-Kennzahlen
+    // MARK: - Gefilterte Liste (Status + Gewerk)
+    private var gefiltert: [Mangel] {
+        maengel.filter { mangel in
+            let statusOK = statusFilter == nil || mangel.status == statusFilter
+            let gewerkOK = gewerkFilter == nil || mangel.gewerk == gewerkFilter
+            return statusOK && gewerkOK
+        }
+    }
 
-    private var anzahlOffen:      Int { maengel.filter { $0.status == .offen    }.count }
-    private var anzahlInArbeit:   Int { maengel.filter { $0.status == .inArbeit }.count }
-    private var anzahlBehoben:    Int { maengel.filter { $0.status == .behoben || $0.status == .abgenommen }.count }
+    // MARK: - Statistik-Kennzahlen (immer über alle Mängel)
+    private var anzahlOffen:        Int { maengel.filter { $0.status == .offen    }.count }
+    private var anzahlInArbeit:     Int { maengel.filter { $0.status == .inArbeit }.count }
+    private var anzahlBehoben:      Int { maengel.filter { $0.status == .behoben || $0.status == .abgenommen }.count }
     private var anzahlUeberfaellig: Int { maengel.filter { $0.istUeberfaellig }.count }
 
     var body: some View {
@@ -44,6 +54,9 @@ struct MangelListeView: View {
                     statistikKarte
                 }
                 filterPicker
+                if !verfuegbareGewerke.isEmpty && verfuegbareGewerke.count >= 2 {
+                    gewerkPicker
+                }
                 if gefiltert.isEmpty {
                     leerHinweis
                 } else {
@@ -58,7 +71,7 @@ struct MangelListeView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("M\u{00e4}ngel (\(maengel.count))")
+            .navigationTitle("Mängel (\(maengel.count))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -75,9 +88,7 @@ struct MangelListeView: View {
                     .disabled(maengel.isEmpty)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        zeigeErfassen = true
-                    } label: {
+                    Button { zeigeErfassen = true } label: {
                         Image(systemName: "plus")
                     }
                 }
@@ -128,7 +139,7 @@ struct MangelListeView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Filter-Chips
+    // MARK: - Status-Filter-Chips
 
     @ViewBuilder
     private var filterPicker: some View {
@@ -161,14 +172,56 @@ struct MangelListeView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: - Gewerk-Filter-Chips
+
+    @ViewBuilder
+    private var gewerkPicker: some View {
+        Section {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    gewerkChip(label: "Alle Gewerke", gewerk: nil)
+                    ForEach(verfuegbareGewerke, id: \.self) { g in
+                        gewerkChip(label: g, gewerk: g)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        } header: {
+            Text("Gewerk")
+        }
+        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+    }
+
+    private func gewerkChip(label: String, gewerk: String?) -> some View {
+        let aktiv = gewerkFilter == gewerk
+        return Button {
+            gewerkFilter = gewerk
+        } label: {
+            Text(label)
+                .font(.subheadline.weight(aktiv ? .semibold : .regular))
+                .padding(.horizontal, 14).padding(.vertical, 6)
+                .background(aktiv ? Color.purple : Color(.tertiarySystemFill))
+                .foregroundStyle(aktiv ? .white : .primary)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Leer-Hinweis
+
     private var leerHinweis: some View {
         Section {
             HStack(spacing: 14) {
-                Image(systemName: "checkmark.seal")
-                    .font(.title2).foregroundStyle(.green)
+                Image(systemName: statusFilter == nil && gewerkFilter == nil
+                      ? "checkmark.seal" : "line.3.horizontal.decrease.circle")
+                    .font(.title2)
+                    .foregroundStyle(statusFilter == nil && gewerkFilter == nil ? .green : .orange)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Keine M\u{00e4}ngel")
-                    Text("Tippe auf + um einen Mangel zu erfassen.")
+                    Text(statusFilter == nil && gewerkFilter == nil
+                         ? "Keine Mängel" : "Keine Mängel für diesen Filter")
+                    Text(statusFilter == nil && gewerkFilter == nil
+                         ? "Tippe auf + um einen Mangel zu erfassen."
+                         : "Filter zurücksetzen um alle Mängel zu sehen.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -176,11 +229,13 @@ struct MangelListeView: View {
         }
     }
 
+    // MARK: - Export + Löschen
+
     private func exportPDF() {
         let data = MangelPDFExporter.generate(event: event, maengel: Array(maengel))
         let fmt  = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
-        let name = "M\u{00e4}ngelprotokoll-\(fmt.string(from: Date()))-\(event.title ?? "Baustelle")"
+        let name = "Mängelprotokoll-\(fmt.string(from: Date()))-\(event.title ?? "Baustelle")"
             .replacingOccurrences(of: " ", with: "-")
             .appending(".pdf")
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
