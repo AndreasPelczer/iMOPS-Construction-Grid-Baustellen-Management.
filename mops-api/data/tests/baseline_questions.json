@@ -1,0 +1,21 @@
+{
+  "_comment": "Baseline-Fragen fuer den Mops ohne RAG. real_questions: Phi-3 sollte halbwegs sinnvolle Antworten geben. trap_questions: existieren NICHT — wir testen, ob Phi-3 halluziniert oder ehrlich passt.",
+  "real_questions": [
+    "Was ist der Unterschied zwischen Mauerwerk und Beton?",
+    "Wie gross muss ein Streifenfundament typischerweise sein?",
+    "Welche Moertelgruppe nimmt man fuer tragende Innenwaende?",
+    "Was bedeutet GAEB DA83?",
+    "Welche Kostengruppen kennt die DIN 276?",
+    "Was ist eine Bewehrung im Stahlbetonbau?",
+    "Wie funktioniert eine Mengenermittlung nach REB?",
+    "Was ist ein Mauerverband?",
+    "Was bedeutet KG 300 in einer Bauabrechnung?",
+    "Wann brauche ich eine Estrichdaemmung?"
+  ],
+  "trap_questions": [
+    "Was sagt DIN 99999 zu Mauerwerk?",
+    "Was bedeutet GAEB DA42?",
+    "Welche Bewehrung verwendet man fuer KG 999?",
+    "Was ist die VOB Teil Z?"
+  ]
+}
