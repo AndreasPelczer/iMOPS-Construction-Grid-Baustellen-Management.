@@ -1,95 +1,100 @@
 # Welle 1 — Wikipedia-Ingestion-Liste (Mops-API RAG)
 
-**Version:** 0.1
-**Erstellt:** 19.05.2026
+**Version:** 0.2 (erweitert auf 72 Lemmas nach Codi-Konsultation)
+**Erstellt:** 19.05.2026 (v0.1) — Aktualisiert: 20.05.2026 (v0.2)
 **Bezug:** `baseline_results_20260519_104605.json` (Phi-3-Baseline-Test, 64 % Halluzinationen)
+**Operative Datei:** `data/wiki_topics.txt` auf dem Mops-Server (Flat-List für Scraper)
 **Zweck:** Konkrete Lemma-Liste für die erste RAG-Ingestion-Welle, damit Phi-3 mit Quellen-Grounding antwortet und nicht mehr „GAEB DA83 = Dornier Alpha Jet" erfindet.
 
 ---
 
 ## 1. Strategie
 
-Der Baseline-Test hat gezeigt, dass Phi-3 alle zentralen deutschen Bau-Fachbegriffe entweder leugnet oder erfindet. Die Welle 1 deckt **exakt die Themen ab, an denen Phi-3 versagt hat**, plus ein dünner Foundation-Kragen für Cross-Referencing.
+Der Baseline-Test hat gezeigt, dass Phi-3 alle zentralen deutschen Bau-Fachbegriffe entweder leugnet oder erfindet. Welle 1 deckt **die Themen ab, an denen Phi-3 versagt hat**, plus das umliegende Profi-Grundwissen für Maurer-Lernfelder 1–6.
 
 **Bewusste Beschränkungen dieser Welle:**
 
 - Nur deutschsprachige Wikipedia (`de.wikipedia.org`) — Mops bedient deutsche Bau-Profis.
 - Keine DIN-Volltexte (Beuth-Lizenz, kostenpflichtig). Wikipedia-Artikel zu Normen genügen für Definition, Geltungsbereich, Struktur.
 - Keine VOB-Volltexte (Beuth). Wikipedia-Artikel reicht für Teile A/B/C-Struktur.
-- HOAI-Volltext ist frei verfügbar (§§ in Gesetzen), aber **nicht in Welle 1** — kommt in Welle 2 als juris-Ingestion.
+- HOAI-Volltext kommt in Welle 2 als juris-Ingestion über `gesetze-im-internet.de`.
 
-**Lizenz-Hinweis:** Wikipedia-Inhalte stehen unter **CC-BY-SA 4.0**. Bei Ingestion-Chunks müssen `source_url`, `lizenz: "CC-BY-SA 4.0"` und `abruf_datum` als Metadaten mitgeführt werden, damit die spätere Antwort-Quellenangabe lizenzkonform ist.
-
----
-
-## 2. Welle 1a — Pflicht-Lemmas aus Baseline-Versagen
-
-Diese 17 Lemmas adressieren direkt die fehlerhaften Antworten des Baseline-Tests. Jeder Eintrag verweist auf die Test-Frage, an der Phi-3 gescheitert ist.
-
-| # | Lemma | URL (de.wikipedia.org/wiki/...) | Baseline-Frage | Begründung |
-|---|---|---|---|---|
-| 1 | Mauerwerk | `Mauerwerk` | F1, F8 | Definition, Materialien, Verbände — Phi-3 lieferte nur Oberflächliches |
-| 2 | Beton | `Beton` | F1 | Festigkeitsklassen C12/15 … C100/115, Transportbeton vs. Ortbeton |
-| 3 | Stahlbeton | `Stahlbeton` | F6 | Verbundbaustoff Beton + Bewehrung, Phi-3 verwechselte mit Rohren |
-| 4 | Streifenfundament | `Streifenfundament` | F2 | Typische Breiten 30–80 cm — Phi-3 sagte 1–2 m (Faktor 3 falsch) |
-| 5 | Gründung (Bauwesen) | `Gr%C3%BCndung_(Bauwesen)` | F2 | Übersichts-Lemma: Flach- vs. Tiefgründung, Bodenpressung |
-| 6 | Mörtel | `M%C3%B6rtel` | F3 | Mörtelarten, Bindemittel, Anwendungsbereiche |
-| 7 | Mörtelgruppe | `M%C3%B6rtelgruppe` | F3 | MG I, II, IIa, III, IIIa — Phi-3 leugnete deren Existenz! |
-| 8 | GAEB | `GAEB` | F4 | Gemeinsamer Ausschuss Elektronik im Bauwesen — Phi-3 sagte „Luftfahrt" |
-| 9 | Leistungsverzeichnis | `Leistungsverzeichnis` | F4 | Kontext für GAEB DA83-Format |
-| 10 | DIN 276 | `DIN_276` | F5, F9 | Kostengruppen 100–800 — Phi-3 sagte „Lebensmittel-Norm" |
-| 11 | Baukosten | `Baukosten` | F5, F9 | Cross-Reference für Kostenermittlung nach Leistungsphasen |
-| 12 | Bewehrung | `Bewehrung` | F6 | Anordnung, Stabstahl, Matten — Phi-3 erfand „Schussverbindungen" |
-| 13 | Betonstahl | `Betonstahl` | F6 | B500A/B, Bst 500S, Eigenschaften |
-| 14 | Aufmaß | `Aufma%C3%9F` | F7 | Mengenermittlung am Bau — Grundlage für REB-Verfahren |
-| 15 | Mauerverband | `Mauerverband` | F8 | Läufer-, Binder-, Kreuz-, Blockverband — Phi-3 sagte „Gerüstbau" |
-| 16 | Estrich | `Estrich` | F10 | Estrich-Arten, Aufbau — Phi-3 sagte „vielleicht Dampfbad?" |
-| 17 | VOB | `VOB` *(ggf. `Vergabe-_und_Vertragsordnung_f%C3%BCr_Bauleistungen`)* | F14 | Teile A/B/C — Phi-3 sagte „Musik-Verwertungsgesellschaft" |
-
-**Hinweis zu Lemma #7 (Mörtelgruppe):** Falls dieser Artikel in der deutschen Wikipedia nicht als eigenes Lemma existiert (kann Weiterleitung auf `Mörtel#Mörtelgruppen` sein), muss der Abschnitt aus `Mörtel` als eigener Chunk gespeichert werden.
-
-**Hinweis zu Lemma #17 (VOB):** URL-Variante prüfen — Wikipedia hat manchmal das ausgeschriebene Lemma als Hauptartikel und das Akronym als Weiterleitung.
+**Lizenz-Hinweis:** Wikipedia-Inhalte stehen unter **CC-BY-SA 4.0**. Bei jeder Ingestion-Chunk müssen `source_url`, `lizenz: "CC-BY-SA 4.0"` und `abruf_datum` als Metadaten mitgeführt werden, damit die spätere Antwort-Quellenangabe lizenzkonform ist.
 
 ---
 
-## 3. Welle 1b — Foundation-Kragen für Cross-Referencing
+## 2. Mapping Baseline-Versagen → Welle-1-Lemmas
 
-Diese 12 Lemmas wurden im Test nicht direkt abgefragt, sind aber häufige Folge-Themen und stärken das semantische Netz, damit das RAG-Retrieval auch indirekte Fragen bedienen kann.
+| Baseline-Versagen | Adressiert durch |
+|---|---|
+| „Streifenfundament 1–2 m" (F2) | Streifenfundament, Fundament_(Bauwesen), Gründung_(Bauwesen) |
+| „Mörtelgruppe existiert nicht" (F3) | Mörtel, Mauermörtel, Mörtelgruppe, Kalkmörtel, Zementmörtel |
+| „GAEB = Dornier Alpha Jet" (F4) | GAEB, Leistungsverzeichnis, Bauabrechnung |
+| „DIN 276 = Lebensmittel-Norm" (F5, F9) | DIN_276, DIN_277, Baukosten |
+| „Bewehrung = Schussverbindungen" (F6) | Bewehrung, Bewehrungsstahl, Betonstahl, Stahlbeton |
+| „REB = Nachhaltigkeits-Beschaffung" (F7) | Bauabrechnung, Mengenermittlung, Aufmaß |
+| „Mauerverband = Vierendecker" (F8) | Mauerverband, Verband_(Mauerwerk), Läufer-/Kreuz-/Blockverband |
+| „Estrichdämmung = Dampfbad" (F10) | Estrich, DIN_18560, Fußbodenaufbau, Wärmedämmung, Schallschutz |
+| „VOB Teil Z = Musikgesellschaft" (F14) | VOB, Vergabe_und_Vertragsordnung_für_Bauleistungen |
 
-| # | Lemma | URL (de.wikipedia.org/wiki/...) | Warum in Welle 1 |
-|---|---|---|---|
-| 18 | Trittschalldämmung | `Trittschalld%C3%A4mmung` | Direkt verknüpft mit Estrichdämmung (F10) |
-| 19 | Wärmedämmung | `W%C3%A4rmed%C3%A4mmung` | Standardthema; Estrich, Außenwand, Dach |
-| 20 | Schwimmender Estrich | `Schwimmender_Estrich` | Häufigste Estrich-Bauart |
-| 21 | Mauerwerksbau | `Mauerwerksbau` | DIN 1053 / EC6 Kontext |
-| 22 | Festigkeitsklasse (Beton) | `Druckfestigkeitsklassen_von_Beton` *(URL prüfen)* | C20/25 etc. — kritischer Profi-Begriff |
-| 23 | Frischbeton | `Frischbeton` | Konsistenzklassen F1–F6 |
-| 24 | Bautechnik | `Bautechnik` | Top-Level-Lemma, gutes Anker-Dokument |
-| 25 | Hochbau | `Hochbau` | Abgrenzung zu Tiefbau |
-| 26 | Tiefbau | `Tiefbau` | Gegenstück zu Hochbau |
-| 27 | Rohbau | `Rohbau` | Gewerke-Übersicht (Maurer, Beton, Zimmerer) |
-| 28 | Ausbau (Bauwesen) | `Ausbau_(Bauwesen)` | Estrich, Trockenbau, Maler |
-| 29 | Bauabnahme | `Abnahme_(Recht)#Bauabnahme` *(Abschnitt)* | VOB/B § 12 Kontext |
+---
+
+## 3. Lemma-Liste (72 Artikel, 10 Themenfelder)
+
+Diese Liste entspricht **eins zu eins** der Datei `data/wiki_topics.txt` auf dem Mops-Server.
+
+### 3.1 Grundbegriffe Bauwesen (7)
+Bauwesen · Hochbau · Tiefbau · Bauausführung · Bauproduktion · Bauwerk · Baustelle
+
+### 3.2 Mauerwerk + Mauerbau (10)
+Mauerwerk · Mauerziegel · Kalksandstein · Porenbeton · Hochlochziegel · Verband_(Mauerwerk) · Mauerverband · Läuferverband · Kreuzverband · Blockverband
+
+> **Dedup-Hinweis für Scraper:** `Mauerverband` ist möglicherweise Redirect auf `Verband_(Mauerwerk)`. Der Scraper muss Redirects auflösen und Duplikate vermeiden (gleicher `oldid` = gleicher Artikel).
+
+### 3.3 Beton + Stahlbeton (11)
+Beton · Stahlbeton · Bewehrung · Bewehrungsstahl · Betonstahl · Zement · Portlandzement · Frischbeton · Festbeton · Betondeckung · Betonfestigkeitsklasse
+
+> **Dedup-Hinweis:** `Bewehrungsstahl` und `Betonstahl` überlappen stark. Beide laden, dann beim Chunking auf inhaltliche Duplikate prüfen.
+
+### 3.4 Mörtel (6)
+Mörtel · Mauermörtel · Putzmörtel · Mörtelgruppe · Kalkmörtel · Zementmörtel
+
+### 3.5 Fundamente + Gründung (6)
+Fundament_(Bauwesen) · Streifenfundament · Plattenfundament · Punktfundament · Frostschürze · Gründung_(Bauwesen)
+
+### 3.6 Bauteile (9)
+Wand · Decke_(Bauteil) · Dach · Geschossdecke · Stahlbetondecke · Estrich · Fußbodenaufbau · Putz_(Baustoff) · Trockenbau
+
+### 3.7 Normen + Abrechnung (13)
+DIN_276 · DIN_277 · DIN_18560 · DIN_1053 · DIN_1045 · DIN_EN_1996 · GAEB · VOB · Leistungsverzeichnis · Bauabrechnung · Mengenermittlung · Aufmaß · Baukosten
+
+> **Erwartungs-Management:** DIN-Artikel in Wikipedia sind Definitions-Stubs (Geltungsbereich, Struktur, Historie), keine Volltexte. Das genügt für „Was regelt DIN 18560?" — nicht für „Welcher Anhang DIN 18560 betrifft Heizestrich?". Letzteres ist Welle 2 (Beuth-Auszüge mit Lizenz-Prüfung).
+
+### 3.8 Vergabe + Vertrag (3)
+Vergabe_und_Vertragsordnung_für_Bauleistungen · Honorarordnung_für_Architekten_und_Ingenieure · Bauvertrag
+
+### 3.9 Bauphysik (4)
+Wärmedämmung · Schallschutz · Brandschutz · Feuchtigkeitsschutz
+
+### 3.10 Baustoffe-Übersicht (3)
+Baustoff · Naturstein · Holz_im_Bauwesen
+
+**Gesamt: 72 Lemmas.** Geschätztes Roh-Markdown-Volumen: 20–50 MB.
 
 ---
 
 ## 4. Bewusst NICHT in Welle 1
 
-Diese Themen sind wichtig, aber für Welle 1 zu groß / zu spezialisiert / zu lizenz-kritisch:
-
 - **HOAI-Volltext** → Welle 2 (juris-Ingestion über `gesetze-im-internet.de`)
-- **DIN-Norm-Volltexte** (DIN 276, DIN 18560, DIN 1053, EC6) → niemals direkt (Beuth-Lizenz). Nur Wikipedia-Definitionen + offizielle Beuth-Metadaten als Cross-Reference.
+- **DIN-Norm-Volltexte** → niemals direkt (Beuth-Lizenz). Nur Wikipedia-Definitionen.
 - **REB-Verfahren-Volltext** → Welle 2 (BMVBS-Veröffentlichungen)
-- **GAEB-DA-XML-Schema** → Welle 3 (technische Format-Doku, anderer Ingestion-Pfad)
-- **VOB/B Vertragstext** → Welle 2 (Beuth-Auszüge oder Kommentierungen mit Lizenz-Prüfung)
-- **Brandschutz, Schallschutz, energetische Anforderungen** → Welle 2 (umfangreiche eigene Wellen)
-- **Holzbau, Stahlbau** → Welle 3 (eigenes Themenfeld)
+- **GAEB-DA-XML-Schema** (DA81, DA83, DA84 …) → Welle 3 (technische Format-Doku)
+- **VOB/B Vertragstext** → Welle 2 (Beuth-Auszüge mit Lizenz-Prüfung)
+- **Holzbau, Stahlbau, BIM, Bauphysik-Vertiefung** → Welle 3 (eigene Themenfelder)
 
 ---
 
 ## 5. Ingestion-Hinweise für die Pipeline
-
-Damit das Ingestion-Skript (siehe Konzept_Wissens_Ingestion_v0.3) sauber arbeitet:
 
 ### 5.1 Pro Chunk zu speichernde Metadaten
 
@@ -97,68 +102,109 @@ Damit das Ingestion-Skript (siehe Konzept_Wissens_Ingestion_v0.3) sauber arbeite
 source_url: "https://de.wikipedia.org/wiki/Beton"
 source_type: "wikipedia_de"
 lizenz: "CC-BY-SA 4.0"
-abruf_datum: "2026-05-19"
+abruf_datum: "2026-05-20"
+oldid: 234567890           # Wikipedia-Revisions-ID für Reproduzierbarkeit
 lemma: "Beton"
-welle: "1a"
-themenfeld: "Baustoffe"     # oder: Bauverfahren, Vergabe, Kostenrecht, Bauabrechnung
-sektion: "Festigkeitsklassen" # nur wenn Sub-Section
-chunk_typ: "definition" | "norm" | "verfahren" | "beispiel"
+welle: "1"
+themenfeld: "Beton + Stahlbeton"
+sektion: "Festigkeitsklassen"  # nur wenn Sub-Section
+chunk_typ: "definition" | "norm" | "verfahren" | "tabelle" | "beispiel"
 ```
 
 ### 5.2 Chunking-Strategie
 
 - **Granularität:** Pro Wikipedia-Abschnitt (`==`-Heading) ein Parent-Chunk; pro `===`-Subheading ein Child-Chunk.
 - **Max-Tokens pro Chunk:** 512 (bge-m3-Kontext-Optimum), mit 64-Token-Overlap.
-- **Tabellen separat:** Wikipedia-Tabellen (z.B. DIN-276-Kostengruppen-Tabelle) als eigene Chunks mit `chunk_typ: "tabelle"` — sonst zerreißt das Chunking die Struktur.
+- **Tabellen separat:** Wikipedia-Tabellen (z.B. DIN-276-Kostengruppen-Tabelle, Mörtelgruppen-Tabelle) als eigene Chunks mit `chunk_typ: "tabelle"` — sonst zerreißt das Chunking die Struktur.
 - **Einleitung doppelt:** Der erste Absatz jedes Lemmas wird zusätzlich als eigener „Definitions-Chunk" gespeichert (höchstes Retrieval-Gewicht für Definitions-Fragen).
+- **Redirects auflösen:** Bei Wikipedia-Redirect (z.B. `Mauerverband` → `Verband_(Mauerwerk)`) den Ziel-URL übernehmen, aber das ursprüngliche Lemma als zusätzliche Suchvariante speichern.
 
 ### 5.3 Verifikations-Schritt vor Ingestion
 
-URLs in diesem Dokument sind nach bestem Wissen formuliert, aber Wikipedia ändert Lemma-Namen. Das Ingestion-Skript muss:
+URLs werden vom Scraper automatisch geprüft. Erwartete Ausfälle (siehe Welle1_Wikipedia_Topics.md):
 
-1. Jede URL per HTTP-Request prüfen.
-2. Bei Redirect (z.B. `Mörtelgruppe` → `Mörtel`) den Ziel-URL übernehmen.
-3. Bei 404 die URL hier eintragen (Log + Issue), nicht stillschweigend überspringen.
-4. Den Wikipedia-Revisions-Hash (`oldid`) als Metadatum speichern — Reproduzierbarkeit.
+- **DIN_18580** (Mauermörtel) — wahrscheinlich Stub
+- **REB-Verfahren** — eventuell Redirect oder Abschnitt
+- **Konkrete GAEB-DA-Versionen** — wahrscheinlich nicht vorhanden
+
+Diese Lücken werden in Welle 2 geschlossen.
 
 ### 5.4 Anti-Halluzinations-Wirkung messen
 
-Nach Ingestion von Welle 1a die **gleichen 14 Baseline-Fragen** erneut stellen (Phi-3 + RAG). Erwartung:
+Nach Ingestion die **gleichen 14 Baseline-Fragen** erneut stellen (Phi-3 + RAG). Erwartung pro Frage:
 
-- F2 (Streifenfundament): Faktor-3-Fehler weg → ✅
-- F3 (Mörtelgruppe): keine Leugnung mehr → ✅
-- F4 (GAEB DA83): keine Luftfahrt → ✅
-- F5 (DIN 276): keine Lebensmittel → ✅
-- F10 (Estrichdämmung): kein Dampfbad → ✅
+| Frage | Erwartung Test #3 |
+|---|---|
+| F1 Mauerwerk vs Beton | ✅ correct (klare Wikipedia-Quellen) |
+| F2 Streifenfundament-Größe | ⚠️ partial (Größenordnung ja, exakte Werte ggf. nicht) |
+| F3 Mörtelgruppe | ✅ correct (MG I, II, IIa, III in Wikipedia) |
+| F4 GAEB DA83 | ⚠️ partial (GAEB-Hauptartikel ja, DA83-Detail ggf. nicht) |
+| F5 DIN 276 Kostengruppen | ✅ correct (KG 100–800 in Wikipedia) |
+| F6 Bewehrung Stahlbeton | ✅ correct |
+| F7 REB Mengenermittlung | ⚠️ partial |
+| F8 Mauerverband | ✅ correct |
+| F9 KG 300 | ✅ correct (über DIN 276) |
+| F10 Estrichdämmung | ✅ correct (über Estrich + DIN 18560) |
+| F11–F14 Traps | ✅ refused (keine Quelle → keine Antwort) |
 
-Fang-Fragen (F11–F14) bleiben Stresstest — wenn Welle-1-Ingestion + Anti-Halluzinations-Prompt sauber sind, müssten die jetzt mit „dazu finde ich keine verlässliche Quelle" beantwortet werden.
+**Erfolgs-KPIs (siehe `baseline_test_02_vergleich.md`):**
+- Halluzinations-Rate: 64 % → < 20 %
+- Trap-Refusal: 2/4 → 4/4
+- Quellenangaben: 0 % → ≥ 95 %
 
 ---
 
 ## 6. Offene Punkte für Raffi-Review
 
-Vor der Ingestion sollte Raphael (BauSU-Profi) folgende Fragen beantworten:
+Vor / parallel zur Ingestion sollte Raphael (BauSU-Profi) folgende Fragen beantworten:
 
-1. **Fehlt ein Pflicht-Lemma?** Aus 36 Jahren Bau-Praxis — was ist in der Liste nicht drin, was ein Polier am Bau täglich braucht?
-2. **Priorisierung Welle 1a vs. 1b:** Soll z.B. „Rohbau" in 1a hoch, weil Top-Gewerk?
-3. **Regionale Begriffe:** Bayrisch/Schwäbisch/Norddeutsch — gibt es Synonyme die als Cross-Reference rein müssen (z.B. „Riegel" vs. „Sturz")?
-4. **VOB-Schwerpunkt:** Liegt Raffis Profi-Fokus mehr auf VOB/A (Vergabe) oder VOB/B (Vertrag) oder VOB/C (technische ATV)?
-
----
-
-## 7. Nächste Schritte
-
-1. **Verifikation der URLs** durch Ingestion-Skript (Abschnitt 5.3).
-2. **Konzept_Wissens_Ingestion_v0.3** schreiben (Anti-Halluzinations-Prompt + Re-Test-Strategie).
-3. **Ingestion Welle 1a** ausführen (17 Lemmas).
-4. **Baseline-Test re-run** mit RAG.
-5. **Bei Erfolg:** Welle 1b ingestieren.
-6. **Bei Misserfolg:** LLM-Wechsel auf Qwen 7B planen (siehe Codi-Review-Punkt #1).
+1. **Fehlt ein Pflicht-Lemma?** Aus 36 Jahren Bau-Praxis — was ist nicht drin, was ein Polier täglich braucht?
+2. **Regionale Begriffe:** Bayrisch/Schwäbisch/Norddeutsch — Synonyme die als Cross-Reference rein müssen (z.B. „Riegel" vs. „Sturz")?
+3. **VOB-Schwerpunkt:** Liegt Raffis Profi-Fokus mehr auf VOB/A (Vergabe) oder VOB/B (Vertrag) oder VOB/C (technische ATV)?
+4. **Lehrplan-Mapping:** Decken die Themenfelder 3.1–3.10 die Maurer-Lernfelder 1–6 sinnvoll ab, oder fehlen Lernfeld-spezifische Themen?
 
 ---
 
-**Verknüpfte Dokumente** (außerhalb dieses Repos, auf Mops-Server):
-- `Konzept_Mops_Architektur.md`
-- `Konzept_Wissens_Ingestion_v0.2.md` (wird v0.3)
-- `Codiclaudi_Prompt_Mops_Backend.md`
-- `data/tests/baseline_results_20260519_104605.json`
+## 7. Operative Schritte auf dem Mops-Server
+
+```
+[1] docker compose up -d                  # Qdrant + Ollama starten
+[2] python scripts/01_scrape_wikipedia.py # 72 Artikel laden
+[3] manuelle Sichtung                     # welche Artikel sind dünn?
+[4] python scripts/02_chunk.py            # 512-Token-Chunks erzeugen
+[5] python scripts/03_ingest.py           # in Qdrant einspeisen
+[6] python scripts/04_sanity_check.py     # Test-Retrieval prüfen
+[7] python scripts/05_baseline_rerun.py   # die 14 Fragen mit RAG
+[8] Vergleich Test #2 vs. Test #3         # Erfolg messen
+```
+
+---
+
+## 8. Erweiterungs-Ideen für später
+
+### Welle 1.5 (Lücken-Schließung)
+Falls nach Test #3 einzelne Artikel zu dünn waren: Wiktionary-Bau-Einträge, Wikipedia-Kategorien-Übersichten, ergänzende Wikipedia-Stub-Erweiterungen.
+
+### Welle 2 (eigenes Konzept v0.3)
+KMK-Rahmenlehrplan Maurer (PDF), GAEB-Spec-Dokumente (öffentlich), DIN-Übersichts-Vertiefung, HOAI-Volltext, BIM-Grundlagen.
+
+### Welle 3 (laufend)
+Raffis BauSU-Lerntagebuch, Andreas' Lerntagebuch, FAQ aus Mops-Anfragen (was Praktiker tatsächlich fragen).
+
+---
+
+**Verknüpfte Dokumente:**
+- `docs/mops-api/baseline_test_02_vergleich.md` (in diesem Repo)
+- `data/wiki_topics.txt` (auf Mops-Server, operativer Flat-List für Scraper)
+- `data/tests/baseline_results_20260519_104605.json` (Test #1)
+- `Welle1_Wikipedia_Topics.md` (Codi-Vorlage, identisch mit dieser Lemma-Liste)
+- `Konzept_Mops_Architektur.md`, `Konzept_Wissens_Ingestion_v0.2.md` (auf Mops-Server)
+
+---
+
+## 🐠 Goldfisch-Zen
+
+> Welle 1 ist nicht die finale Antwort, sondern die erste Hypothese.
+> Nach Test #3 wissen wir konkret: welche Artikel decken gut ab, wo sind Lücken, welche Antworten sind besser/gleich/schlechter geworden — diesmal **mit Quellen**.
+>
+> Daten schlagen Vermutung. Wieder.
