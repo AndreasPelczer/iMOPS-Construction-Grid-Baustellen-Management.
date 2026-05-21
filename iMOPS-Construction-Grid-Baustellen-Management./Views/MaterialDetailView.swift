@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct MaterialDetailView: View {
     @ObservedObject var material: CDLexikonEntry

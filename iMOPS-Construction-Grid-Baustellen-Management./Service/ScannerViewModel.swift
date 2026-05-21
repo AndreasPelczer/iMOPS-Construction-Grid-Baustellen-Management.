@@ -1,5 +1,6 @@
 #if !targetEnvironment(macCatalyst)
 import Foundation
+import Combine
 import Vision
 import AVFoundation
 import UIKit

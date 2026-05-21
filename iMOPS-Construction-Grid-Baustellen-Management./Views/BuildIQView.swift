@@ -1,5 +1,7 @@
 #if !targetEnvironment(macCatalyst)
 import SwiftUI
+import Vision
+import Combine
 import AVFoundation
 import CoreData
 

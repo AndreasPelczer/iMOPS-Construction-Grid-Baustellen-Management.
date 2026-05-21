@@ -6,6 +6,7 @@
 //
 
 import CoreData
+import Combine
 
 struct PersistenceController {
     static let shared = PersistenceController()
