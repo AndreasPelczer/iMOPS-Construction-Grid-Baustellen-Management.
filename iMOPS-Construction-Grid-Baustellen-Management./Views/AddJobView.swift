@@ -54,7 +54,7 @@ struct AddJobView: View {
 
                 Section {
                     if viewModel.lineItems.isEmpty {
-                        Text("Noch keine Positionen. Tippe auf „Position hinzufügen".")
+                        Text("Noch keine Positionen. Tippe auf \"Position hinzufügen\".")
                             .foregroundStyle(.secondary)
                     }
 
