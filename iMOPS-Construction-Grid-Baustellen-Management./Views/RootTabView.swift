@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct RootTabView: View {
     @Environment(AppSession.self) private var session

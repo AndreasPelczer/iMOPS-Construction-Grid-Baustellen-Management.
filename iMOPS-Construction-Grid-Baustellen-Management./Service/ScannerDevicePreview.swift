@@ -1,5 +1,6 @@
 #if !targetEnvironment(macCatalyst)
 import SwiftUI
+import Combine
 import AVFoundation
 
 struct ScannerDevicePreview: UIViewRepresentable {

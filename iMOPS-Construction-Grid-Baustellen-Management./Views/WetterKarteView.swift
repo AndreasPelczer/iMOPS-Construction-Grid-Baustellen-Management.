@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - WetterKarteView
 // Kompakte Wetterkarte für EventDetailView.

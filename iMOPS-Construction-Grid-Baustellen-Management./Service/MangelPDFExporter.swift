@@ -1,4 +1,5 @@
 import UIKit
+import Combine
 
 struct MangelPDFExporter {
 
@@ -243,10 +244,12 @@ struct MangelPDFExporter {
 private extension MangelStatus {
     var uiColor: UIColor {
         switch self {
-        case .offen:     return .systemOrange
-        case .inArbeit:  return .systemBlue
-        case .erledigt:  return .systemGreen
-        case .abgelehnt: return .systemGray
+        case .offen:      return .systemOrange
+        case .inArbeit:   return .systemBlue
+        case .behoben:    return .systemGreen
+        case .erledigt:   return .systemGreen
+        case .abgenommen: return .systemGreen
+        case .abgelehnt:  return .systemGray
         }
     }
 }
@@ -254,8 +257,9 @@ private extension MangelStatus {
 private extension MangelSchwere {
     var uiColor: UIColor {
         switch self {
-        case .gering:     return .systemGreen
-        case .mittel:     return .systemOrange
+        case .gering:        return .systemGreen
+        case .mittel:        return .systemOrange
+        case .kritisch:      return .systemRed
         case .schwerwiegend: return .systemRed
         }
     }
