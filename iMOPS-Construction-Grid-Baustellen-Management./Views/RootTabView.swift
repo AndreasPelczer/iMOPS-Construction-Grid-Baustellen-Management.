@@ -58,7 +58,15 @@ struct RootTabView: View {
                 }
             }
 
-            // TAB 6: BuildIQ KI-Scanner (nur iOS, kein macCatalyst)
+            // TAB 6: BauWissen (Mops/Prof – Bau-Fachwissen-KI)
+            NavigationStack {
+                BauWissenView()
+            }
+            .tabItem {
+                Label("BauWissen", systemImage: "book.and.wrench")
+            }
+
+            // TAB 7: BuildIQ KI-Scanner (nur iOS, kein macCatalyst)
             #if !targetEnvironment(macCatalyst)
             NavigationStack {
                 BuildIQLandingView()
@@ -68,7 +76,7 @@ struct RootTabView: View {
             }
             #endif
 
-            // TAB 7: Settings
+            // TAB 8: Settings
             NavigationStack {
                 SettingsView()
             }
