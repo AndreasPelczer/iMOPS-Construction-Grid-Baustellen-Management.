@@ -21,6 +21,7 @@ struct LVView: View {
     @State private var showKostenübersicht   = false
     @State private var showImport            = false
     @State private var showGAEBImport        = false
+    @State private var droppedGAEBURL: URL?
     @State private var showHelp              = false
     @State private var showExportShare       = false
     @State private var exportURL: URL?
@@ -128,6 +129,10 @@ struct LVView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .gaebDropTarget { url in
+            droppedGAEBURL = url
+            showGAEBImport = true
+        }
         .navigationTitle("LV – \(event.title ?? "Baustelle")")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

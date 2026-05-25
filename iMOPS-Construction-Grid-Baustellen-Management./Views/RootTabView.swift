@@ -10,6 +10,7 @@ import Combine
 
 struct RootTabView: View {
     @Environment(AppSession.self) private var session
+    @Environment(ImportedFileHandler.self) private var fileHandler
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
@@ -86,6 +87,9 @@ struct RootTabView: View {
         }
         .tint(.orange)
         .environment(\.locale, session.locale)
+        .universalFileDropTarget { url in
+            fileHandler.handleIncomingFile(url: url)
+        }
         .fullScreenCover(isPresented: Binding(
             get: { !hasCompletedOnboarding },
             set: { if !$0 { hasCompletedOnboarding = true } }
