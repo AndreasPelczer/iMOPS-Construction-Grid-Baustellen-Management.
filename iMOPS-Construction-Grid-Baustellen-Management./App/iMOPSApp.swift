@@ -26,6 +26,7 @@ struct iMOPSApp: App {
                 )
                 .task {
                     ScharpeggeSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    StammdatenSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     NotificationService.shared.requestAuthorization()
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)
                 }

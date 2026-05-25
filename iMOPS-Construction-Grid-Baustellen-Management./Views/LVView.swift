@@ -14,6 +14,7 @@ struct LVView: View {
 
     @State private var showingAdd            = false
     @State private var editPosition: LVPosition?
+    @State private var kalkPosition: LVPosition?
     @State private var fortschrittPosition: LVPosition?
     @State private var showBestellliste      = false
     @State private var showAngebotsVergleich = false
@@ -106,6 +107,10 @@ struct LVView: View {
                                         Label("Bearbeiten", systemImage: "pencil")
                                     }
                                     .tint(.orange)
+                                    Button { kalkPosition = pos } label: {
+                                        Label("Kalkulation", systemImage: "function")
+                                    }
+                                    .tint(.indigo)
                                     Button { duplicateAsAlternative(pos) } label: {
                                         Label("Alternative", systemImage: "doc.on.doc")
                                     }
@@ -200,6 +205,10 @@ struct LVView: View {
         }
         .sheet(item: $editPosition) { pos in
             AddLVPositionView(event: event, editPosition: pos)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(item: $kalkPosition) { pos in
+            LVTiefenkalkulationView(position: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
         .sheet(item: $fortschrittPosition) { pos in
@@ -454,6 +463,14 @@ struct LVPositionRow: View {
                     .foregroundStyle(isAlt ? .secondary : .primary)
             }
             HStack(spacing: 6) {
+                if position.hatKalkulation {
+                    let kalk = LVKalkulator.kalkuliere(position: position)
+                    Image(systemName: "function").font(.caption2).foregroundStyle(.indigo)
+                    Text(kalk.einheitspreisVK, format: .currency(code: "EUR"))
+                        .font(.caption.monospacedDigit()).foregroundStyle(.indigo)
+                    Text("EP").font(.caption2).foregroundStyle(.secondary)
+                    Text("·").foregroundStyle(.secondary)
+                }
                 if let art = position.artikelNummer, !art.isEmpty {
                     Image(systemName: "barcode").font(.caption2).foregroundStyle(.secondary)
                     Text(art).font(.caption).foregroundStyle(.secondary)
