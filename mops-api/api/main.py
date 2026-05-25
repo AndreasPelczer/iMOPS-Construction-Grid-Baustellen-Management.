@@ -5,13 +5,17 @@ from __future__ import annotations
 import sys
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 import psutil
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from api.config import Settings, get_settings
-from api.routes import chat, health
+from api.routes import admin, chat, health
+from api.services.memory_service import MemoryService
 from api.services.ollama_client import OllamaClient
 
 
@@ -54,6 +58,18 @@ async def lifespan(app: FastAPI):
         )
 
     app.state.ollama = ollama
+
+    # Memory-Service (Qdrant) fuer Prof-Echos initialisieren
+    memory = MemoryService(qdrant_url=settings.qdrant_url)
+    try:
+        await memory.init_collections()
+        logger.info("MemoryService initialisiert (Qdrant).")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            f"Qdrant nicht erreichbar — Admin-UI funktioniert erst wenn Qdrant laeuft: {exc}"
+        )
+    app.state.memory_service = memory
+
     yield
     logger.info("Mops-API shutting down.")
 
@@ -82,6 +98,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(chat.router)
+    app.include_router(admin.router)
+
+    # Admin-UI als statische Dateien ausliefern
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    static_dir.mkdir(exist_ok=True)
+    app.mount("/admin-ui", StaticFiles(directory=str(static_dir), html=True), name="admin")
+
     return app
 
 

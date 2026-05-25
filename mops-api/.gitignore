@@ -7,5 +7,6 @@ __pycache__/
 .env
 data/raw/
 data/chunks/
+data/prof_echoes/
 data/tests/baseline_results_*.json
 .DS_Store

@@ -29,6 +29,9 @@ class Settings(BaseSettings):
         r"|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$"
     )
 
+    # Qdrant (lokale Instanz fuer Prof-Echos / Memory)
+    qdrant_url: str = "http://localhost:6333"
+
     log_level: str = "INFO"
 
 

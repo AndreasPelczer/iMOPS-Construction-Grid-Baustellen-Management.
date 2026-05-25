@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prof-Echos – Pending Freigabe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #FAF8F5;
+            color: #2C2C2C;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #fff;
+            border-bottom: 3px solid #E07A3C;
+            padding: 20px 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2C2C2C;
+        }
+
+        .header .count {
+            font-size: 0.9rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px 16px;
+            flex: 1;
+        }
+
+        /* Karten */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: opacity 0.3s ease;
+        }
+
+        .card.approving {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+
+        .badge-model {
+            background: #F3E8FF;
+            color: #7C3AED;
+        }
+
+        .badge-model.mops {
+            background: #FFF3E0;
+            color: #E07A3C;
+        }
+
+        .badge-tokens {
+            background: #F0F0F0;
+            color: #555;
+            font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+            font-size: 0.7rem;
+        }
+
+        .badge-time {
+            background: #E8F5E9;
+            color: #388E3C;
+            font-size: 0.7rem;
+        }
+
+        .question {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2C2C2C;
+            margin-bottom: 10px;
+        }
+
+        .answer {
+            background: #FAFAFA;
+            border-left: 3px solid #E07A3C;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 14px;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Quellen */
+        .sources-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .source {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .source:last-child {
+            border-bottom: none;
+        }
+
+        .source-score {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            min-width: 42px;
+            text-align: center;
+        }
+
+        .score-high {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .score-mid {
+            background: #FFF8E1;
+            color: #F57F17;
+        }
+
+        .score-low {
+            background: #F0F0F0;
+            color: #888;
+        }
+
+        .source-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .source-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .source-preview {
+            font-size: 0.78rem;
+            color: #666;
+            margin-top: 2px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* ID anzeigen */
+        .card-id {
+            font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+            font-size: 0.65rem;
+            color: #BBB;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+
+        /* Approve-Button */
+        .approve-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin-top: 14px;
+            background: #E07A3C;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .approve-btn:hover {
+            background: #C4662F;
+        }
+
+        .approve-btn:active {
+            transform: scale(0.98);
+        }
+
+        .approve-btn:disabled {
+            background: #CCC;
+            cursor: not-allowed;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state .emoji {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border: 3px solid #E07A3C;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error */
+        .error-box {
+            background: #FFF0F0;
+            border: 1px solid #FFCDD2;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            color: #C62828;
+            margin-bottom: 20px;
+        }
+
+        .error-box button {
+            margin-top: 10px;
+            padding: 8px 20px;
+            background: #E07A3C;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 16px;
+            font-size: 0.75rem;
+            color: #BBB;
+            border-top: 1px solid #EEE;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>&#127891; Prof-Echos &ndash; Pending Freigabe</h1>
+        <div class="count" id="countLine">Lade...</div>
+    </div>
+
+    <div class="container" id="content">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Echos werden geladen...</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        Mops l&auml;uft auf 192.168.2.42:8080 | Stand: pelczer.de
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        const contentEl = document.getElementById("content");
+        const countEl = document.getElementById("countLine");
+
+        async function loadPending() {
+            contentEl.innerHTML = '<div class="loading"><div class="spinner"></div><p>Echos werden geladen...</p></div>';
+            countEl.textContent = "Lade...";
+
+            try {
+                const res = await fetch(API_BASE + "/admin/pending");
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const entries = await res.json();
+                render(entries);
+            } catch (err) {
+                contentEl.innerHTML =
+                    '<div class="error-box">' +
+                    '<p>Mops ist nicht erreichbar: ' + escapeHtml(err.message) + '</p>' +
+                    '<button onclick="loadPending()">Nochmal versuchen</button>' +
+                    '</div>';
+                countEl.textContent = "Fehler";
+            }
+        }
+
+        function render(entries) {
+            if (entries.length === 0) {
+                contentEl.innerHTML =
+                    '<div class="empty-state">' +
+                    '<div class="emoji">&#128054;</div>' +
+                    '<p>Alle Echos sind freigegeben oder noch keine vorhanden</p>' +
+                    '</div>';
+                countEl.textContent = "0 wartend";
+                return;
+            }
+
+            countEl.textContent = entries.length + " wartend";
+
+            let html = "";
+            for (const e of entries) {
+                const isProf = e.model.includes("claude");
+                const modelLabel = isProf
+                    ? "&#127891; Prof (" + escapeHtml(e.model) + ")"
+                    : "&#128054; Mops (" + escapeHtml(e.model) + ")";
+                const modelClass = isProf ? "badge-model" : "badge-model mops";
+
+                const created = formatDate(e.created_at);
+
+                html += '<div class="card" id="card-' + e.id + '">';
+                html += '  <div class="card-id">' + escapeHtml(e.id) + '</div>';
+                html += '  <div class="card-meta">';
+                html += '    <span class="badge ' + modelClass + '">' + modelLabel + '</span>';
+                html += '    <span class="badge badge-tokens">&#8593; ' + e.tokens_in + ' / &#8595; ' + e.tokens_out + ' tokens</span>';
+                html += '    <span class="badge badge-time">' + escapeHtml(created) + '</span>';
+                html += '  </div>';
+                html += '  <h3 class="question">' + escapeHtml(e.question) + '</h3>';
+                html += '  <div class="answer">' + escapeHtml(e.answer) + '</div>';
+
+                if (e.sources && e.sources.length > 0) {
+                    html += '  <div class="sources-title">Quellen (' + e.sources.length + ')</div>';
+                    for (const s of e.sources) {
+                        const pct = Math.round((s.score || 0) * 100);
+                        const scoreClass = pct >= 90 ? "score-high" : pct >= 70 ? "score-mid" : "score-low";
+                        const preview = (s.chunk_preview || "").substring(0, 200);
+                        html += '  <div class="source">';
+                        html += '    <span class="source-score ' + scoreClass + '">' + pct + '%</span>';
+                        html += '    <div class="source-info">';
+                        html += '      <div class="source-title">' + escapeHtml(s.titel || s.lemma_id || "–") + '</div>';
+                        if (preview) {
+                            html += '      <div class="source-preview">' + escapeHtml(preview) + '</div>';
+                        }
+                        html += '    </div>';
+                        html += '  </div>';
+                    }
+                }
+
+                html += '  <button class="approve-btn" onclick="approveEntry(\'' + e.id + '\')">&#128077; Freigeben</button>';
+                html += '</div>';
+            }
+
+            contentEl.innerHTML = html;
+        }
+
+        async function approveEntry(id) {
+            const card = document.getElementById("card-" + id);
+            if (card) card.classList.add("approving");
+
+            const btn = card ? card.querySelector(".approve-btn") : null;
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = "Wird freigegeben...";
+            }
+
+            try {
+                const res = await fetch(API_BASE + "/admin/approve/" + id, { method: "POST" });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error("HTTP " + res.status + ": " + text);
+                }
+                await loadPending();
+            } catch (err) {
+                if (card) card.classList.remove("approving");
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "&#128077; Freigeben";
+                }
+                alert("Fehler beim Freigeben: " + err.message);
+            }
+        }
+
+        function formatDate(iso) {
+            if (!iso) return "–";
+            try {
+                const d = new Date(iso);
+                return d.toLocaleDateString("de-DE", {
+                    day: "2-digit", month: "2-digit", year: "numeric",
+                    hour: "2-digit", minute: "2-digit"
+                });
+            } catch {
+                return iso;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        loadPending();
+    </script>
+</body>
+</html>
