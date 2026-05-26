@@ -57,14 +57,24 @@ enum FileDropUTTypes {
 
 enum FileDropHelper {
 
+    /// Kopiert eine URL direkt ins temp-Verzeichnis (dropDestination API / Mac).
+    static func copyToTemp(from url: URL) -> URL? {
+        copyToTempDir(from: url)
+    }
+
     /// Kopiert eine gedroppte Datei in ein temporaeres Verzeichnis und gibt die lokale URL zurueck.
     static func copyToTemp(from provider: NSItemProvider) async -> URL? {
         await withCheckedContinuation { continuation in
             // Zuerst versuchen wir fileURL
             if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
                 provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { item, _ in
-                    if let data = item as? Data,
-                       let url = URL(dataRepresentation: data, relativeTo: nil) {
+                    // Mac: item ist direkt eine URL
+                    if let url = item as? URL {
+                        let localURL = copyToTempDir(from: url)
+                        continuation.resume(returning: localURL)
+                    // iOS: item kommt als Data-Repraesentation
+                    } else if let data = item as? Data,
+                              let url = URL(dataRepresentation: data, relativeTo: nil) {
                         let localURL = copyToTempDir(from: url)
                         continuation.resume(returning: localURL)
                     } else {

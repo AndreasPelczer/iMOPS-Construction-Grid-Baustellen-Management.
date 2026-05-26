@@ -21,8 +21,10 @@ struct FileDropOverlayModifier: ViewModifier {
                     dropOverlay
                 }
             }
-            .onDrop(of: [.fileURL, .item], isTargeted: $isTargeted) { providers in
-                handleDrop(providers)
+            .dropDestination(for: URL.self) { urls, _ in
+                handleDrop(urls)
+            } isTargeted: { targeted in
+                isTargeted = targeted
             }
     }
 
@@ -48,15 +50,15 @@ struct FileDropOverlayModifier: ViewModifier {
         .allowsHitTesting(false)
     }
 
-    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        guard let provider = providers.first else { return false }
+    private func handleDrop(_ urls: [URL]) -> Bool {
+        guard let url = urls.first else { return false }
 
         Task {
-            guard let url = await FileDropHelper.copyToTemp(from: provider) else { return }
-            let ext = url.pathExtension.lowercased()
+            guard let localURL = FileDropHelper.copyToTemp(from: url) else { return }
+            let ext = localURL.pathExtension.lowercased()
             guard acceptedExtensions.isEmpty || acceptedExtensions.contains(ext) else { return }
             await MainActor.run {
-                onFileDrop(url)
+                onFileDrop(localURL)
             }
         }
         return true
