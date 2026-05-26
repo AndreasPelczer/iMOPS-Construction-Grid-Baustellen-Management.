@@ -10,7 +10,9 @@ enum DroppedFileType {
     case gaeb       // .x83, .x84, .xml (GAEB)
     case cad        // .usdz, .obj, .dae, .fbx, .stl, .gltf, .glb
     case skp        // .skp (SketchUp)
-    case pdf        // .pdf (LV-Import)
+    case pdf        // .pdf
+    case photo      // .jpg, .png, .heic
+    case excel      // .xlsx, .xls, .csv
     case unknown
 
     static func detect(from url: URL) -> DroppedFileType {
@@ -19,7 +21,6 @@ enum DroppedFileType {
         case "x83", "x84", "x86":
             return .gaeb
         case "xml":
-            // XML koennte GAEB sein — wir behandeln es als GAEB im LV-Kontext
             return .gaeb
         case "skp":
             return .skp
@@ -28,6 +29,10 @@ enum DroppedFileType {
             return .cad
         case "pdf":
             return .pdf
+        case "jpg", "jpeg", "png", "heic", "heif", "gif", "tiff", "bmp":
+            return .photo
+        case "xlsx", "xls", "csv":
+            return .excel
         default:
             return .unknown
         }
@@ -41,6 +46,8 @@ extension DroppedFileType {
         case .cad:     return "3D-Modell"
         case .skp:     return "SketchUp-Datei"
         case .pdf:     return "PDF-Dokument"
+        case .photo:   return "Foto"
+        case .excel:   return "Excel-Tabelle"
         case .unknown: return "Unbekannter Dateityp"
         }
     }
@@ -51,6 +58,8 @@ extension DroppedFileType {
         case .cad:     return "cube"
         case .skp:     return "cube.transparent"
         case .pdf:     return "doc.text"
+        case .photo:   return "photo"
+        case .excel:   return "tablecells"
         case .unknown: return "questionmark.folder"
         }
     }
@@ -61,6 +70,8 @@ extension DroppedFileType {
         case .cad:     return .green
         case .skp:     return .blue
         case .pdf:     return .red
+        case .photo:   return .purple
+        case .excel:   return .green
         case .unknown: return .gray
         }
     }

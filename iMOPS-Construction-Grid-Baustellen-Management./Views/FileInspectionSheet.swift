@@ -219,7 +219,7 @@ struct FileInspectionSheet: View {
                     dismiss()
                 }
 
-            case .pdf, .unknown:
+            case .pdf, .photo, .excel, .unknown:
                 EmptyView()
             }
 

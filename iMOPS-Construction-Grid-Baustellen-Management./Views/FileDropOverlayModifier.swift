@@ -103,9 +103,7 @@ extension View {
     /// Fuegt ein allgemeines Drop-Target fuer alle unterstuetzten Dateien hinzu
     func universalFileDropTarget(onDrop: @escaping (URL) -> Void) -> some View {
         modifier(FileDropOverlayModifier(
-            acceptedExtensions: ["x83", "x84", "x86", "xml", "pdf",
-                                 "usdz", "usda", "usdc", "obj", "dae", "scn",
-                                 "fbx", "stl", "ply", "gltf", "glb", "abc", "skp"],
+            acceptedExtensions: [],
             label: "Datei hier ablegen",
             icon: "square.and.arrow.down",
             onFileDrop: onDrop
