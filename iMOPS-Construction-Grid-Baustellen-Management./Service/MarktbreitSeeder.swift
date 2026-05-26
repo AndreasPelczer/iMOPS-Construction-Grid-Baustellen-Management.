@@ -4,7 +4,7 @@ import CoreData
 struct MarktbreitSeeder {
 
     static func seedIfNeeded(context: NSManagedObjectContext) {
-        let key = "marktbreit_efh_schwarz_seeded_v1"
+        let key = "marktbreit_efh_schwarz_seeded_v2"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
 
         let fetch: NSFetchRequest<Event> = Event.fetchRequest()
@@ -28,20 +28,28 @@ struct MarktbreitSeeder {
         event.timeStamp = Date()
         event.eventStartTime = Date()
 
+        // Mengen aus Gebaeudedaten: 6,50 x 10,50m, h=8,14m, Satteldach 20/20
+        // Umfang AW = 2*(6,50+10,50) = 34,00m
+        // Grundflaeche = 6,50*10,50 = 68,25 m²
+        // Dachflaeche pro Seite = ((6,50/2+0,50)/cos20°) * (10,50+2*0,20) = 3,99 * 10,90 = 43,5 m²
+        // IW-Laenge geschaetzt: 1x laengs ~9,5m + 1x quer ~5,5m = 15m (Pos 8.2+8.3 Statik)
+        // Wandhoehen: UG ~2,50m, EG ~2,75m, Giebel-Dreieck h = 3,25*tan20° = 1,18m
+        // Oeffnungsabzug AW ~20%, IW ~15%
+
         let positionen: [(String, String, String, String, Double)] = [
-            ("3.20.1", "320", "Streifenfundament Aussenwand bewehrt, b=37cm, d=16cm", "m", 0),
-            ("3.20.2", "320", "Streifenfundament Innenwand bewehrt", "m", 0),
-            ("3.20.3", "320", "Sohlplatte Stahlbeton d=16cm", "m²", 0),
-            ("3.30.1", "330", "Aussenmauerwerk Porenbeton PP 2-0.35, d=24cm", "m²", 0),
-            ("3.30.2", "330", "Aussenmauerwerk verstaerkt PP 4-0.55, d=24cm (lokal nach Statik)", "m²", 0),
-            ("3.30.3", "330", "Stahlbetonstuetze in Keller-Aussenwand", "Stk", 0),
-            ("3.40.1", "340", "Innenmauerwerk Porenbeton PP 4-0.50, d=17,5cm", "m²", 0),
-            ("3.50.1", "350", "Filigran-Elementdecke ueber UG", "m²", 0),
-            ("3.50.2", "350", "Ringbalken Stahlbeton C 20/25, d=17cm + XPS-Schalung", "m", 0),
-            ("3.50.3", "350", "Deckengleicher Balken als Fenstersturz", "Stk", 0),
-            ("3.60.1", "360", "Fachwerkbinder Dachstuhl Satteldach 20°/20°", "Stk", 0),
-            ("3.60.2", "360", "Dacheindeckung inkl. Lattung", "m²", 0),
-            ("3.60.3", "360", "Untergurt-Ausbau: Holzwerkstoffplatte + Mineralwolldaemmung 24cm + GK + Dampfbremse", "m²", 0),
+            ("3.20.1", "320", "Streifenfundament Aussenwand bewehrt, b=37cm, d=16cm", "m", 34.0),
+            ("3.20.2", "320", "Streifenfundament Innenwand bewehrt", "m", 15.0),
+            ("3.20.3", "320", "Sohlplatte Stahlbeton d=16cm", "m²", 68.25),
+            ("3.30.1", "330", "Aussenmauerwerk Porenbeton PP 2-0.35, d=24cm", "m²", 150.0),
+            ("3.30.2", "330", "Aussenmauerwerk verstaerkt PP 4-0.55, d=24cm (lokal nach Statik)", "m²", 15.0),
+            ("3.30.3", "330", "Stahlbetonstuetze in Keller-Aussenwand", "Stk", 2),
+            ("3.40.1", "340", "Innenmauerwerk Porenbeton PP 4-0.50, d=17,5cm", "m²", 67.0),
+            ("3.50.1", "350", "Filigran-Elementdecke ueber UG", "m²", 68.25),
+            ("3.50.2", "350", "Ringbalken Stahlbeton C 20/25, d=17cm + XPS-Schalung", "m", 36.0),
+            ("3.50.3", "350", "Deckengleicher Balken als Fenstersturz", "Stk", 3),
+            ("3.60.1", "360", "Fachwerkbinder Dachstuhl Satteldach 20°/20°", "Stk", 14),
+            ("3.60.2", "360", "Dacheindeckung inkl. Lattung", "m²", 87.0),
+            ("3.60.3", "360", "Untergurt-Ausbau: Holzwerkstoffplatte + Mineralwolldaemmung 24cm + GK + Dampfbremse", "m²", 68.25),
             ("4.40.1", "440", "PV-Vorruestung Dachflaeche", "psch", 1),
         ]
 
