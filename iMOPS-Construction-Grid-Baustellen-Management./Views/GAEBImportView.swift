@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 
 struct GAEBImportView: View {
     let event: Event
+    var initialURL: URL? = nil
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
@@ -67,6 +68,9 @@ struct GAEBImportView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                 }
+            }
+            .task {
+                if let url = initialURL { parsefile(url: url) }
             }
         }
     }

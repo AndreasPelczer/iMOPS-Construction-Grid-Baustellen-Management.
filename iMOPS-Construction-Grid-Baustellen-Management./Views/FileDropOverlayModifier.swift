@@ -72,7 +72,7 @@ extension View {
     /// Fuegt ein Drop-Target fuer GAEB-Dateien hinzu (.x83, .x84, .xml)
     func gaebDropTarget(onDrop: @escaping (URL) -> Void) -> some View {
         modifier(FileDropOverlayModifier(
-            acceptedExtensions: ["x83", "x84", "xml"],
+            acceptedExtensions: ["x83", "x84", "x86", "xml"],
             label: "GAEB-Datei hier ablegen",
             icon: "doc.badge.arrow.up",
             onFileDrop: onDrop
@@ -103,7 +103,7 @@ extension View {
     /// Fuegt ein allgemeines Drop-Target fuer alle unterstuetzten Dateien hinzu
     func universalFileDropTarget(onDrop: @escaping (URL) -> Void) -> some View {
         modifier(FileDropOverlayModifier(
-            acceptedExtensions: ["x83", "x84", "xml", "pdf",
+            acceptedExtensions: ["x83", "x84", "x86", "xml", "pdf",
                                  "usdz", "usda", "usdc", "obj", "dae", "scn",
                                  "fbx", "stl", "ply", "gltf", "glb", "abc", "skp"],
             label: "Datei hier ablegen",

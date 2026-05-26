@@ -16,7 +16,7 @@ enum DroppedFileType {
     static func detect(from url: URL) -> DroppedFileType {
         let ext = url.pathExtension.lowercased()
         switch ext {
-        case "x83", "x84":
+        case "x83", "x84", "x86":
             return .gaeb
         case "xml":
             // XML koennte GAEB sein — wir behandeln es als GAEB im LV-Kontext
@@ -30,6 +30,38 @@ enum DroppedFileType {
             return .pdf
         default:
             return .unknown
+        }
+    }
+}
+
+extension DroppedFileType {
+    var displayName: String {
+        switch self {
+        case .gaeb:    return "GAEB-Datei"
+        case .cad:     return "3D-Modell"
+        case .skp:     return "SketchUp-Datei"
+        case .pdf:     return "PDF-Dokument"
+        case .unknown: return "Unbekannter Dateityp"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .gaeb:    return "doc.badge.arrow.up"
+        case .cad:     return "cube"
+        case .skp:     return "cube.transparent"
+        case .pdf:     return "doc.text"
+        case .unknown: return "questionmark.folder"
+        }
+    }
+
+    var iconColor: Color {
+        switch self {
+        case .gaeb:    return .orange
+        case .cad:     return .green
+        case .skp:     return .blue
+        case .pdf:     return .red
+        case .unknown: return .gray
         }
     }
 }

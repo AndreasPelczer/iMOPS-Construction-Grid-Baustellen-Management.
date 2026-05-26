@@ -8,6 +8,7 @@ import UIKit
 
 struct LVView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(ImportedFileHandler.self) private var importedFileHandler
     @ObservedObject var event: Event
 
     @FetchRequest private var positionen: FetchedResults<LVPosition>
@@ -232,9 +233,16 @@ struct LVView: View {
             LVImportView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showGAEBImport) {
-            GAEBImportView(event: event)
+        .sheet(isPresented: $showGAEBImport, onDismiss: { droppedGAEBURL = nil }) {
+            GAEBImportView(event: event, initialURL: droppedGAEBURL)
                 .environment(\.managedObjectContext, viewContext)
+        }
+        .onAppear {
+            if let url = importedFileHandler.pendingGAEBURL {
+                droppedGAEBURL = url
+                importedFileHandler.pendingGAEBURL = nil
+                showGAEBImport = true
+            }
         }
         .sheet(isPresented: $showExportShare) {
             if let url = exportURL {
