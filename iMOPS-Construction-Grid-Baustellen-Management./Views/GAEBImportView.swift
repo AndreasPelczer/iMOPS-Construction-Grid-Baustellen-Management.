@@ -336,3 +336,75 @@ struct GAEBDocumentPicker: UIViewControllerRepresentable {
         }
     }
 }
+
+// MARK: - Event Picker for GAEB Import
+
+struct GAEBEventPickerSheet: View {
+    let gaebURL: URL
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+
+    @FetchRequest(
+        sortDescriptors: [SortDescriptor(\Event.timeStamp, order: .reverse)],
+        animation: .default
+    ) private var events: FetchedResults<Event>
+
+    @State private var selectedEvent: Event?
+    @State private var showGAEBImport = false
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if events.isEmpty {
+                    ContentUnavailableView(
+                        "Keine Baustellen",
+                        systemImage: "building.2",
+                        description: Text("Erstelle zuerst eine Baustelle, um GAEB-Daten zu importieren.")
+                    )
+                } else {
+                    List(events) { event in
+                        Button {
+                            selectedEvent = event
+                            showGAEBImport = true
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(event.title ?? "Ohne Titel")
+                                        .font(.headline)
+                                    if let nr = event.eventNumber, !nr.isEmpty {
+                                        Text("Nr. \(nr)")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    if let loc = event.location, !loc.isEmpty {
+                                        Label(loc, systemImage: "mappin")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .tint(.primary)
+                    }
+                }
+            }
+            .navigationTitle("Baustelle wählen")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showGAEBImport, onDismiss: { dismiss() }) {
+                if let event = selectedEvent {
+                    GAEBImportView(event: event, initialURL: gaebURL)
+                        .environment(\.managedObjectContext, viewContext)
+                }
+            }
+        }
+    }
+}

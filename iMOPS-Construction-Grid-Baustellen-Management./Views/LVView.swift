@@ -237,8 +237,8 @@ struct LVView: View {
             GAEBImportView(event: event, initialURL: droppedGAEBURL)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .onAppear {
-            if let url = importedFileHandler.pendingGAEBURL {
+        .onChange(of: importedFileHandler.pendingGAEBURL) { _, newURL in
+            if let url = newURL {
                 droppedGAEBURL = url
                 importedFileHandler.pendingGAEBURL = nil
                 showGAEBImport = true
