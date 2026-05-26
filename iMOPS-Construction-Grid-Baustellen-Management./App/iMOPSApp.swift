@@ -9,6 +9,10 @@ import SwiftUI
 import CoreData
 import Combine
 
+extension URL: @retroactive Identifiable {
+    public var id: String { absoluteString }
+}
+
 @main
 struct iMOPSApp: App {
     let persistence = PersistenceController.shared
@@ -115,12 +119,9 @@ struct iMOPSApp: App {
                         }
                     }
                 }
-                .sheet(isPresented: $importedFileHandler.showGAEBEventPicker) {
-                    if let url = importedFileHandler.pendingGAEBURL {
-                        GAEBEventPickerSheet(gaebURL: url)
-                            .environment(\.managedObjectContext, persistence.container.viewContext)
-                            .onDisappear { importedFileHandler.pendingGAEBURL = nil }
-                    }
+                .sheet(item: $importedFileHandler.pendingGAEBURL) { url in
+                    GAEBEventPickerSheet(gaebURL: url)
+                        .environment(\.managedObjectContext, persistence.container.viewContext)
                 }
         }
     }
@@ -134,7 +135,6 @@ final class ImportedFileHandler {
     var showImportedSKPSheet = false
     var showImportedCADViewer = false
     var showSketchUpWeb = false
-    var showGAEBEventPicker = false
     var importedFileName = ""
     var lastImportedFileURL: URL?
     var pendingGAEBURL: URL?
@@ -186,7 +186,6 @@ final class ImportedFileHandler {
             showImportedCADViewer = true
         case .importGAEB:
             pendingGAEBURL = lastImportedFileURL
-            showGAEBEventPicker = true
         }
         pendingAction = .none
     }
