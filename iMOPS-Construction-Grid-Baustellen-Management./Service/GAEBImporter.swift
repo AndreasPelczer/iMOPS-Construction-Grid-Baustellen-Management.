@@ -154,7 +154,7 @@ private final class GAEBXMLDelegate: NSObject, XMLParserDelegate {
                 namespaceURI: String?,
                 qualifiedName: String?) {
         defer {
-            pathStack.removeLast()
+            if !pathStack.isEmpty { pathStack.removeLast() }
             currentText = ""
         }
         let text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
