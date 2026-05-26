@@ -41,6 +41,7 @@ struct iMOPSApp: App {
                 .sheet(isPresented: $importedFileHandler.showFileInspection,
                        onDismiss: { importedFileHandler.executePendingAction() }) {
                     FileInspectionSheet()
+                        .environment(importedFileHandler)
                 }
                 .sheet(isPresented: $importedFileHandler.showImportedSKPSheet) {
                     NavigationStack {
