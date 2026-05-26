@@ -39,3 +39,19 @@ class ChatResponse(BaseModel):
     model: str
     duration_ms: int
     tokens: int
+
+
+class ClassifyRequest(BaseModel):
+    """File classification request from iMOPS FileInspector."""
+
+    filename: str
+    extension: str
+    size_bytes: int = 0
+
+
+class ClassifyResponse(BaseModel):
+    """KI-Klassifikation einer Datei."""
+
+    category: str
+    confidence: float
+    reasoning: str | None = None

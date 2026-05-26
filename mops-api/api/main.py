@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from api.config import Settings, get_settings
-from api.routes import admin, chat, health
+from api.routes import admin, chat, classify, health
 from api.services.memory_service import MemoryService
 from api.services.ollama_client import OllamaClient
 
@@ -98,6 +98,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(chat.router)
+    app.include_router(classify.router)
     app.include_router(admin.router)
 
     # Admin-UI als statische Dateien ausliefern
