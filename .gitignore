@@ -42,3 +42,9 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+
+# Sensible Daten
+Secrets.plist
+*.xcuserstate
+**/xcshareddata/
+

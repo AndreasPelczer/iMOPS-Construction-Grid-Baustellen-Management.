@@ -10,10 +10,12 @@ import Combine
 
 struct RootTabView: View {
     @Environment(AppSession.self) private var session
+    @Environment(ImportedFileHandler.self) private var fileHandler
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
-        TabView {
+        @Bindable var handler = fileHandler
+        TabView(selection: $handler.selectedTab) {
             // TAB 1: Baustellen
             NavigationStack {
                 ContentView()
@@ -21,6 +23,7 @@ struct RootTabView: View {
             .tabItem {
                 Label("Baustellen", systemImage: "building.2")
             }
+            .tag("baustellen")
 
             // TAB 2: Suche
             NavigationStack {
@@ -29,6 +32,7 @@ struct RootTabView: View {
             .tabItem {
                 Label("Suche", systemImage: "magnifyingglass")
             }
+            .tag("suche")
 
             // TAB 3: Haus-Konfigurator (nur fuer Disponent / Leitung)
             if session.role == .dispatcher || session.role == .director {
@@ -38,6 +42,7 @@ struct RootTabView: View {
                 .tabItem {
                     Label("Planer", systemImage: "house.and.flag")
                 }
+                .tag("planer")
             }
 
             // TAB 4: Katalog (Material-Lexikon)
@@ -47,6 +52,7 @@ struct RootTabView: View {
             .tabItem {
                 Label("Katalog", systemImage: "books.vertical")
             }
+            .tag("katalog")
 
             // TAB 5: Crew (nur für Disponent / Leitung)
             if session.role == .dispatcher || session.role == .director {
@@ -56,6 +62,7 @@ struct RootTabView: View {
                 .tabItem {
                     Label("Mitarbeiter", systemImage: "person.2.fill")
                 }
+                .tag("mitarbeiter")
             }
 
             // TAB 6: BauWissen (Mops/Prof – Bau-Fachwissen-KI)
@@ -65,6 +72,7 @@ struct RootTabView: View {
             .tabItem {
                 Label("BauWissen", systemImage: "book.and.wrench")
             }
+            .tag("bauwissen")
 
             // TAB 7: BuildIQ KI-Scanner (nur iOS, kein macCatalyst)
             #if !targetEnvironment(macCatalyst)
@@ -74,6 +82,7 @@ struct RootTabView: View {
             .tabItem {
                 Label("BuildIQ", systemImage: "brain.head.profile")
             }
+            .tag("buildiq")
             #endif
 
             // TAB 8: Settings
@@ -83,9 +92,13 @@ struct RootTabView: View {
             .tabItem {
                 Label("Settings", systemImage: "gearshape.fill")
             }
+            .tag("settings")
         }
         .tint(.orange)
         .environment(\.locale, session.locale)
+        .universalFileDropTarget { url in
+            fileHandler.handleIncomingFile(url: url)
+        }
         .fullScreenCover(isPresented: Binding(
             get: { !hasCompletedOnboarding },
             set: { if !$0 { hasCompletedOnboarding = true } }

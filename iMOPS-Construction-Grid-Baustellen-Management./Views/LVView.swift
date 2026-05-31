@@ -8,18 +8,21 @@ import UIKit
 
 struct LVView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(ImportedFileHandler.self) private var importedFileHandler
     @ObservedObject var event: Event
 
     @FetchRequest private var positionen: FetchedResults<LVPosition>
 
     @State private var showingAdd            = false
     @State private var editPosition: LVPosition?
+    @State private var kalkPosition: LVPosition?
     @State private var fortschrittPosition: LVPosition?
     @State private var showBestellliste      = false
     @State private var showAngebotsVergleich = false
     @State private var showKostenübersicht   = false
     @State private var showImport            = false
     @State private var showGAEBImport        = false
+    @State private var droppedGAEBURL: URL?
     @State private var showHelp              = false
     @State private var showExportShare       = false
     @State private var exportURL: URL?
@@ -106,6 +109,10 @@ struct LVView: View {
                                         Label("Bearbeiten", systemImage: "pencil")
                                     }
                                     .tint(.orange)
+                                    Button { kalkPosition = pos } label: {
+                                        Label("Kalkulation", systemImage: "function")
+                                    }
+                                    .tint(.indigo)
                                     Button { duplicateAsAlternative(pos) } label: {
                                         Label("Alternative", systemImage: "doc.on.doc")
                                     }
@@ -123,6 +130,10 @@ struct LVView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .gaebDropTarget { url in
+            droppedGAEBURL = url
+            showGAEBImport = true
+        }
         .navigationTitle("LV – \(event.title ?? "Baustelle")")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -202,6 +213,10 @@ struct LVView: View {
             AddLVPositionView(event: event, editPosition: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
+        .sheet(item: $kalkPosition) { pos in
+            LVTiefenkalkulationView(position: pos)
+                .environment(\.managedObjectContext, viewContext)
+        }
         .sheet(item: $fortschrittPosition) { pos in
             LVFortschrittSheet(position: pos)
         }
@@ -218,9 +233,16 @@ struct LVView: View {
             LVImportView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showGAEBImport) {
-            GAEBImportView(event: event)
+        .sheet(isPresented: $showGAEBImport, onDismiss: { droppedGAEBURL = nil }) {
+            GAEBImportView(event: event, initialURL: droppedGAEBURL)
                 .environment(\.managedObjectContext, viewContext)
+        }
+        .onChange(of: importedFileHandler.pendingGAEBURL) { _, newURL in
+            if let url = newURL {
+                droppedGAEBURL = url
+                importedFileHandler.pendingGAEBURL = nil
+                showGAEBImport = true
+            }
         }
         .sheet(isPresented: $showExportShare) {
             if let url = exportURL {
@@ -454,6 +476,14 @@ struct LVPositionRow: View {
                     .foregroundStyle(isAlt ? .secondary : .primary)
             }
             HStack(spacing: 6) {
+                if position.hatKalkulation {
+                    let kalk = LVKalkulator.kalkuliere(position: position)
+                    Image(systemName: "function").font(.caption2).foregroundStyle(.indigo)
+                    Text(kalk.einheitspreisVK, format: .currency(code: "EUR"))
+                        .font(.caption.monospacedDigit()).foregroundStyle(.indigo)
+                    Text("EP").font(.caption2).foregroundStyle(.secondary)
+                    Text("·").foregroundStyle(.secondary)
+                }
                 if let art = position.artikelNummer, !art.isEmpty {
                     Image(systemName: "barcode").font(.caption2).foregroundStyle(.secondary)
                     Text(art).font(.caption).foregroundStyle(.secondary)

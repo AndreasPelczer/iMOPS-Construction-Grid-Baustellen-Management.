@@ -73,6 +73,30 @@
         <relationship name="maengel" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Mangel" inverseName="event" inverseEntity="Mangel"/>
         <relationship name="lvPositionen" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="LVPosition" inverseName="event" inverseEntity="LVPosition"/>
     </entity>
+    <entity name="Geraet" representedClassName="Geraet" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="anschaffungsKosten" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="nutzungsdauerStunden" optional="YES" attributeType="Integer 32" defaultValueString="1000" usesScalarValueType="YES"/>
+        <attribute name="notiz" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="KalkMaterial" representedClassName="KalkMaterial" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <attribute name="preisProEinheit" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="lieferant" optional="YES" attributeType="String"/>
+        <attribute name="letzteAktualisierung" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="quelleRaw" optional="YES" attributeType="String" defaultValueString="manuell"/>
+        <attribute name="verbrauchProM2" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="verschnittProzent" optional="YES" attributeType="Double" defaultValueString="0.05" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="Lohnsatz" representedClassName="Lohnsatz" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="qualifikation" optional="YES" attributeType="String"/>
+        <attribute name="stundenlohn" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="zuschlagFaktor" optional="YES" attributeType="Double" defaultValueString="1.65" usesScalarValueType="YES"/>
+    </entity>
     <entity name="LVPosition" representedClassName="LVPosition" syncable="YES">
         <attribute name="posNr" optional="YES" attributeType="String"/>
         <attribute name="bezeichnung" optional="YES" attributeType="String"/>
@@ -81,7 +105,12 @@
         <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
         <attribute name="artikelNummer" optional="YES" attributeType="String"/>
         <attribute name="lieferant" optional="YES" attributeType="String"/>
+        <attribute name="wagnisGewinnProzent" optional="YES" attributeType="Double" defaultValueString="0.08" usesScalarValueType="YES"/>
+        <attribute name="bgkProzent" optional="YES" attributeType="Double" defaultValueString="0.12" usesScalarValueType="YES"/>
         <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="lvPositionen" inverseEntity="Event"/>
+        <relationship name="kalkMaterialien" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionMaterial" inverseName="position" inverseEntity="PositionMaterial"/>
+        <relationship name="kalkLohn" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionLohn" inverseName="position" inverseEntity="PositionLohn"/>
+        <relationship name="kalkGeraete" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionGeraet" inverseName="position" inverseEntity="PositionGeraet"/>
     </entity>
     <entity name="Mangel" representedClassName="Mangel" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
@@ -97,5 +126,28 @@
         <attribute name="fotoPfad" optional="YES" attributeType="String"/>
         <attribute name="schwere" optional="YES" attributeType="String" defaultValueString="mittel"/>
         <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="maengel" inverseEntity="Mangel"/>
+    </entity>
+    <entity name="PositionGeraet" representedClassName="PositionGeraet" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="stunden" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="geraetName" optional="YES" attributeType="String"/>
+        <attribute name="kostenProStunde" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkGeraete" inverseEntity="LVPosition"/>
+    </entity>
+    <entity name="PositionLohn" representedClassName="PositionLohn" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="stunden" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="qualifikation" optional="YES" attributeType="String"/>
+        <attribute name="stundenBruttoEK" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkLohn" inverseEntity="LVPosition"/>
+    </entity>
+    <entity name="PositionMaterial" representedClassName="PositionMaterial" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="materialName" optional="YES" attributeType="String"/>
+        <attribute name="mengeProEinheit" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="einzelpreis" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="verschnittProzent" optional="YES" attributeType="Double" defaultValueString="0.05" usesScalarValueType="YES"/>
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkMaterialien" inverseEntity="LVPosition"/>
     </entity>
 </model>

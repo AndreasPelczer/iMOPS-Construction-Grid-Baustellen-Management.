@@ -141,7 +141,11 @@ struct GAEBExporter {
         var lineTotal  = 0.0
         if format.includePrices {
             let storeID = pos.objectID.uriRepresentation().absoluteString
-            let ep = store.guenstigster(for: storeID)?.einzelpreis ?? 0
+            var ep = store.guenstigster(for: storeID)?.einzelpreis ?? 0
+            // Fallback: kalkulierter VK-Preis wenn vorhanden
+            if ep == 0 && pos.hatKalkulation {
+                ep = LVKalkulator.kalkuliere(position: pos).einheitspreisVK
+            }
             lineTotal = ep * pos.menge
             if ep > 0 {
                 priceLines = """

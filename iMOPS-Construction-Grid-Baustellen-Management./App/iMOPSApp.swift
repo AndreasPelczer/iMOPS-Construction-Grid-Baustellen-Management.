@@ -9,6 +9,10 @@ import SwiftUI
 import CoreData
 import Combine
 
+extension URL: @retroactive Identifiable {
+    public var id: String { absoluteString }
+}
+
 @main
 struct iMOPSApp: App {
     let persistence = PersistenceController.shared
@@ -26,6 +30,8 @@ struct iMOPSApp: App {
                 )
                 .task {
                     ScharpeggeSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    StammdatenSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    MarktbreitSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     NotificationService.shared.requestAuthorization()
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)
                 }
@@ -36,6 +42,11 @@ struct iMOPSApp: App {
                 }
                 .onOpenURL { url in
                     importedFileHandler.handleIncomingFile(url: url)
+                }
+                .sheet(isPresented: $importedFileHandler.showFileInspection,
+                       onDismiss: { importedFileHandler.executePendingAction() }) {
+                    FileInspectionSheet()
+                        .environment(importedFileHandler)
                 }
                 .sheet(isPresented: $importedFileHandler.showImportedSKPSheet) {
                     NavigationStack {
@@ -109,6 +120,10 @@ struct iMOPSApp: App {
                         }
                     }
                 }
+                .sheet(item: $importedFileHandler.pendingGAEBURL) { url in
+                    GAEBEventPickerSheet(gaebURL: url)
+                        .environment(\.managedObjectContext, persistence.container.viewContext)
+                }
         }
     }
 }
@@ -117,13 +132,19 @@ struct iMOPSApp: App {
 
 @Observable
 final class ImportedFileHandler {
+    var showFileInspection = false
     var showImportedSKPSheet = false
     var showImportedCADViewer = false
     var showSketchUpWeb = false
     var importedFileName = ""
     var lastImportedFileURL: URL?
+    var pendingGAEBURL: URL?
+    var selectedTab = "baustellen"
 
-    private let viewableFormats: Set<String> = ["usdz", "usda", "usdc", "obj", "dae", "scn", "abc", "stl", "ply"]
+    enum FileAction {
+        case none, openSKP, openCADViewer, importGAEB
+    }
+    var pendingAction: FileAction = .none
 
     func handleIncomingFile(url: URL) {
         let accessing = url.startAccessingSecurityScopedResource()
@@ -148,19 +169,25 @@ final class ImportedFileHandler {
 
             try fileManager.copyItem(at: url, to: destURL)
 
-            let ext = url.pathExtension.lowercased()
             importedFileName = url.lastPathComponent
             lastImportedFileURL = destURL
-
-            if ext == "skp" {
-                showImportedSKPSheet = true
-            } else if viewableFormats.contains(ext) {
-                showImportedCADViewer = true
-            } else {
-                showImportedSKPSheet = true
-            }
+            showFileInspection = true
         } catch {
             print("Datei-Import Fehler: \(error)")
         }
+    }
+
+    func executePendingAction() {
+        switch pendingAction {
+        case .none:
+            break
+        case .openSKP:
+            showImportedSKPSheet = true
+        case .openCADViewer:
+            showImportedCADViewer = true
+        case .importGAEB:
+            pendingGAEBURL = lastImportedFileURL
+        }
+        pendingAction = .none
     }
 }

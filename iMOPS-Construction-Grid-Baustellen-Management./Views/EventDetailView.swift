@@ -124,6 +124,24 @@ struct EventDetailView: View {
         }
         .navigationTitle(event.title ?? "Baustelle")
         .navigationBarTitleDisplayMode(.inline)
+        .cadDropTarget { url in
+            let ext = url.pathExtension.lowercased()
+            // CAD-Datei in Sandbox kopieren und zur Liste hinzufuegen
+            let fm = FileManager.default
+            let docsDir = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let cadDir = docsDir.appendingPathComponent("CADFiles", isDirectory: true)
+            try? fm.createDirectory(at: cadDir, withIntermediateDirectories: true)
+            let destURL = cadDir.appendingPathComponent(url.lastPathComponent)
+            try? fm.removeItem(at: destURL)
+            if (try? fm.copyItem(at: url, to: destURL)) != nil {
+                let info = CADFileInfo(fileName: destURL.lastPathComponent, relativePath: destURL.lastPathComponent)
+                cadFiles.append(info)
+                saveCADFiles()
+                if ext == "skp" || ["fbx", "gltf", "glb"].contains(ext) {
+                    convertFileToUSDZ(destURL)
+                }
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showHelp = true } label: {

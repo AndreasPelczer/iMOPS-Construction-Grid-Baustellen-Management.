@@ -4,6 +4,21 @@
 <dict>
 	<key>CFBundleDocumentTypes</key>
 	<array>
+		<!-- GAEB Ausschreibung / Kalkulation -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>GAEB Dokument</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>de.bindaverlag.imops.gaeb-x83</string>
+				<string>de.bindaverlag.imops.gaeb-x84</string>
+				<string>de.bindaverlag.imops.gaeb-x86</string>
+			</array>
+		</dict>
 		<!-- SKP (SketchUp) -->
 		<dict>
 			<key>CFBundleTypeName</key>
@@ -37,6 +52,60 @@
 				<string>public.3d-content</string>
 			</array>
 		</dict>
+		<!-- PDF -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>PDF Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+			</array>
+		</dict>
+		<!-- Excel / Spreadsheets -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Spreadsheet</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.openxmlformats.spreadsheetml.sheet</string>
+				<string>com.microsoft.excel.xls</string>
+				<string>public.comma-separated-values-text</string>
+			</array>
+		</dict>
+		<!-- Bilder -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Bild</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.image</string>
+			</array>
+		</dict>
+		<!-- Text-Dateien -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Text Dokument</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+		</dict>
 	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
@@ -61,6 +130,60 @@
 				<array>
 					<string>application/vnd.sketchup.skp</string>
 					<string>application/octet-stream</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- GAEB X83: Angebotsaufforderung -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.bindaverlag.imops.gaeb-x83</string>
+			<key>UTTypeDescription</key>
+			<string>GAEB Ausschreibung</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>x83</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- GAEB X84: Angebot -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.bindaverlag.imops.gaeb-x84</string>
+			<key>UTTypeDescription</key>
+			<string>GAEB Angebot</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>x84</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- GAEB X86: Aufmass -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.bindaverlag.imops.gaeb-x86</string>
+			<key>UTTypeDescription</key>
+			<string>GAEB Aufmaß</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>x86</string>
 				</array>
 			</dict>
 		</dict>

@@ -125,8 +125,8 @@ struct BautagesberichtPDFExporter {
             let textH = (text as NSString).boundingRect(
                 with: CGSize(width: cW - 16, height: 1000),
                 options: .usesLineFragmentOrigin,
-                attributes: attrs).height + 8
-            fill(CGRect(x: mH, y: y, width: cW, height: textH + 8),
+                attributes: attrs, context: nil).height + 8
+                fill(CGRect(x: mH, y: y, width: cW, height: textH + 8),
                  color: UIColor(white: 0.97, alpha: 1))
             txtInRect(text,
                       rect: CGRect(x: mH + 8, y: y + 4, width: cW - 16, height: textH),

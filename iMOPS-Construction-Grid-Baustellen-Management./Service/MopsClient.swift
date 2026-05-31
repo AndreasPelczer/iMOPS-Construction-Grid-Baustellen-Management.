@@ -9,10 +9,13 @@ struct MopsConfig {
     static let host = "http://192.168.2.42:8080"
     static let chatEndpoint = "/chat"
     static let healthEndpoint = "/health"
+    static let classifyEndpoint = "/classify"
     static let defaultMaxTokens = 500
     static let defaultTopK = 3
     // Mops laeuft CPU-only, kann bis zu 120s+ brauchen
     static let requestTimeoutSeconds: TimeInterval = 180
+    // Classify ist leichtgewichtig — kuerzerer Timeout
+    static let classifyTimeoutSeconds: TimeInterval = 30
 }
 
 // MARK: - MopsClientError
@@ -112,5 +115,44 @@ final class MopsClient {
         } catch {
             return false
         }
+    }
+
+    // MARK: - File Classification
+
+    /// Klassifiziert eine Datei anhand von Filename, Endung und Groesse via Mops-KI.
+    func classifyFile(name: String, ext: String, sizeBytes: Int64) async throws -> FileClassification {
+        guard let url = URL(string: MopsConfig.host + MopsConfig.classifyEndpoint) else {
+            throw MopsClientError.invalidURL
+        }
+
+        let payload = ClassifyRequest(filename: name, fileExtension: ext, sizeBytes: sizeBytes)
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = MopsConfig.classifyTimeoutSeconds
+        request.httpBody = try JSONEncoder().encode(payload)
+
+        logger.info("Mops classify: \(name) (.\(ext), \(sizeBytes) bytes)")
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await urlSession.data(for: request)
+        } catch let error as URLError {
+            if error.code == .timedOut {
+                throw MopsClientError.timeout
+            }
+            throw MopsClientError.serverOffline
+        }
+
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            let body = String(data: data, encoding: .utf8) ?? "<keine Antwort>"
+            throw MopsClientError.httpError(statusCode: http.statusCode, body: body)
+        }
+
+        let result = try JSONDecoder().decode(FileClassification.self, from: data)
+        logger.info("Mops classify result: \(result.category) (confidence \(result.confidence))")
+        return result
     }
 }

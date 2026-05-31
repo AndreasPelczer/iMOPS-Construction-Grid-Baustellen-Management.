@@ -63,7 +63,7 @@ struct LVPDFExporter {
             hline(at: y); y += 14
 
             infoRow("Projekt:",    event.title    ?? "–")
-            infoRow("Standort:",   event.standort ?? "–")
+            infoRow("Standort:",   event.location ?? "–")
             infoRow("Datum:",      DateFormatter.localizedString(from: Date(),
                                         dateStyle: .long, timeStyle: .none))
             infoRow("Positionen:", "\(positionen.count)")

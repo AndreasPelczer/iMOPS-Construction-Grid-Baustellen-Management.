@@ -113,8 +113,8 @@ private final class GAEBXMLDelegate: NSObject, XMLParserDelegate {
     func parser(_ parser: XMLParser,
                 didStartElement elementName: String,
                 namespaceURI: String?,
-                qualifiedName: String?,
-                attributeDict: [String: String] = [:]) {
+                qualifiedName qName: String?,
+                attributes attributeDict: [String: String] = [:]) {
         pathStack.append(elementName)
         currentText = ""
 
@@ -154,7 +154,7 @@ private final class GAEBXMLDelegate: NSObject, XMLParserDelegate {
                 namespaceURI: String?,
                 qualifiedName: String?) {
         defer {
-            pathStack.removeLast()
+            if !pathStack.isEmpty { pathStack.removeLast() }
             currentText = ""
         }
         let text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
