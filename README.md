@@ -26,6 +26,18 @@ Service/              - Persistence, Seeder, Templates
 - **MVVM** Pattern
 - Keine externen Abhaengigkeiten (nur Apple Frameworks)
 
+## Backend (Mops-API)
+
+Die iOS-App spricht mit einem lokalen LLM-Backend (Mops + Prof + RAG):
+
+- **Repo:** [AndreasPelczer/mops-api](https://github.com/AndreasPelczer/mops-api)
+- **Host:** 192.168.2.42:8080 (Mops-Box, Ubuntu, llama3.2:3b CPU-only)
+- **Endpoints:** `/chat`, `/classify`, `/health`, `/admin-ui`
+- **Routing:** `/prof ` Prefix routet an Claude Sonnet 4.5
+
+Server-Code lebt in einem eigenen Repo, damit iOS- und Backend-Entwicklung
+unabhaengig versioniert werden koennen.
+
 ## Features (MVP)
 
 - Events/Baustellen verwalten
