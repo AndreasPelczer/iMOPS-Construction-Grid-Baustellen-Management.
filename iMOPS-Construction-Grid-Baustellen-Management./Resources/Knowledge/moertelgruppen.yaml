@@ -1,0 +1,60 @@
+# Mörtelgruppen — Exact-Match-Knowledge fuer iMOPS
+
+- id: "Moertelgruppe_II"
+  aliases:
+    - "MG II"
+    - "MG-II"
+    - "Mörtelgruppe II"
+    - "Moertelgruppe II"
+  antwort: |
+    Mörtelgruppe MG II = Normalmauermörtel mittlerer Festigkeit.
+    - Druckfestigkeit: ≥ 2,5 N/mm² (NM 2,5)
+    - Bindemittel: Kalk-Zement-Gemisch
+    Standard für tragendes Mauerwerk im Wohnungsbau ohne erhöhte
+    Anforderungen. Wird oft mit Porenbeton-Plansteinen verwendet.
+  quelle_kurz: "DIN EN 998-2, DIN 1053-1 (zurückgezogen)"
+  license_note: "Werte und Anwendung"
+
+- id: "Moertelgruppe_IIa"
+  aliases:
+    - "MG IIa"
+    - "MG-IIa"
+    - "Mörtelgruppe IIa"
+    - "Moertelgruppe IIa"
+  antwort: |
+    Mörtelgruppe MG IIa = Normalmauermörtel höherer Festigkeit.
+    - Druckfestigkeit: ≥ 5,0 N/mm² (NM 5)
+    - Bindemittel: Kalk-Zement-Gemisch mit höherem Zementanteil
+    Für höher belastetes Mauerwerk oder schmalere Wandquerschnitte.
+  quelle_kurz: "DIN EN 998-2, DIN 1053-1 (zurückgezogen)"
+  license_note: "Werte und Anwendung"
+
+- id: "Moertelgruppe_III"
+  aliases:
+    - "MG III"
+    - "MG-III"
+    - "Mörtelgruppe III"
+    - "Moertelgruppe III"
+  antwort: |
+    Mörtelgruppe MG III = Zementmörtel.
+    - Druckfestigkeit: ≥ 10 N/mm² (NM 10)
+    - Bindemittel: reiner Zementmörtel
+    Für hochbelastete Bereiche, Außenputz auf belastetem Untergrund,
+    Sockelbereich, feuchtbeanspruchte Bauteile.
+  quelle_kurz: "DIN EN 998-2, DIN 1053-1 (zurückgezogen)"
+  license_note: "Werte und Anwendung"
+
+- id: "Duennbettmoertel"
+  aliases:
+    - "Dünnbettmörtel"
+    - "Duennbettmoertel"
+    - "DM"
+    - "Plansteinmörtel"
+  antwort: |
+    Dünnbettmörtel (DM) = Mörtel für Plansteine.
+    - Schichtdicke: 1-3 mm (statt 10-12 mm bei Normalmörtel)
+    - Höhere Festigkeit, exakte Maßhaltigkeit der Steine nötig
+    Anwendung: Plansteinmauerwerk aus Porenbeton, Kalksandstein,
+    Hochlochziegel. Reduziert Wärmebrücken durch Mörtelfugen.
+  quelle_kurz: "DIN EN 998-2, DIN V 18580"
+  license_note: "Werte und Anwendung"

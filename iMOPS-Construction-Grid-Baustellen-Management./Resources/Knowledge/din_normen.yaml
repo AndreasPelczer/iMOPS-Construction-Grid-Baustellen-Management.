@@ -1,0 +1,205 @@
+# DIN-Normen — Exact-Match-Knowledge fuer iMOPS
+#
+# Format: Eine YAML-Liste, jeder Eintrag mit id, aliases, antwort, quelle_kurz,
+# optional quelle_url und license_note. Aliases werden case-insensitive im
+# Fragetext gesucht. Laengster passender Alias gewinnt (z.B. "DIN EN 1992-1-1"
+# vor "DIN 1992").
+#
+# WICHTIG: antwort-Feld darf NUR Sachverhalte/Werte enthalten, keinen Norm-Wortlaut.
+# Volltexte sind Beuth-lizenziert.
+
+- id: "DIN_276"
+  aliases:
+    - "DIN 276"
+    - "DIN-276"
+    - "DIN 276-1"
+    - "Kostengruppen"
+    - "KG nach DIN"
+  antwort: |
+    DIN 276 strukturiert Baukosten in 100er-Hauptgruppen:
+    - 100 Grundstück
+    - 200 Vorbereitende Maßnahmen
+    - 300 Baukonstruktion (Bauwerk)
+    - 400 Technische Anlagen
+    - 500 Außenanlagen
+    - 600 Ausstattung und Kunstwerke
+    - 700 Baunebenkosten
+    Die dreistellige Gliederung erlaubt durch weitere Ebenen
+    eine genauere Kostenermittlung (z.B. 330 Außenwände,
+    332 Nichttragende Außenwände).
+  quelle_kurz: "DIN 276:2018-12 (Kosten im Bauwesen)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_277"
+  aliases:
+    - "DIN 277"
+    - "DIN-277"
+    - "Grundflächen"
+    - "Rauminhalte"
+    - "BGF"
+    - "NRF"
+    - "Bruttogrundfläche"
+  antwort: |
+    DIN 277 regelt die Berechnung von Grundflächen und Rauminhalten
+    im Hochbau. Wichtige Begriffe:
+    - BGF (Brutto-Grundfläche)
+    - NRF (Netto-Raumfläche)
+    - NUF (Nutzungsfläche)
+    - VF (Verkehrsfläche)
+    - TF (Technikfläche)
+    Wird zusammen mit DIN 276 für Kosten-Mengen-Modelle genutzt.
+  quelle_kurz: "DIN 277:2021-08 (Grundflächen und Rauminhalte im Hochbau)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_1045"
+  aliases:
+    - "DIN 1045"
+    - "DIN-1045"
+    - "DIN 1045-1"
+    - "DIN 1045-2"
+    - "DIN 1045-3"
+    - "Tragwerke aus Beton"
+  antwort: |
+    DIN 1045 ist die deutsche Norm-Reihe für Tragwerke aus Beton,
+    Stahlbeton und Spannbeton. Teile:
+    - DIN 1045-1: Bemessung und Konstruktion
+    - DIN 1045-2: Beton (Festlegung, Eigenschaften, Herstellung)
+    - DIN 1045-3: Bauausführung
+    - DIN 1045-4: Ergänzende Regeln für Fertigteile
+    Bemessung weitgehend durch DIN EN 1992 (Eurocode 2) ersetzt,
+    DIN 1045-2/3 bleiben relevant für Beton und Ausführung.
+  quelle_kurz: "DIN 1045 (mehrteilig)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_EN_1992"
+  aliases:
+    - "DIN EN 1992"
+    - "Eurocode 2"
+    - "EC2"
+    - "EN 1992"
+    - "DIN EN 1992-1-1"
+  antwort: |
+    DIN EN 1992 = Eurocode 2: Bemessung und Konstruktion von
+    Stahlbeton- und Spannbetontragwerken. Hauptteile:
+    - EN 1992-1-1: Hochbau allgemein
+    - EN 1992-1-2: Brandschutz
+    - EN 1992-2: Brücken
+    - EN 1992-3: Behälter und Silos
+    Anwendung in Deutschland mit dem Nationalen Anhang
+    (DIN EN 1992-1-1/NA).
+  quelle_kurz: "DIN EN 1992:2011-01 (Eurocode 2)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_18195"
+  aliases:
+    - "DIN 18195"
+    - "DIN-18195"
+    - "Bauwerksabdichtung"
+    - "Abdichtung Bauwerk"
+  antwort: |
+    DIN 18195 regelte die Bauwerksabdichtung. 2017 zurückgezogen
+    und aufgeteilt in:
+    - DIN 18531: Dachabdichtungen
+    - DIN 18532: Befahrene Flächen
+    - DIN 18533: Erdberührte Bauteile
+    - DIN 18534: Innenraumabdichtung
+    - DIN 18535: Behälter und Becken
+  quelle_kurz: "DIN 18195 (zurückgezogen, ersetzt durch DIN 18531-18535)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_18560"
+  aliases:
+    - "DIN 18560"
+    - "Estrich"
+    - "Estriche im Bauwesen"
+  antwort: |
+    DIN 18560 regelt Estriche im Bauwesen. Teile:
+    - DIN 18560-1: Allgemeine Anforderungen
+    - DIN 18560-2: Estriche und Heizestriche auf Dämmschichten
+    - DIN 18560-3: Verbundestriche
+    - DIN 18560-4: Estriche auf Trennschicht
+    - DIN 18560-7: Hochbeanspruchbare Estriche (Industrieestriche)
+    Wichtig: Estrichdicke nach Beanspruchung und Aufbau.
+  quelle_kurz: "DIN 18560 (mehrteilig)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "HOAI"
+  aliases:
+    - "HOAI"
+    - "Honorarordnung"
+    - "Architektenhonorar"
+    - "Ingenieurhonorar"
+  antwort: |
+    HOAI = Honorarordnung für Architekten und Ingenieure.
+    Regelt die Vergütung von Planungsleistungen in Deutschland.
+    Aktuelle Fassung: HOAI 2021. 9 Leistungsphasen:
+    - LP1 Grundlagenermittlung
+    - LP2 Vorplanung
+    - LP3 Entwurfsplanung
+    - LP4 Genehmigungsplanung
+    - LP5 Ausführungsplanung
+    - LP6 Vorbereitung der Vergabe
+    - LP7 Mitwirkung bei der Vergabe
+    - LP8 Objektüberwachung (Bauüberwachung)
+    - LP9 Objektbetreuung
+  quelle_kurz: "HOAI 2021"
+  license_note: "Verordnung amtlich frei zugänglich"
+
+- id: "VOB"
+  aliases:
+    - "VOB"
+    - "VOB/A"
+    - "VOB/B"
+    - "VOB/C"
+    - "Vergabe- und Vertragsordnung"
+    - "Vergabe und Vertragsordnung"
+  antwort: |
+    VOB = Vergabe- und Vertragsordnung für Bauleistungen.
+    Drei Teile:
+    - VOB/A: Allgemeine Bestimmungen für die Vergabe
+    - VOB/B: Allgemeine Vertragsbedingungen für die Ausführung
+    - VOB/C: Allgemeine Technische Vertragsbedingungen (ATV)
+      mit über 60 DIN-Normen (z.B. DIN 18299 Allgemeine Regeln,
+      DIN 18331 Beton- und Stahlbetonarbeiten)
+    Herausgeber: Deutscher Vergabe- und Vertragsausschuss (DVA).
+  quelle_kurz: "VOB Gesamtausgabe"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "GAEB"
+  aliases:
+    - "GAEB"
+    - "Gemeinsamer Ausschuss Elektronik im Bauwesen"
+    - "GAEB DA XML"
+    - "x83"
+    - "x84"
+    - "x86"
+  antwort: |
+    GAEB = Gemeinsamer Ausschuss Elektronik im Bauwesen.
+    Definiert Datenaustausch-Formate für die Bauwirtschaft:
+    - GAEB DA XML 3.2 / 3.3: aktuelle XML-Versionen
+    - Phasen-Dateien:
+      - X81 Leistungsbeschreibung
+      - X82 Kostenanschlag
+      - X83 Angebotsaufforderung
+      - X84 Angebot
+      - X85 Nebenangebote
+      - X86 Aufmaß
+    Dateierweiterungen: .x83, .x84, .x86.
+  quelle_kurz: "GAEB DA XML 3.2 / 3.3"
+  quelle_url: "https://www.gaeb.de"
+  license_note: "Spezifikation öffentlich"
+
+- id: "REB"
+  aliases:
+    - "REB"
+    - "REB 23.003"
+    - "Elektronische Bauabrechnung"
+    - "Regelung Bauabrechnung"
+  antwort: |
+    REB = Regelungen für die Elektronische Bauabrechnung.
+    Vom GAEB herausgegeben. Wichtigste Regel:
+    - REB 23.003: Mengenberechnung mit DA11-Schnittstelle
+    Seit 2013 ergänzt durch GAEB DA XML 3.2 (X31).
+    Definiert Aufmaß-Datenaustausch zwischen Bau-Beteiligten.
+  quelle_kurz: "REB 23.003"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"

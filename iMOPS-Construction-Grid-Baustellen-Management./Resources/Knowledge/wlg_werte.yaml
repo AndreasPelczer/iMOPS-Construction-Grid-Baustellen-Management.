@@ -1,0 +1,64 @@
+# Wärmeleitgruppen (WLG) — Exact-Match-Knowledge fuer iMOPS
+
+- id: "WLG_035"
+  aliases:
+    - "WLG 035"
+    - "WLG-035"
+    - "WLG035"
+    - "Wärmeleitgruppe 035"
+  antwort: |
+    WLG 035 = Wärmeleitgruppe mit λ = 0,035 W/(m·K).
+    Standard für moderne Dämmstoffe (Mineralwolle, EPS-Hartschaum
+    Standard-Qualität, einige PUR/PIR).
+    Typische Dicken im EFH-Neubau:
+    - Außenwanddämmung (WDVS): 14-20 cm
+    - Dachdämmung Zwischensparren: 18-24 cm
+    - Bodenplattendämmung: 12-16 cm
+  quelle_kurz: "DIN EN 13162-13172 (Dämmstoff-Klassifikation)"
+  license_note: "Werte aus Klassen-Definition"
+
+- id: "WLG_040"
+  aliases:
+    - "WLG 040"
+    - "WLG-040"
+    - "WLG040"
+    - "Wärmeleitgruppe 040"
+  antwort: |
+    WLG 040 = Wärmeleitgruppe mit λ = 0,040 W/(m·K).
+    Klassische Mineralwolle, einfaches EPS, Zellulose.
+    Etwas dickere Schichten nötig als WLG 035 für gleichen U-Wert.
+  quelle_kurz: "DIN EN 13162-13172"
+  license_note: "Werte aus Klassen-Definition"
+
+- id: "WLG_032"
+  aliases:
+    - "WLG 032"
+    - "WLG-032"
+    - "WLG032"
+    - "Wärmeleitgruppe 032"
+  antwort: |
+    WLG 032 = Wärmeleitgruppe mit λ = 0,032 W/(m·K).
+    Hochleistungs-Dämmstoffe: PUR/PIR, EPS-Hochleistung,
+    Mineralwolle-Premium. Geringere Dicke bei gleichem U-Wert
+    als WLG 035/040 — wichtig bei begrenztem Bauraum.
+  quelle_kurz: "DIN EN 13162-13172"
+  license_note: "Werte aus Klassen-Definition"
+
+- id: "U_Wert"
+  aliases:
+    - "U-Wert"
+    - "U Wert"
+    - "Wärmedurchgangskoeffizient"
+    - "k-Wert"
+  antwort: |
+    U-Wert = Wärmedurchgangskoeffizient in W/(m²·K).
+    Gibt an, wie viel Wärme pro m² Bauteil und 1 K Temperaturdifferenz
+    durchgeht. Niedriger Wert = bessere Dämmung.
+    Anforderungen GEG 2020 (Referenz für Neubau):
+    - Außenwand: U ≤ 0,28
+    - Dach: U ≤ 0,20
+    - Boden zu unbeheizt: U ≤ 0,35
+    - Fenster: U_w ≤ 1,3
+    Formel: U = 1 / R_T (Wärmedurchlasswiderstand)
+  quelle_kurz: "DIN EN ISO 6946, GEG 2020"
+  license_note: "Werte aus Norm-Definition"
