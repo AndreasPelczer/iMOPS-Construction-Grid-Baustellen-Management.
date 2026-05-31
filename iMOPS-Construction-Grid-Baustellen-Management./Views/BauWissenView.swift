@@ -158,9 +158,7 @@ struct BauWissenView: View {
                     .bold()
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(response.model.contains("claude")
-                                ? Color.purple.opacity(0.12)
-                                : Color.orange.opacity(0.12))
+                    .background(badgeBackground(viewModel.modelBadgeColor))
                     .cornerRadius(8)
 
                 Spacer()
@@ -201,5 +199,13 @@ struct BauWissenView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
+    }
+
+    private func badgeBackground(_ color: BauWissenViewModel.ModelBadgeColor) -> Color {
+        switch color {
+        case .local: return Color.green.opacity(0.15)
+        case .prof:  return Color.purple.opacity(0.12)
+        case .mops:  return Color.orange.opacity(0.12)
+        }
     }
 }
