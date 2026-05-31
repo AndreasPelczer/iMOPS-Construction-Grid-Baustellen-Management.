@@ -1,0 +1,83 @@
+# Beton-Festigkeitsklassen — Exact-Match-Knowledge fuer iMOPS
+
+- id: "C20_25"
+  aliases:
+    - "C20/25"
+    - "C 20/25"
+    - "Beton C20/25"
+  antwort: |
+    C20/25 = Normalbeton, niedrigste Festigkeitsklasse für tragenden
+    Stahlbeton in Deutschland (DIN EN 1992 verlangt mindestens C20/25).
+    - 20 N/mm² Zylinderdruckfestigkeit (f_ck,cyl)
+    - 25 N/mm² Würfeldruckfestigkeit (f_ck,cube)
+    Anwendung: untergeordnete Bauteile, Sauberkeitsschicht,
+    unbewehrte Streifenfundamente einfacher Bauten.
+  quelle_kurz: "DIN EN 206 / DIN 1045-2"
+  license_note: "Werte aus Festigkeitsklassen-Definition"
+
+- id: "C25_30"
+  aliases:
+    - "C25/30"
+    - "C 25/30"
+    - "Beton C25/30"
+  antwort: |
+    C25/30 = Normalbeton-Standard für Stahlbeton im Wohnungsbau.
+    - 25 N/mm² am Zylinder, 30 N/mm² am Würfel
+    - Würfel 15cm Kantenlänge, 28 Tage Wasserlagerung
+    Typische Anwendung: Decken, Wände, Stützen im Hochbau.
+    Mindestbetondeckung nach DIN EN 1992-1-1 für Außenbauteile: 25mm.
+  quelle_kurz: "DIN EN 206 / DIN 1045-2"
+  license_note: "Werte aus Festigkeitsklassen-Definition"
+
+- id: "C30_37"
+  aliases:
+    - "C30/37"
+    - "C 30/37"
+    - "Beton C30/37"
+  antwort: |
+    C30/37 = Normalbeton, höhere Festigkeit als C25/30.
+    - 30 N/mm² am Zylinder, 37 N/mm² am Würfel
+    Typische Anwendung:
+    - Tiefgaragendecken
+    - Bauteile mit hoher Beanspruchung
+    - Expositionsklassen XC4, XF1 oder höher
+    - Wasserundurchlässige Bauteile (WU-Konstruktion)
+  quelle_kurz: "DIN EN 206 / DIN 1045-2"
+  license_note: "Werte aus Festigkeitsklassen-Definition"
+
+- id: "C35_45"
+  aliases:
+    - "C35/45"
+    - "C 35/45"
+  antwort: |
+    C35/45 = Hochfester Normalbeton.
+    - 35 N/mm² Zylinder, 45 N/mm² Würfel
+    Anwendung: hochbeanspruchte Bauteile, Brücken, Industriebau,
+    Spannbeton-Fertigteile.
+  quelle_kurz: "DIN EN 206 / DIN 1045-2"
+  license_note: "Werte aus Festigkeitsklassen-Definition"
+
+- id: "Expositionsklassen"
+  aliases:
+    - "Expositionsklasse"
+    - "Expositionsklassen"
+    - "XC1"
+    - "XC2"
+    - "XC3"
+    - "XC4"
+    - "XF1"
+    - "XS1"
+  antwort: |
+    Expositionsklassen nach DIN EN 206 / DIN 1045-2 klassifizieren
+    Umgebungsbedingungen für Beton:
+    - X0: kein Korrosions-/Angriffsrisiko
+    - XC1-XC4: Carbonatisierung (XC1 trocken/dauernd nass,
+      XC4 wechselnd nass/trocken)
+    - XD1-XD3: Chloride außer Meerwasser
+    - XS1-XS3: Chloride aus Meerwasser
+    - XF1-XF4: Frost-Tau-Wechsel
+    - XA1-XA3: chemischer Angriff
+    - XM1-XM3: Verschleiß
+    Klasse bestimmt Mindest-Festigkeit, Zementgehalt und w/z-Wert.
+  quelle_kurz: "DIN EN 206 / DIN 1045-2"
+  license_note: "Werte aus Klassen-Definition"
