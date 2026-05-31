@@ -11,12 +11,20 @@ hier nachgeschaut. Bei einem Treffer wird die lokale Antwort sofort zurückgegeb
 
 ## Aktuelle Dateien
 
-| Datei | Inhalt |
-|-------|--------|
-| `din_normen.yaml` | DIN-Normen-Übersicht (DIN 276, 277, 1045, EN 1992, 18195, 18560, HOAI, VOB, GAEB, REB) |
-| `betongueten.yaml` | Beton-Festigkeitsklassen (C20/25 bis C35/45) + Expositionsklassen |
-| `wlg_werte.yaml` | Wärmeleitgruppen (WLG 032/035/040) + U-Wert |
-| `moertelgruppen.yaml` | Mörtelgruppen (MG II/IIa/III) + Dünnbettmörtel |
+| Datei | Kategorie | Inhalt |
+|-------|-----------|--------|
+| `din_normen.yaml` | fachwissen | DIN-Normen-Übersicht (DIN 276, 277, 1045, EN 1992, 18195, 18560, HOAI, VOB, GAEB, REB) |
+| `betongueten.yaml` | fachwissen | Beton-Festigkeitsklassen (C20/25 bis C35/45) + Expositionsklassen |
+| `wlg_werte.yaml` | fachwissen | Wärmeleitgruppen (WLG 032/035/040) + U-Wert |
+| `moertelgruppen.yaml` | fachwissen | Mörtelgruppen (MG II/IIa/III) + Dünnbettmörtel |
+| `app_bedienung.yaml` | app-bedienung | iMOPS-Bedienungshilfe (Baustelle/Auftrag/Mangel anlegen, GAEB-Import, BauWissen, PDF-Export, CAD-Viewer, BuildIQ) |
+
+### Zwei Kategorien — warum
+
+- **`fachwissen`** — objektive Bau-Fakten (DIN-Normen, Materialwerte). Source-Card im UI: 📖 "Aus Bau-Wissen"
+- **`app-bedienung`** — deterministische Hilfe-Texte zur App selbst (Buttons, Tabs, Workflows). Source-Card im UI: 🔧 "Bedienungshilfe"
+
+Beide laufen durch denselben Lookup, werden aber im UI unterschiedlich dargestellt damit User wissen ob die Antwort aus dem Bau-Domain oder über die App selbst stammt.
 
 ## Schema
 
@@ -24,6 +32,8 @@ Jeder Eintrag in einer YAML-Liste:
 
 ```yaml
 - id: "DIN_276"               # eindeutige ID, intern
+  kategorie: "fachwissen"     # optional, default "fachwissen". "app-bedienung" für App-Hilfe.
+  app_version_min: "1.0"      # optional, NUR bei kategorie: app-bedienung sinnvoll
   aliases:                    # case-insensitive Suchbegriffe
     - "DIN 276"
     - "DIN-276"

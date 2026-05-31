@@ -1,0 +1,201 @@
+# iMOPS App-Bedienung — deterministische Hilfe-Texte
+#
+# Diese Eintraege beschreiben WIE die App bedient wird (Buttons, Tabs, Workflows).
+# Sie sind kategorie: "app-bedienung" — die UI zeigt sie mit einem "Bedienungshilfe"-
+# Icon statt dem Bau-Wissen-Icon an.
+#
+# WICHTIG (Drift-Falle): Wenn sich die App aendert (neue Buttons, umbenannte Tabs,
+# neue Workflows), MUSS dieser File mit-aktualisiert werden. Sonst erklaert der
+# Mops Bedienung die es nicht mehr gibt. Siehe CONTRIBUTING.md.
+#
+# Pflege-Regel: bei jedem PR der UI-Views aendert pruefen ob hier was aktualisiert
+# werden muss. app_version_min hilft alte Eintraege zu erkennen.
+
+- id: "App_Baustelle_anlegen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Baustelle anlegen"
+    - "Neue Baustelle"
+    - "Event anlegen"
+    - "Wie lege ich eine Baustelle an"
+    - "Wie erstelle ich eine Baustelle"
+  antwort: |
+    Eine neue Baustelle anlegen:
+    1. Tab "Baustellen" oeffnen (unten links)
+    2. Plus-Button oben rechts antippen
+    3. Pflichtfelder: Titel, Bauherr, Architekt, Baugenehmigungs-Nr.
+    4. Optional: Ort, Start-/Endzeit, Notizen
+    5. "Sichern" tippt die Baustelle in die Liste
+
+    Die Baustelle ist danach im Tab "Baustellen" auswaehlbar und enthaelt
+    LV, Mengen, Maengel, Aufmasse und Bautagesberichte.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Auftrag_anlegen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Auftrag anlegen"
+    - "Neuer Auftrag"
+    - "Wie lege ich einen Auftrag an"
+    - "Job anlegen"
+  antwort: |
+    Einen Auftrag (Job) zu einer Baustelle anlegen:
+    1. Baustelle aus der Liste oeffnen
+    2. In der Detail-Ansicht zum Bereich "Auftraege" scrollen
+    3. Plus-Button im Auftraege-Header tippen
+    4. Aus Vorlage waehlen (Rohbau, Elektrik, Sanitaer, ...) oder leer starten
+    5. Checkliste, Mitarbeiter und Geraete zuordnen
+    6. "Sichern"
+
+    Auftraege folgen dem Status: Offen -> In Arbeit -> Erledigt -> Abgenommen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_GAEB_Import"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "GAEB Import"
+    - "GAEB importieren"
+    - "X83 importieren"
+    - "X84 importieren"
+    - "LV importieren"
+    - "Wie importiere ich GAEB"
+  antwort: |
+    GAEB-Datei (.x83 / .x84 / .x86) in eine Baustelle importieren:
+    1. Datei auf das iPad ziehen (Drag-and-Drop) oder ueber Files-App teilen
+    2. iMOPS erkennt den Dateityp automatisch (FileInspector oeffnet sich)
+    3. Mops klassifiziert die Datei zusaetzlich per KI (Brain-Icon)
+    4. Button "In LV importieren" tippen
+    5. Im EventPicker die Ziel-Baustelle waehlen
+    6. Positionen pruefen und finale Mengen bestaetigen
+    7. "Importieren" -> Positionen sind im LV der Baustelle
+
+    Unterstuetzt: GAEB DA XML 3.2 und 3.3.
+  quelle_kurz: "iMOPS App-Bedienung (Phase 5c)"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Mangel_erfassen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Mangel erfassen"
+    - "Mangel anlegen"
+    - "Wie erfasse ich einen Mangel"
+    - "Maengelmanagement"
+    - "Maengel anlegen"
+  antwort: |
+    Einen Mangel zur Baustelle erfassen:
+    1. Baustelle oeffnen
+    2. Bereich "Maengel" -> Plus-Button
+    3. Foto aufnehmen (Kamera) oder aus Galerie waehlen
+    4. Pflichtfelder: Titel, Gewerk, Schwere (gering/mittel/kritisch)
+    5. Optional: Frist, Ort am Bau, verantwortliche Person, DIN-276-KG
+    6. "Sichern"
+
+    Bei gesetzter Frist plant iMOPS eine Push-Notification ueber den
+    NotificationService. Der Status laesst sich spaeter aendern:
+    Offen -> In Arbeit -> Behoben -> Abgenommen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_BauWissen_und_Prof"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "BauWissen"
+    - "Was ist BauWissen"
+    - "Wie funktioniert Prof"
+    - "Prof-Schalter"
+    - "Prof Modus"
+    - "Wann nehme ich Prof"
+  antwort: |
+    Der Tab "BauWissen" verbindet die App mit dem Mops-Server fuer
+    Bau-Fachfragen. Zwei Modi:
+
+    - Mops (Standard): lokales LLM auf der Mops-Box (llama3.2:3b).
+      Schnell genug fuer einfache Fragen, kostenlos, offline-tolerant
+      (wenn Server erreichbar). Antwort in 30-120 Sekunden.
+
+    - Prof (Schalter rechts oben): leitet die Frage an Claude Sonnet 4.5
+      ueber die Anthropic-API weiter. Schneller (5-15 Sekunden), klueger
+      bei komplexen Fragen, kostet pro Anfrage. Fuer Spezialfaelle wo
+      Mops nicht ausreicht.
+
+    Quellen werden unter jeder Antwort als Karten mit Relevanz-Score
+    angezeigt.
+  quelle_kurz: "iMOPS App-Bedienung (Phase 4)"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_LV_PDF_Export"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "LV als PDF"
+    - "LV exportieren"
+    - "PDF-Export LV"
+    - "Wie exportiere ich das LV"
+    - "Leistungsverzeichnis PDF"
+  antwort: |
+    LV einer Baustelle als PDF exportieren:
+    1. Baustelle oeffnen
+    2. Auf der LV-Karte den PDF-Button (Pfeil nach oben + Dokument)
+       tippen — oder oben im Menue "LV als PDF"
+    3. PDF wird mit Deckblatt (Projekt, Standort, Datum) + DIN-276
+       gruppierten Positionen erzeugt
+    4. iOS-ShareSheet oeffnet sich (AirDrop, Mail, Drucken)
+
+    Alternativ: "LV als CSV" exportiert die Positionsdaten fuer
+    Tabellenkalkulation (RFC-4180).
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_CAD_Viewer"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "CAD Viewer"
+    - "3D Modell ansehen"
+    - "SKP oeffnen"
+    - "USDZ oeffnen"
+    - "OBJ ansehen"
+  antwort: |
+    3D-/CAD-Dateien in iMOPS ansehen:
+    1. Datei in die App ziehen (Drag-and-Drop) - unterstuetzt: USDZ,
+       OBJ, DAE, FBX, GLTF, GLB, STL, PLY, SKP
+    2. FileInspector zeigt Datei-Info, Klassifikation per KI
+    3. Bei "3D-Viewer oeffnen" laedt SceneKit das Modell
+    4. Drehen mit Finger, Pinch-to-Zoom, Pan zum Verschieben
+    5. Reset-Button zurueck zur Ausgangsposition
+
+    SKP-Dateien werden auf dem Server in USDZ konvertiert (kann bei
+    grossen Modellen etwas dauern).
+  quelle_kurz: "iMOPS App-Bedienung (Phase 5)"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_BuildIQ_Scanner"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "BuildIQ"
+    - "Was ist BuildIQ"
+    - "KI Scanner"
+    - "DIN 276 Foto"
+    - "Foto Klassifikation"
+  antwort: |
+    Der Tab "BuildIQ" ist ein KI-Foto-Scanner fuer DIN-276-Kostengruppen.
+    Workflow:
+    1. Foto vom Bauwerk/Bauteil aufnehmen oder aus Galerie
+    2. BuildIQ schickt das Bild an Gemini (Google) zur Klassifikation
+    3. Antwort: vermutete DIN-276-Kostengruppe + Konfidenz + Begruendung
+    4. Optional: Ergebnis ins Maengel-/Auftrags-System uebernehmen
+
+    Hinweis: Foto-Daten werden an Gemini geschickt. Fuer sensible
+    Baustellen ggf. nicht verwenden.
+
+    Verfuegbar nur auf iOS (nicht auf macCatalyst).
+  quelle_kurz: "iMOPS App-Bedienung (Phase 3)"
+  license_note: "Eigene Bedienungshilfe"

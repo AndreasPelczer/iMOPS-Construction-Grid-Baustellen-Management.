@@ -14,12 +14,24 @@ struct KnowledgeEntry: Codable, Sendable, Identifiable {
     let quelleKurz: String
     let quelleUrl: String?
     let licenseNote: String?
+    /// Optional: "fachwissen" (default) oder "app-bedienung".
+    /// Steuert das Anzeige-Icon in der UI ("Aus Bau-Wissen" vs "Bedienungshilfe").
+    let kategorie: String?
+    /// Optional: Mindest-App-Version fuer die diese Antwort gueltig ist.
+    /// UI kann aelteren Eintraegen einen "evtl. veraltet" Hinweis anhaengen.
+    let appVersionMin: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, aliases, antwort
+        case id, aliases, antwort, kategorie
         case quelleKurz = "quelle_kurz"
         case quelleUrl = "quelle_url"
         case licenseNote = "license_note"
+        case appVersionMin = "app_version_min"
+    }
+
+    /// Auf "fachwissen" defaulten wenn nichts angegeben.
+    var resolvedKategorie: String {
+        kategorie ?? "fachwissen"
     }
 }
 
@@ -48,6 +60,7 @@ actor ExactMatchKnowledge {
         "betongueten",
         "wlg_werte",
         "moertelgruppen",
+        "app_bedienung",
     ]
 
     private init() {}
