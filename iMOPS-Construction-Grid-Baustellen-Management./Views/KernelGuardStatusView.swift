@@ -73,19 +73,22 @@ struct KernelGuardStatusView: View {
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
 
-        // Brigade-Load Progress Bar
+        // Belastung (Pelczer-Matrix vom Kernel — beruecksichtigt Brigade-Groesse,
+        // Task-Gewichte und Fatigue-Multiplikator, nicht nur die Roh-Task-Ratio).
+        let score = TheBrain.shared.meierScore
+        let normalized = Double(score) / 100.0
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("Brigade-Last")
+                Text("Belastung (Pelczer-Matrix)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("\(Int(report.brigadeLoad * 100))%")
+                Text("\(score)%")
                     .font(.caption.monospacedDigit().bold())
-                    .foregroundStyle(loadColor(report.brigadeLoad))
+                    .foregroundStyle(loadColor(normalized))
             }
-            ProgressView(value: report.brigadeLoad)
-                .tint(loadColor(report.brigadeLoad))
+            ProgressView(value: normalized)
+                .tint(loadColor(normalized))
         }
 
         // Status-Zeilen
