@@ -100,18 +100,6 @@ final class TheBrain {
 
         let scoreResult = Int(min(max(jitteredLoad, 0), 100))
 
-        // DEBUG: zeigen warum der Score ist wo er ist
-        print("""
-        iMOPS-KERNEL-DEBUG:
-          activeTasks=\(activeTasks.count) keys=\(activeTasks)
-          totalLoad=\(totalLoad) staffCount=\(staffCount) systemCapacity=\(systemCapacity)
-          hoursOnClock=\(String(format: "%.2f", hoursOnClock)) fatigueFactor=\(String(format: "%.2f", fatigueFactor))
-          finalLoad(raw)=\(String(format: "%.2f", (Double(totalLoad) / systemCapacity) * fatigueFactor * 100))
-          finalLoad(after BOURDAIN mult)=\(String(format: "%.2f", finalLoad))
-          normalizedLoad=\(String(format: "%.3f", normalizedLoad)) noise=\(String(format: "%.3f", noise))
-          jitteredLoad=\(String(format: "%.2f", jitteredLoad)) scoreResult=\(scoreResult)
-        """)
-
         // 6. WHISPER-MESSAGE
         if let whisper = taskValidation.whisper {
             print("iMOPS-BOURDAIN: \(whisper)")
