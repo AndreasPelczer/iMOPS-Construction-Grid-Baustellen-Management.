@@ -8,6 +8,11 @@ struct SettingsView: View {
     @State private var isCheckingServer = false
     @State private var wetterApiKey: String = UserDefaults.standard.string(forKey: WetterService.apiKeyUserDefaultsKey) ?? ""
 
+    // Mops-Server-URL (LAN-IP oder Cloudflare-Tunnel)
+    @AppStorage(MopsConfig.Keys.baseURL) private var mopsBaseURL: String = MopsConfig.defaultHost
+    @State private var mopsServerStatus: String = ""
+    @State private var isCheckingMops = false
+
     // Firmendaten (XRechnung Seller / Bautagesbericht)
     @AppStorage(FirmenSettings.Keys.name)     private var firmaName    = ""
     @AppStorage(FirmenSettings.Keys.strasse)  private var strasse      = ""
@@ -154,6 +159,46 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
 
+            // --- Mops-Server (BauWissen / Pre-Filter) ---
+            Section("Mops-Server (BauWissen)") {
+                TextField("Server-URL", text: $mopsBaseURL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+
+                HStack {
+                    Button("Standard wiederherstellen") {
+                        mopsBaseURL = MopsConfig.defaultHost
+                        mopsServerStatus = ""
+                    }
+                    .font(.caption)
+                    .disabled(mopsBaseURL == MopsConfig.defaultHost)
+
+                    Spacer()
+
+                    Button { checkMopsServer() } label: {
+                        Label("Testen", systemImage: "network")
+                    }
+                    .disabled(isCheckingMops || mopsBaseURL.isEmpty)
+                }
+
+                if isCheckingMops {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Verbinde …")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if !mopsServerStatus.isEmpty {
+                    Text(mopsServerStatus)
+                        .font(.caption)
+                        .foregroundStyle(mopsServerStatus.contains("OK") ? .green : .red)
+                }
+
+                Text("LAN-IP der Mops-Box im Heimnetz (Standard) oder Cloudflare-Tunnel-URL fuer mobile Nutzung. Aenderungen wirken sofort beim naechsten Mops-Call.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
             Section {
                 Text("Baustelle = Event (CoreData). Auftraege werden pro Baustelle verwaltet. CAD-Viewer und Gewerke-Vorlagen sind integriert.")
                     .font(.footnote).foregroundStyle(.secondary)
@@ -174,6 +219,21 @@ struct SettingsView: View {
                 } else {
                     serverStatus = "Nicht erreichbar"
                 }
+            }
+        }
+    }
+
+    /// Health-Probe gegen die aktuell konfigurierte Mops-Server-URL.
+    /// Liest MopsConfig.host (= aktueller AppStorage-Wert) automatisch.
+    private func checkMopsServer() {
+        isCheckingMops = true
+        mopsServerStatus = ""
+        let client = MopsClient()
+        Task {
+            let reachable = await client.checkHealth()
+            await MainActor.run {
+                isCheckingMops = false
+                mopsServerStatus = reachable ? "OK - Mops erreichbar" : "Nicht erreichbar"
             }
         }
     }

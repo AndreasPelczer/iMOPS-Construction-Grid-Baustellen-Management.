@@ -4,9 +4,26 @@ import os
 private let logger = Logger(subsystem: "com.deadrabbit.imops", category: "MopsClient")
 
 // MARK: - MopsConfig
-// Server-Konfiguration fuer den Mops. Aktuell Heimnetz, spaeter Tailscale / Production.
+// Server-Konfiguration fuer den Mops. Die Base-URL ist konfigurierbar
+// (Settings → Mops-Server), damit User von unterwegs auch einen
+// Cloudflare-Tunnel oder Tailscale-Address eintragen koennen.
+// Default ist die Mops-Box im Heimnetz.
 struct MopsConfig {
-    static let host = "http://192.168.2.42:8080"
+    /// Fallback-URL wenn der User nichts in Settings konfiguriert hat.
+    static let defaultHost = "http://192.168.2.42:8080"
+
+    /// UserDefaults-Keys fuer Server-Settings.
+    enum Keys {
+        static let baseURL = "mops_base_url"
+    }
+
+    /// Aktuell aktive Base-URL — liest dynamisch aus UserDefaults damit
+    /// Settings-Aenderungen sofort wirken (ohne App-Neustart).
+    static var host: String {
+        let stored = UserDefaults.standard.string(forKey: Keys.baseURL) ?? ""
+        return stored.isEmpty ? defaultHost : stored
+    }
+
     static let chatEndpoint = "/chat"
     static let healthEndpoint = "/health"
     static let classifyEndpoint = "/classify"
