@@ -17,7 +17,7 @@ hier nachgeschaut. Bei einem Treffer wird die lokale Antwort sofort zurückgegeb
 | `betongueten.yaml` | fachwissen | Beton-Festigkeitsklassen (C20/25 bis C35/45) + Expositionsklassen |
 | `wlg_werte.yaml` | fachwissen | Wärmeleitgruppen (WLG 032/035/040) + U-Wert |
 | `moertelgruppen.yaml` | fachwissen | Mörtelgruppen (MG II/IIa/III) + Dünnbettmörtel |
-| `app_bedienung.yaml` | app-bedienung | iMOPS-Bedienungshilfe (Baustelle/Auftrag/Mangel anlegen, GAEB-Import, BauWissen, PDF-Export, CAD-Viewer, BuildIQ) |
+| `app_bedienung.yaml` | app-bedienung | iMOPS-Bedienungshilfe (Baustelle/Auftrag/Mangel anlegen, GAEB-Import, BauWissen, PDF-Export, CAD-Viewer, BuildIQ) + Self-Help (Was kann Mops/iMOPS, Was kann ich fragen, Prof-Schalter) |
 
 ### Zwei Kategorien — warum
 

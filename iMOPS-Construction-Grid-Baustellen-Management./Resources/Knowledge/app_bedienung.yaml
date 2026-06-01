@@ -199,3 +199,135 @@
     Verfuegbar nur auf iOS (nicht auf macCatalyst).
   quelle_kurz: "iMOPS App-Bedienung (Phase 3)"
   license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Mops_Selbsterklaerung"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Was ist Mops"
+    - "Was ist der Mops"
+    - "Was kann Mops"
+    - "Was kann der Mops"
+    - "Was kann der Mops eigentlich"
+    - "Wer bist du"
+    - "Wer ist Mops"
+  antwort: |
+    Der Mops ist ein lokales LLM (llama3.2:3b), das auf einem CPU-Server im
+    Heimnetz laeuft (192.168.2.42) und Bau-Fachfragen beantwortet. Er nutzt
+    eine RAG-Wissensbasis aus ~85 Wikipedia-Lemmas zu Bau-Themen (Mauerwerk,
+    Beton, DIN-Normen etc.).
+
+    Was er kann:
+    - Bau-Fachfragen mit Quellen-Angabe (Wikipedia / Obsidian-Vault)
+    - Hybrid-Suche: Vektor + Keyword-Boost (0.15) — exakte Begriffe gewinnen
+    - Maurermeister-Persona: knapp, praktisch, ehrlich bei Wissenslücken
+
+    Was er NICHT kann:
+    - Sich selbst nahtlos erklaeren (dafuer gibt's diese Hilfe-Einträge!)
+    - Sehr schnell antworten — CPU-only, 30 bis 120 Sekunden pro Frage
+    - App-Bedienung erklären — das macht die iMOPS-Bedienungshilfe lokal
+
+    Fuer komplexe Fragen den Prof-Schalter aktivieren (Claude Sonnet 4.5).
+  quelle_kurz: "iMOPS Mops-Architektur (Welle-1)"
+  license_note: "Eigene Selbsterklaerung"
+
+- id: "App_iMOPS_Uebersicht"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Was kann iMOPS"
+    - "Was kann die App"
+    - "Was kann diese App"
+    - "Was ist iMOPS"
+    - "App Funktionen"
+    - "App Features"
+    - "Was kann ich machen"
+  antwort: |
+    iMOPS ist eine Baustellen-Management-App fuer Bauleiter und Poliere.
+    Hauptfunktionen:
+
+    - Baustellen-Verwaltung (Events mit Bauherr, Architekt, Standort)
+    - LV-Erstellung + GAEB-Import (.x83/.x84/.x86) + PDF/CSV-Export
+    - LV-Tiefenkalkulation (Material, Lohn, Geraete)
+    - Maengelmanagement mit Foto, Frist, Push-Notifications und PDF-Protokoll
+    - Auftraege (Jobs) mit Checklisten und SOP-Templates
+    - Drag-and-Drop fuer GAEB, CAD (SKP/USDZ/OBJ), PDF, Excel, Bilder
+    - 3D-CAD-Viewer (SceneKit)
+    - BauWissen (Mops + Prof KI-Assistent)
+    - BuildIQ (KI-Foto-Scanner fuer DIN-276-Kostengruppen)
+    - Wetterintegration mit DIN-bezogenen Warnungen
+    - Globale Suche und Fristenuebersicht
+
+    Offline-first: alle Daten in CoreData, kein Cloud-Zwang.
+  quelle_kurz: "iMOPS App-Uebersicht"
+  license_note: "Eigene Selbsterklaerung"
+
+- id: "App_BauWissen_Was_Fragen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Was kann ich fragen"
+    - "Was kann ich hier fragen"
+    - "Wie nutze ich BauWissen"
+    - "Wie frage ich"
+    - "Welche Fragen"
+    - "Beispiel Fragen"
+  antwort: |
+    Im BauWissen-Tab kannst du Fragen aus zwei Bereichen stellen:
+
+    Bau-Fachwissen (Mops oder Prof beantwortet):
+    - "Was ist eine tragende Wand?"
+    - "Welche Frostschutzhoehe braucht ein Streifenfundament?"
+    - "Wie unterscheiden sich C25/30 und C30/37?"
+    - "Was sagt VOB/B Abs. 4?"
+
+    Direkter Treffer aus iMOPS-Wissensbasis (sofort, lokal):
+    - "Was ist DIN 276?" / "Kostengruppen"
+    - "C25/30 Festigkeit" / "Beton C30/37"
+    - "WLG 035" / "U-Wert"
+    - "Mörtelgruppe MG II"
+    - "GAEB DA XML"
+
+    App-Bedienung (auch lokal, sofort):
+    - "Wie lege ich eine Baustelle an?"
+    - "Wie importiere ich GAEB?"
+    - "Wie funktioniert der Prof-Schalter?"
+
+    Bei langen Wartezeiten (>60s) den Prof-Schalter aktivieren — schneller
+    und gruendlicher fuer komplexe Fragen.
+  quelle_kurz: "iMOPS BauWissen-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Prof_Schalter"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Prof Schalter"
+    - "Prof aktivieren"
+    - "Wann Prof"
+    - "Wann nehme ich Prof"
+    - "Prof statt Mops"
+    - "Unterschied Mops Prof"
+  antwort: |
+    Der Prof-Schalter rechts oben im BauWissen-Eingabefeld wechselt das
+    Antwort-Modell:
+
+    Mops (Schalter aus, Standard):
+    - llama3.2:3b lokal auf der Mops-Box
+    - CPU-only, 30 bis 120 Sekunden Antwortzeit
+    - Kostenlos
+    - Gut fuer einfache Fakten-Fragen mit guter RAG-Quelle
+
+    Prof (Schalter an):
+    - Claude Sonnet 4.5 ueber die Anthropic-API
+    - 5 bis 15 Sekunden Antwortzeit
+    - Kostet pro Anfrage (API-Tokens)
+    - Besser fuer komplexe, mehrteilige oder ungewoehnliche Fragen
+
+    Faustregel: starte mit Mops, eskaliere zu Prof wenn die Antwort
+    unbefriedigend ist oder die Frage komplex strukturiert ist.
+
+    Beide Modi nutzen dieselbe RAG-Wissensbasis (bau_wissen_v1) und werden
+    durch den iOS-side Pre-Filter umgangen wenn ein exakter Treffer existiert.
+  quelle_kurz: "iMOPS BauWissen Mops/Prof-Architektur"
+  license_note: "Eigene Bedienungshilfe"
