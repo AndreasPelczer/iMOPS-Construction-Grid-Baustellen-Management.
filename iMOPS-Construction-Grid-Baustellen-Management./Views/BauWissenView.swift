@@ -13,6 +13,7 @@ struct BauWissenView: View {
             VStack(spacing: 20) {
                 headerSection
                 inputSection
+                if showsExamples { examplesSection }
                 if viewModel.isLoading { loadingSection }
                 if let error = viewModel.errorMessage { errorSection(error) }
                 if let response = viewModel.response { responseSection(response) }
@@ -21,6 +22,15 @@ struct BauWissenView: View {
         }
         .navigationTitle("BauWissen")
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    /// Beispielfragen werden nur gezeigt solange noch nichts passiert ist —
+    /// klassisches Onboarding-Verhalten. Sobald die erste Antwort da ist,
+    /// verschwinden sie und der User ist im Flow.
+    private var showsExamples: Bool {
+        viewModel.response == nil
+            && !viewModel.isLoading
+            && viewModel.errorMessage == nil
     }
 
     // MARK: - Header mit Erklärung
@@ -92,6 +102,57 @@ struct BauWissenView: View {
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
     }
+
+    // MARK: - Beispielfragen (Onboarding)
+
+    private var examplesSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Beispielfragen — tipp eine an")
+                .font(.subheadline)
+                .bold()
+                .foregroundColor(.secondary)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                ForEach(Self.examples) { ex in
+                    ExampleCard(example: ex) {
+                        viewModel.questionText = ex.frage
+                        viewModel.useProf = ex.useProf
+                        viewModel.submitQuestion()
+                    }
+                }
+            }
+
+            Text("Tipp: \"Was kann ich hier fragen?\" zeigt dir die Übersicht.")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.tertiarySystemBackground))
+        .cornerRadius(12)
+    }
+
+    private static let examples: [BauWissenExample] = [
+        BauWissenExample(
+            kind: .localFachwissen,
+            frage: "Was ist DIN 276?",
+            untertitel: "Sofort aus Wissensbasis"
+        ),
+        BauWissenExample(
+            kind: .localBedienung,
+            frage: "Wie lege ich eine Baustelle an?",
+            untertitel: "Sofort aus Bedienungshilfe"
+        ),
+        BauWissenExample(
+            kind: .mops,
+            frage: "Welche Frostschutzhöhe braucht ein Streifenfundament?",
+            untertitel: "Mops (lokal, 30-120s)"
+        ),
+        BauWissenExample(
+            kind: .prof,
+            frage: "Was unterscheidet Eurocode 2 und DIN 1045-2?",
+            untertitel: "Prof (Claude, 5-15s)"
+        )
+    ]
 
     // MARK: - Loading-Indicator
 
@@ -207,5 +268,80 @@ struct BauWissenView: View {
         case .prof:  return Color.purple.opacity(0.12)
         case .mops:  return Color.orange.opacity(0.12)
         }
+    }
+}
+
+// MARK: - Example-Modell + Card
+
+struct BauWissenExample: Identifiable {
+    let id = UUID()
+    let kind: Kind
+    let frage: String
+    let untertitel: String
+
+    /// Steuert Icon, Farbe und ob Prof-Toggle aktiviert wird.
+    /// Mops/Prof = Server-Pfad. LocalFachwissen/LocalBedienung = ExactMatch-Hit erwartet.
+    var useProf: Bool {
+        kind == .prof
+    }
+
+    enum Kind {
+        case localFachwissen   // 📖 grün, lokal
+        case localBedienung    // 🔧 grün, lokal
+        case mops              // 🐶 orange, Server lokales LLM
+        case prof              // 🎓 lila, Server Claude
+
+        var icon: String {
+            switch self {
+            case .localFachwissen: return "📖"
+            case .localBedienung:  return "🔧"
+            case .mops:            return "🐶"
+            case .prof:            return "🎓"
+            }
+        }
+
+        var accentColor: Color {
+            switch self {
+            case .localFachwissen, .localBedienung: return .green
+            case .mops:                              return .orange
+            case .prof:                              return .purple
+            }
+        }
+    }
+}
+
+struct ExampleCard: View {
+    let example: BauWissenExample
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Text(example.kind.icon)
+                        .font(.title3)
+                    Spacer()
+                }
+                Text(example.frage)
+                    .font(.subheadline)
+                    .bold()
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(example.untertitel)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(example.kind.accentColor.opacity(0.10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(example.kind.accentColor.opacity(0.25), lineWidth: 1)
+            )
+            .cornerRadius(10)
+        }
+        .buttonStyle(.plain)
     }
 }
