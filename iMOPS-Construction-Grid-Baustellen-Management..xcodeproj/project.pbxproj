@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1AD049962FCD7FC800DEF29D /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 1AD049952FCD7FC800DEF29D /* Yams */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		1A961EE92F45FFC50027C5B3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AD049962FCD7FC800DEF29D /* Yams in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +130,7 @@
 			);
 			name = "iMOPS-Construction-Grid-Baustellen-Management.";
 			packageProductDependencies = (
+				1AD049952FCD7FC800DEF29D /* Yams */,
 			);
 			productName = "iMOPS-Construction-Grid-Baustellen-Management.";
 			productReference = 1A961ED92F45FFC30027C5B3 /* iMOPS-Construction-Grid-Baustellen-Management..app */;
@@ -208,6 +214,9 @@
 			);
 			mainGroup = 1A961ED02F45FFC30027C5B3;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1AD049942FCD7FC800DEF29D /* XCRemoteSwiftPackageReference "Yams" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1A961EDA2F45FFC30027C5B3 /* Products */;
 			projectDirPath = "";
@@ -593,6 +602,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1AD049942FCD7FC800DEF29D /* XCRemoteSwiftPackageReference "Yams" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jpsim/Yams.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.2.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1AD049952FCD7FC800DEF29D /* Yams */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1AD049942FCD7FC800DEF29D /* XCRemoteSwiftPackageReference "Yams" */;
+			productName = Yams;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1A961ED12F45FFC30027C5B3 /* Project object */;
 }
