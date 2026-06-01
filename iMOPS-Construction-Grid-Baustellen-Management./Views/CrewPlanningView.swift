@@ -33,7 +33,13 @@ struct CrewPlanningView: View {
     @State private var showInactive = false
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            // Kernel-Banner immer sichtbar — Schicht-Status gilt auch ohne Crew-Members
+            KernelGuardStatusView()
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
+
             if activeEmployees.isEmpty && inactiveEmployees.isEmpty {
                 emptyState
             } else {
@@ -84,13 +90,6 @@ struct CrewPlanningView: View {
 
     private var crewList: some View {
         List {
-            // Kernel-Status (Spike): BourdainGuard + MenschMeier + Privacy Shield
-            Section {
-                KernelGuardStatusView()
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    .listRowBackground(Color.clear)
-            }
-
             // Auslastungs-Header
             if !activeEmployees.isEmpty {
                 Section {
