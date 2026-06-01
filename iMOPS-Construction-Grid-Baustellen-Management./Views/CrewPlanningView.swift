@@ -84,6 +84,13 @@ struct CrewPlanningView: View {
 
     private var crewList: some View {
         List {
+            // Kernel-Status (Spike): BourdainGuard + MenschMeier + Privacy Shield
+            Section {
+                KernelGuardStatusView()
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowBackground(Color.clear)
+            }
+
             // Auslastungs-Header
             if !activeEmployees.isEmpty {
                 Section {

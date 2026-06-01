@@ -34,6 +34,11 @@ struct iMOPSApp: App {
                     MarktbreitSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     NotificationService.shared.requestAuthorization()
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)
+
+                    // Kernel-Spike: TheBrain bootstrappen mit Baustellen-Brigade
+                    // und Schicht-Start. Läuft bei jedem App-Start, weil TheBrain
+                    // in-memory ist (kein Persistence-Layer im Spike).
+                    TheBrain.shared.seed()
                 }
                 .onReceive(
                     NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
