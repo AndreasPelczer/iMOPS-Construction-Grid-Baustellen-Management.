@@ -7,8 +7,14 @@ struct EditJobView: View {
 
     @ObservedObject var job: Auftrag
 
-    let storageLocations = ["FischKühlhaus", "Molkerei", "Fleisch", "Bereitstelle", "VorkühlerFk", "TK Oben", "TK- Fingerfood"]
-    let storageNotes = ["1/1 Schwarz", "1/1 Silber", "1/2 Schwarz", "1/2 Silber", "1/1 Silber 10er", "1/1 Silber 6,5 cm", "30cm 1/2 Silber 10,30"]
+    let storageLocations = [
+        "Baustelle EG", "Baustelle OG", "Materiallager",
+        "Container", "Werkstatt", "Bauhof"
+    ]
+    let storageNotes = [
+        "Palette", "Gitterbox", "Sack/Gebinde",
+        "Einzelteile", "Europalette", "Big Bag"
+    ]
 
     @State private var employeeName: String
     @State private var status: JobStatus
@@ -24,11 +30,11 @@ struct EditJobView: View {
         self.job = job
         _employeeName = State(initialValue: job.employeeName ?? "")
         _status = State(initialValue: job.status)
-        _storageLocation = State(initialValue: job.storageLocation ?? "FischKühlhaus")
+        _storageLocation = State(initialValue: job.storageLocation ?? "Baustelle EG")
         _processingDetails = State(initialValue: job.processingDetails ?? "")
         _isHotDelivery = State(initialValue: job.deliveryTemperature)
         _isCompleted = State(initialValue: job.isCompleted)
-        _storageNote = State(initialValue: job.storageNote ?? "1/1 Schwarz")
+        _storageNote = State(initialValue: job.storageNote ?? "Palette")
 
         let gespeicherteNummer = job.kostenGruppeNummer
         let initial = DIN276KostenGruppe.alle.first { $0.nummer == gespeicherteNummer }
