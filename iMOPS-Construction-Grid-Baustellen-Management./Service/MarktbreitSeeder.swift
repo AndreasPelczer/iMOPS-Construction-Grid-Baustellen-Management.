@@ -4,23 +4,23 @@ import CoreData
 struct MarktbreitSeeder {
 
     static func seedIfNeeded(context: NSManagedObjectContext) {
-        let key = "marktbreit_efh_schwarz_seeded_v3"  // v3: Mengen aus Statik-Detaildaten
+        let key = "marktbreit_efh_schwarz_seeded_v4"  // v4: + Goldschmitt-Zusatzarbeiten (KG 390/500)
 
         let fetch: NSFetchRequest<Event> = Event.fetchRequest()
         fetch.predicate = NSPredicate(format: "eventNumber == %@", "I-25_448-GO")
 
         if let existing = try? context.fetch(fetch).first {
-            // Event existiert schon — nur Mengen patchen wenn v3 noch nicht gelaufen
+            // Event existiert schon — Positionen idempotent abgleichen, wenn v4 noch nicht gelaufen
             guard !UserDefaults.standard.bool(forKey: key) else { return }
             patchPositionen(of: existing, in: context)
-            saveAndMark(context: context, key: key, msg: "Mengen aus Statik-Detail aktualisiert (v3)")
+            saveAndMark(context: context, key: key, msg: "EFH Schwarz Marktbreit: Goldschmitt-Zusatzarbeiten ergänzt (v4)")
             return
         }
 
         // Event existiert noch nicht — komplett neu anlegen
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         createEventWithPositionen(in: context)
-        saveAndMark(context: context, key: key, msg: "EFH Schwarz Marktbreit: Event + 15 LV-Positionen angelegt (v3)")
+        saveAndMark(context: context, key: key, msg: "EFH Schwarz Marktbreit: Event + 24 LV-Positionen angelegt (v4)")
     }
 
     // MARK: - Event neu anlegen
@@ -48,12 +48,8 @@ struct MarktbreitSeeder {
 
         for daten in lvDaten() {
             let pos = LVPosition(context: context)
-            pos.posNr = daten.posNr
-            pos.kostenGruppeNummer = daten.kg
-            pos.bezeichnung = daten.bezeichnung
-            pos.einheit = daten.einheit
-            pos.menge = daten.menge
             pos.event = event
+            applyDaten(daten, to: pos, in: context)
         }
     }
 
@@ -67,20 +63,12 @@ struct MarktbreitSeeder {
         }
 
         for daten in lvDaten() {
-            if let pos = byPosNr[daten.posNr] {
-                pos.bezeichnung = daten.bezeichnung
-                pos.einheit = daten.einheit
-                pos.menge = daten.menge
-                pos.kostenGruppeNummer = daten.kg
-            } else {
-                let pos = LVPosition(context: context)
-                pos.posNr = daten.posNr
-                pos.kostenGruppeNummer = daten.kg
-                pos.bezeichnung = daten.bezeichnung
-                pos.einheit = daten.einheit
-                pos.menge = daten.menge
-                pos.event = event
-            }
+            let pos = byPosNr[daten.posNr] ?? {
+                let neu = LVPosition(context: context)
+                neu.event = event
+                return neu
+            }()
+            applyDaten(daten, to: pos, in: context)
         }
 
         let v3Marker = "[v3-Statik-Detail]"
@@ -89,6 +77,47 @@ struct MarktbreitSeeder {
                 "Decke 60,62 m² (mit Treppen-Aussparung), AW Keller 73 m², neue Position 3.30.2b für d=36,5cm-Bereich, " +
                 "Stürze als laufende Meter (4,57 m gesamt)."
         }
+
+        let v4Marker = "[v4-Goldschmitt]"
+        if !(event.notes ?? "").contains(v4Marker) {
+            event.notes = (event.notes ?? "") + "\n\n\(v4Marker) Goldschmitt-Zusatzarbeiten (Angebot 24.03.2026, BV 2026-011) " +
+                "als KG-390/500-Pauschalen ergänzt: 9 Titel, 59.132,61 € netto / 70.367,81 € brutto."
+        }
+    }
+
+    // MARK: - Felder + Pauschal-Unterposition setzen (idempotent)
+
+    private static let nuMaterialName = "Fremdleistung NU Goldschmitt"
+
+    /// Überträgt LV-Daten auf eine Position. Bei Pauschalpositionen (`pauschalNetto != nil`)
+    /// wird der Betrag als NU-Material-Unterposition hinterlegt (Preisträger für den
+    /// `LVKalkulator`) und Wagnis+Gewinn / BGK auf 0 gesetzt — ein NU-Endpreis bekommt
+    /// keinen Eigen-Aufschlag. Idempotent: vorhandene NU-Unterposition wird wiederverwendet,
+    /// nicht dupliziert.
+    private static func applyDaten(_ daten: LVDaten, to pos: LVPosition, in context: NSManagedObjectContext) {
+        pos.posNr = daten.posNr
+        pos.kostenGruppeNummer = daten.kg
+        pos.bezeichnung = daten.bezeichnung
+        pos.einheit = daten.einheit
+        pos.menge = daten.menge
+
+        guard let netto = daten.pauschalNetto else { return }
+
+        pos.wagnisGewinnProzent = 0
+        pos.bgkProzent = 0
+
+        let material = pos.materialArray.first { $0.materialName == nuMaterialName }
+            ?? {
+                let m = PositionMaterial(context: context)
+                m.id = UUID()
+                m.materialName = nuMaterialName
+                m.position = pos
+                return m
+            }()
+        material.mengeProEinheit = 1
+        material.einzelpreis = netto
+        material.verschnittProzent = 0
+        material.einheit = "psch"
     }
 
     // MARK: - LV-Daten (zentrale Quelle)
@@ -99,6 +128,9 @@ struct MarktbreitSeeder {
         let bezeichnung: String
         let einheit: String
         let menge: Double
+        /// Netto-Pauschalbetrag (€) für Fremdleistungs-/NU-Positionen.
+        /// nil = klassische Mengen-Position ohne hinterlegten Preis.
+        var pauschalNetto: Double? = nil
     }
 
     private static func lvDaten() -> [LVDaten] {
@@ -158,7 +190,43 @@ struct MarktbreitSeeder {
             // KG 440 – PV-Vorrüstung
             LVDaten(posNr: "4.40.1", kg: "440",
                     bezeichnung: "PV-Vorrüstung Dachfläche (statisch berücksichtigt, 0,20 kN/m²)",
-                    einheit: "psch", menge: 1)
+                    einheit: "psch", menge: 1),
+
+            // KG 390/500 – Goldschmitt-Zusatzarbeiten (Außenanlagen + Erdbau)
+            // Angebot G. Goldschmitt Bau GmbH vom 24.03.2026 (BV-Nr. 2026-011), VOB-Ausführung.
+            // Als Fremdleistungs-Pauschalen modelliert: NU-Endpreis netto, daher wg=0 / bgk=0
+            // (kein Eigen-Aufschlag auf einen fremd kalkulierten Festpreis).
+            // Titel 05 + 09 fehlen in Goldschmitts Original-Nummerierung — vermutlich aus der
+            // Standard-LV-Vorlage ausgelassen, kein Grund im Angebot vermerkt.
+            // Summe der 9 Titel = 59.132,61 € netto (= 70.367,81 € brutto).
+            // Baustelleneinrichtung → KG 390 (KG 391 existiert nicht im DIN276-Katalog der App).
+            LVDaten(posNr: "3.90.1", kg: "390",
+                    bezeichnung: "Baustelleneinrichtung (An-/Abfuhr, Bau-WC, Bauzaun 21m, 5 Monate)",
+                    einheit: "psch", menge: 1, pauschalNetto: 1549.21),
+            LVDaten(posNr: "5.10.1", kg: "510",
+                    bezeichnung: "Erdarbeiten allgemein (Mutterboden, Schnurgerüst, Aushub BK 3-5, Verfüllung, Schotterpolster)",
+                    einheit: "psch", menge: 1, pauschalNetto: 15164.77),
+            LVDaten(posNr: "5.50.1", kg: "550",
+                    bezeichnung: "Entwässerung außerhalb (DN100/150 PVC, Schächte, Drainage, Sickergrube, Birco-Rinne)",
+                    einheit: "psch", menge: 1, pauschalNetto: 7798.17),
+            LVDaten(posNr: "5.31.1", kg: "531",
+                    bezeichnung: "Terrasse + Weg (Schotter 0/32, Keramikplatten 60×60×2 beige, Leistensteine, Kabuflex)",
+                    einheit: "psch", menge: 1, pauschalNetto: 4833.34),
+            LVDaten(posNr: "5.30.1", kg: "530",
+                    bezeichnung: "Spritzschutz (Leistensteine 18m, Mainkies 16/32)",
+                    einheit: "psch", menge: 1, pauschalNetto: 1841.94),
+            LVDaten(posNr: "5.50.2", kg: "550",
+                    bezeichnung: "Hausanschlüsse (Rohrgrabenaushub, MSE 4-fach, 60m Leerrohre DN100)",
+                    einheit: "psch", menge: 1, pauschalNetto: 4875.10),
+            LVDaten(posNr: "5.43.1", kg: "543",
+                    bezeichnung: "Stützmauer Carport (Statik + Fundament + Stb-Wand 24cm 2-schalig FT, Ortbeton C25/30 XC4/XF1, ~650kg Stahl)",
+                    einheit: "psch", menge: 1, pauschalNetto: 13842.01),
+            LVDaten(posNr: "5.33.1", kg: "533",
+                    bezeichnung: "Stellplatz pflastern (Ausstellungspflaster Muschelkalk Nr. 3, 36 m²)",
+                    einheit: "psch", menge: 1, pauschalNetto: 3101.38),
+            LVDaten(posNr: "5.43.2", kg: "543",
+                    bezeichnung: "Mauerscheiben (7 Stück: Typ 80/105/155/180/230×2/305, je 99cm breit)",
+                    einheit: "psch", menge: 1, pauschalNetto: 6126.69)
         ]
     }
 
