@@ -37,7 +37,27 @@ xcodebuild test ... -only-testing:"iMOPS-Construction-Grid-Baustellen-Management
 ```
 
 Tests nutzen das **Swift-Testing-Framework** (`import Testing`, `@Test`, `#expect`),
-nicht XCTest. Bisher nur Smoke-Tests.
+nicht XCTest.
+
+### Tests laufen lassen
+
+Empfohlener Befehl für die Unit-Tests — gezielt nur das Unit-Target:
+
+```bash
+xcodebuild test -project "iMOPS-Construction-Grid-Baustellen-Management..xcodeproj" \
+  -scheme "iMOPS-Construction-Grid-Baustellen-Management." \
+  -only-testing:"iMOPS-Construction-Grid-Baustellen-Management.Tests" \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
+```
+
+**Ohne `-only-testing`** zieht das Scheme zusätzlich das **UITests-Target** hoch — das
+startet einen **zweiten Simulator** (langsamer, und bei wenig freier Platte häufig
+`No space left on device` → SpringBoard-/Simulator-Crash). Für reine Logik-Tests also
+immer `-only-testing` auf `…Tests` setzen.
+
+CoreData-Tests bauen ihren In-Memory-Stack über `PersistenceController(inMemory: true)`,
+müssen den Controller aber **festhalten** (struct — inline erzeugt wird der Container
+sofort wieder freigegeben, Objekte verlieren dann ihre Attribute).
 
 ## Architektur
 
