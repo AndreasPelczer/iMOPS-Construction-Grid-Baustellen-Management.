@@ -1,4 +1,5 @@
 import Foundation
+import CoreData
 
 // MARK: - Kalkulations-Ergebnis
 
@@ -77,5 +78,22 @@ enum LVKalkulator {
         positionen.reduce(0.0) { sum, pos in
             sum + kalkuliere(position: pos).gesamtpreis
         }
+    }
+
+    // MARK: - Effektiver Einzelpreis (eine Wahrheit fuer alle Konsumenten)
+
+    /// Liefert den effektiven Einzelpreis (VK, netto) einer Position.
+    /// Reihenfolge EXAKT wie im GAEB-X84-Export:
+    ///   1. guenstigstes erfasstes Angebot (AngebotsStore)
+    ///   2. sonst kalkulierter VK-Preis (Tiefenkalkulation / Pauschal-Traeger)
+    ///   3. sonst 0
+    /// Damit rechnen Kostenzusammenfassung, PDF-Export, XRechnung und GAEB identisch.
+    static func effektiverEP(for position: LVPosition,
+                             store: AngebotsStore = .shared) -> Double {
+        let id = position.objectID.uriRepresentation().absoluteString
+        let angebotsEP = store.guenstigster(for: id)?.einzelpreis ?? 0
+        if angebotsEP > 0 { return angebotsEP }
+        if position.hatKalkulation { return kalkuliere(position: position).einheitspreisVK }
+        return 0
     }
 }

@@ -27,6 +27,20 @@ struct LVPDFExporter {
         var y: CGFloat = 40
         var ctx: UIGraphicsPDFRendererContext!
 
+        /// Laufende Netto-Summe ueber alle Positionen (gefuellt in drawKG).
+        var gesamtNetto: Double = 0
+
+        let eurFmt: NumberFormatter = {
+            let f = NumberFormatter()
+            f.numberStyle  = .currency
+            f.currencyCode = "EUR"
+            f.locale       = Locale(identifier: "de_DE")
+            return f
+        }()
+        func eur(_ v: Double) -> String {
+            eurFmt.string(from: NSNumber(value: v)) ?? String(format: "%.2f €", v)
+        }
+
         init(event: Event, positionen: [LVPosition]) {
             self.event = event
             self.positionen = positionen
@@ -42,6 +56,7 @@ struct LVPDFExporter {
                 c.beginPage()
                 self.drawHeader()
                 self.drawPositionen()
+                self.drawKostenZusammenfassung()
                 self.drawFooter()
             }
         }
@@ -123,14 +138,17 @@ struct LVPDFExporter {
                     fill(CGRect(x: mH, y: y, width: cW, height: 18),
                          color: UIColor(white: 0.96, alpha: 1))
                 }
+                let ep = LVKalkulator.effektiverEP(for: pos)
+                let gp = ep * pos.menge
+                gesamtNetto += gp
                 let vals: [(String, NSTextAlignment)] = [
                     (pos.posNr        ?? "",  .left),
                     (pos.artikelNummer ?? "", .left),
                     (pos.bezeichnung  ?? "",  .left),
                     (pos.menge > 0 ? String(format: "%.2f", pos.menge) : "", .right),
                     (pos.einheit      ?? "",  .left),
-                    ("", .right),
-                    ("", .right)
+                    (ep > 0 ? eur(ep) : "", .right),
+                    (gp > 0 ? eur(gp) : "", .right)
                 ]
                 xOff = mH
                 for (i, (val, align)) in vals.enumerated() {
@@ -149,6 +167,41 @@ struct LVPDFExporter {
                 y += 18
             }
             y += 12
+        }
+
+        // MARK: Kostenzusammenfassung (DIN 276: Netto + MwSt + Brutto)
+
+        func drawKostenZusammenfassung() {
+            pageBreakIfNeeded(90)
+            y += 8
+            hline(at: y); y += 12
+
+            let mwstSatz = FirmenSettings.mwstSatz
+            let mwst     = gesamtNetto * mwstSatz / 100
+            let brutto   = gesamtNetto + mwst
+
+            summenZeile("Summe netto", gesamtNetto, bold: false)
+            summenZeile("zzgl. MwSt. \(pctStr(mwstSatz)) %", mwst, bold: false)
+            y += 2; hline(at: y); y += 10
+            summenZeile("Summe brutto", brutto, bold: true)
+        }
+
+        /// Eine rechtsbuendige Summenzeile (Label + Betrag) am rechten Rand.
+        func summenZeile(_ label: String, _ value: Double, bold: Bool) {
+            let font: UIFont = .systemFont(ofSize: bold ? 11 : 10,
+                                           weight: bold ? .bold : .regular)
+            let labelRect = CGRect(x: mH + cW - 300, y: y, width: 185, height: 16)
+            txtInRect(label, rect: labelRect, font: font,
+                      color: bold ? .black : UIColor(white: 0.3, alpha: 1), align: .right)
+            let valRect = CGRect(x: mH + cW - 110, y: y, width: 110, height: 16)
+            txtInRect(eur(value), rect: valRect, font: font,
+                      color: bold ? orange : .black, align: .right)
+            y += 18
+        }
+
+        /// Prozentsatz ohne unnoetige Nachkommastelle (19,0 → "19").
+        func pctStr(_ v: Double) -> String {
+            v == v.rounded() ? String(format: "%.0f", v) : String(format: "%.1f", v)
         }
 
         // MARK: Footer

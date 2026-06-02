@@ -23,12 +23,10 @@ struct KostenübersichtView: View {
         return grouped.keys.sorted().map { kg in
             let items = grouped[kg] ?? []
             let gp = items.reduce(0.0) { sum, pos in
-                let ep = store.guenstigster(
-                    for: pos.objectID.uriRepresentation().absoluteString)?.einzelpreis ?? 0.0
-                return sum + ep * pos.menge
+                sum + LVKalkulator.effektiverEP(for: pos, store: store) * pos.menge
             }
             let ohne = items.filter {
-                store.guenstigster(for: $0.objectID.uriRepresentation().absoluteString) == nil
+                LVKalkulator.effektiverEP(for: $0, store: store) == 0
             }.count
             return KGKosten(kg: kg, bezeichnung: dinBezeichnung(kg),
                             items: items, gesamtGP: gp, ohnePreis: ohne)

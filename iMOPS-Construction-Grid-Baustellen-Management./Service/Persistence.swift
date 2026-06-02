@@ -32,10 +32,24 @@ struct PersistenceController {
 
     let container: NSPersistentContainer
 
+    /// Das Datenmodell wird genau EINMAL geladen und von allen Containern geteilt.
+    /// Ohne das lädt jeder `NSPersistentContainer(name:)` eine eigene Kopie des
+    /// Modells; sobald zwei Stacks parallel existieren (z.B. App-Stack + In-Memory-
+    /// Stack im Test-Host) entstehen doppelte NSEntityDescriptions für dieselbe
+    /// NSManagedObject-Subklasse → Crash in `Event(context:)`.
+    private static let managedObjectModel: NSManagedObjectModel = {
+        guard let url = Bundle.main.url(forResource: "test25B", withExtension: "momd"),
+              let model = NSManagedObjectModel(contentsOf: url) else {
+            fatalError("CoreData-Modell 'test25B.momd' nicht im Bundle gefunden")
+        }
+        return model
+    }()
+
     // Persistence.swift (Ausschnitt der init-Methode)
 
     init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "test25B")
+        container = NSPersistentContainer(name: "test25B",
+                                          managedObjectModel: Self.managedObjectModel)
         
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")

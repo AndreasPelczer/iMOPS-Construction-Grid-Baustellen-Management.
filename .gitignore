@@ -48,3 +48,6 @@ Secrets.plist
 *.xcuserstate
 **/xcshareddata/
 
+
+# Lokale Patch-Backups (Konvention: .backup_<timestamp>)
+*.backup_*

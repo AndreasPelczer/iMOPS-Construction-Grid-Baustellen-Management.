@@ -37,12 +37,12 @@ struct XRechnungExporter {
         let vatCat     = FirmenSettings.vatCategory
         let ustId      = FirmenSettings.ustIdNr
 
-        // Only non-alternative positions; fall back to 0 EP if no offer stored
+        // Only non-alternative positions. Preis ueber den zentralen Resolver:
+        // guenstigstes Angebot → kalkulierter VK (z.B. Pauschal-Traeger) → 0.
         let items: [(pos: LVPosition, ep: Double, gp: Double)] = positionen
             .filter { !LVPositionHelper.isAlternative($0) }
             .map { pos in
-                let id = pos.objectID.uriRepresentation().absoluteString
-                let ep = store.guenstigster(for: id)?.einzelpreis ?? 0.0
+                let ep = LVKalkulator.effektiverEP(for: pos, store: store)
                 return (pos, ep, ep * pos.menge)
             }
 
