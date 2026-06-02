@@ -331,3 +331,37 @@
     durch den iOS-side Pre-Filter umgangen wenn ein exakter Treffer existiert.
   quelle_kurz: "iMOPS BauWissen Mops/Prof-Architektur"
   license_note: "Eigene Bedienungshilfe"
+
+- id: "App_XRechnung_fehlende_Preise"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "XRechnung exportieren"
+    - "Rechnung exportieren"
+    - "XRechnung geht nicht"
+    - "Export nicht möglich fehlende Preise"
+    - "Warum kann ich keine XRechnung erstellen"
+    - "Position ohne Preis Export"
+  antwort: |
+    XRechnung-Export und fehlende Preise:
+
+    Der XRechnung-Export wird BLOCKIERT, sobald mindestens eine Position
+    keinen Preis hat. "Kein Preis" heißt: weder ein Angebot im
+    Angebotsvergleich noch eine hinterlegte Kalkulation (Tiefenkalkulation
+    oder Pauschal-/NU-Träger). Das verhindert versehentliche Rechnungen
+    mit 0,00-€-Positionen.
+
+    Meldung "Export nicht möglich – fehlende Preise":
+    1. Im LV die betroffene Position öffnen
+    2. Entweder im Angebotsvergleich (⋯ → Angebotsvergleich) einen Preis
+       erfassen ODER die Position kalkulieren (⋯ → Kalkulation)
+    3. Export erneut starten
+
+    Unterschied zu GAEB X84: Der GAEB-Export warnt nur und lässt sich mit
+    "Trotzdem exportieren" fortsetzen (leere EP-Felder sind dort zulässig,
+    z.B. für eine Angebotsaufforderung). Die XRechnung dagegen blockt hart.
+
+    Der angesetzte Einzelpreis ist überall derselbe (eine Wahrheit):
+    günstigstes Angebot, sonst kalkulierter VK-Preis, sonst 0.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"

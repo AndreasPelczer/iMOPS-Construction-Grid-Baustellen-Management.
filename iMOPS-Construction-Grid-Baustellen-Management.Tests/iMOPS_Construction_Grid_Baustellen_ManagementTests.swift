@@ -115,4 +115,27 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
         #expect(netto > 0)
         #expect(abs(netto - 1549.21) < 0.001)
     }
+
+    /// DER wichtige Test fürs Geld: Eine Position OHNE Preisträger und OHNE
+    /// Angebot fällt deterministisch auf 0 — und genau dieses `== 0` ist das
+    /// "fehlt"-Signal, das die Export-Gates auswerten (XRechnung blockt hart,
+    /// GAEB/Kostenübersicht warnen). Bricht dieser Test, ist die stille
+    /// 0-€-Falle zurück: eine künftige Pauschale ohne Träger würde wieder
+    /// unbemerkt mit 0 € durchrutschen.
+    @Test @MainActor func positionOhnePreisFaelltAufNull() {
+        let event = Event(context: ctx)
+        event.title = "Schwarz Marktbreit"
+
+        let pos = LVPosition(context: ctx)
+        pos.posNr = "3.90.9"
+        pos.bezeichnung = "Pauschale OHNE Preisträger"
+        pos.kostenGruppeNummer = "390"
+        pos.einheit = "psch"
+        pos.menge = 1
+        pos.event = event
+        // bewusst: kein PositionMaterial / keine Kalkulation, kein Angebot
+
+        #expect(!pos.hatKalkulation)                       // nachweislich kein Träger
+        #expect(LVKalkulator.effektiverEP(for: pos) == 0)  // → fällt (laut prüfbar) auf 0
+    }
 }

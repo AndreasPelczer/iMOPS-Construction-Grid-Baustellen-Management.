@@ -255,13 +255,12 @@ struct LVView: View {
             }
             Button("Abbrechen", role: .cancel) { pendingExportFormat = nil }
         } message: {
-            Text("\(missingPricesCount) Position\(missingPricesCount == 1 ? " hat" : "en haben") noch keinen Preis im Angebotsvergleich. Der X84 wird mit leeren EP-Feldern exportiert.")
+            Text("\(missingPricesCount) Position\(missingPricesCount == 1 ? " hat" : "en haben") keinen Preis (weder Angebot noch Kalkulation). Der X84 wird für diese mit leeren EP-Feldern exportiert.")
         }
-        .alert("Fehlende Preise", isPresented: $showXRMissingAlert) {
-            Button("Trotzdem exportieren") { doXRechnungExport() }
-            Button("Abbrechen", role: .cancel) { }
+        .alert("Export nicht möglich – fehlende Preise", isPresented: $showXRMissingAlert) {
+            Button("Verstanden", role: .cancel) { }
         } message: {
-            Text("\(xrMissingCount) Position\(xrMissingCount == 1 ? " hat" : "en haben") noch keinen Preis im Angebotsvergleich. Die XRechnung wird mit EP = 0,00 € exportiert.")
+            Text("\(xrMissingCount) Position\(xrMissingCount == 1 ? " hat" : "en haben") keinen Preis (weder Angebot noch Kalkulation). Eine Rechnung mit 0,00-€-Positionen wird nicht exportiert – bitte erst Preis im Angebotsvergleich erfassen oder die Position kalkulieren.")
         }
     }
 
@@ -328,9 +327,10 @@ struct LVView: View {
 
     private func triggerGAEBExport(_ format: GAEBExportFormat) {
         if format.includePrices {
+            // "Fehlt" == das, was der Export tatsächlich als 0 verrechnet:
+            // weder Angebot noch Kalkulation (siehe LVKalkulator.effektiverEP).
             let missing = Array(positionen).filter { pos in
-                let id = pos.objectID.uriRepresentation().absoluteString
-                return store.guenstigster(for: id) == nil
+                LVKalkulator.effektiverEP(for: pos, store: store) == 0
             }.count
             if missing > 0 {
                 missingPricesCount  = missing
@@ -357,9 +357,10 @@ struct LVView: View {
 
     private func triggerXRechnungExport() {
         let nonAlt = Array(positionen).filter { !LVPositionHelper.isAlternative($0) }
+        // Hart blocken: eine Rechnung darf keine 0-€-Position enthalten.
+        // "Fehlt" == effektiverEP 0 (weder Angebot noch Kalkulation).
         let missing = nonAlt.filter { pos in
-            let id = pos.objectID.uriRepresentation().absoluteString
-            return store.guenstigster(for: id) == nil
+            LVKalkulator.effektiverEP(for: pos, store: store) == 0
         }.count
         if missing > 0 {
             xrMissingCount    = missing
