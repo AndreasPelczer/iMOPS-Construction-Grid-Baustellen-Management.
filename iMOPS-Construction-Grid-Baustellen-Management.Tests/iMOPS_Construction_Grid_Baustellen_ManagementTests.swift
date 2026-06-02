@@ -68,6 +68,18 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
         #expect(text.contains("Streifenfundament"))   // Datenzeile
     }
 
+    /// CSV-Preisspalten über denselben Resolver wie PDF/XRechnung.
+    /// Pauschalwert 13842,01 muss mit Dezimal-Komma in der GP/EP-Spalte stehen.
+    @Test @MainActor func lvCSVExportEnthaeltPreis() {
+        let pos  = makePauschalPosition(netto: 13842.01)
+        let data = LVCSVExporter.generate(event: pos.event!, positionen: [pos])
+        let text = String(decoding: data, as: UTF8.self)
+
+        #expect(text.contains("EP_netto_EUR"))   // neue Spaltenüberschrift
+        #expect(text.contains("13842,01"))       // Resolver-Preis, Dezimal-Komma
+        #expect(text.contains("Summe netto"))    // Summen-Block am Dateiende
+    }
+
     // MARK: - Pauschal-Preisträger (Regression: Kostenzusammenfassung/Export = 0,00 €)
 
     /// Baut eine Goldschmitt-Pauschalposition exakt wie der MarktbreitSeeder:
