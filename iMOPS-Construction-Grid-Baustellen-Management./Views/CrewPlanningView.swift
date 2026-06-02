@@ -214,7 +214,7 @@ struct AddEmployeeSheet: View {
     @State private var telefon: String = ""
     @State private var notiz: String = ""
 
-    private let rollenVorschlaege = ["Koch", "Beistand", "Azubi", "Servicekraft", "Küchenchef", "Spüle", "Logistik"]
+    private let rollenVorschlaege = ["Polier", "Vorarbeiter", "Maurer", "Stahlbetonbauer", "Eisenflechter", "Geräteführer", "Bauhelfer", "Azubi", "Logistik"]
 
     var body: some View {
         NavigationStack {
