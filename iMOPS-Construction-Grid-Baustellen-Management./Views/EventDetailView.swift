@@ -46,9 +46,7 @@ struct EventDetailView: View {
     @State private var showMangelErfassen  = false
     @State private var refreshID = UUID()
     @State private var showHelp = false
-    @State private var showLVPDFShare = false
     @State private var lvPDFURL: URL?
-    @State private var showLVCSVShare = false
     @State private var lvCSVURL: URL?
     @State private var showBautagesbericht = false
 
@@ -208,15 +206,11 @@ struct EventDetailView: View {
                 }
             )
         }
-        .sheet(isPresented: $showLVPDFShare) {
-            if let url = lvPDFURL {
-                LVShareSheet(url: url).ignoresSafeArea()
-            }
+        .sheet(item: $lvPDFURL) { url in
+            LVShareSheet(url: url).ignoresSafeArea()
         }
-        .sheet(isPresented: $showLVCSVShare) {
-            if let url = lvCSVURL {
-                LVShareSheet(url: url).ignoresSafeArea()
-            }
+        .sheet(item: $lvCSVURL) { url in
+            LVShareSheet(url: url).ignoresSafeArea()
         }
         .sheet(isPresented: $showBautagesbericht) {
             BautagesberichtView(event: event)
@@ -556,7 +550,6 @@ struct EventDetailView: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         if (try? data.write(to: url)) != nil {
             lvPDFURL = url
-            showLVPDFShare = true
         }
     }
 
@@ -569,7 +562,6 @@ struct EventDetailView: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         if (try? data.write(to: url)) != nil {
             lvCSVURL = url
-            showLVCSVShare = true
         }
     }
 

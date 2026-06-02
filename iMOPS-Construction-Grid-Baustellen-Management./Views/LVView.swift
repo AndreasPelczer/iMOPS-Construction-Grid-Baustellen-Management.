@@ -24,7 +24,6 @@ struct LVView: View {
     @State private var showGAEBImport        = false
     @State private var droppedGAEBURL: URL?
     @State private var showHelp              = false
-    @State private var showExportShare       = false
     @State private var exportURL: URL?
     // GAEB X84 – Warnung wenn Preise fehlen
     @State private var showMissingPricesAlert = false
@@ -244,10 +243,8 @@ struct LVView: View {
                 showGAEBImport = true
             }
         }
-        .sheet(isPresented: $showExportShare) {
-            if let url = exportURL {
-                LVShareSheet(url: url).ignoresSafeArea()
-            }
+        .sheet(item: $exportURL) { url in
+            LVShareSheet(url: url).ignoresSafeArea()
         }
         .sheet(isPresented: $showHelp) {
             LVHelpView()
@@ -386,7 +383,6 @@ struct LVView: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         if (try? data.write(to: url)) != nil {
             exportURL = url
-            showExportShare = true
         }
     }
 
