@@ -1,0 +1,21 @@
+#!/bin/sh
+# pre-push: blockt direkten Push auf 'main'. Andere Branches frei.
+# Notfall-Override: git push --no-verify
+#
+# Versioniert via core.hooksPath=.githooks (siehe .githooks/README.md).
+PROTECTED="main"
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+    case "$remote_ref" in
+        refs/heads/"$PROTECTED")
+            echo "" >&2
+            echo "  ✗ Direkter Push auf '$PROTECTED' blockiert." >&2
+            echo "    → erstmal Feature-Branch + PR machen." >&2
+            echo "    (bewusster Notfall: git push --no-verify)" >&2
+            echo "" >&2
+            exit 1
+            ;;
+    esac
+done
+
+exit 0
