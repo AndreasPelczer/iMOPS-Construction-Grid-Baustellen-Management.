@@ -1,0 +1,44 @@
+══════════════════════════════════════════════════════════════════════════
+  MATERIALANFRAGE / PREISANFRAGE — Mauerwerk
+══════════════════════════════════════════════════════════════════════════
+
+  An:        Baustoffhandel Scharpegge
+  Datum:     03.06.2026
+
+  Bauvorhaben:  Neubau EFH Town & Country Aura 125
+  Bauherrin:    Angelika Schwarz
+  Standort:     Neuenbergstraße 1, 97340 Marktbreit
+  Projekt-Nr.:  I-25_448-GO  ·  T&C 67774  ·  Baust.-Nr. 2026-011
+
+  Sehr geehrte Damen und Herren,
+  bitte unterbreiten Sie uns ein Angebot für folgendes Mauerwerk-Material:
+
+──────────────────────────────────────────────────────────────────────────
+     Artikel                            Fläche     Steine   Pal.     Mörtel
+──────────────────────────────────────────────────────────────────────────
+    Porenbeton Z-17.1-543 d=36,5 c    28.4 m²    191 Stk    8 Pal   108.0 kg
+    Porenbeton PP 2 d=24 cm           32.1 m²    216 Stk    6 Pal    80.3 kg
+    Porenbeton PP 4 d=24 cm            6.6 m²     45 Stk    2 Pal    16.5 kg
+  ≈ Porenbeton PP 2-0.35 d=24 cm      81.6 m²    547 Stk   14 Pal   204.1 kg
+    Porenbeton PP 4-0.50 d=17,5 cm    24.0 m²    161 Stk    3 Pal    43.2 kg
+──────────────────────────────────────────────────────────────────────────
+  SUMME                                         1160 Stk   33 Pal   452.1 kg
+──────────────────────────────────────────────────────────────────────────
+
+  Legende:  ≈ = Menge geschätzt (oberirdische Wände, Statik tabelliert
+            sie nicht); übrige Mengen exakt aus Statik-Wandlager-Modell.
+
+  Hinweise:
+   • Dünnbettmörtel passend zum jeweiligen Steintyp (PP / Zulassung Z-17.1-543).
+   • Lieferung auf Baustelle, Abladen mit Kran/Stapler bauseits klären.
+   • Bitte Bindefrist und Lieferzeit angeben. Ausführung nach VOB.
+
+  ⚠ HINWEIS (Entwurf): Stückzahlen/Paletten/Mörtel beruhen auf vorläufigen
+     Verbrauchs-Stammdaten und sind vor verbindlicher Bestellung zu prüfen.
+
+  Mit freundlichen Grüßen
+  G. Goldschmitt Bau GmbH / Bauleitung
+
+══════════════════════════════════════════════════════════════════════════
+  erzeugt automatisch aus Statik-PDF — iMOPS Welle-3-Pipeline (Prototyp)
+══════════════════════════════════════════════════════════════════════════
