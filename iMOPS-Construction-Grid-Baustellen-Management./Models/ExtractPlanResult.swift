@@ -29,11 +29,13 @@ struct ExtractMetadata: Codable {
 // Eine LV-Position aus dem Plan (passt 1:1 auf die CoreData-Entität LVPosition).
 struct ExtractLVPosition: Codable {
     let posNr: String
-    let kg: String            // DIN-276-Kostengruppe (-> kostenGruppeNummer)
     let bezeichnung: String
-    let einheit: String
-    let menge: Double
-    let quelle: String        // "statik_tabelle" | "b-plan" | "schaetzung" | …
+    // optional: Box liefert bei "manuell"-Positionen (Streifenfundament,
+    // Ringbalken) menge=null; restliche Felder defensiv ebenfalls optional.
+    let kg: String?           // DIN-276-Kostengruppe (-> kostenGruppeNummer)
+    let einheit: String?
+    let menge: Double?
+    let quelle: String?       // "statik_tabelle" | "b-plan" | "schaetzung" | …
 }
 
 // Eine Mauerwerks-Bestellzeile inkl. Mat-Nr aus dem abZ-Resolver.

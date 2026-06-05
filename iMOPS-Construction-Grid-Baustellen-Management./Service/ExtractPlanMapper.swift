@@ -33,7 +33,7 @@ enum ExtractPlanMapper {
             let pos = LVPosition(context: context)
             pos.posNr = p.posNr
             pos.bezeichnung = p.bezeichnung
-            pos.menge = p.menge
+            pos.menge = p.menge ?? 0               // "manuell"-Positionen: menge=null
             pos.einheit = p.einheit
             pos.kostenGruppeNummer = p.kg          // DIN 276
             pos.event = event
@@ -59,8 +59,8 @@ enum ExtractPlanMapper {
             return ParsedLVPosition(
                 posNr: p.posNr,
                 bezeichnung: p.bezeichnung,
-                menge: p.menge,
-                einheit: p.einheit,
+                menge: p.menge ?? 0,
+                einheit: p.einheit ?? "",
                 confidence: p.quelle == "schaetzung" ? 0.6 : 0.95,
                 kostenGruppe: p.kg,
                 artikelNummer: zeile?.matnr,

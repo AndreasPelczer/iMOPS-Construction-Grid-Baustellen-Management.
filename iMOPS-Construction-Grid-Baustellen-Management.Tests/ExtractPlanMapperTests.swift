@@ -94,4 +94,21 @@ struct ExtractPlanMapperTests {
         #expect(stuetze.kostenGruppe == "330")
         #expect(stuetze.artikelNummer == nil)
     }
+
+    @MainActor
+    @Test func mengeNullCrashtNicht() throws {
+        // "manuell"-Positionen (Streifenfundament, Ringbalken) liefern menge=null —
+        // darf NICHT zu einem Decode-Fehler führen (Regression aus dem Live-Demo).
+        let json = """
+        {"metadata": {}, "waende": [], "bewehrung": [],
+         "lv_positionen": [
+           {"posNr": "3.20.2", "kg": "320", "bezeichnung": "Streifenfundament", "einheit": "m", "menge": null, "quelle": "manuell"}
+         ],
+         "bestellliste": [], "etiketten": {"hart": [], "geschaetzt": []}}
+        """
+        let r = try JSONDecoder().decode(ExtractPlanResult.self, from: Data(json.utf8))
+        #expect(r.lvPositionen.first?.menge == nil)
+        #expect(ExtractPlanMapper.toParsed(r).first?.menge == 0)        // nil → 0
+        #expect(ExtractPlanMapper.mapPositions(r, into: ctx).first?.menge == 0)
+    }
 }
