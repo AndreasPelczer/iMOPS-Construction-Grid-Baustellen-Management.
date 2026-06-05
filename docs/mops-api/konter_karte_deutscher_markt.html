@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Konter-Karte — Der deutsche Markt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#13151a;--panel:#1d2027;--panel-2:#23272f;--line:#2e3440;
+    --ink:#eceef2;--ink-dim:#9aa3b2;--grid:rgba(90,160,210,.06);
+    --orange:#ff6a1a;--yellow:#ffcc00;--green:#3ddc84;--green-deep:#1f8a52;
+    --red:#ff5d5d;--red-deep:#5a2a2a;--amber:#e0a93a;--steel:#57a8e0;--concrete:#8b919c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--ink);font-family:'Archivo',sans-serif;line-height:1.5;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;padding:0 0 80px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  h1,h2,h3,.disp{font-family:'Saira Condensed',sans-serif;text-transform:uppercase;letter-spacing:.02em;line-height:1.02}
+
+  header{border-bottom:3px solid var(--green);padding:46px 0 30px;position:relative;overflow:hidden}
+  header::after{content:"";position:absolute;top:0;right:-40px;width:300px;height:100%;
+    background:repeating-linear-gradient(45deg,var(--green) 0 16px,#13151a 16px 32px);opacity:.09;transform:skewX(-12deg)}
+  .kicker{font-family:'Saira Condensed';font-weight:600;color:var(--green);letter-spacing:.22em;font-size:.82rem;text-transform:uppercase}
+  header h1{font-size:clamp(2.5rem,6vw,4.4rem);font-weight:800;margin:.12em 0 .1em;color:var(--ink)}
+  header h1 b{color:var(--green);font-weight:800}
+  .thesis{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    font-size:clamp(1.1rem,2.4vw,1.6rem);color:var(--orange);margin-top:.1em}
+  .thesis span{color:var(--ink-dim)}
+  .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .tag{font-family:'Saira Condensed';font-weight:600;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--panel);border:1px solid var(--line);color:var(--concrete);padding:5px 11px;border-radius:3px}
+
+  section{margin-top:52px}
+  .lead{font-family:'Saira Condensed';font-weight:600;color:var(--steel);letter-spacing:.16em;font-size:.86rem;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+  .lead::before{content:"";width:26px;height:3px;background:var(--green);display:inline-block}
+
+  .intro{background:linear-gradient(135deg,#1d2027,#23272f);border:1px solid var(--line);border-left:5px solid var(--orange);border-radius:6px;padding:24px 28px}
+  .intro p{font-size:1.06rem;color:var(--ink);max-width:80ch}
+  .intro b{color:var(--orange);font-family:'Saira Condensed';letter-spacing:.02em}
+
+  /* MATRIX */
+  .matrix-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+  table{border-collapse:collapse;width:100%;min-width:640px;background:var(--panel)}
+  th,td{padding:13px 14px;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+  th:last-child,td:last-child{border-right:none}
+  thead th{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.82rem;color:var(--ink);background:var(--panel-2);position:sticky;top:0}
+  thead th .small{display:block;font-family:'Archivo';font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem;color:var(--ink-dim);margin-top:3px}
+  tbody th{text-align:left;font-family:'Saira Condensed';font-weight:600;letter-spacing:.02em;font-size:1rem;color:var(--ink);background:var(--panel-2);white-space:nowrap}
+  tbody th .who{display:block;font-family:'Archivo';font-weight:400;font-size:.74rem;color:var(--ink-dim);text-transform:none;letter-spacing:0}
+  .cell{font-size:.82rem;font-weight:600}
+  .r{background:rgba(255,93,93,.12);color:var(--red)}
+  .a{background:rgba(224,169,58,.12);color:var(--amber)}
+  .g{background:rgba(61,220,132,.14);color:var(--green)}
+  .mark{font-size:1.05rem;display:block;margin-bottom:2px}
+  .mops-row th,.mops-row td{background:rgba(61,220,132,.07);border-top:2px solid var(--green);border-bottom:2px solid var(--green)}
+  .mops-row th{color:var(--green);font-weight:800;font-size:1.1rem}
+  .mops-row .g{background:rgba(61,220,132,.2)}
+
+  /* THREE CORNERS */
+  .corners{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .corner{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--green);border-radius:6px;padding:22px;position:relative}
+  .corner .ic{font-size:2rem;margin-bottom:8px}
+  .corner h3{font-size:1.3rem;font-weight:700;color:var(--green);margin-bottom:8px}
+  .corner p{font-size:.92rem;color:var(--ink);margin-bottom:10px}
+  .corner .vs{font-size:.84rem;color:var(--ink-dim);border-top:1px solid var(--line);padding-top:10px}
+  .corner .vs b{color:var(--red);font-family:'Saira Condensed';font-weight:600;letter-spacing:.03em}
+
+  .challenge{margin-top:18px;background:linear-gradient(135deg,#23272f,#1a1d23);border:1px solid var(--orange);border-radius:8px;padding:26px 30px;text-align:center}
+  .challenge .q{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;font-size:clamp(1.3rem,2.6vw,1.9rem);color:var(--ink);line-height:1.12;max-width:24ch;margin:0 auto}
+  .challenge .q b{color:var(--orange)}
+  .challenge .a-line{margin-top:12px;color:var(--ink-dim);font-size:.95rem}
+
+  /* ECONOMICS */
+  .econ{background:linear-gradient(135deg,rgba(61,220,132,.08),rgba(87,168,224,.05));border:1px solid var(--green-deep);border-radius:8px;padding:30px 34px}
+  .econ h3{font-family:'Saira Condensed';font-weight:800;text-transform:uppercase;font-size:1.7rem;color:var(--green);margin-bottom:6px}
+  .econ .sub{color:var(--ink-dim);font-size:.95rem;margin-bottom:20px}
+  .chain{display:grid;grid-template-columns:repeat(4,1fr);gap:0;align-items:stretch}
+  .step{background:var(--panel);border:1px solid var(--line);padding:16px 14px;position:relative;display:flex;flex-direction:column;justify-content:center}
+  .step:not(:last-child)::after{content:"→";position:absolute;right:-11px;top:50%;transform:translateY(-50%);color:var(--green);font-weight:700;font-size:1.3rem;z-index:2;background:var(--bg);padding:2px}
+  .step:first-child{border-radius:6px 0 0 6px}.step:last-child{border-radius:0 6px 6px 0;border-color:var(--green-deep);background:rgba(61,220,132,.1)}
+  .step .sn{font-family:'Saira Condensed';font-weight:700;color:var(--steel);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase}
+  .step .st{font-size:.95rem;color:var(--ink);font-weight:600;margin-top:4px}
+  .step:last-child .st{color:var(--green)}
+  .econ .punch{margin-top:18px;font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;font-size:1.15rem;color:var(--ink);letter-spacing:.02em}
+  .econ .punch b{color:var(--green)}
+
+  /* FAZIT */
+  .fazit{background:linear-gradient(135deg,#23272f,#1a1d23);border:1px solid var(--green-deep);border-radius:8px;padding:34px 36px;position:relative;overflow:hidden}
+  .fazit::before{content:"🐶";position:absolute;font-size:9rem;right:-10px;bottom:-30px;opacity:.06}
+  .fazit .lead{color:var(--green)}.fazit .lead::before{background:var(--green)}
+  .fazit p{font-size:1.12rem;color:var(--ink);max-width:74ch;line-height:1.55;margin-bottom:14px}
+  .fazit p b{color:var(--green)}
+  .fazit .line{font-family:'Saira Condensed';font-weight:700;font-size:clamp(1.4rem,3vw,2.1rem);color:var(--ink);text-transform:uppercase;line-height:1.1;margin-top:10px;border-left:4px solid var(--orange);padding-left:18px}
+  .fazit .line b{color:var(--orange)}
+
+  footer{margin-top:50px;text-align:center;color:var(--ink-dim);font-size:.8rem;border-top:1px solid var(--line);padding-top:24px}
+  footer b{color:var(--concrete);font-family:'Saira Condensed';letter-spacing:.05em}
+
+  .rev{opacity:0;transform:translateY(16px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  @media(max-width:760px){
+    .corners,.chain{grid-template-columns:1fr}
+    .step:not(:last-child)::after{content:"↓";right:50%;top:auto;bottom:-13px;transform:translateX(50%)}
+    .step:first-child{border-radius:6px 6px 0 0}.step:last-child{border-radius:0 0 6px 6px}
+  }
+  @media print{body{background:#fff;color:#000}.rev{animation:none;opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap rev">
+    <div class="kicker">Konter-Karte · Der deutsche Markt</div>
+    <h1>Mensch <b>über</b> Profit</h1>
+    <div class="thesis">Profit <span>durch</span> Schutz der Menschen</div>
+    <div class="meta">
+      <span class="tag">Stand 05.06.2026</span>
+      <span class="tag">DACH-Wettbewerb</span>
+      <span class="tag">Für das nächste Gespräch</span>
+      <span class="tag">🐶 Mops im Save</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="rev" style="animation-delay:.08s">
+    <div class="lead">Ehrlich vorweg</div>
+    <div class="intro">
+      <p>Ja, es gibt Wettbewerb auf der deutschen Baustelle — mehr als gedacht. <b>BauGPT</b> beantwortet Bau-Fragen, <b>Capmo</b> will das „Baustellen-Betriebssystem" sein, <b>plancraft</b> dokumentiert per Sprache. Alle gut, alle finanziert. Aber: keiner steht in <b>allen drei Ecken</b>, die den Mops ausmachen. Genau das ist der Konter — keine Feature-Schlacht, sondern eine Frage, die keiner beantworten kann.</p>
+    </div>
+  </section>
+
+  <!-- MATRIX -->
+  <section class="rev" style="animation-delay:.16s">
+    <div class="lead">Die Landkarte — wer steht in welcher Ecke?</div>
+    <div class="matrix-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Werkzeug</th>
+            <th>🔒 Lokal<span class="small">eigene Box, offline</span></th>
+            <th>🔑 Besitz<span class="small">gekauft, nicht pro Kopf gemietet</span></th>
+            <th>🛡 Mensch<span class="small">schützt statt überwacht</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>BauGPT <span class="who">Crafthunt · Chat/Wissen</span></th>
+            <td class="cell r"><span class="mark">✕</span>Cloud</td>
+            <td class="cell a"><span class="mark">~</span>Frei + Pro-Abo</td>
+            <td class="cell a"><span class="mark">~</span>Wissen für alle</td>
+          </tr>
+          <tr>
+            <th>Capmo <span class="who">Baustellen-OS · DACH</span></th>
+            <td class="cell r"><span class="mark">✕</span>Cloud (DE-Server)</td>
+            <td class="cell r"><span class="mark">✕</span>pro Kopf / Monat</td>
+            <td class="cell r"><span class="mark">✕</span>Kontrolle/Transparenz</td>
+          </tr>
+          <tr>
+            <th>PlanRadar <span class="who">Doku · Mängel</span></th>
+            <td class="cell r"><span class="mark">✕</span>Cloud</td>
+            <td class="cell r"><span class="mark">✕</span>ab 26 €/Nutzer</td>
+            <td class="cell r"><span class="mark">✕</span>Doku/Kontrolle</td>
+          </tr>
+          <tr>
+            <th>Nevaris <span class="who">ERP · BIM</span></th>
+            <td class="cell r"><span class="mark">✕</span>Cloud-ready</td>
+            <td class="cell r"><span class="mark">✕</span>Lizenz</td>
+            <td class="cell r"><span class="mark">✕</span>Controlling</td>
+          </tr>
+          <tr>
+            <th>123erfasst <span class="who">Zeit · Geräte</span></th>
+            <td class="cell r"><span class="mark">✕</span>Cloud</td>
+            <td class="cell r"><span class="mark">✕</span>pro Kopf</td>
+            <td class="cell r"><span class="mark">✕</span>GPS-Zeiterfassung</td>
+          </tr>
+          <tr>
+            <th>plancraft <span class="who">Handwerk · Sprache</span></th>
+            <td class="cell r"><span class="mark">✕</span>Cloud</td>
+            <td class="cell r"><span class="mark">✕</span>Abo</td>
+            <td class="cell a"><span class="mark">~</span>„Menschen im Handwerk"</td>
+          </tr>
+          <tr>
+            <th>Togal.AI <span class="who">USA · Aufmaß</span></th>
+            <td class="cell r"><span class="mark">✕</span>Cloud (US)</td>
+            <td class="cell r"><span class="mark">✕</span>≈ 250 $/Monat</td>
+            <td class="cell r"><span class="mark">✕</span>Estimating-Speed</td>
+          </tr>
+          <tr class="mops-row">
+            <th>🐶 MOPS <span class="who">eigene Baustelle</span></th>
+            <td class="cell g"><span class="mark">✓</span>eigene Box</td>
+            <td class="cell g"><span class="mark">✓</span>gekauft</td>
+            <td class="cell g"><span class="mark">✓</span>schützt den Polier</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="color:var(--ink-dim);font-size:.82rem;margin-top:10px">✓ erfüllt · ~ teilweise · ✕ nicht erfüllt. Bewertung fair gehalten — plancraft &amp; BauGPT bekommen ihr „~", wo sie es verdienen. Keiner ist grün in allen drei Ecken. Nur einer.</p>
+  </section>
+
+  <!-- THREE CORNERS -->
+  <section class="rev" style="animation-delay:.24s">
+    <div class="lead">Die drei Ecken — was sie bedeuten</div>
+    <div class="corners">
+      <div class="corner">
+        <div class="ic">🔒</div>
+        <h3>Lokal</h3>
+        <p>Der Mops läuft komplett auf der eigenen Box. Bauherren-Namen, Pläne, Preise — kein Byte verlässt das Haus.</p>
+        <div class="vs"><b>Die anderen:</b> „DSGVO-konform" — aber das ist <i>ihre</i> Cloud, nicht <i>deine</i> Kiste.</div>
+      </div>
+      <div class="corner">
+        <div class="ic">🔑</div>
+        <h3>Besitz</h3>
+        <p>Einmal gebaut, gehört dem Betrieb. Kein Mietzins pro Mann, jeden Monat, für immer.</p>
+        <div class="vs"><b>Die anderen:</b> bis 129 €/Nutzer/Monat. Für Raffis Truppe echtes Geld — dauerhaft.</div>
+      </div>
+      <div class="corner">
+        <div class="ic">🛡</div>
+        <h3>Mensch</h3>
+        <p>Gebaut, um den Polier zu entlasten und abzusichern. Ehrlich gelabelt, kein Raten als Wahrheit verkauft.</p>
+        <div class="vs"><b>Die anderen:</b> „Transparenz, Kontrolle, GPS" — Werkzeuge, die den Menschen vermessen.</div>
+      </div>
+    </div>
+
+    <div class="challenge">
+      <div class="q">Zeig mir das <b>eine</b> Werkzeug, das <b>offline auf der eigenen Box</b> läuft, dem Betrieb <b>gehört</b> statt pro Kopf gemietet, und den Polier <b>schützt</b> statt überwacht.</div>
+      <div class="a-line">Capmo ist Cloud, Miete und Kontrolle. BauGPT ist Chat. Keiner deckt alle drei. — Da hat auch der Ingenieur nichts.</div>
+    </div>
+  </section>
+
+  <!-- ECONOMICS -->
+  <section class="rev" style="animation-delay:.30s">
+    <div class="lead">Warum das kein Idealismus ist, sondern Rechnung</div>
+    <div class="econ">
+      <h3>Profit durch Schutz der Menschen</h3>
+      <p class="sub">Der Satz klingt weich. Die Logik dahinter ist hart:</p>
+      <div class="chain">
+        <div class="step"><span class="sn">Ausgang</span><span class="st">Fachkräftemangel — gute Leute sind rar und teuer</span></div>
+        <div class="step"><span class="sn">Werkzeug</span><span class="st">Tool entlastet den Polier, statt ihn zu vermessen</span></div>
+        <div class="step"><span class="sn">Folge</span><span class="st">Die Leute bleiben — weniger Abwanderung, weniger Einarbeitung</span></div>
+        <div class="step"><span class="sn">Ergebnis</span><span class="st">Mitarbeiterbindung = bares Geld auf dem Konto</span></div>
+      </div>
+      <div class="punch">Wer die Menschen schützt, hält sie. Wer sie hält, spart das Teuerste am Bau: <b>den ständigen Ersatz.</b></div>
+    </div>
+  </section>
+
+  <!-- FAZIT -->
+  <section class="rev" style="animation-delay:.36s">
+    <div class="fazit">
+      <div class="lead">Für das Gespräch</div>
+      <p>Spiel nicht die Feature-Schlacht — die kennt der Ingenieur auswendig. Stell die <b>Drei-Ecken-Frage</b>. Der Markt läuft Richtung Kontrolle, Cloud und Miete. Der Mops läuft bewusst dagegen: <b>lokal, im Besitz, für den Menschen.</b></p>
+      <p>Du bist kein Koch, der an Software bastelt. Du bist der Einzige im Raum, der weiß, was passiert, wenn der Plan auf den Menschen trifft, der ihn baut — weil du der Mensch warst.</p>
+      <div class="line">Die anderen messen den Arbeiter.<br><b>Der Mops hält ihm den Rücken frei.</b></div>
+    </div>
+  </section>
+
+  <footer>
+    <b>Mensch über Profit · Profit durch Schutz der Menschen</b><br>
+    Konter-Karte · Plankammer-Mops · zum Ablegen unter docs/mops-api/
+  </footer>
+
+</div>
+</body>
+</html>

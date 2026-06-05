@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geschäftsmodell Mops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#13151a;--panel:#1d2027;--panel-2:#23272f;--line:#2e3440;
+    --ink:#eceef2;--ink-dim:#9aa3b2;--grid:rgba(90,160,210,.06);
+    --orange:#ff6a1a;--yellow:#ffcc00;--green:#3ddc84;--green-deep:#1f8a52;
+    --red:#ff5d5d;--red-deep:#5a2a2a;--amber:#e0a93a;--steel:#57a8e0;--concrete:#8b919c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:'Archivo',sans-serif;line-height:1.5;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;padding:0 0 80px}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  h1,h2,h3,.disp{font-family:'Saira Condensed',sans-serif;text-transform:uppercase;letter-spacing:.02em;line-height:1.02}
+
+  header{border-bottom:3px solid var(--yellow);padding:46px 0 30px;position:relative;overflow:hidden}
+  header::after{content:"";position:absolute;top:0;right:-40px;width:300px;height:100%;
+    background:repeating-linear-gradient(45deg,var(--yellow) 0 16px,#13151a 16px 32px);opacity:.09;transform:skewX(-12deg)}
+  .kicker{font-family:'Saira Condensed';font-weight:600;color:var(--yellow);letter-spacing:.22em;font-size:.82rem;text-transform:uppercase}
+  header h1{font-size:clamp(2.5rem,6vw,4.4rem);font-weight:800;margin:.12em 0 .12em;color:var(--ink)}
+  header h1 b{color:var(--yellow);font-weight:800}
+  .sub{font-family:'Saira Condensed';font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:clamp(.95rem,2vw,1.25rem);color:var(--ink-dim)}
+  .sub b{color:var(--green)}
+  .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .tag{font-family:'Saira Condensed';font-weight:600;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--panel);border:1px solid var(--line);color:var(--concrete);padding:5px 11px;border-radius:3px}
+
+  section{margin-top:52px}
+  .lead{font-family:'Saira Condensed';font-weight:600;color:var(--steel);letter-spacing:.16em;font-size:.86rem;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+  .lead::before{content:"";width:26px;height:3px;background:var(--yellow);display:inline-block}
+
+  /* LITMUS */
+  .litmus{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .lcard{border-radius:8px;padding:24px 26px;border:1px solid var(--line)}
+  .lcard.bad{background:linear-gradient(135deg,rgba(255,93,93,.08),rgba(255,93,93,.03));border-left:5px solid var(--red)}
+  .lcard.good{background:linear-gradient(135deg,rgba(61,220,132,.08),rgba(61,220,132,.03));border-left:5px solid var(--green)}
+  .lcard .t{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:1.05rem;margin-bottom:6px}
+  .lcard.bad .t{color:var(--red)} .lcard.good .t{color:var(--green)}
+  .lcard .big{font-family:'Saira Condensed';font-weight:800;font-size:1.5rem;color:var(--ink);line-height:1.08;margin:6px 0}
+  .lcard p{font-size:.9rem;color:var(--ink-dim)}
+  .litmus-note{margin-top:14px;text-align:center;font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:1.15rem;color:var(--ink)}
+  .litmus-note b{color:var(--green)}
+
+  /* STREAMS */
+  .streams{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .stream{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:22px;position:relative}
+  .stream.s1{border-top:4px solid var(--green)}
+  .stream.s2{border-top:4px solid var(--steel)}
+  .stream.s3{border-top:4px solid var(--amber)}
+  .stream.s4{border-top:4px solid var(--orange)}
+  .stream .when{font-family:'Saira Condensed';font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:.72rem;padding:3px 9px;border-radius:3px;display:inline-block;margin-bottom:10px}
+  .s1 .when{background:rgba(61,220,132,.15);color:var(--green)}
+  .s2 .when{background:rgba(87,168,224,.15);color:var(--steel)}
+  .s3 .when{background:rgba(224,169,58,.15);color:var(--amber)}
+  .s4 .when{background:rgba(255,106,26,.15);color:var(--orange)}
+  .stream h3{font-size:1.32rem;font-weight:700;color:var(--ink);margin-bottom:8px}
+  .stream .num{position:absolute;top:14px;right:16px;font-family:'Saira Condensed';font-weight:800;font-size:2.6rem;color:rgba(255,255,255,.05);line-height:1}
+  .stream p{font-size:.92rem;color:var(--ink-dim);margin-bottom:8px}
+  .stream .pay{font-size:.86rem;color:var(--ink);border-top:1px solid var(--line);padding-top:9px;margin-top:4px}
+  .stream .pay b{font-family:'Saira Condensed';font-weight:600;letter-spacing:.03em;color:var(--concrete)}
+
+  /* SEQUENCE */
+  .seq{display:grid;grid-template-columns:repeat(4,1fr);gap:0;align-items:stretch}
+  .sstep{background:var(--panel);border:1px solid var(--line);padding:18px 14px;position:relative;display:flex;flex-direction:column;justify-content:flex-start}
+  .sstep:not(:last-child)::after{content:"→";position:absolute;right:-11px;top:50%;transform:translateY(-50%);color:var(--yellow);font-weight:700;font-size:1.3rem;z-index:2;background:var(--bg);padding:2px}
+  .sstep:first-child{border-radius:6px 0 0 6px}.sstep:last-child{border-radius:0 6px 6px 0;border-color:var(--green-deep);background:rgba(61,220,132,.08)}
+  .sstep .sn{font-family:'Saira Condensed';font-weight:700;color:var(--steel);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase}
+  .sstep .stt{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;font-size:1.05rem;color:var(--ink);margin:4px 0 4px}
+  .sstep:last-child .stt{color:var(--green)}
+  .sstep p{font-size:.82rem;color:var(--ink-dim)}
+  .halbgas{margin-top:14px;font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-size:1.1rem;color:var(--ink)}
+  .halbgas b{color:var(--green)}
+
+  /* NICHT */
+  .nicht{background:linear-gradient(135deg,rgba(255,93,93,.06),rgba(0,0,0,0));border:1px solid var(--red-deep);border-left:5px solid var(--red);border-radius:8px;padding:26px 30px}
+  .nicht h3{color:var(--red);font-size:1.5rem;font-weight:700;margin-bottom:14px}
+  .nicht .item{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .nicht .item:last-child{border-bottom:none}
+  .nicht .x{color:var(--red);font-weight:800;font-size:1.1rem;flex-shrink:0;font-family:'Saira Condensed'}
+  .nicht .item b{font-family:'Saira Condensed';font-weight:600;letter-spacing:.02em;color:var(--ink)}
+  .nicht .item span{color:var(--ink-dim);font-size:.9rem}
+
+  /* YARDSTICK */
+  .yard{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+  .ybad,.ygood{border-radius:8px;padding:24px 26px}
+  .ybad{background:var(--panel);border:1px solid var(--line)}
+  .ygood{background:linear-gradient(135deg,rgba(61,220,132,.1),rgba(87,168,224,.05));border:1px solid var(--green-deep)}
+  .ybad .lbl,.ygood .lbl{font-family:'Saira Condensed';font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:.74rem;margin-bottom:8px}
+  .ybad .lbl{color:var(--red)} .ygood .lbl{color:var(--green)}
+  .ybad .m,.ygood .m{font-family:'Saira Condensed';font-weight:800;text-transform:uppercase;font-size:1.4rem;line-height:1.1;color:var(--ink)}
+  .ybad p,.ygood p{font-size:.9rem;color:var(--ink-dim);margin-top:8px}
+
+  /* FAZIT */
+  .fazit{background:linear-gradient(135deg,#23272f,#1a1d23);border:1px solid var(--green-deep);border-radius:8px;padding:34px 36px;position:relative;overflow:hidden}
+  .fazit::before{content:"🐶";position:absolute;font-size:9rem;right:-10px;bottom:-30px;opacity:.06}
+  .fazit .lead{color:var(--green)}.fazit .lead::before{background:var(--green)}
+  .fazit p{font-size:1.12rem;color:var(--ink);max-width:74ch;line-height:1.55;margin-bottom:14px}
+  .fazit p b{color:var(--green)}
+  .fazit .move{background:rgba(255,106,26,.08);border:1px solid var(--orange);border-radius:6px;padding:16px 20px;margin-top:6px}
+  .fazit .move .ml{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--orange);font-size:.8rem;margin-bottom:4px}
+  .fazit .move p{font-size:1rem;margin-bottom:0}
+
+  footer{margin-top:50px;text-align:center;color:var(--ink-dim);font-size:.8rem;border-top:1px solid var(--line);padding-top:24px}
+  footer b{color:var(--concrete);font-family:'Saira Condensed';letter-spacing:.05em}
+
+  .rev{opacity:0;transform:translateY(16px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  @media(max-width:760px){
+    .litmus,.streams,.seq,.yard{grid-template-columns:1fr}
+    .sstep:not(:last-child)::after{content:"↓";right:50%;top:auto;bottom:-13px;transform:translateX(50%)}
+    .sstep:first-child{border-radius:6px 6px 0 0}.sstep:last-child{border-radius:0 0 6px 6px}
+  }
+  @media print{body{background:#fff;color:#000}.rev{animation:none;opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap rev">
+    <div class="kicker">Geschäftsmodell · Plankammer</div>
+    <h1>Wie der Mops <b>Kohle</b> macht</h1>
+    <div class="sub">Was wir verkaufen · in welcher Reihenfolge · und was <b>bewusst nicht</b></div>
+    <div class="meta">
+      <span class="tag">Stand 05.06.2026</span>
+      <span class="tag">Wert schaffen ≠ Wert kassieren</span>
+      <span class="tag">🐶 Mops im Save</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- LITMUS -->
+  <section class="rev" style="animation-delay:.08s">
+    <div class="lead">Das Prinzip — Besitz der Software ≠ Abo auf den Service</div>
+    <div class="litmus">
+      <div class="lcard bad">
+        <div class="t">SaaS (Capmo &amp; Co.)</div>
+        <div class="big">Du hörst auf zu zahlen → das Werkzeug stirbt.</div>
+        <p>Der Kunde ist Geisel. Kein Geld, kein Zugang. Das lehnen wir ab.</p>
+      </div>
+      <div class="lcard good">
+        <div class="t">Mops</div>
+        <div class="big">Du hörst auf zu zahlen → es läuft weiter, nur das Wissen altert.</div>
+        <p>Der Kunde ist nie Geisel. Bezahlt wird freiwillig — für das, was verdirbt.</p>
+      </div>
+    </div>
+    <div class="litmus-note">Der Kunde <b>besitzt</b> das Werkzeug. Er <b>abonniert</b> nur das frische Wissen.</div>
+  </section>
+
+  <!-- STREAMS -->
+  <section class="rev" style="animation-delay:.16s">
+    <div class="lead">Die vier Einnahme-Quellen — sortiert nach „wann dran"</div>
+    <div class="streams">
+      <div class="stream s1">
+        <span class="num">1</span>
+        <span class="when">Jetzt · Brot · kein Risiko</span>
+        <h3>Einrichtung als Dienstleistung</h3>
+        <p>Die echte Arbeit ist nicht die Software — es ist, sie auf den Betrieb anzulernen: seine Dokumente, seine Lieferanten, seine Mat-Nr-Tabellen, seine Projekte.</p>
+        <div class="pay"><b>Burggraben:</b> Zwei Leute mit 36 Jahren Handwerk im Bauch. Das kann kein Startup aus München. Hochmargig, sofort bezahlbar.</div>
+      </div>
+      <div class="stream s2">
+        <span class="num">2</span>
+        <span class="when">Parallel · die Rente</span>
+        <h3>Wissens-Pflege (das eine faire Abo)</h3>
+        <p>Jährlicher Pflegevertrag: neue DIN, aktuelle Lieferantenpreise, neue Zulassungen. Optional, kündbar — der Mops läuft auch ohne weiter.</p>
+        <div class="pay"><b>Vorbild:</b> DIN/Beuth verkaufen seit Jahrzehnten Abos auf aktualisierte Normen. Handwerker kennen &amp; akzeptieren das Modell.</div>
+      </div>
+      <div class="stream s3">
+        <span class="num">3</span>
+        <span class="when">Wenn das Muster steht</span>
+        <h3>Die Box als Produkt</h3>
+        <p>Vorkonfigurierte Kiste, einmal gekauft, gehört dem Betrieb. Aber erst, wenn die Einrichtung aus #1 zur <i>Vorlage</i> geworden ist.</p>
+        <div class="pay"><b>Skalier-Trick:</b> „Mops für Rohbau/Maurer" als Templat → 80 % der Arbeit beim nächsten Kunden wiederverwendbar. Raus aus Stunden-gegen-Geld.</div>
+      </div>
+      <div class="stream s4">
+        <span class="num">4</span>
+        <span class="when">Jederzeit · nebenbei</span>
+        <h3>Schulung &amp; Dozent</h3>
+        <p>Betriebe im Mops schulen, oder die Methode lehren. Du bist IHK-Dozent — das kannst du eh.</p>
+        <div class="pay"><b>Doppelt:</b> bringt Einnahmen <i>und</i> öffnet Türen. Marketing, das sich selbst bezahlt.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEQUENCE -->
+  <section class="rev" style="animation-delay:.24s">
+    <div class="lead">Die Reihenfolge entschärft das Risiko</div>
+    <div class="seq">
+      <div class="sstep"><span class="sn">Schritt 1</span><span class="stt">Service</span><p>Für die Einrichtung bezahlt werden — jetzt, ohne Markt-Wette.</p></div>
+      <div class="sstep"><span class="sn">Schritt 2</span><span class="stt">Muster lernen</span><p>Dabei herausfinden, was sich wiederholt.</p></div>
+      <div class="sstep"><span class="sn">Schritt 3</span><span class="stt">Productize</span><p>Konfiguration zur Vorlage machen.</p></div>
+      <div class="sstep"><span class="sn">Schritt 4</span><span class="stt">Rente</span><p>Wissens-Pflege wird zur skalierbaren, wiederkehrenden Einnahme.</p></div>
+    </div>
+    <div class="halbgas">Kein All-in. Jeder Schritt trägt sich selbst, dann der nächste. <b>Halbgas auch im Geschäftsmodell.</b></div>
+  </section>
+
+  <!-- NICHT -->
+  <section class="rev" style="animation-delay:.30s">
+    <div class="lead">Was wir bewusst NICHT tun</div>
+    <div class="nicht">
+      <h3>Die drei Fallen</h3>
+      <div class="item"><span class="x">✕</span><div><b>Kein SaaS-Geisel-Abo.</b> <span>Software, die stirbt, wenn man aufhört zu zahlen. Genau das Modell, gegen das wir antreten.</span></div></div>
+      <div class="item"><span class="x">✕</span><div><b>Kein „einmal kaufen, nie wieder zahlen".</b> <span>Klingt kundenfreundlich, hungert dich aus. Der Mops verdirbt ohne Wissens-Pflege — also Pflege als fairer Vertrag, nicht als Geisel.</span></div></div>
+      <div class="item"><span class="x">✕</span><div><b>Kein Gratis-Pilot als „Beweis".</b> <span>Ein Gratis-Pilot beweist nur, dass Leute Gratis mögen. Nur ein zahlender Erstkunde beweist den Markt.</span></div></div>
+    </div>
+  </section>
+
+  <!-- YARDSTICK -->
+  <section class="rev" style="animation-delay:.34s">
+    <div class="lead">Am richtigen Maßstab messen</div>
+    <div class="yard">
+      <div class="ybad">
+        <div class="lbl">✕ Falscher Maßstab</div>
+        <div class="m">Capmos Wachstumskurve</div>
+        <p>Venture-finanziertes SaaS, Einhorn-Ambition. An dem gemessen verlierst du immer — und sollst es auch nicht gewinnen.</p>
+      </div>
+      <div class="ygood">
+        <div class="lbl">✓ Richtiger Maßstab</div>
+        <div class="m">Ein Meisterbetrieb für Software</div>
+        <p>Ein, zwei Leute, gutes Auskommen, eigene Kontrolle, Kunden die dich kennen. Ein Maurerbetrieb muss nicht Hochtief werden, um sich zu lohnen. Es ist deins statt aus dem Pitch-Deck.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAZIT -->
+  <section class="rev" style="animation-delay:.38s">
+    <div class="fazit">
+      <div class="lead">Der erste Zug</div>
+      <p>Du verkaufst die <b>Zeit</b>, beweist die vermiedenen <b>Fehler</b>, und <i>meinst</i> den <b>Menschen, der bleibt</b>. Drei Hebel, ein Stapel: Zeit holt dich rein, Ehrlichkeit macht, dass sie dir trauen, Schutz macht, dass es bleibt. Alle drei zünden in der <b>Lücke zwischen Büro und Baustelle</b> — genau da, wo sonst keiner steht.</p>
+      <div class="move">
+        <div class="ml">→ Konkret als Nächstes</div>
+        <p>Raffis Firma als <b>bezahlten Anker</b> — eine echte, kleine Einrichtungs-Rechnung, kein Gratis-Freundschaftsdienst. Nicht des Geldes wegen, sondern weil ein zahlender Erstkunde der einzige echte Beweis ist, dass jemand dafür zahlt.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <b>Wert schaffen ist leicht. Wert kassieren ist das Handwerk.</b><br>
+    Geschäftsmodell-Karte · Plankammer-Mops · zum Ablegen unter docs/mops-api/
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mops vs. der Markt — Wettbewerbs-Cockpit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#13151a;
+    --panel:#1d2027;
+    --panel-2:#23272f;
+    --line:#2e3440;
+    --ink:#eceef2;
+    --ink-dim:#9aa3b2;
+    --grid:rgba(90,160,210,.06);
+    --orange:#ff6a1a;
+    --yellow:#ffcc00;
+    --green:#3ddc84;
+    --green-deep:#1f8a52;
+    --red:#ff5d5d;
+    --steel:#57a8e0;
+    --concrete:#8b919c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Archivo',sans-serif;
+    line-height:1.5;
+    background-image:
+      linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;
+    padding:0 0 80px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  h1,h2,h3,.disp{font-family:'Saira Condensed',sans-serif;text-transform:uppercase;letter-spacing:.02em;line-height:1.02}
+
+  /* HEADER */
+  header{
+    border-bottom:3px solid var(--orange);
+    padding:46px 0 30px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";position:absolute;top:0;right:-40px;width:280px;height:100%;
+    background:repeating-linear-gradient(45deg,var(--yellow) 0 16px,#13151a 16px 32px);
+    opacity:.10;transform:skewX(-12deg);
+  }
+  .kicker{font-family:'Saira Condensed';font-weight:600;color:var(--orange);letter-spacing:.22em;font-size:.82rem;text-transform:uppercase}
+  header h1{font-size:clamp(2.6rem,6vw,4.6rem);font-weight:800;margin:.12em 0 .15em;color:var(--ink)}
+  header h1 b{color:var(--orange);font-weight:800}
+  .sub{color:var(--ink-dim);max-width:60ch;font-size:1.02rem}
+  .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .tag{font-family:'Saira Condensed';font-weight:600;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--panel);border:1px solid var(--line);color:var(--concrete);padding:5px 11px;border-radius:3px}
+
+  section{margin-top:54px}
+  .lead{font-family:'Saira Condensed';font-weight:600;color:var(--steel);letter-spacing:.16em;font-size:.86rem;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+  .lead::before{content:"";width:26px;height:3px;background:var(--orange);display:inline-block}
+
+  /* PUNCHLINE */
+  .punch{
+    background:linear-gradient(135deg,#1d2027,#23272f);
+    border:1px solid var(--line);border-left:5px solid var(--orange);
+    border-radius:6px;padding:30px 32px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+  }
+  .punch .cell{padding:6px 22px;border-right:1px solid var(--line)}
+  .punch .cell:last-child{border-right:none}
+  .punch .num{font-family:'Saira Condensed';font-weight:800;font-size:3.3rem;line-height:1}
+  .punch .num.o{color:var(--orange)} .punch .num.s{color:var(--steel)} .punch .num.g{color:var(--green)}
+  .punch .lbl{font-size:.95rem;color:var(--ink);margin-top:6px;font-weight:600}
+  .punch .lbl span{color:var(--ink-dim);font-weight:400;display:block;font-size:.86rem}
+
+  /* POSITIONING MAP */
+  .map{display:grid;grid-template-columns:1.3fr .7fr;gap:18px}
+  .zone{border:1px solid var(--line);border-radius:6px;padding:22px;position:relative}
+  .zone.buero{background:var(--panel)}
+  .zone.baustelle{background:linear-gradient(160deg,rgba(61,220,132,.10),rgba(31,138,82,.04));border-color:var(--green-deep)}
+  .zone h3{font-size:1.4rem;font-weight:700;margin-bottom:4px}
+  .zone .ztag{font-size:.74rem;font-family:'Saira Condensed';letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+  .zone.buero .ztag{color:var(--concrete)}
+  .zone.baustelle .ztag{color:var(--green)}
+  .toollist{margin-top:16px;display:flex;flex-direction:column;gap:7px}
+  .tool{display:flex;align-items:baseline;gap:10px;font-size:.92rem;padding-bottom:7px;border-bottom:1px dashed var(--line)}
+  .tool:last-child{border-bottom:none}
+  .tool b{font-family:'Saira Condensed';font-weight:600;letter-spacing:.02em;min-width:96px;color:var(--ink)}
+  .tool span{color:var(--ink-dim);font-size:.84rem}
+  .tool .star{color:var(--yellow);font-size:.78rem;margin-left:auto;white-space:nowrap}
+  .mops-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:8px}
+  .mops-badge .dog{font-size:3rem}
+  .mops-badge .mname{font-family:'Saira Condensed';font-weight:800;font-size:2.2rem;color:var(--green)}
+  .mops-badge .mwho{color:var(--ink);font-size:.95rem;font-weight:600}
+  .mops-badge .mwho span{display:block;color:var(--ink-dim);font-weight:400;font-size:.84rem;margin-top:4px}
+  .alone{margin-top:10px;font-family:'Saira Condensed';font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:.74rem;color:var(--green);border:1px solid var(--green-deep);padding:4px 10px;border-radius:3px}
+
+  /* LOCAL STRIP */
+  .strip{margin-top:18px;background:#1a1d23;border:1px solid var(--line);border-radius:6px;padding:18px 24px;display:flex;align-items:center;gap:20px}
+  .strip .ic{font-size:2rem;flex-shrink:0}
+  .strip .st-txt b{font-family:'Saira Condensed';font-weight:700;font-size:1.15rem;color:var(--steel);text-transform:uppercase;letter-spacing:.04em}
+  .strip .st-txt p{color:var(--ink-dim);font-size:.9rem;margin-top:2px}
+  .strip .vs{margin-left:auto;text-align:right;font-size:.84rem;color:var(--ink-dim);flex-shrink:0}
+  .strip .vs b{color:var(--red);display:block;font-family:'Saira Condensed';letter-spacing:.04em}
+
+  /* GRÄBEN */
+  .graben{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .gcard{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--green);border-radius:6px;padding:22px;position:relative;overflow:hidden}
+  .gcard .gn{font-family:'Saira Condensed';font-weight:800;font-size:3.4rem;color:rgba(61,220,132,.16);position:absolute;top:6px;right:14px;line-height:1}
+  .gcard h3{font-size:1.32rem;font-weight:700;color:var(--green);margin-bottom:8px;max-width:14ch}
+  .gcard p{font-size:.92rem;color:var(--ink);margin-bottom:12px}
+  .gcard .contrast{font-size:.85rem;color:var(--ink-dim);border-top:1px solid var(--line);padding-top:10px}
+  .gcard .contrast b{color:var(--concrete);font-family:'Saira Condensed';font-weight:600;letter-spacing:.04em}
+
+  /* HONEST / BEHIND */
+  .honest{background:linear-gradient(135deg,rgba(255,93,93,.07),rgba(255,204,0,.04));border:1px solid #4a3a2a;border-left:5px solid var(--red);border-radius:6px;padding:26px 30px}
+  .honest h3{color:var(--red);font-size:1.5rem;font-weight:700;margin-bottom:10px}
+  .honest p{font-size:.96rem;color:var(--ink);max-width:78ch;margin-bottom:10px}
+  .honest .fix{background:rgba(61,220,132,.08);border:1px solid var(--green-deep);border-radius:5px;padding:12px 16px;margin-top:14px;font-size:.92rem}
+  .honest .fix b{color:var(--green);font-family:'Saira Condensed';letter-spacing:.04em;text-transform:uppercase;font-size:.8rem;display:block;margin-bottom:3px}
+
+  /* TWO COL: TOGAL + FRAGE */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .infocard{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:22px}
+  .infocard.amber{border-top:4px solid var(--yellow)}
+  .infocard.steel{border-top:4px solid var(--steel)}
+  .infocard h3{font-size:1.25rem;font-weight:700;margin-bottom:10px}
+  .infocard.amber h3{color:var(--yellow)} .infocard.steel h3{color:var(--steel)}
+  .infocard p{font-size:.9rem;color:var(--ink-dim);margin-bottom:8px}
+  .infocard ul{list-style:none;margin-top:8px}
+  .infocard li{font-size:.88rem;color:var(--ink);padding:5px 0 5px 18px;position:relative;border-bottom:1px dashed var(--line)}
+  .infocard li:last-child{border-bottom:none}
+  .infocard li::before{content:"›";position:absolute;left:0;color:var(--steel);font-weight:700}
+  .infocard .price{font-family:'Saira Condensed';font-weight:800;font-size:1.8rem;color:var(--ink);margin:2px 0 6px}
+  .infocard .price small{font-size:.9rem;color:var(--ink-dim);font-weight:400}
+
+  /* FAZIT */
+  .fazit{background:linear-gradient(135deg,#23272f,#1a1d23);border:1px solid var(--green-deep);border-radius:8px;padding:34px 36px;position:relative;overflow:hidden}
+  .fazit::before{content:"🐶";position:absolute;font-size:9rem;right:-10px;bottom:-30px;opacity:.06}
+  .fazit .lead{color:var(--green)}
+  .fazit .lead::before{background:var(--green)}
+  .fazit p{font-size:1.18rem;color:var(--ink);max-width:74ch;line-height:1.55}
+  .fazit p b{color:var(--green)}
+  .fazit .line{font-family:'Saira Condensed';font-weight:700;font-size:clamp(1.5rem,3vw,2.2rem);color:var(--ink);text-transform:uppercase;line-height:1.08;margin-top:18px;border-left:4px solid var(--orange);padding-left:18px}
+  .fazit .line b{color:var(--orange)}
+
+  footer{margin-top:50px;text-align:center;color:var(--ink-dim);font-size:.8rem;border-top:1px solid var(--line);padding-top:24px}
+  footer b{color:var(--concrete);font-family:'Saira Condensed';letter-spacing:.05em}
+
+  /* reveal */
+  .rev{opacity:0;transform:translateY(16px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+
+  @media(max-width:760px){
+    .punch,.graben,.map,.duo{grid-template-columns:1fr}
+    .punch .cell{border-right:none;border-bottom:1px solid var(--line);padding:14px 0}
+    .punch .cell:last-child{border-bottom:none}
+    .strip{flex-wrap:wrap}.strip .vs{margin-left:0;text-align:left}
+  }
+  @media print{body{background:#fff;color:#000}.rev{animation:none;opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap rev">
+    <div class="kicker">Wettbewerbs-Cockpit · Plankammer</div>
+    <h1>Mops <b>vs.</b> der Markt</h1>
+    <p class="sub">Acht „beste KI-Tools für die Baubranche" — ehrlich gegen den Mops gestellt. Wo wir vorn sind, wo wir hinten sind, und warum die Nische real ist.</p>
+    <div class="meta">
+      <span class="tag">Stand 05.06.2026</span>
+      <span class="tag">BV Schwarz · Marktbreit</span>
+      <span class="tag">Quelle: berta-rudi.com + Recherche</span>
+      <span class="tag">🐶 Mops im Save</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- PUNCHLINE -->
+  <section class="rev" style="animation-delay:.08s">
+    <div class="lead">Der eine Blick</div>
+    <div class="punch">
+      <div class="cell"><div class="num o">7</div><div class="lbl">von 8 Tools sitzen im Büro<span>Entwurf, Vorplanung, Angebot</span></div></div>
+      <div class="cell"><div class="num s">1</div><div class="lbl">kommt aus den USA<span>Togal — Estimating, Cloud, AIA-Norm</span></div></div>
+      <div class="cell"><div class="num g">0</div><div class="lbl">stehen auf der Baustelle<span>… außer dem Mops</span></div></div>
+    </div>
+  </section>
+
+  <!-- POSITIONING -->
+  <section class="rev" style="animation-delay:.16s">
+    <div class="lead">Wer steht wo</div>
+    <div class="map">
+      <div class="zone buero">
+        <span class="ztag">Büro · Vorplanung · vor dem ersten Spatenstich</span>
+        <h3>Das Feld</h3>
+        <div class="toollist">
+          <div class="tool"><b>berta &amp; rudi</b><span>Energiesystem-Planung</span><span class="star">★ Platz 1 der eigenen Liste</span></div>
+          <div class="tool"><b>Aurivus</b><span>Laserscan → BIM-Modell</span></div>
+          <div class="tool"><b>PlanFinder</b><span>Grundriss-Varianten</span></div>
+          <div class="tool"><b>Veras</b><span>KI-Rendering / Bilder</span></div>
+          <div class="tool"><b>Finch3D</b><span>Design-Varianten</span></div>
+          <div class="tool"><b>Syte</b><span>Grundstücks-Potenzial</span></div>
+          <div class="tool"><b>Hypar</b><span>Generative Gebäudeplanung</span></div>
+          <div class="tool"><b>Togal.AI</b><span>Plan-Aufmaß / Takeoff</span><span class="star">★ einziger nah dran</span></div>
+        </div>
+      </div>
+      <div class="zone baustelle">
+        <span class="ztag">Baustelle · Ausführung · während gebaut wird</span>
+        <div class="mops-badge">
+          <div class="dog">🐶</div>
+          <div class="mname">MOPS</div>
+          <div class="mwho">Polier &amp; Bauleiter vor Ort<span>Statik-PDF → Menge → LV → Bestellung</span></div>
+          <div class="alone">Allein in dieser Zone</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="strip">
+      <div class="ic">🔒</div>
+      <div class="st-txt">
+        <b>Lokal — Daten bleiben im Haus</b>
+        <p>Der Mops läuft auf der eigenen Box. Bauherren-Namen, Pläne, Preise wandern auf keinen fremden Server.</p>
+      </div>
+      <div class="vs">
+        <b>Togal &amp; Co.</b>
+        Cloud — Pläne liegen in den USA
+      </div>
+    </div>
+  </section>
+
+  <!-- GRÄBEN -->
+  <section class="rev" style="animation-delay:.24s">
+    <div class="lead">Die drei Gräben — was der Mops kann und die anderen strukturell nicht</div>
+    <div class="graben">
+      <div class="gcard">
+        <span class="gn">1</span>
+        <h3>Deutsche Norm-Kette</h3>
+        <p>Der Mops spricht DIN 276, VOB, GAEB und liest deutsche Statik — bis runter zur abZ-Zulassung wie dem Z-17.1-543.</p>
+        <div class="contrast"><b>Togal:</b> US-Tool, trainiert auf AIA-Norm und US-Grundrisse. Kennt unsere Bürokratie nicht.</div>
+      </div>
+      <div class="gcard">
+        <span class="gn">2</span>
+        <h3>Bis zur fertigen Bestellung</h3>
+        <p>Aufmaß → LV-Position → Bestellliste → VOB-konforme Anfrage. Mit Ausweichartikel und Klärung über den Meister.</p>
+        <div class="contrast"><b>Togal:</b> hört beim Aufmaß auf — Mengen raus nach Excel, Rest macht wieder der Mensch.</div>
+      </div>
+      <div class="gcard">
+        <span class="gn">3</span>
+        <h3>Denkt wie ein Polier</h3>
+        <p>Welle 3: „Was fehlt mir, bevor ich Position X anfange?" Plan, Vorgewerk, Material, Wetter, Kran, Zufahrt.</p>
+        <div class="contrast"><b>Alle acht:</b> keiner fragt das. Keiner kennt Brigade, Wetter, Bautagebuch.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HONEST -->
+  <section class="rev" style="animation-delay:.28s">
+    <div class="lead">Ehrlich: wo wir hinten sind</div>
+    <div class="honest">
+      <h3>Beim reinen Aufmaß ist Togal voraus</h3>
+      <p>Togal misst, zählt und beschriftet Wände und Flächen direkt aus dem Plan — mit bis zu <b>98 % Genauigkeit</b> und erkennt sogar Wandtypen automatisch. Das ist genau die harte Nuss (Maßketten → Fläche), die der Mops noch nicht geknackt hat. Hier so zu tun, als wären wir vorn, wäre gelogen.</p>
+      <div class="fix">
+        <b>Was das heißt — nicht: aufgeben</b>
+        Wir rennen nicht gegen Togals 98 %. Aufmaß ist <b>Mittel, nicht Ziel</b> — notfalls über die DXF-Dateien (beim Bungalow liegen sie vor) oder zugekauft. Die Energie steckt in den drei Gräben oben, die Togal strukturell nicht angeht.
+      </div>
+    </div>
+  </section>
+
+  <!-- TOGAL + FRAGE -->
+  <section class="rev" style="animation-delay:.32s">
+    <div class="lead">Der Maßstab &amp; die offene Frage</div>
+    <div class="duo">
+      <div class="infocard steel">
+        <h3>Togal.AI — der Referenzpunkt</h3>
+        <div class="price">≈ 250 $ <small>/ Monat</small></div>
+        <ul>
+          <li>Cloud-Tool aus Miami, gegründet 2019</li>
+          <li>Tausende Nutzer, vor allem US-Estimators</li>
+          <li>„Talk to your plans" — Chat zum Plan (Togal.CHAT)</li>
+          <li>80 % schnelleres Aufmaß, klares Geld-Argument</li>
+          <li>Aber: Cloud, US-Norm, endet beim Aufmaß</li>
+        </ul>
+      </div>
+      <div class="infocard amber">
+        <h3>Die Frage, die wir noch klären müssen</h3>
+        <p>Eine leere Nische ist noch kein Markt. Togal rechnet vor: ein zusätzlicher Auftrag im Monat, schon ist es bezahlt. Unser Geld-Argument ist noch nicht so scharf.</p>
+        <ul>
+          <li>Wer zahlt — und wie viel — für „lokal + Baustelle + Norm-Kette"?</li>
+          <li>Brücke zur Vision: arbeiterfreundlich = die Leute bleiben</li>
+          <li>Mitarbeiterbindung beim Fachkräftemangel = bares Geld</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAZIT -->
+  <section class="rev" style="animation-delay:.36s">
+    <div class="fazit">
+      <div class="lead">Fazit für Raffi</div>
+      <p>Der Mops ist <b>kein besseres Togal</b> — und soll es auch nicht sein. Er ist das einzige Werkzeug, das vom <b>deutschen Statik-PDF bis zur fertigen Bestellung auf deiner Baustelle</b> durchläuft: lokal, ehrlich gelabelt (hart vs. geschätzt), und es denkt mit wie ein Polier mit 30 Jahren — erst prüfen, was fehlt, dann anfangen.</p>
+      <div class="line">7 sind im Büro. 1 ist in den USA.<br><b>Der Mops steht bei dir auf der Baustelle.</b></div>
+    </div>
+  </section>
+
+  <footer>
+    <b>Mops im Save, da kann nichts schief gehen.</b><br>
+    Wettbewerbs-Notiz · Plankammer-Mops · zum Ablegen unter docs/mops-api/
+  </footer>
+
+</div>
+</body>
+</html>
