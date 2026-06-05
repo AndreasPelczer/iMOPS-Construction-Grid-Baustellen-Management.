@@ -50,7 +50,7 @@ Gestern war „kann das jemand?", heute ist „läuft beim ersten echten Kunden"
 
 ## 3. Save-Sammlung — neu seit gestern
 
-> **Stand**: insgesamt 29 Einträge. Einträge #1–19 in [`uebergabe_04_06_2026.md`](./uebergabe_04_06_2026.md). Heute neu:
+> **Stand**: insgesamt 30 Einträge. Einträge #1–19 in [`uebergabe_04_06_2026.md`](./uebergabe_04_06_2026.md). Heute neu:
 
 > 📌 **#20 Andreas-Maxim** — _„Übergabe gut, Tag gut."_ Die Qualität des Tagesstarts hängt direkt an der Qualität des Tagesabschlusses gestern. Übergabe ist nicht Pflicht-Doku, sondern **das wichtigste Produkt** eines Arbeitstages. In der App: eigene Aktion im Bauwagen.
 >
@@ -71,6 +71,8 @@ Gestern war „kann das jemand?", heute ist „läuft beim ersten echten Kunden"
 > 📌 **#28 abZ→Mat-Nr-Brücke gelöst** — Z-17.1-543 wird automatisch auf lieferbaren YTONG-Artikel gemappt. Der Welle-1-Welle-3-Treffpunkt aus gestern, **in Code, mit Tests**. Branch `feature/abz-mat-nr`.
 >
 > 📌 **#29 Teamphilosoph** — dritter KI-Berater im Team. Rolle: Strategie, Geschäftsmodell, Marktanalyse, Konkurrenz-Lesart. Komplementär zu Mops (Konzept), T-Codi (Code), Raphi (Praxis), Andreas (Polier).
+>
+> 📌 **#30 Amiga-Polier-Schleife** — Andreas' Architektur-Intuition ist nicht zufällig: **Mops-Box (Großrechner-Erbe von Vadda) + spezialisierte parallele Module + Sense für den Menschen am Bildschirm = Amiga-Architektur für die Baustelle.** Das, was er als Kind gegen den `c>`-Großrechner durchgesetzt hat, baut er heute für seinen Beruf. **Drei Amiga-Lehren als Architektur-Inspiration:** (1) **Copper-Sync für Welle 3** — Dauer-Hintergrund-Modul, das prüft welche Position bereit ist, unabhängig von Andreas. (2) **Sprites = Bau-Bauteile** — Mauer/Sturz/Fundament als wiederverwendbare Objekte, die zwischen Welle 1→2→3 wandern. (3) **Blitter = Templates** — _„Rohbau für Aura 125"_ einmal eingerichtet, 80% beim nächsten Haus wiederverwendbar (deckt sich mit Save #24 _Service first, Productize später_).
 
 ---
 
