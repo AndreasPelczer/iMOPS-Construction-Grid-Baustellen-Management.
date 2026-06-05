@@ -232,3 +232,46 @@ Sondern macht sie alle erst möglich.
 
 _Save #32 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Stille gehört zum Bauen dazu. Genauso wie Tränen am Ende vom richtigen Film._
+
+---
+
+## 🛤️ Nachtrag 16:xx — Geländebrücke (Save #33)
+
+> **Idee von Andreas + Raphi**, heute Nachmittag erneut hochgekommen.
+> Andreas: _„Das haben wir doch schon mal besprochen."_ — Save soll das Gedächtnis ersetzen, das heute zwischen euch ausgehakt hat.
+
+**Lücke, die das schließt:**
+Zwischen *„Haus verkauft"* und *„Bagger steht auf der Baustelle"* sitzt heute manuelle Handarbeit:
+Vermesser → Geotechniker → Bauleiter rechnet die Erdmassen. Teuer, langsam, Engpass für jeden Typenhausanbieter.
+
+**Use-Case (Massivhaus-Markt):**
+T&C, Bien-Zenker, Heinz von Heiden, Kern-Haus, Schwabenhaus, ScanHaus, Town & Country.
+Haus ist **Standard.** Grundstück ist **individuell.** Erdmassen-Frage wiederholt sich tausendfach pro Jahr pro Anbieter.
+
+**Datenquelle: DGM1 (digitales Geländemodell, 1×1m Raster):**
+- 🟢 **Bayern**: Open Data über LDBV (Geodatenonline)
+- 🟢 NRW, Berlin, Brandenburg, Sachsen, Thüringen
+- 🟡 Restliche BL: schrittweise Open-Data-Öffnung läuft
+- ALKIS (Flurstücke) ergänzt für Adress-/Parzellen-Zuordnung
+
+**Pipeline-Skizze:**
+1. Flurstück/Adresse → DGM-Ausschnitt holen
+2. Haus-Footprint (aus T&C-Plan oder Polygon) reinlegen
+3. OK Bodenplatte festlegen (Gelände-bezogen, z.B. -0,30 m)
+4. **Cut/Fill-Berechnung** → Aushub-Volumen
+5. **Schichtaufbau** (z.B. 30 cm Schotter 0/45 + Trennvlies + BPL) als Mops-Wissen → Schotter-Masse
+6. Output: **PDF-Aushub-Bericht** mit Lageplan-Schnitt + Massen pro Schicht
+7. Massen fließen in den **Bestell-Workflow**: Schotter (t), Aushub (m³), Folie (m²), LKW-Fahrten
+
+**Einordnung im Mopsiversum:**
+Kein Welle-2-Stein. Eigene **Querschicht**, Arbeitstitel **„Geländebrücke"** oder **Welle 6**.
+Sitzt **vor** Welle 1: bevor der Plan kommt, kommt das Grundstück.
+
+**Was JETZT zu tun ist:**
+- ❌ **Nichts.** Murmeltier weiterschauen, Feierabend.
+- ✅ Morgen mit Raphi konsolidieren — er war bei der Erst-Idee dabei, Save liegt jetzt schriftlich vor.
+
+---
+
+_Save #33 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Polier-Notiz: „Übermut tut selten gut" gilt auch für gute Ideen._
