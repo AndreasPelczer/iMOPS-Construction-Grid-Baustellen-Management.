@@ -44,4 +44,28 @@ enum ExtractPlanMapper {
             return pos
         }
     }
+
+    /// Wandelt das Extraktions-Ergebnis in die Vorschau-Struktur des LV-Imports
+    /// (ParsedLVPosition) — für den „prüfen/abwählen/importieren"-Screen.
+    /// confidence: harte Statik-Positionen 0,95 · Schätzungen 0,6.
+    static func toParsed(_ result: ExtractPlanResult) -> [ParsedLVPosition] {
+        var bestellByPos: [String: ExtractBestellzeile] = [:]
+        for zeile in result.bestellliste {
+            guard let ref = zeile.bezugPosNr, bestellByPos[ref] == nil else { continue }
+            bestellByPos[ref] = zeile
+        }
+        return result.lvPositionen.map { p in
+            let zeile = bestellByPos[p.posNr]
+            return ParsedLVPosition(
+                posNr: p.posNr,
+                bezeichnung: p.bezeichnung,
+                menge: p.menge,
+                einheit: p.einheit,
+                confidence: p.quelle == "schaetzung" ? 0.6 : 0.95,
+                kostenGruppe: p.kg,
+                artikelNummer: zeile?.matnr,
+                lieferant: zeile?.lieferant
+            )
+        }
+    }
 }

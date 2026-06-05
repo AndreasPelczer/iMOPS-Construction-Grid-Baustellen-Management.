@@ -76,4 +76,22 @@ struct ExtractPlanMapperTests {
         let positions = ExtractPlanMapper.mapPositions(try decoded(), into: ctx, event: event)
         #expect(positions.allSatisfy { $0.event === event })
     }
+
+    @MainActor
+    @Test func toParsedTraegtKgMatNrUndConfidence() throws {
+        let parsed = ExtractPlanMapper.toParsed(try decoded())
+        #expect(parsed.count == 2)
+
+        let wand = try #require(parsed.first { $0.posNr == "3.30.1" })
+        #expect(wand.kostenGruppe == "330")
+        #expect(wand.artikelNummer == "10005024")
+        #expect(wand.lieferant == "Xella")
+        #expect(wand.confidence > 0.8)   // statik_tabelle → hoch
+        #expect(wand.isSelected)         // standardmäßig ausgewählt
+
+        // Stahlbeton-Position ohne Bestellzeile: KG da, aber keine Mat-Nr
+        let stuetze = try #require(parsed.first { $0.posNr == "3.30.4" })
+        #expect(stuetze.kostenGruppe == "330")
+        #expect(stuetze.artikelNummer == nil)
+    }
 }

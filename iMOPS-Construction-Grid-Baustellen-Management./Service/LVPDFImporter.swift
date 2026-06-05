@@ -13,6 +13,10 @@ struct ParsedLVPosition: Identifiable {
     var isSelected: Bool = true
     /// 0–1: how confident the parser is this is a real LV position
     var confidence: Float
+    // Optional — vom Mops-/Statik-Import gefüllt (lokaler PDF-Parser lässt sie nil):
+    var kostenGruppe: String? = nil   // DIN 276 (KG)
+    var artikelNummer: String? = nil  // Xella-Mat-Nr (abZ-Resolver)
+    var lieferant: String? = nil
 }
 
 // MARK: - Importer
