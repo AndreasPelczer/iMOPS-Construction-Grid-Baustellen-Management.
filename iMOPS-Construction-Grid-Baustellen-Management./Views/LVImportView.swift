@@ -14,6 +14,10 @@ struct LVImportView: View {
     @State private var isParsing = false
     @State private var parseError: String?
     @State private var showError = false
+    @State private var importQuelle: ImportQuelle = .lokal
+    @State private var parsingHinweis = "PDF wird analysiert ..."
+
+    private enum ImportQuelle { case lokal, mops }
 
     private var selectedCount: Int { parsedPositions.filter { $0.isSelected }.count }
     private var allSelected: Bool  { parsedPositions.allSatisfy { $0.isSelected } }
@@ -42,7 +46,7 @@ struct LVImportView: View {
                 }
             }
             .sheet(isPresented: $showDocumentPicker) {
-                PDFDocumentPicker { url in parsePDF(url: url) }
+                PDFDocumentPicker { url in handlePick(url: url) }
                     .ignoresSafeArea()
             }
             .alert("Nicht erkannt", isPresented: $showError) {
@@ -56,7 +60,7 @@ struct LVImportView: View {
                         Color.black.opacity(0.35).ignoresSafeArea()
                         VStack(spacing: 14) {
                             ProgressView().scaleEffect(1.4)
-                            Text("PDF wird analysiert ...").font(.subheadline)
+                            Text(parsingHinweis).font(.subheadline)
                         }
                         .padding(28)
                         .background(.ultraThickMaterial)
@@ -85,15 +89,34 @@ struct LVImportView: View {
                         .multilineTextAlignment(.center)
                 }
 
-                Button {
-                    showDocumentPicker = true
-                } label: {
-                    Label("PDF auswählen", systemImage: "doc.badge.plus")
-                        .font(.headline)
-                        .padding(.horizontal, 32).padding(.vertical, 14)
-                        .background(.orange)
-                        .foregroundStyle(.white)
-                        .clipShape(Capsule())
+                VStack(spacing: 12) {
+                    Button {
+                        importQuelle = .lokal
+                        showDocumentPicker = true
+                    } label: {
+                        Label("PDF auswählen", systemImage: "doc.badge.plus")
+                            .font(.headline)
+                            .padding(.horizontal, 32).padding(.vertical, 14)
+                            .background(.orange)
+                            .foregroundStyle(.white)
+                            .clipShape(Capsule())
+                    }
+
+                    Button {
+                        importQuelle = .mops
+                        showDocumentPicker = true
+                    } label: {
+                        Label("Statik per Mops auswerten", systemImage: "brain.head.profile")
+                            .font(.headline)
+                            .padding(.horizontal, 28).padding(.vertical, 14)
+                            .background(.blue)
+                            .foregroundStyle(.white)
+                            .clipShape(Capsule())
+                    }
+
+                    Text("Mops liest Statik-/Bewehrungspläne: Mengen, Kostengruppe und Mat-Nr automatisch.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -208,6 +231,54 @@ struct LVImportView: View {
         }
     }
 
+    /// Routet die ausgewählte PDF an den lokalen Parser oder an den Mops.
+    private func handlePick(url: URL) {
+        switch importQuelle {
+        case .lokal:
+            parsingHinweis = "PDF wird analysiert ..."
+            parsePDF(url: url)
+        case .mops:
+            parsingHinweis = "Mops liest den Plan … (kann etwas dauern)"
+            parsePDFViaMops(url: url)
+        }
+    }
+
+    /// Lädt die PDF an die Box (/extract-plan) und füllt die Vorschau aus dem
+    /// Mops-Ergebnis (inkl. Kostengruppe + Mat-Nr aus dem abZ-Resolver).
+    private func parsePDFViaMops(url: URL) {
+        // Kopie ins Temp, solange der Security-Scope noch aktiv ist
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
+        try? FileManager.default.removeItem(at: tmp)
+        do {
+            try FileManager.default.copyItem(at: url, to: tmp)
+        } catch {
+            parseError = "PDF konnte nicht gelesen werden."
+            showError = true
+            return
+        }
+        isParsing = true
+        Task {
+            do {
+                let data = try Data(contentsOf: tmp)
+                let result = try await MopsClient().extractPlan(
+                    pdf: data, filename: tmp.lastPathComponent,
+                    projekt: event.eventNumber, baustelle: event.title)
+                let parsed = ExtractPlanMapper.toParsed(result)
+                isParsing = false
+                if parsed.isEmpty {
+                    parseError = "Der Mops hat keine Positionen aus dem Plan gelesen."
+                    showError = true
+                } else {
+                    parsedPositions = parsed
+                }
+            } catch {
+                isParsing = false
+                parseError = (error as? MopsClientError)?.errorDescription ?? error.localizedDescription
+                showError = true
+            }
+        }
+    }
+
     private func importSelected() {
         for parsed in parsedPositions where parsed.isSelected {
             let pos = LVPosition(context: viewContext)
@@ -215,7 +286,9 @@ struct LVImportView: View {
             pos.bezeichnung        = parsed.bezeichnung
             pos.menge              = parsed.menge
             pos.einheit            = parsed.einheit
-            pos.kostenGruppeNummer = "300"
+            pos.kostenGruppeNummer = parsed.kostenGruppe ?? "300"
+            pos.artikelNummer      = parsed.artikelNummer   // Mops-Import: Mat-Nr
+            pos.lieferant          = parsed.lieferant
             pos.event              = event
         }
         try? viewContext.save()

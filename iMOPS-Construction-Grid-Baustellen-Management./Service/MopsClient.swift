@@ -27,6 +27,7 @@ struct MopsConfig {
     static let chatEndpoint = "/chat"
     static let healthEndpoint = "/health"
     static let classifyEndpoint = "/classify"
+    static let extractPlanEndpoint = "/extract-plan"
     static let defaultMaxTokens = 500
     static let defaultTopK = 3
     // Mops laeuft CPU-only, kann bis zu 120s+ brauchen
@@ -171,5 +172,73 @@ final class MopsClient {
         let result = try JSONDecoder().decode(FileClassification.self, from: data)
         logger.info("Mops classify result: \(result.category) (confidence \(result.confidence))")
         return result
+    }
+
+    // MARK: - Plan-Extraktion (Welle 4 — App-Brücke)
+
+    /// Lädt eine Plan-PDF zur Box (POST /extract-plan, multipart) und bekommt
+    /// LV-Positionen + Mauerwerks-Bestellliste zurück. CPU-only → bis 180s.
+    func extractPlan(pdf data: Data, filename: String = "plan.pdf",
+                     projekt: String? = nil, baustelle: String? = nil) async throws -> ExtractPlanResult {
+        guard let url = URL(string: MopsConfig.host + MopsConfig.extractPlanEndpoint) else {
+            throw MopsClientError.invalidURL
+        }
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Self.multipartBody(boundary: boundary, pdf: data, filename: filename,
+                                              projekt: projekt, baustelle: baustelle)
+
+        logger.info("Mops extract-plan: \(filename) (\(data.count) bytes)")
+
+        let respData: Data
+        let response: URLResponse
+        do {
+            (respData, response) = try await urlSession.data(for: request)
+        } catch let error as URLError {
+            if error.code == .timedOut {
+                logger.error("extract-plan Timeout nach \(MopsConfig.requestTimeoutSeconds)s")
+                throw MopsClientError.timeout
+            }
+            logger.error("extract-plan nicht erreichbar: \(error.localizedDescription)")
+            throw MopsClientError.serverOffline
+        }
+
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            let body = String(data: respData, encoding: .utf8) ?? "<keine Antwort>"
+            logger.error("extract-plan HTTP \(http.statusCode): \(body)")
+            throw MopsClientError.httpError(statusCode: http.statusCode, body: body)
+        }
+
+        let result = try JSONDecoder().decode(ExtractPlanResult.self, from: respData)
+        logger.info("extract-plan: \(result.lvPositionen.count) LV-Pos, \(result.bestellliste.count) Bestellzeilen")
+        return result
+    }
+
+    /// Baut den multipart/form-data-Body: PDF-Datei + optionale Projekt-/Baustellen-Felder.
+    private static func multipartBody(boundary: String, pdf: Data, filename: String,
+                                      projekt: String?, baustelle: String?) -> Data {
+        var body = Data()
+        let nl = "\r\n"
+
+        // Datei-Teil (Feldname "file" — so erwartet es der Endpoint)
+        body.append("--\(boundary)\(nl)".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\(nl)".data(using: .utf8)!)
+        body.append("Content-Type: application/pdf\(nl)\(nl)".data(using: .utf8)!)
+        body.append(pdf)
+        body.append(nl.data(using: .utf8)!)
+
+        // optionale Formfelder
+        for (name, value) in [("projekt", projekt), ("baustelle", baustelle)] {
+            guard let value, !value.isEmpty else { continue }
+            body.append("--\(boundary)\(nl)".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(name)\"\(nl)\(nl)".data(using: .utf8)!)
+            body.append("\(value)\(nl)".data(using: .utf8)!)
+        }
+
+        body.append("--\(boundary)--\(nl)".data(using: .utf8)!)
+        return body
     }
 }
