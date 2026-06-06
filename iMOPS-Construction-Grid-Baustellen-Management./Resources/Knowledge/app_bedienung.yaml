@@ -394,3 +394,30 @@
     günstigstes Angebot, sonst kalkulierter VK-Preis, sonst 0.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Globale_Suche"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Suche"
+    - "Globale Suche"
+    - "Wie suche ich"
+    - "Alle LVs anzeigen"
+    - "Leistungsverzeichnisse finden"
+    - "Position suchen"
+  antwort: |
+    Der Tab "Suche" durchsucht die ganze App auf einmal (ab 2 Zeichen):
+    - Baustellen (Titel, Ort, Bauherr)
+    - LV-Positionen (Bezeichnung, Artikel-Nr, Pos-Nr)
+    - Maengel (Titel, Beschreibung, Ort, Gewerk)
+    - Katalog (Name, Code, Kategorie)
+    - Auftraege (Mitarbeiter, Kostengruppe, Details, Lagerort)
+
+    Treffer kommen in Abschnitten und sind antippbar — eine LV-Position
+    springt direkt ins LV der zugehoerigen Baustelle.
+
+    Unten die Kategorie-Chips (Alle / Baustellen / LV / Maengel / Katalog /
+    Auftraege) grenzen ein. Tipp: Chip "LV" bei leerem Suchfeld listet
+    ALLE Leistungsverzeichnisse (pro Baustelle) zum Durchspringen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
