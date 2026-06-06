@@ -366,7 +366,7 @@ struct BuildIQLandingView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     featureRow(icon: "camera.fill",      title: "Kamera-Scan",       desc: "Fotografiere Lieferscheine oder Materialschilder")
                     featureRow(icon: "text.viewfinder",  title: "Texterkennung",      desc: "Vision OCR liest den Text automatisch")
-                    featureRow(icon: "sparkles",         title: "Gemini 2.0 Flash",   desc: "KI ordnet DIN 276 Kostengruppen zu")
+                    featureRow(icon: "sparkles",         title: "Mops (lokal)",       desc: "Ordnet auf der Box eine DIN 276 Kostengruppe zu – ohne Cloud")
                     featureRow(icon: "link.badge.plus",  title: "Auftrag zuweisen",   desc: "Ergebnis direkt einem offenen Auftrag zuordnen")
                 }
                 .padding(.horizontal, 28)
@@ -427,13 +427,13 @@ struct BuildIQHelpView: View {
         NavigationStack {
             List {
                 Section("Was ist BuildIQ?") {
-                    Text("BuildIQ verbindet Kamera, OCR und Google Gemini 2.0 Flash, um Baumaterialien automatisch zu erkennen und DIN 276 Kostengruppen zuzuordnen – direkt auf der Baustelle.")
+                    Text("BuildIQ verbindet Kamera, OCR und den lokalen Mops (auf der Box, ohne Cloud), um Baumaterialien automatisch zu erkennen und DIN 276 Kostengruppen zuzuordnen – direkt auf der Baustelle.")
                 }
 
                 Section("So funktioniert's") {
                     helpStep(nr: "1", icon: "camera.fill",     text: "Halte die Kamera auf einen Lieferschein oder ein Materialschild.")
                     helpStep(nr: "2", icon: "text.viewfinder", text: "Tippe den Auslöser – Vision OCR liest den Text automatisch.")
-                    helpStep(nr: "3", icon: "sparkles",        text: "Gemini 2.0 Flash analysiert und ordnet eine DIN 276 Kostengruppe zu.")
+                    helpStep(nr: "3", icon: "sparkles",        text: "Der lokale Mops (auf der Box) analysiert und ordnet eine DIN 276 Kostengruppe zu.")
                     helpStep(nr: "4", icon: "link.badge.plus", text: "Weise das Ergebnis einem offenen Auftrag zu.")
                 }
 
