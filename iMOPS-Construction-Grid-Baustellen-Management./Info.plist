@@ -4,7 +4,6 @@
 <dict>
 	<key>CFBundleDocumentTypes</key>
 	<array>
-		<!-- GAEB Ausschreibung / Kalkulation -->
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>GAEB Dokument</string>
@@ -19,7 +18,6 @@
 				<string>de.bindaverlag.imops.gaeb-x86</string>
 			</array>
 		</dict>
-		<!-- SKP (SketchUp) -->
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>SketchUp Document</string>
@@ -32,7 +30,6 @@
 				<string>com.sketchup.skp</string>
 			</array>
 		</dict>
-		<!-- 3D / CAD Formate -->
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>3D Model</string>
@@ -52,7 +49,6 @@
 				<string>public.3d-content</string>
 			</array>
 		</dict>
-		<!-- PDF -->
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>PDF Document</string>
@@ -65,7 +61,6 @@
 				<string>com.adobe.pdf</string>
 			</array>
 		</dict>
-		<!-- Excel / Spreadsheets -->
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>Spreadsheet</string>
@@ -80,7 +75,6 @@
 				<string>public.comma-separated-values-text</string>
 			</array>
 		</dict>
-		<!-- Bilder -->
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>Bild</string>
@@ -93,7 +87,6 @@
 				<string>public.image</string>
 			</array>
 		</dict>
-		<!-- Text-Dateien -->
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>Text Dokument</string>
@@ -107,19 +100,31 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>192.168.2.42</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
-		<!-- SKP: iMOPS definiert den Typ fuer iOS (kein anderer App tut das) -->
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>com.sketchup.skp</string>
-			<key>UTTypeDescription</key>
-			<string>SketchUp Document</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
 				<string>public.content</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>SketchUp Document</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.sketchup.skp</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -133,16 +138,15 @@
 				</array>
 			</dict>
 		</dict>
-		<!-- GAEB X83: Angebotsaufforderung -->
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.bindaverlag.imops.gaeb-x83</string>
-			<key>UTTypeDescription</key>
-			<string>GAEB Ausschreibung</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.xml</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>GAEB Ausschreibung</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.bindaverlag.imops.gaeb-x83</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -151,16 +155,15 @@
 				</array>
 			</dict>
 		</dict>
-		<!-- GAEB X84: Angebot -->
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.bindaverlag.imops.gaeb-x84</string>
-			<key>UTTypeDescription</key>
-			<string>GAEB Angebot</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.xml</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>GAEB Angebot</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.bindaverlag.imops.gaeb-x84</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -169,16 +172,15 @@
 				</array>
 			</dict>
 		</dict>
-		<!-- GAEB X86: Aufmass -->
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.bindaverlag.imops.gaeb-x86</string>
-			<key>UTTypeDescription</key>
-			<string>GAEB Aufmaß</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.xml</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>GAEB Aufmaß</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.bindaverlag.imops.gaeb-x86</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -190,16 +192,15 @@
 	</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
-		<!-- FBX -->
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>com.autodesk.fbx</string>
-			<key>UTTypeDescription</key>
-			<string>Autodesk FBX</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.3d-content</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>Autodesk FBX</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.autodesk.fbx</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -208,16 +209,15 @@
 				</array>
 			</dict>
 		</dict>
-		<!-- glTF -->
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>org.khronos.gltf</string>
-			<key>UTTypeDescription</key>
-			<string>GL Transmission Format</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.3d-content</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>GL Transmission Format</string>
+			<key>UTTypeIdentifier</key>
+			<string>org.khronos.gltf</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -226,16 +226,15 @@
 				</array>
 			</dict>
 		</dict>
-		<!-- GLB -->
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>org.khronos.glb</string>
-			<key>UTTypeDescription</key>
-			<string>GL Binary Format</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.3d-content</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>GL Binary Format</string>
+			<key>UTTypeIdentifier</key>
+			<string>org.khronos.glb</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -245,26 +244,5 @@
 			</dict>
 		</dict>
 	</array>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<true/>
-	<key>UIFileSharingEnabled</key>
-	<true/>
-	<!-- ATS-Ausnahme: Mops-Server laeuft auf HTTP im LAN (kein TLS) -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>192.168.2.42</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-			</dict>
-		</dict>
-	</dict>
-	<!-- Spracherkennung: lokal auf Gerät, keine Cloud-Übertragung -->
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>iMOPS nutzt die Spracherkennung lokal auf deinem Gerät für Baustellenberichte und Mängelerfassung. Es werden keine Sprachdaten an externe Server übertragen.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Das Mikrofon wird für die Spracheingabe bei Berichten und Mängelerfassung benötigt. Die Verarbeitung erfolgt lokal auf deinem Gerät.</string>
 </dict>
 </plist>
