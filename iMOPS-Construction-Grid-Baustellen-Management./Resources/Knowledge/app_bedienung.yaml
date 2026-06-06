@@ -164,6 +164,10 @@
     - "PDF-Export LV"
     - "Wie exportiere ich das LV"
     - "Leistungsverzeichnis PDF"
+    - "LV als Excel"
+    - "LV als CSV"
+    - "Excel-Export"
+    - "als Excel schicken"
   antwort: |
     LV einer Baustelle als PDF exportieren:
     1. Baustelle oeffnen
@@ -173,8 +177,8 @@
        gruppierten Positionen erzeugt
     4. iOS-ShareSheet oeffnet sich (AirDrop, Mail, Drucken)
 
-    Alternativ: "LV als CSV" exportiert die Positionsdaten fuer
-    Tabellenkalkulation (RFC-4180).
+    Alternativ: Button "LV als CSV (Excel)" im Menue exportiert die Positionen
+    als CSV (RFC-4180) — oeffnet direkt in Excel/Numbers, gut zum Weiterschicken.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 

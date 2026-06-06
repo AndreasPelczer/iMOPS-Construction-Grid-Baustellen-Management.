@@ -167,6 +167,11 @@ struct LVView: View {
                     }
                     .disabled(positionen.isEmpty)
 
+                    Button { generateCSV() } label: {
+                        Label("LV als CSV (Excel)", systemImage: "tablecells")
+                    }
+                    .disabled(positionen.isEmpty)
+
                     Button { triggerGAEBExport(.x83_v33) } label: {
                         Label("GAEB X83 exportieren", systemImage: "arrow.up.doc.fill")
                     }
@@ -322,6 +327,13 @@ struct LVView: View {
         let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
         let name = "LV-\(event.title ?? "Baustelle")"
             .replacingOccurrences(of: " ", with: "-").appending(".pdf")
+        writeAndShare(data: data, filename: name)
+    }
+
+    private func generateCSV() {
+        let data = LVCSVExporter.generate(event: event, positionen: Array(positionen))
+        let name = "LV-\(event.title ?? "Baustelle")"
+            .replacingOccurrences(of: " ", with: "-").appending(".csv")
         writeAndShare(data: data, filename: name)
     }
 
