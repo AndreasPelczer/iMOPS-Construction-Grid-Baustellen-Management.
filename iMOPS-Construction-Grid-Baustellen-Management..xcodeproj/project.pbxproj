@@ -423,6 +423,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iMOPS-Construction-Grid-Baustellen-Management./Info.plist";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Die Kamera wird für den BuildIQ-Scanner benötigt – Lieferscheine und Materialschilder fotografieren. Die Texterkennung läuft lokal auf deinem Gerät.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Das Mikrofon wird für die Spracheingabe bei Berichten und Mängelerfassung benötigt. Die Verarbeitung erfolgt lokal auf deinem Gerät.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "iMOPS nutzt die Spracherkennung lokal auf deinem Gerät für Baustellenberichte und Mängelerfassung. Es werden keine Sprachdaten an externe Server übertragen.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -456,6 +460,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iMOPS-Construction-Grid-Baustellen-Management./Info.plist";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Die Kamera wird für den BuildIQ-Scanner benötigt – Lieferscheine und Materialschilder fotografieren. Die Texterkennung läuft lokal auf deinem Gerät.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Das Mikrofon wird für die Spracheingabe bei Berichten und Mängelerfassung benötigt. Die Verarbeitung erfolgt lokal auf deinem Gerät.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "iMOPS nutzt die Spracherkennung lokal auf deinem Gerät für Baustellenberichte und Mängelerfassung. Es werden keine Sprachdaten an externe Server übertragen.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
