@@ -484,3 +484,296 @@ _Vier Stunden Polier-Werk, dokumentiert für die nächste Sitzung und für Raphi
 
 _Save #35 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Sonntagvormittag-Flow dokumentiert für die Nachwelt und für Raphi._
+
+---
+
+## 🧮 Nachtrag 7.6.2026, nachmittags — Lohn-/Maschinen-Vorlage + Welle 6 (Save #37)
+
+> _Andreas: „erstelle mir eine Vorlage für Excel wo genau aufgelistet ist was ein Arbeiter auf dem Bau verdient. Lehrling, Polier, Meister, Facharbeiter, Hilfsarbeiter. Und Maschinenpark-Kosten? Welche Infos haben wir und der Mops?"_
+
+---
+
+### Was entstanden ist
+
+📄 **`docs/Vorlage_Lohn_Maschinenpark_2026.xlsx`** — Excel-Vorlage mit 4 Tabs:
+
+1. **Lohngruppen** — von Azubi 1.Jahr bis Bauleiter, mit Brutto · Nebenkosten-Faktor · Vollkosten-Formel
+2. **Maschinenpark** — 16 Maschinen-Kategorien (Bagger / Radlader / LKW / Kran / Betonpumpe / Walze / etc.), mit Stundensätzen + Vorhaltung + Mindesteinsatz
+3. **Mittellohn** — Beispiel-Crew Rohbau (1 Polier + 4 Facharbeiter + 3 Hilfsarbeiter), mit automatischer Mittellohn-Berechnung über SUMPRODUCT-Formeln
+4. **Zuschläge** — von Selbstkosten zur Angebotssumme: AGK 10% · WuG 8% · Skonto-Reserve 2,5% · MwSt 19%, mit Beispiel-Rechnung
+
+Alle Tabs als **A4 Querformat druckbar** — Andreas-Wunsch: „an die Wand kleben".
+
+Default-Werte sind **Richtwerte Tarif West 2026**. Vor Live-Einsatz: aktueller ZDB-Tarif gegenchecken, Firmen-spezifischer Lohnnebenkosten-Faktor (typisch 1,7-2,0).
+
+---
+
+### Was Mops bereits weiß (Welle 1-4)
+
+- Material-Katalog mit Mat-Nr.
+- LV-Positionen mit Mengen
+- BuildIQ-Scan (Mengen aus Fotos)
+- abZ-Daten (Festigkeitsklassen etc.)
+- Bauwissen-RAG (Normen, Techniken)
+
+### Was bisher fehlte (= diese Vorlage füllt teilweise)
+
+- Tariflöhne pro Lohngruppe
+- Lohnnebenkosten-Faktor (firmen-individuell)
+- Maschinen-Mietsätze + Vorhaltekosten
+- Mittellohn-Berechnung
+- AGK / WuG / Skonto-Sätze
+
+### Was Mops berechnen könnte, sobald Werte da sind
+
+- Mannstunden pro LV-Position (aus Erfahrungswerten)
+- Maschinenstunden pro Position
+- Gesamtkalkulation pro Position
+- **Angebotssumme komplett aus Mengen + Material + Lohn + Maschinen + Aufschlägen**
+
+---
+
+### 🌊 Welle 6 — Arbeitstitel „Kalkulations-Schicht"
+
+**Position**: nach Welle 5 (BuildIQ Stufe 2 = Soll/Ist-Abgleich)
+
+**Zweck**: schließt die Lücke zwischen *„Mengen + Material"* (Welle 1-4) und *„fertiges Angebot beim Kunden"*.
+
+**Datenmodell-Skizze:**
+- Tabelle `lohngruppen` (LG, Bezeichnung, Brutto, Nebenkosten-Faktor, Vollkosten)
+- Tabelle `maschinen` (Maschine, Stundensatz, Vorhaltung, Mindesteinsatz)
+- Tabelle `firma_settings` (Lohnnebenkosten-Faktor, AGK %, WuG %, Skonto %)
+- Tabelle `crew_typen` (Vorlage-Crews pro Gewerk, mit Mittellohn-Berechnung)
+- Zusatz pro LV-Position: `mannstunden_pro_einheit`, `maschinen_typ`, `maschinen_stunden_pro_einheit`
+- Mops-API-Endpoint: `/calculate-offer` (Selbstkosten + Aufschläge → Angebotssumme)
+
+**Erstdatenbefüllung**: aus dieser Excel-Vorlage, die Andreas + Raphi selbst pflegen.
+
+**Spätere Erweiterung (Welle 6+)**:
+- Erfahrungswerte-Datenbank: „Wie viele Mannstunden braucht ein erfahrener Mauerer pro m² 24er-Wand?" — Mops lernt aus eigenen Projekten
+- Wettbewerbsvergleich: was kostet vergleichbares woanders
+- Zeitverlauf: wie haben sich Stundensätze entwickelt
+
+---
+
+### Polier-Verbindung zur DNA
+
+> 🛡 *„Mensch über Profit · Profit durch Schutz der Menschen."*
+
+Welle 6 macht **Lohnkosten transparent** — Polier sieht in der App: *„Diese Baustelle bringt €5/Std weniger als die letzte vergleichbare. Warum?"* Statt vagen Profit-Druck gibt's konkrete Marge — und konkretes Wissen, wann eine Baustelle nicht angenommen werden sollte.
+
+---
+
+_Save #37 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Andreas-Wunsch: „einmal sehen heute um es an die Wand kleben zu können." — erledigt._
+
+---
+
+## 🏢 Nachtrag 7.6.2026, nachmittags — Heinze als strategischer Partner (Save #38)
+
+> _Andreas: „notier auch gleich Heinze.de mit denen müssen und werden wir zusammenarbeiten. Die großen mischen da auch mit, aber wir machen es anders und besser."_
+> _Andreas hat HP gerade das erste Mal überflogen._
+
+---
+
+### Wer Heinze ist
+
+- Familienunternehmen, Sitz **Celle / Niedersachsen**, gegründet **1962**
+- Ursprünglich Bau-Verlag (Bauakten, Architektenführer in Papier)
+- Heute komplett digital — und im Hintergrund **Datenrückgrat** für viel mehr Bau-Software, als auffällt
+- Vier Säulen: **Produktdatenbank · GAEB-Ausschreibungstexte · BIM-Object-Plattform · Architekten-/Planer-Marketing**
+
+### Geldströme (= wer zahlt was)
+
+1. 🏭 **Hersteller zahlen am meisten** — Knauf, Heidelberg-Materials, Sto, Velux & Co. zahlen Heinze für Sichtbarkeit bei Architekten. **Hauptbrot.**
+2. 🛠 **Software-Partner zahlen API-Lizenz** — ORCA, Nevaris, Sirados etc. ziehen Heinze-Daten in ihre AVA-Tools. Größenordnung: **4-stellig bis tief 5-stellig p.a.**, individuell verhandelt, nicht öffentlich.
+3. 🆓 **Architekten/Planer nutzen oft gratis** — sie sind die Zielgruppe der Hersteller, die zahlen schon.
+
+### Die „Großen" die da mitmischen
+
+ORCA AVA · RIB iTwo · Nevaris/SIDOUN · Capmo · Sirados · BRZ · MWM · AVANTI
+→ Alle integrieren Heinze für den **Desktop-Architekten**, der LV zusammenklickt.
+
+### Wo iMOPS anders und besser ist
+
+**Die Großen bedienen den Desktop-Architekten. Mops bedient den Polier auf der Baustelle.**
+
+| Was die Großen mit Heinze machen | Was Mops mit Heinze machen kann |
+|---|---|
+| Architekt zieht LV-Text in AVA | Polier scannt Material → BuildIQ erkennt → Heinze-Datenblatt direkt im iPad |
+| Hersteller-Marketing für Planer | abZ + Heinze = bessere Mat-Nr-Auflösung als jeder reine Katalog |
+| BIM für 3D-Konstruktion | Heinze-Produktdaten in Mops-Bestellliste, autom. aktualisiert |
+| GAEB-Import in AVA-Office | GAEB-Import in Polier-iPad mit Mengen-Validierung aus BuildIQ |
+| Statisches Werk | Lebende Datenheimat — Mops merkt was bei *dieser* Baustelle wirklich verbaut wurde |
+
+### 5-Schritt-Ablauf für Software-Partnerschaften
+
+```
+1. Kontakt → Partner-/Business-Development-Team auf der HP
+2. Use Case Pitch → "Wo passt iMOPS in eure Strategie?"
+3. NDA + Erstgespräch → wechselseitiges Beschnuppern
+4. Pilot-Phase → oft 6-12 Monate günstig oder kostenlos
+5. Kommerzieller Vertrag → wenn Pilot Datenrückfluss zeigt
+```
+
+**Pilot-Phase ist der Trick** — für innovative kleine Anbieter gibt's oft Startup-Konditionen. **Explizit nach „Innovations-/Pilot-Programm" fragen.**
+
+### Verhandlungs-Hebel für iMOPS
+
+1. 🐶 **Neue Endgeräte-Klasse** — Polier-iPad auf Baustelle, kein Architekten-Desktop. Neuer Channel für Heinze zum Endbenutzer-Markt.
+2. 📊 **Datenrückfluss = Gold für Heinze** — *„welche Mat-Nrn werden auf welcher Art Baustelle wirklich verbaut?"* — kennt **kein anderer Partner**. Heinze kennt nur die Theorie (was ausgeschrieben wird), nicht die Praxis (was eingebaut wird). **Das ist der einzigartige Hebel.**
+3. 🌱 **Klein → niedriges Risiko** für Heinze → eher bereit für Pilot-Konditionen
+4. 🪜 **Skalierungs-Story** — *„100.000+ Polier-MAUs in D-A-CH in 5 Jahren"* hört Heinze gern
+
+### Plan B — startklar ohne Heinze
+
+**Wichtig**: iMOPS NICHT abhängig von Heinze bauen.
+- **GAEB-XML** ist offener Standard → Architekten schicken eh GAEB-Files → Mops importiert direkt ohne Heinze-Lizenz
+- **abZ-Wissen** läuft bei uns lokal (Welle 1)
+- **BuildIQ** läuft lokal (Welle 5)
+- Heinze ist **Komfort + Tiefe**, nicht Pflicht
+
+→ Heinze-Integration kommt als **Welle 8 oder höher**, nachdem Welle 6 (Kalkulations-Schicht) und Welle 7 (Geländebrücke) stehen.
+
+### Konkurrenz im Daten-Markt (für Plan-B-Optionen)
+
+- **DBD** (Dr. Schiller & Partner) — Dynamische BauDaten, anderes Preismodell
+- **Sirados** — eher Baupreis-Lexikon
+- **f:data** (Sirados-Konzern) — Mischung aus beiden
+- **freie GAEB-Texte** in der Praxis von Architekten
+
+---
+
+### Wo Heinze in der Welle-Roadmap landet
+
+- ✅ Welle 1-4 stehen (Mops läuft autonom)
+- 🌊 Welle 5: BuildIQ Stufe 2 (Soll/Ist-Abgleich)
+- 🌊 Welle 6: **Kalkulations-Schicht** (Lohn + Maschine, Save #37)
+- 🌊 Welle 7: **Geländebrücke** (Geodaten + Erdmassen, Save #33)
+- 🌊 **Welle 8: Heinze-Integration** (Produktdaten + GAEB-Texte + BIM-Brücke)
+
+---
+
+_Save #38 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Heinze-Skelett-Argument für ersten Anruf griffbereit._
+
+---
+
+## 🚦 Nachtrag 7.6.2026, nachmittags — Voraussetzungs-Ampel (Save #39)
+
+> _Andreas im Park, mit geliehenem Stift und Zettel:_
+> _„Sonst werd ich kirre."_
+> _Wurde eine komplette UI-Logik-Schicht. Spontan, auf dem Spaziergang._
+
+---
+
+### Konzept — „Voraussetzungs-Ampel" pro Baustelle
+
+Jede Baustelle hat eine **Checkliste von Voraussetzungen**, die erfüllt sein müssen, bevor der Polier sinnvoll loslegen kann.
+
+**Status-Mechanik (Ampel):**
+- 🔴 **Rot** = nicht erfüllt
+- 🟠 **Orange** = in Arbeit / fast da
+- 🟢 **Grün** = erfüllt, kann genutzt werden
+
+**Polier-Knopf** „loslegen" wird **erst scharf, wenn alles grün** ist (auf der jeweiligen Ebene).
+
+**Beispiel-Voraussetzungen:**
+- Grundriss vorhanden?
+- Architekt-Plan abgenommen?
+- Anzahlung eingegangen?
+- Statik freigegeben?
+- Baugenehmigung?
+- Geotechnik-Gutachten?
+- Materialbestellungen ausgelöst?
+- Subunternehmer-Verträge unterschrieben?
+
+---
+
+### Granularität — hierarchisches Rollup
+
+Status ist nicht nur „pro Baustelle", sondern auf **jeder Ebene**, mit Rollup nach oben:
+
+```
+BAUSTELLE          🟢 ← nur grün wenn ALLE Gebäude grün
+  └── Gebäude A     🟠 ← orange weil ein Stockwerk orange
+        ├── EG       🟢
+        ├── 1. OG    🟠 ← weil eine Position offen
+        │     ├── Pos 1 Mauerwerk    🟢
+        │     ├── Pos 2 Schalung     🟠 ← Material fehlt
+        │     └── Pos 3 Beton        🟢
+        ├── 2. OG    🔴 ← noch nicht geplant
+        └── Treppenhaus  🟢
+```
+
+**Polier-Effekt**: Du musst nicht erst alles auf einmal grün haben — kannst EG-Mauerwerk loslegen, während 2. OG noch in Planung ist. Das System schaltet **stückweise frei.**
+
+---
+
+### Schätzwerte andersfarbig — Datenqualität sichtbar machen
+
+**Problem, das niemand sonst löst**: *„Habe ich diese 240 m² Wand gemessen oder geschätzt?"*
+
+**Lösung in Mops:**
+- **Normalfarbig** = gemessen / verifiziert
+- **Andersfarbig + gestrichelt** (Vorschlag: lila/blaugrau) = Schätzung / Annahme
+- **Beim BuildIQ-Scan** → Schätzung wird automatisch durch Messung ersetzt → Farbe wechselt zu normal
+
+→ Polier sieht auf einen Blick, **wo seine Datenbasis Hand und Fuß hat** und wo er noch nachprüfen muss. Das ist **Polier-DNA in Pixeln.**
+
+---
+
+### Aktive System-Forderung
+
+Mops fordert aktiv die fehlenden Zahlen ein — *„her mit den nötigen Zahlen!"* — statt passiv darauf zu warten:
+- Erinnerung bei offenen Voraussetzungen
+- Eskalation bei Fristen (z.B. „Baugenehmigung seit 30 Tagen rot")
+- Vorschlag wo die Zahlen herkommen können (z.B. „Geotechnik-Gutachten bei Statiker anfordern")
+
+---
+
+### Welle-Mapping
+
+**🌊 Welle 9 — „Voraussetzungs-Ampel" / „Bauplatz-Bereitschafts-Tracker"**
+
+Ergänzt:
+- Welle 5 (BuildIQ Stufe 2 — Soll/Ist)
+- Welle 6 (Kalkulations-Schicht)
+
+um die **Workflow-Schicht**: *„Kann der Polier überhaupt loslegen oder fehlt noch was?"*
+
+**Mops-Logik in Schichten:**
+- Welle 1-4 = Werkzeuge geben dem Polier
+- Welle 5-6 = Messen + Rechnen
+- **Welle 9 = Sagen, ob er DARF**
+
+---
+
+### Aktuelle Welle-Roadmap
+
+| Welle | Titel | Quelle |
+|---|---|---|
+| 1–4 | ✅ Live | (gestern/heute morgen) |
+| 5 | BuildIQ Stufe 2 (Soll/Ist) | seit Tagen |
+| 6 | Kalkulations-Schicht | Save #37 (heute) |
+| 7 | Geländebrücke (DGM) | Save #33 (Andreas + Raphi) |
+| 8 | Heinze-Integration | Save #38 (heute) |
+| **9** | **Voraussetzungs-Ampel** | **Save #39 (Park-Zettel heute)** |
+
+---
+
+### Polier-DNA — warum das einzigartig ist
+
+🛡 **Mensch über Profit · Profit durch Schutz der Menschen.**
+
+Andere Bau-Software-Anbieter (Capmo, Nevaris, ORCA) zeigen *Status* — meist als grüne/rote Punkte ohne tiefen Workflow. Mops zeigt **Voraussetzungs-Kette mit Hierarchie + Datenqualität**.
+
+Das schützt:
+- **Den Polier** vor unnötiger Arbeit, die scheitern wird (weil Statik noch nicht da ist)
+- **Den Bauherrn** vor Streit am Ende (weil Schätzwerte transparent waren)
+- **Den Bauleiter** vor falschen Versprechungen an Kunden (weil das System Lücken sichtbar macht)
+
+---
+
+_Save #39 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Spaziergangs-Brainstorm dokumentiert — geliehener Stift, frische Luft, vier Wellen vorausgedacht._
