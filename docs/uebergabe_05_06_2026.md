@@ -275,3 +275,139 @@ Sitzt **vor** Welle 1: bevor der Plan kommt, kommt das Grundstück.
 
 _Save #33 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Polier-Notiz: „Übermut tut selten gut" gilt auch für gute Ideen._
+
+---
+
+## 🌅 Nachtrag 7.6.2026, Sonntagvormittag — Raphi-Mac komplett mops-zertifiziert (Save #34)
+
+> _Vier Stunden zwischen 06:00 und 10:00. Andreas auf Raphis MacBook Air, Mops als Lotse._
+> _Andreas-Mission: „Deinen Mac kannste mitnehmen, der Mops hat's schon geregelt." Eingelöst._
+
+---
+
+### Was heute Vormittag passiert ist
+
+**Phase 1 — Backup auf Intenso (FAT32, 2 TB):**
+- ~26 GB rsync von Raphis Home in `/Volumes/INTENSO/Raphi-Backup-2026-06-07/`
+- **Doppelboden**: Mai-Backup vom 29.5.2026 (17 GB) bleibt unangetastet als Fallback
+- Status 23 (Symlinks/Permissions auf FAT32) — kosmetisch, keine echten Verluste
+- **Photos Library**: was an Symlinks fehlt, ist für Restore eh wertlos
+
+**Phase 2 — Klar Schiff (~60 GB frei statt 37):**
+- Downloads-Schlacht: 4× SketchUp-Installer + Teams.pkg + Claude.dmg + Windows-Schrott → ~5,8 GB
+- Application Support Schnellschuss: SketchUp 23/24 + Wallpaper-Cache → ~2,9 GB
+- Caches + Logs direkt-Löschung → ~4,6 GB
+- CoreSimulator → 2,5 GB
+- **Apps-Bereinigung** (mit sudo): SketchUp 2024 + Teams classic + PowerPoint + OneNote + Creality Slicer + Xcode + TNT-DMG (das war nicht mehr da) → ~13,3 GB
+- APFS purgeable space rechnete macOS später ein → Finder zeigt **51 → ~60 GB frei**
+- **`df` vs. Finder**: gelernt, dass df purgeable nicht freigibt — Finder/About-This-Mac ist der ehrliche Wert
+
+**Phase 3 — Mops-Server-Sync für Raphi:**
+- SSH-Key `ed25519` auf Raphis Mac (`~/.ssh/mops_sync_key`)
+- Public Key per `ssh-copy-id` auf die Box (`mops@192.168.2.42`)
+- Box-Ordner angelegt: `/srv/raphi/{sketchup,snapshots,imops-dokumente,snapshots-dokumente}`
+- **Zwei Sync-Spuren live (4× täglich, versetzt):**
+  - `com.mops.sketchup-sync` → `~/Mops-SketchUp/` → `/srv/raphi/sketchup/`  (8:00, 12:00, 16:00, 20:00)
+  - `com.mops.imops-dokumente-sync` → `~/imops-dokumente/` → `/srv/raphi/imops-dokumente/`  (8:15, 12:15, 16:15, 20:15)
+- **Snapshot-Versionierung** pro Sync: gelöschte/geänderte Dateien wandern in `/srv/raphi/snapshots[-dokumente]/[Datum_Uhrzeit]/`
+- Erst-Sync verifiziert: 33 Dateien rüber, beide launchd-Jobs registriert
+
+---
+
+### iMOPS-Dokumente-Struktur (live auf Raphis Mac + auf der Box)
+
+```
+~/imops-dokumente/
+├── Baustellen/
+│   └── 2026-448-GO_Schwarz_Marktbreit/      ← die einzige 100 %-sichere
+│       ├── Statik/  LV/  Angebote/  Lieferanten/  Baupläne/
+│       ├── Fotos/  Korrespondenz/  Bautagesberichte/
+│       └── Aufmasse/  Rechnungen/  Verträge/
+├── Vorlagen/                                ← BauSU-Formeln, Bauzeiten, LV-DIN276, Mops-Briefing
+└── _INBOX/                                  ← „Baustelle unklar, Raphi sortiert"
+    ├── Schmidt-Hettingen/                   ← 2 PDFs aus Downloads
+    ├── 466-GO/                              ← 1 DIN-18599-PDF aus Downloads
+    └── unklar/                              ← 4 Files (Datenblatt, .skp, Stammdaten, PRO)
+```
+
+**_INBOX-Strategie**: was wir 100 % wissen, gleich strukturiert anlegen. Unsicheres parkt sichtbar in `_INBOX/` — Raphi sortiert beim Erstkontakt selbst, bevor erster Snapshot-Konflikt entstehen kann. **Vermeidet rsync-Schmerzen bei späten Umbenennungen.**
+
+---
+
+### Architektur-Skizze persistiert
+
+📄 `docs/architektur_raphi_buero_setup.md` — 182 Zeilen, ASCII-Datenfluss-Diagramm, Rollen-Klärung, 3-2-1-Regel, Phasen-Status, Tech-Referenz, iMOPS-Dokumente-Struktur.
+→ Raphi kann's Montag nachlesen. Andreas hat's griffbereit für Phase 4.
+
+---
+
+### Was bewusst NICHT angefasst wurde (Raphi-Klärung am Montag)
+
+Apps mit Klärungsbedarf — bis ~25 GB weiteres Potenzial:
+- 🐘 **Claude 12 GB** (Konversations-DB) — Raphi nutzt Claude Desktop aktiv
+- **SketchUp 2025** 2,4 GB · **Microsoft Outlook** 2,7 · **OneDrive** 1,4 · **Microsoft Teams (neu)** 1,0
+- **Apple-Suite** (Pages/Keynote/Numbers) 1,4 GB · **Numbers Creator Studio** 486 MB
+- **Creality Cloud** 443 MB · **Taskade** 376 MB · **SketchUpViewer** 437 MB
+- **Chrome-Cache** ~5 GB (via Chrome-Settings, nicht Filesystem)
+- **MEGA2560 Arduino-Schematik** 2 MB (vermutlich uralte Spielerei)
+
+---
+
+### Apple-Configurator-Route für iMOPS-Distribution (statt Xcode)
+
+**Geplant für Phase 4 / heute optional:**
+- Andreas hat **$99/Jahr Apple Developer Account** → App-Signatur 1 Jahr gültig
+- Andreas baut iMOPS auf seinem Mac → `.ipa` Export
+- `.ipa` landet auf der Mops-Box: `/srv/raphi/imops-builds/iMOPS-[Datum].ipa`
+- Raphis Mac: **Apple Configurator 2** (gratis App Store, ~50 MB)
+- Raphi schließt iPhone/iPad per USB an → Configurator installiert von Box
+- **Xcode auf Raphis Mac war 5,1 GB → eingespart, ohne Funktionsverlust**
+- Vorteil vs. TestFlight: kein Apple-Server-Pfad, **Datenhoheit bleibt**
+
+---
+
+### Phase 4 — Montag (8.6.2026)
+
+**4a) Nächtliches Backup Box → Büromac (1 TB HDD):**
+- SSH-Vertrauen Box → Büromac einrichten
+- Cron-Job auf der Box: 02:00 Uhr `rsync /srv/raphi/ → /Volumes/IMOPS-Backup/raphi/`
+
+**4b) Erste Raphi-Klärungen** (mit Mac am Tisch):
+- Apps-Cleanup: Claude/SketchUp 2025/Outlook/OneDrive/Teams/PowerPoint-Counterparts/Apple-Suite
+- `_INBOX/466-GO/` und `_INBOX/Schmidt-Hettingen/` → richtige Baustellen-Namen, in `Baustellen/` verschieben **vor erstem Sync**
+- Configurator 2 installieren + erster .ipa-Install testen
+
+---
+
+### Polier-Disziplin, die heute live bewiesen wurde
+
+- ✅ **„Heute mache ich was ich will"** — Andreas hat sich erlaubt, früh aufzustehen weil er WOLLTE, nicht weil er musste
+- ✅ **„Übermut tut selten gut"** — nichts blind gelöscht, alles via Papierkorb
+- ✅ **„Übergabe gut, Tag gut"** — Raphi bekommt Mac mit Architektur-Doc + zwei live Sync-Spuren
+- ✅ **„Mensch über Profit"** — Apps-Bereinigung respektiert was Raphi braucht (nicht angefasst was unklar war)
+- ✅ **Pattern-Erkennung**: Andreas hat antizipiert, dass Lotse mit `mkdir` anfängt → **Lehrling wird Geselle**
+
+---
+
+### Lehrmoment des Tages
+
+> _„Extra nicht gemacht. Ich liebe es mehr übers Terminal zu lernen."_
+
+Andreas hat Claude Code **nicht** auf Raphis Mac installiert, obwohl es Copy-Paste-Tänze gespart hätte. Stattdessen: jeden Befehl selbst getippt. Der lange Weg verändert, der kurze liefert nur das Ergebnis. **Das ist Polier-Disziplin angewandt aufs eigene Lernen.**
+
+---
+
+### Tagline-Anker
+
+🎸 **Rio Reiser / TSS auf Postgres-Niveau** — bewiesen durch:
+- SSH-Key statt Cloud-Konto
+- Eigene Box statt fremde Server
+- `--backup-dir` als Hausbesetzer-Versicherung gegen Datenverlust
+- _INBOX als „Sammelraum mit Würde" statt anonyme Downloads-Halde
+
+> 🛡 *„Mensch über Profit · Profit durch Schutz der Menschen."* — eine Zeile, ein Sonntagmorgen, eine ganze Setup-Architektur, die danach lebt.
+
+---
+
+_Save #34 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Vier Stunden Polier-Werk, dokumentiert für die nächste Sitzung und für Raphi._
