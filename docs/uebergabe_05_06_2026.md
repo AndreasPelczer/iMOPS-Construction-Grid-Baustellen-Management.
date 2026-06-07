@@ -484,3 +484,85 @@ _Vier Stunden Polier-Werk, dokumentiert für die nächste Sitzung und für Raphi
 
 _Save #35 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Sonntagvormittag-Flow dokumentiert für die Nachwelt und für Raphi._
+
+---
+
+## 🧮 Nachtrag 7.6.2026, nachmittags — Lohn-/Maschinen-Vorlage + Welle 6 (Save #37)
+
+> _Andreas: „erstelle mir eine Vorlage für Excel wo genau aufgelistet ist was ein Arbeiter auf dem Bau verdient. Lehrling, Polier, Meister, Facharbeiter, Hilfsarbeiter. Und Maschinenpark-Kosten? Welche Infos haben wir und der Mops?"_
+
+---
+
+### Was entstanden ist
+
+📄 **`docs/Vorlage_Lohn_Maschinenpark_2026.xlsx`** — Excel-Vorlage mit 4 Tabs:
+
+1. **Lohngruppen** — von Azubi 1.Jahr bis Bauleiter, mit Brutto · Nebenkosten-Faktor · Vollkosten-Formel
+2. **Maschinenpark** — 16 Maschinen-Kategorien (Bagger / Radlader / LKW / Kran / Betonpumpe / Walze / etc.), mit Stundensätzen + Vorhaltung + Mindesteinsatz
+3. **Mittellohn** — Beispiel-Crew Rohbau (1 Polier + 4 Facharbeiter + 3 Hilfsarbeiter), mit automatischer Mittellohn-Berechnung über SUMPRODUCT-Formeln
+4. **Zuschläge** — von Selbstkosten zur Angebotssumme: AGK 10% · WuG 8% · Skonto-Reserve 2,5% · MwSt 19%, mit Beispiel-Rechnung
+
+Alle Tabs als **A4 Querformat druckbar** — Andreas-Wunsch: „an die Wand kleben".
+
+Default-Werte sind **Richtwerte Tarif West 2026**. Vor Live-Einsatz: aktueller ZDB-Tarif gegenchecken, Firmen-spezifischer Lohnnebenkosten-Faktor (typisch 1,7-2,0).
+
+---
+
+### Was Mops bereits weiß (Welle 1-4)
+
+- Material-Katalog mit Mat-Nr.
+- LV-Positionen mit Mengen
+- BuildIQ-Scan (Mengen aus Fotos)
+- abZ-Daten (Festigkeitsklassen etc.)
+- Bauwissen-RAG (Normen, Techniken)
+
+### Was bisher fehlte (= diese Vorlage füllt teilweise)
+
+- Tariflöhne pro Lohngruppe
+- Lohnnebenkosten-Faktor (firmen-individuell)
+- Maschinen-Mietsätze + Vorhaltekosten
+- Mittellohn-Berechnung
+- AGK / WuG / Skonto-Sätze
+
+### Was Mops berechnen könnte, sobald Werte da sind
+
+- Mannstunden pro LV-Position (aus Erfahrungswerten)
+- Maschinenstunden pro Position
+- Gesamtkalkulation pro Position
+- **Angebotssumme komplett aus Mengen + Material + Lohn + Maschinen + Aufschlägen**
+
+---
+
+### 🌊 Welle 6 — Arbeitstitel „Kalkulations-Schicht"
+
+**Position**: nach Welle 5 (BuildIQ Stufe 2 = Soll/Ist-Abgleich)
+
+**Zweck**: schließt die Lücke zwischen *„Mengen + Material"* (Welle 1-4) und *„fertiges Angebot beim Kunden"*.
+
+**Datenmodell-Skizze:**
+- Tabelle `lohngruppen` (LG, Bezeichnung, Brutto, Nebenkosten-Faktor, Vollkosten)
+- Tabelle `maschinen` (Maschine, Stundensatz, Vorhaltung, Mindesteinsatz)
+- Tabelle `firma_settings` (Lohnnebenkosten-Faktor, AGK %, WuG %, Skonto %)
+- Tabelle `crew_typen` (Vorlage-Crews pro Gewerk, mit Mittellohn-Berechnung)
+- Zusatz pro LV-Position: `mannstunden_pro_einheit`, `maschinen_typ`, `maschinen_stunden_pro_einheit`
+- Mops-API-Endpoint: `/calculate-offer` (Selbstkosten + Aufschläge → Angebotssumme)
+
+**Erstdatenbefüllung**: aus dieser Excel-Vorlage, die Andreas + Raphi selbst pflegen.
+
+**Spätere Erweiterung (Welle 6+)**:
+- Erfahrungswerte-Datenbank: „Wie viele Mannstunden braucht ein erfahrener Mauerer pro m² 24er-Wand?" — Mops lernt aus eigenen Projekten
+- Wettbewerbsvergleich: was kostet vergleichbares woanders
+- Zeitverlauf: wie haben sich Stundensätze entwickelt
+
+---
+
+### Polier-Verbindung zur DNA
+
+> 🛡 *„Mensch über Profit · Profit durch Schutz der Menschen."*
+
+Welle 6 macht **Lohnkosten transparent** — Polier sieht in der App: *„Diese Baustelle bringt €5/Std weniger als die letzte vergleichbare. Warum?"* Statt vagen Profit-Druck gibt's konkrete Marge — und konkretes Wissen, wann eine Baustelle nicht angenommen werden sollte.
+
+---
+
+_Save #37 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Andreas-Wunsch: „einmal sehen heute um es an die Wand kleben zu können." — erledigt._
