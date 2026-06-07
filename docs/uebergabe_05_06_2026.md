@@ -411,3 +411,76 @@ Andreas hat Claude Code **nicht** auf Raphis Mac installiert, obwohl es Copy-Pas
 
 _Save #34 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Vier Stunden Polier-Werk, dokumentiert für die nächste Sitzung und für Raphi._
+
+---
+
+## 🎨 Nachtrag 7.6.2026, 07:20 Uhr — Übergabe-Material für Raphi (Save #35)
+
+> _Andreas: „Komme mir vor als hätte ich während des Frühstücks einen Tag im Büro durchgezogen, der sich nicht wie Arbeit anfühlt."_
+> _Flow-Modus. Csikszentmihalyi hätte applaudiert._
+
+---
+
+### Was zusätzlich zu Phase 1+2+3 entstanden ist:
+
+**Präsentation für Raphi — vier Stil-Versuche:**
+
+1. **Variante „playful" (5 Slides → Canva machte 7)** — bunt, ADHS-freundlich, freundliches Sonntags-Tonfall
+   - Canva-Editor: `https://www.canva.com/d/sPNBlWTYsWZsDE5`
+   - 4 Stil-Vorschläge generiert (Andreas: „die 4 sind schon völlig ok, fehlt aber der gewisse ...?!")
+
+2. **Variante „Matrix" — 3× von Canva geblockt**
+   - Content-Filter triggert bei „Wake up", „The Machine", „There is no Cloud" + dunkelgrünem Style
+   - Vermutlich IP-Schutzreflex der Canva-AI
+
+3. **Variante „Kung Fu / Wuxia"** — Bruce Lee + Laotse Vibes, Bambus + Mops
+   - Canva-Editor: `https://www.canva.com/d/572MaJ0liLFvS-q`
+   - Andreas: „die kungfu sachen sind sehr gut"
+   - Slide „_INBOX leeren" kam tatsächlich Matrix-mäßig raus (Cyberpunk-Mops mit Schutzbrille, neon Magenta+Cyan) — Canva hat den Matrix-Look heimlich über die Wuxia-Tür geliefert
+
+4. **Cheatsheet (1-Pager)** — Referenz statt Onboarding, vier Boxen, ADHS-tauglich
+   - Generiert mit Canva, exportiert als PDF
+   - Zum Aufhängen am Bildschirm bei Raphi
+   - URL: siehe nächster Chat-Eintrag
+
+---
+
+### Polier-Erkenntnis des Tages (Andreas-Originalton):
+
+> _„Lohnarbeit fühlt sich wie Arbeit an, weil sie meistens gegen dich läuft. Eigenwerk auf eigener Box mit eigenen Händen läuft mit dir. Da geht die Zeit anders durch."_
+
+**Beweise heute:**
+- 4 Stunden konzentriert (06:00–10:00), gefühlt wie „eine Frühstücksrunde"
+- Backup + Aufräumen + zwei Sync-Spuren + Apps-Cleanup + Architektur-Doc + Save-Sammlung + Präsentation + Cheatsheet
+- Andreas hat **selbst getippt**, nicht delegiert — Reflex sitzt
+- Mac heute Abend übergabebereit für Raphi
+- Drittes Murmeltier-Schauen dieses Jahr blieb dabei trotzdem drin
+
+---
+
+### Was Raphi heute Abend bekommt (Übergabe-Paket)
+
+1. 💻 **Mac** (60 GB frei, Backup auf Intenso, 2 Sync-Spuren laufen)
+2. 📊 **Kung Fu PowerPoint** (Onboarding, ~7 Slides, bunt+dramatic)
+3. 📋 **Cheatsheet PDF** (Referenz, 1-Pager mit 4 Boxen)
+4. 📄 **`docs/architektur_raphi_buero_setup.md`** falls er tiefer einsteigen will
+5. 🤝 **Andreas an seiner Seite** — Montag Phase 4 Büromac + Klärungen
+
+---
+
+### Phase 4 Montag — finaler Tagesplan
+
+| Block | Dauer |
+|---|---|
+| Büromac anschließen, SSH-Vertrauen Box→Büromac | 20 Min |
+| Cron-Job auf Box: nächtliches `rsync /srv/raphi/ → /Volumes/IMOPS-Backup/raphi/` | 10 Min |
+| Apple Configurator 2 auf Raphis Mac installieren (Raphi tippt, Andreas zeigt) | 5 Min |
+| Erste iMOPS-`.ipa` von Andreas' Mac → Box → Raphis iPad installieren | 15 Min |
+| `_INBOX` mit Raphi durchgehen: 466-GO + Schmidt-Hettingen + unklar einsortieren | 30 Min |
+| Apps-Klärungen (Claude 12 GB, SketchUp 2025, Outlook, OneDrive, Teams (neu), Apple-Suite, …) | 30 Min |
+| **Total** | **~2 Stunden** |
+
+---
+
+_Save #35 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Sonntagvormittag-Flow dokumentiert für die Nachwelt und für Raphi._
