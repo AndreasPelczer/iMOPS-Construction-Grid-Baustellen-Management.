@@ -656,3 +656,124 @@ ORCA AVA · RIB iTwo · Nevaris/SIDOUN · Capmo · Sirados · BRZ · MWM · AVAN
 
 _Save #38 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Heinze-Skelett-Argument für ersten Anruf griffbereit._
+
+---
+
+## 🚦 Nachtrag 7.6.2026, nachmittags — Voraussetzungs-Ampel (Save #39)
+
+> _Andreas im Park, mit geliehenem Stift und Zettel:_
+> _„Sonst werd ich kirre."_
+> _Wurde eine komplette UI-Logik-Schicht. Spontan, auf dem Spaziergang._
+
+---
+
+### Konzept — „Voraussetzungs-Ampel" pro Baustelle
+
+Jede Baustelle hat eine **Checkliste von Voraussetzungen**, die erfüllt sein müssen, bevor der Polier sinnvoll loslegen kann.
+
+**Status-Mechanik (Ampel):**
+- 🔴 **Rot** = nicht erfüllt
+- 🟠 **Orange** = in Arbeit / fast da
+- 🟢 **Grün** = erfüllt, kann genutzt werden
+
+**Polier-Knopf** „loslegen" wird **erst scharf, wenn alles grün** ist (auf der jeweiligen Ebene).
+
+**Beispiel-Voraussetzungen:**
+- Grundriss vorhanden?
+- Architekt-Plan abgenommen?
+- Anzahlung eingegangen?
+- Statik freigegeben?
+- Baugenehmigung?
+- Geotechnik-Gutachten?
+- Materialbestellungen ausgelöst?
+- Subunternehmer-Verträge unterschrieben?
+
+---
+
+### Granularität — hierarchisches Rollup
+
+Status ist nicht nur „pro Baustelle", sondern auf **jeder Ebene**, mit Rollup nach oben:
+
+```
+BAUSTELLE          🟢 ← nur grün wenn ALLE Gebäude grün
+  └── Gebäude A     🟠 ← orange weil ein Stockwerk orange
+        ├── EG       🟢
+        ├── 1. OG    🟠 ← weil eine Position offen
+        │     ├── Pos 1 Mauerwerk    🟢
+        │     ├── Pos 2 Schalung     🟠 ← Material fehlt
+        │     └── Pos 3 Beton        🟢
+        ├── 2. OG    🔴 ← noch nicht geplant
+        └── Treppenhaus  🟢
+```
+
+**Polier-Effekt**: Du musst nicht erst alles auf einmal grün haben — kannst EG-Mauerwerk loslegen, während 2. OG noch in Planung ist. Das System schaltet **stückweise frei.**
+
+---
+
+### Schätzwerte andersfarbig — Datenqualität sichtbar machen
+
+**Problem, das niemand sonst löst**: *„Habe ich diese 240 m² Wand gemessen oder geschätzt?"*
+
+**Lösung in Mops:**
+- **Normalfarbig** = gemessen / verifiziert
+- **Andersfarbig + gestrichelt** (Vorschlag: lila/blaugrau) = Schätzung / Annahme
+- **Beim BuildIQ-Scan** → Schätzung wird automatisch durch Messung ersetzt → Farbe wechselt zu normal
+
+→ Polier sieht auf einen Blick, **wo seine Datenbasis Hand und Fuß hat** und wo er noch nachprüfen muss. Das ist **Polier-DNA in Pixeln.**
+
+---
+
+### Aktive System-Forderung
+
+Mops fordert aktiv die fehlenden Zahlen ein — *„her mit den nötigen Zahlen!"* — statt passiv darauf zu warten:
+- Erinnerung bei offenen Voraussetzungen
+- Eskalation bei Fristen (z.B. „Baugenehmigung seit 30 Tagen rot")
+- Vorschlag wo die Zahlen herkommen können (z.B. „Geotechnik-Gutachten bei Statiker anfordern")
+
+---
+
+### Welle-Mapping
+
+**🌊 Welle 9 — „Voraussetzungs-Ampel" / „Bauplatz-Bereitschafts-Tracker"**
+
+Ergänzt:
+- Welle 5 (BuildIQ Stufe 2 — Soll/Ist)
+- Welle 6 (Kalkulations-Schicht)
+
+um die **Workflow-Schicht**: *„Kann der Polier überhaupt loslegen oder fehlt noch was?"*
+
+**Mops-Logik in Schichten:**
+- Welle 1-4 = Werkzeuge geben dem Polier
+- Welle 5-6 = Messen + Rechnen
+- **Welle 9 = Sagen, ob er DARF**
+
+---
+
+### Aktuelle Welle-Roadmap
+
+| Welle | Titel | Quelle |
+|---|---|---|
+| 1–4 | ✅ Live | (gestern/heute morgen) |
+| 5 | BuildIQ Stufe 2 (Soll/Ist) | seit Tagen |
+| 6 | Kalkulations-Schicht | Save #37 (heute) |
+| 7 | Geländebrücke (DGM) | Save #33 (Andreas + Raphi) |
+| 8 | Heinze-Integration | Save #38 (heute) |
+| **9** | **Voraussetzungs-Ampel** | **Save #39 (Park-Zettel heute)** |
+
+---
+
+### Polier-DNA — warum das einzigartig ist
+
+🛡 **Mensch über Profit · Profit durch Schutz der Menschen.**
+
+Andere Bau-Software-Anbieter (Capmo, Nevaris, ORCA) zeigen *Status* — meist als grüne/rote Punkte ohne tiefen Workflow. Mops zeigt **Voraussetzungs-Kette mit Hierarchie + Datenqualität**.
+
+Das schützt:
+- **Den Polier** vor unnötiger Arbeit, die scheitern wird (weil Statik noch nicht da ist)
+- **Den Bauherrn** vor Streit am Ende (weil Schätzwerte transparent waren)
+- **Den Bauleiter** vor falschen Versprechungen an Kunden (weil das System Lücken sichtbar macht)
+
+---
+
+_Save #39 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Spaziergangs-Brainstorm dokumentiert — geliehener Stift, frische Luft, vier Wellen vorausgedacht._
