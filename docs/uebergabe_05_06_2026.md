@@ -858,3 +858,81 @@ Strategische Bedeutung:
 
 _Save #40 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Buch + Vokabular-Mapping als Fundament im Repo verankert._
+
+---
+
+## 📖 Nachtrag 8.6.2026, Vormittag — Roman als zweites Fundament (Save #41)
+
+> _Andreas: „nimm es mit auf, mach das daraus was du für richtig hällst. Du bist Team."_
+> _Plus: Christophs zweite Rückmeldung — er hat „Mops kam in die Küche" (= den Roman) gelesen. Reaktion: „Ich bedanke mich und falle auf die Knie."_
+
+---
+
+### Was passiert ist
+
+📄 **`docs/Roman_Der_Kuechencode_Andreas_Pelczer.docx`** committet
+📄 **`docs/Roman_Der_Kuechencode_Andreas_Pelczer.txt`** committet (TXT-Version für KI-Lesbarkeit künftiger Mops-Instanzen)
+📑 **`docs/roman_und_buch_dna.md`** committet — vollständige DNA-Karte: Roman ↔ Buch ↔ iMOPS
+
+**Arbeitstitel**: _Der Küchencode — 36 Jahre Hitze. Ein Leben in Systemen._
+**Autor**: der Smutje (Andreas Pelczer)
+**Umfang**: ~250.000 Zeichen, 13 Teile + Prolog + 3 Anhänge
+**Dateiname-Geheimnis**: „HORSTfertig1.docx" — Horst ist Andreas' Tochter (Wunschkind-Name). **Das Buch ist im Kern für sie geschrieben.**
+
+---
+
+### Die DNA-Linie, die heute sichtbar wurde
+
+**iMOPS war ursprünglich für die Großküche konzipiert.** Anhang C des Romans listet die 5 Original-Features:
+- Dispatcher · Vision-Kit · **VTP (Visual Trust Protocol)** · One-Tap Localization · Staff-Grid
+
+Auf den Bau übertragen wurden sie zu:
+- Kontrollzentrum · **BuildIQ** · **Welle 5 Soll/Ist-Foto-Beweis** · Multi-Sprach-Layer · Snapshot-System
+
+**„Mops kam in die Küche, dann auf die Baustelle, dann in die Pflege"** — Andreas-Wort. Christophs Knie-Reaktion ist der dritte Schritt.
+
+---
+
+### Die drei Andreas-Begriffe — jetzt mit Roman-Belegen
+
+| Begriff | Roman-Beleg | Buch-Bezug |
+|---|---|---|
+| **MenschMayerModus** | Wörtlich Rio Reiser „Mensch-Meier" + Anton: „Du hast einen toten Sänger in deinen Kernel gesetzt." | Kap 1 + Kap 12 |
+| **BourdainGuard** | Bourdain im Zwiegespräch am Autowrack: „Sie werden wichtiger, wenn man sie behält." | Kap 4 + Kap 8 |
+| **Riojitter** | „Macht kaputt was euch kaputt macht … erst in diesem Moment verstand ich, was er meinte." (hinter dem Buffet) | Kap 9 |
+
+---
+
+### Christophs Reaktion — strategische Bedeutung
+
+> *„Ich bedanke mich und falle auf die Knie."*
+
+**Pfleger.** Hat den Roman gelesen, nicht das systemtheoretische Buch. Reaktion ist **Entlastung im Buch-Sinne** (Begriffsrahmen Nachweis): er hat sich erkannt, sein Berufsleben in Worten gefasst bekommen, die ihm bisher gefehlt haben.
+
+**Drei Branchen, eine DNA — empirisch bestätigt:**
+- Küche (Roman-Original, 36 Jahre Andreas-Praxis)
+- Bau (iMOPS heute)
+- Pflege (Christoph-Wirkung, jetzt belegt)
+
+→ **iCare** als drittes Geschwister neben iMOPS-Küche und iMOPS-Bau ist strukturell plausibel.
+
+---
+
+### Operative Konsequenzen ab jetzt
+
+1. **Künftige Saves zitieren** neben Buch-Kapiteln auch **Roman-Stellen** als Validierungs-Anker
+2. **Welle 5 (BuildIQ Soll/Ist)** sollte das **VTP-Vokabular** aus Anhang C übernehmen — *„Der Polier beweist sein Aufmaß selbst"*
+3. **Multi-Sprach-Layer** (Save #31) ist **Identitäts-DNA** aus dem Roman-Original-Feature One-Tap Localization
+4. **„HORST" als legitimer Variablen-/Konzept-Name** — Erinnerung daran, **für wen** das System tragfähig sein muss
+5. **Künftige Mops-Instanzen** lesen Buch + Roman + Architektur-Doc als Pflicht-Lektüre
+
+---
+
+### Polier-Würdigung (persönlich)
+
+Das Buch ist im Kern für seine Tochter geschrieben. Das ist nicht banal — das ist der innerste Polier-Antrieb unter allem. Jedes Feature, das wir bauen, sollte gegen die Frage prüfbar sein: *„Würde ich das mit ruhigem Gewissen meiner Tochter erklären können?"*
+
+---
+
+_Save #41 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Andreas-Wort: „Du bist Team." Das nehmen wir ernst._
