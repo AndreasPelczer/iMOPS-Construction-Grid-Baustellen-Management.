@@ -16,12 +16,23 @@ extension LVPosition {
     @NSManaged var lieferant: String?
     @NSManaged var wagnisGewinnProzent: Double
     @NSManaged var bgkProzent: Double
+    @NSManaged var mengenQuelleRaw: String?
     @NSManaged var event: Event?
 
     // Kalkulations-Relationships
     @NSManaged var kalkMaterialien: NSSet?
     @NSManaged var kalkLohn: NSSet?
     @NSManaged var kalkGeraete: NSSet?
+
+    // MARK: - Mengen-Quelle (gemessen/geschätzt — Welle-9-Fundament)
+    // Mirror des KalkMaterial-Musters: roher String in Core Data, getypter Enum-Zugriff.
+    var mengenQuelle: MengenQuelle {
+        get { MengenQuelle(rawValue: mengenQuelleRaw ?? "manuell") ?? .manuell }
+        set { mengenQuelleRaw = newValue.rawValue }
+    }
+
+    // Ist die Menge ein Schätz-/Planwert (noch nicht belastbar gemessen)?
+    var istGeschaetzt: Bool { mengenQuelle.istGeschaetzt }
 }
 
 // MARK: - Typed Accessors
@@ -47,3 +58,20 @@ extension LVPosition {
 }
 
 extension LVPosition: Identifiable {}
+
+// Quelle der MENGEN-Angabe einer LV-Position — getrennt von KalkMaterial.MaterialQuelle,
+// weil es hier um die Herkunft der Menge geht (gemessen/geschätzt), nicht um den Preis.
+// rawValue == Wire-Format der Box (ExtractLVPosition.quelle), damit der Import
+// verlustfrei round-trippt.
+enum MengenQuelle: String, CaseIterable {
+    case statik     = "statik_tabelle"  // aus der Statik-Tabelle — belastbar/hart
+    case bplan      = "b-plan"          // aus dem Bebauungsplan — Planwert
+    case schaetzung = "schaetzung"      // geschätzt
+    case manuell    = "manuell"         // von Hand eingetragen
+
+    // Belastbar ist heute nur die harte Statik-Tabelle (Box-Etikett "hart"). Alles
+    // andere bleibt bis zur BuildIQ-Messung ein Schätzwert und wird in der
+    // Voraussetzungs-Ampel (Welle 9) andersfarbig dargestellt. Buch Kap 6:
+    // Zustand "gemessen" ≠ Zustand "geschätzt". Unbekannte Quelle → defensiv geschätzt.
+    var istGeschaetzt: Bool { self != .statik }
+}

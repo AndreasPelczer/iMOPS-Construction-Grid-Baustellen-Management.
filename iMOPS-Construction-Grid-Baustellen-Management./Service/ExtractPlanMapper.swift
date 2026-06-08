@@ -36,6 +36,7 @@ enum ExtractPlanMapper {
             pos.menge = p.menge ?? 0               // "manuell"-Positionen: menge=null
             pos.einheit = p.einheit
             pos.kostenGruppeNummer = p.kg          // DIN 276
+            pos.mengenQuelleRaw = p.quelle ?? "manuell"   // gemessen/geschätzt (Welle-9-Fundament)
             pos.event = event
             if let zeile = bestellByPos[p.posNr] {
                 pos.artikelNummer = zeile.matnr     // Xella-Mat-Nr (abZ-Resolver)
