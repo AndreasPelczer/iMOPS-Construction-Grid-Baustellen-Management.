@@ -88,6 +88,17 @@
         <relationship name="kalkMaterialien" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionMaterial" inverseName="position" inverseEntity="PositionMaterial"/>
         <relationship name="kalkLohn" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionLohn" inverseName="position" inverseEntity="PositionLohn"/>
         <relationship name="kalkGeraete" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionGeraet" inverseName="position" inverseEntity="PositionGeraet"/>
+        <relationship name="aufmasse" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Aufmass" inverseName="lvPosition" inverseEntity="Aufmass"/>
+    </entity>
+    <entity name="Aufmass" representedClassName="Aufmass" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="istMenge" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="istEinheit" optional="YES" attributeType="String"/>
+        <attribute name="erstelltAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="quelleRaw" optional="YES" attributeType="String" defaultValueString="manuell"/>
+        <attribute name="fotoData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="notiz" optional="YES" attributeType="String"/>
+        <relationship name="lvPosition" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="aufmasse" inverseEntity="LVPosition"/>
     </entity>
     <entity name="Mangel" representedClassName="Mangel" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
