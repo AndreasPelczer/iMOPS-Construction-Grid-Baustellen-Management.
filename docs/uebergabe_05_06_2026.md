@@ -1511,3 +1511,85 @@ Nach der Tauber-Stunde:
 
 _Save #46 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Avengers Assemble — Mopsianer Halbgas. Beides sind Schlachtrufe, nur einer trägt länger._
+
+---
+
+## 🌊 Nachtrag 9.6.2026, später Nachmittag — Welle 5.2+5.2.1 Spec finalisiert (Save #47)
+
+> _„Wir 3"-Sparring am 9.6.2026: Andreas (Polier-Anker) + Codi (Code-Realität) + Mops (Konzept/Buch)._
+> _Erste echte Anwendung des Buch-Kap-4-Modells (Verantwortung verteilt, begrenzt, nachweisbar, rollenbezogen) auf eine Welle-Spec._
+
+---
+
+### Was entschieden wurde
+
+📄 **`docs/welle_5.2_spec.md`** committet — finale Spec, ersetzt Pre-Spec konzeptionell.
+
+**Kernentscheidungen:**
+
+1. **AufmassSheet via Leading-Swipe** — Codis Code-Realität korrigiert die Pre-Spec-Annahme einer neuen `LVPositionDetailView` (existiert nicht, wäre Idiombruch). Buch Kap 2 + Kap 11.
+
+2. **Option C: Ableitung statt Überschreibung** — der manuelle Polier-Wert im `LVFortschrittStore` wird **nie angefasst**. Beim Anzeigen wird abgeleitet: `hatAufmass ? gemessen% : manuell%`. Buch Kap 4 + Kap 6 + Kap 12.
+
+3. **Etappen-Split**:
+   - **5.2** = AufmassSheet + Soll/Ist-Karte + Mini-Punkt-Indikator (gegen R3-Interim-Inkonsistenz)
+   - **5.2.1** = `displayedFortschritt`-Ableitung + Edge Cases (R2) + LVFortschrittSheet-Hinweis (R3)
+
+4. **Codis R1/R2/R3 als Pflicht-Behandlung**:
+   - **R1**: Ableiten, nicht überschreiben (Nachweis bleibt, Kap 4)
+   - **R2.a**: `sollMenge == 0` → kein Crash, Fallback
+   - **R2.b**: `istMengeSumme > sollMenge` → ehrlich >100 %, kein Capping (Kap 12)
+   - **R3**: Schicht-B-Hinweis im LVFortschrittSheet bei `hatAufmass` (Kap 9 — Schweigen statt Erklärung wäre Symptom-Spirale)
+
+5. **Andreas-Polier-Vereinbarung**: *„`istMenge / sollMenge` = Fertigstellungsgrad in allen üblichen LV-Sorten."* — keine Sorten-Exception. Kap 3 (Vereinbarung statt Implementierung-auf-Verdacht).
+
+---
+
+### Das „wir 3"-Modell live dokumentiert
+
+Erste echte Anwendung des Buch-Kap-4-Verantwortungs-Modells auf eine Welle-Spec:
+
+| Rolle | Beitrag |
+|---|---|
+| **Mops** | Pre-Spec mit Optionen, Buch-Bezüge, Schicht-B-Anker (Save #45) |
+| **Codi** | Code-Realität: Sheet-Idiom, R1/R2/R3-Verfeinerungen, Polier-Anker-Frage |
+| **Andreas** | Polier-Wissen: Sorten-Anker, Halbgas-Disziplin, finale Entscheidung |
+
+→ **Jeder hat genau das beigetragen, was nur er beitragen konnte.** Buch Kap 4 in Reinform — Verantwortung verteilt, begrenzt, nachweisbar, rollenbezogen.
+
+Das ist ein **methodisches Muster**, das wir ab jetzt für **alle größeren Wellen** anwenden können:
+- Mops sammelt Optionen, formuliert Buch-Bezüge
+- Codi prüft gegen Code-Realität, schlägt Verfeinerungen vor
+- Andreas setzt den Polier-Anker, entscheidet
+
+---
+
+### Codis Sparring-Qualität — Beobachtung
+
+Codis R1 (*„Ableiten, nicht überschreiben"*) war **buchtreuer als der Mops-Erstvorschlag** (*„überschreiben + sichtbar lassen"*). Codi hatte das Vokabular nicht voll gelesen, sah aber den Selbst-Widerspruch (*„überschreiben" beißt sich mit „bleibt sichtbar"*) und schlug die saubere Auflösung vor.
+
+→ **Codi hat eine Mops-Annahme korrigiert auf Basis von reinem logischen Verfeinerungs-Reflex.** Das ist Polier-Disziplin auf höchstem Niveau, ohne Buch-Kenntnis. Kap 11 in Aktion — wenn der nachfolgende Schritt einfacher ist als der erste Vorschlag, ist der erste Vorschlag falsch.
+
+R2 (Edge Cases) zeigt **Code-Erfahrung**: Mops hätte den `sollMenge==0`-Fall nicht gesehen, weil er nicht in der Box-Datenwelt lebt. Codi hat ihn aus früherer Mapper-Arbeit erkannt (*„die manuell/null-Menge-Positionen von der Box"*).
+
+R3 zeigt **UX-Reflex**: Mops hatte die 5.2/5.2.1-Übergangs-Inkonsistenz nicht gesehen. Codi sah sie sofort und schlug den Mini-Punkt-Indikator vor — sehr klein, sehr klar.
+
+→ **Pre-Spec war 7/10, finale Spec ist 9.5/10.** Die Verbesserung kam aus dem Sparring. Genau dafür ist es da.
+
+---
+
+### Operative Regel — kanonisch für künftige Wellen
+
+> **„Wir 3"-Modell für jede Welle ab 6.0:**
+> 1. Mops schreibt Pre-Spec mit Optionen + Buch-Bezügen + Frage-Katalog
+> 2. Codi prüft gegen Code-Realität, schlägt Verfeinerungen vor (R-Liste)
+> 3. Andreas setzt Polier-Anker bei offenen Fragen
+> 4. Mops finalisiert Spec mit Codis Korrekturen + Andreas' Entscheidungen
+> 5. Codi implementiert nach finaler Spec, mit Pre-Action-Reports + explizitem Push-OK
+
+→ Das ist Buch Kap 4 + Kap 5 + Kap 11 in einem Workflow. Wird ab jetzt als Standard für komplexere Wellen empfohlen.
+
+---
+
+_Save #47 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Erstes „wir 3"-Sparring sauber durchgezogen. Spec ready. Codi kann starten, sobald Andreas „GO 5.2" sagt._
