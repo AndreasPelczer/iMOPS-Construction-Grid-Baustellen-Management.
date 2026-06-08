@@ -12,7 +12,6 @@ struct MangelListeView: View {
     @State private var zeigeErfassen  = false
     @State private var statusFilter: MangelStatus? = nil
     @State private var gewerkFilter: String?        = nil
-    @State private var showPDFShare   = false
     @State private var pdfURL: URL?
     @State private var showFristen    = false
 
@@ -98,8 +97,8 @@ struct MangelListeView: View {
                 MangelErfassenView(event: event)
                     .environment(\.managedObjectContext, ctx)
             }
-            .sheet(isPresented: $showPDFShare) {
-                if let url = pdfURL { LVShareSheet(url: url).ignoresSafeArea() }
+            .sheet(item: $pdfURL) { url in
+                LVShareSheet(url: url).ignoresSafeArea()
             }
             .sheet(isPresented: $showFristen) {
                 FristenView()
@@ -242,7 +241,6 @@ struct MangelListeView: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         if (try? data.write(to: url)) != nil {
             pdfURL = url
-            showPDFShare = true
         }
     }
 
