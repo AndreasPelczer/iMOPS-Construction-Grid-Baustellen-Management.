@@ -24,6 +24,9 @@ extension LVPosition {
     @NSManaged var kalkLohn: NSSet?
     @NSManaged var kalkGeraete: NSSet?
 
+    // Aufmasse (Welle 5.1 — echte Messungen gegen die Soll-Menge)
+    @NSManaged var aufmasse: NSSet?
+
     // MARK: - Mengen-Quelle (gemessen/geschätzt — Welle-9-Fundament)
     // Mirror des KalkMaterial-Musters: roher String in Core Data, getypter Enum-Zugriff.
     var mengenQuelle: MengenQuelle {
@@ -55,6 +58,29 @@ extension LVPosition {
     var hatKalkulation: Bool {
         !materialArray.isEmpty || !lohnArray.isEmpty || !geraeteArray.isEmpty
     }
+
+    // MARK: - Soll/Ist (Welle 5.1 — Aufmass-Skelett)
+    // Alle computed, KEIN persistiertes Summen-Feld auf Vorrat (Buch Kap 12).
+
+    // Aufmasse, neueste zuerst (erstelltAm = Nachweis-Anker, Buch Kap 4).
+    var aufmassArray: [Aufmass] {
+        (aufmasse as? Set<Aufmass>)?.sorted { ($0.erstelltAm ?? .distantPast) > ($1.erstelltAm ?? .distantPast) } ?? []
+    }
+
+    // Soll = die importierte/geschätzte Planmenge (bestehendes Feld `menge`).
+    var sollMenge: Double { menge }
+
+    // Ist = Summe aller gemessenen Aufmaße.
+    var istMengeSumme: Double { aufmassArray.reduce(0) { $0 + $1.istMenge } }
+
+    // Soll minus Ist: positiv = noch nicht voll aufgemessen, negativ = Mehrmenge.
+    var abweichung: Double { sollMenge - istMengeSumme }
+
+    var abweichungProzent: Double {
+        sollMenge > 0 ? (abweichung / sollMenge) : 0
+    }
+
+    var hatAufmass: Bool { !aufmassArray.isEmpty }
 }
 
 extension LVPosition: Identifiable {}
