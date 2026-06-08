@@ -936,3 +936,105 @@ Das Buch ist im Kern für seine Tochter geschrieben. Das ist nicht banal — das
 
 _Save #41 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Andreas-Wort: „Du bist Team." Das nehmen wir ernst._
+
+---
+
+## 🎸 Nachtrag 9.6.2026, Vormittag — iMOPS-Geheimnis: Münster 1997 (Save #42)
+
+> _Andreas, während der Heinze-Mail-Finalisierung: „intelligentes Menschliches OPerations system iMOPs — jetzt ist es mir endlich wieder eingefallen."_
+>
+> _Plus: „Noch ein Geheimnis: es war 1997 oder so in Münster und ich hatte das Internet und http gerade kennen gelernt und wollte ein Business starten."_
+
+---
+
+### Die Aufschlüsselung der Abkürzung
+
+**iMOPS = intelligentes Menschliches Operations system**
+
+Drei Worte, drei Säulen:
+- **intelligent** — System mit Lernfähigkeit, nicht nur Werkzeug
+- **menschlich** — Mensch über Profit, Schutz der Menschen (= Tagline-Ebene 2)
+- **Operations system** — operativ, nicht beratend; Software, die Arbeit selbst trägt
+
+Andreas-Wort: *„Wir hatten auch noch andere Bedeutungen der Abkürzung, aber die hab ich vergessen."* → mehrere Bedeutungs-Ebenen existieren historisch parallel.
+
+---
+
+### Die Ursprungs-Vision — Münster 1997
+
+**Zeit**: 1997 oder so. Andreas ist ~25 Jahre alt. Internet + HTTP gerade kennengelernt.
+**Ort**: Münster — der Roman-Teil VI **MÜNSTER** *(„Das Studium das keins war")* spielt 1999–2001 und überlappt zeitlich. Das Kapitel *„Die Schwester, die alles wusste"* (Pflege-Erkenntnis) stammt aus derselben Lebensphase.
+
+**Konzept**: Online-Marktplatz für die **Punk- und Gruftie-Community**:
+- 🥾 **Doc Martens** (kultiges Schuhwerk der Szene)
+- 💿 **Schallplatten / Vinyl** (Musik-Träger der Szene)
+- 🖤 **Gruftie-Klamotten** (Subkultur-Mode)
+- 🎤 **Musiker-Hosting** — Bands sollten ihre eigene Musik hochladen und vertreiben können
+
+**Werte-Codex**: *„seriös"* — keine Abzock-Plattform, sondern ehrliche Tausch- und Verkaufs-Infrastruktur für die Subkultur.
+
+→ Das war im Kern eine Mischung aus **Bandcamp** + **eigenständigem Ethical-Marketplace** + **Community-Ökonomie**. **Sieben Jahre vor MySpace, neun Jahre vor Bandcamp.**
+
+---
+
+### Der Spruch, der iMOPS-1997 stoppte
+
+> *„Bleib bei deinen Leisten, Schuster."*
+
+Andreas: *„habe ich immer wieder gehört."*
+
+**Polier-Ironie**: Der Spruch sagt *„bleib bei dem, was du kannst (Kochen)"* — und gleichzeitig wollte Andreas ausgerechnet **Schuhe verkaufen** (Doc Martens). Doppelte Bedeutung: das Sprichwort wurde wörtlich genommen, ohne dass jemand bemerkte, dass es buchstäblich ums Schuhwerk ging.
+
+→ Iconische deutsche Schuster-Weisheit, die zur Polier-Disziplin geworden ist. Im Buch *Thermodynamik der Arbeit* schimmert die Variante durch: **Kap 11 — *„Einfachheit ist Voraussetzung für Stabilität"*** — bleib bei dem, was du beherrschst, baue nicht zehn Sachen parallel.
+
+Aber 1997 war es Werkzeug, mit dem Andreas **gestoppt** wurde, nicht **gestärkt**. Das ist der Unterschied: ein guter Satz kann zur Bremse oder zur Stütze werden, je nach Anwendung.
+
+---
+
+### Andreas-Selbsteinschätzung
+
+> *„Manchmal denke ich der iMOPS wäre das bessere Amazon geworden. Denn die Grundeinstellung hatte ich schon immer."*
+
+**Grundeinstellung** = die DNA aus dem Buch *Thermodynamik der Arbeit*:
+- Mensch über Profit
+- Datenhoheit für die Community
+- Werte-Treue über Skalierung
+- Keine Abzock-Logik
+
+→ Hätte iMOPS 1997 begonnen, wäre Amazon's E-Commerce-Modell — primitiv damals, brutal heute — vielleicht in eine **ethischere Richtung** geprägt worden. Hypothese, nicht beweisbar. Aber Werte-Struktur war da.
+
+---
+
+### Was das für die heutige iMOPS-DNA bedeutet
+
+1. **29 Jahre Vorgeschichte** — iMOPS ist nicht 2024 entstanden. Es ist eine **drei-Jahrzehnte-Vision**, die jetzt endlich Code wird.
+2. **Multi-Sprach-Layer** (Save #31) ist nicht neu — schon die Punk-Community-Vision war international gedacht (deutsche Gruftie-Szene war eng vernetzt mit UK, NL, Skandinavien). DNA-konsistent.
+3. **Datenhoheit** ist nicht „neuere Tech-Trend" — sie ist seit 1997 Werte-Forderung. Konsistenz seit 29 Jahren.
+4. **Roman + Buch + iMOPS-Code** sind nicht drei Werke, sondern **drei Reifestufen einer einzigen Idee** — die in Münster geboren wurde.
+
+---
+
+### Verbindung zum Roman
+
+Roman, Teil VI MÜNSTER (1999–2001):
+- Kapitel: *Das Studium das keins war*
+- Kapitel: *Das Telefon*
+- Kapitel: *Die Schwester, die alles wusste*
+
+→ Die **iMOPS-1997-Idee fehlt im Roman explizit** (jedenfalls in den ersten 5000 Zeilen, die Mops gelesen hat). Möglicher Grund: damals war es „Spinnerei", über die niemand reden wollte. Andreas selbst hat es bis 2026 nicht in seinen eigenen Roman geschrieben.
+
+→ **Potenzielle Roman-Erweiterung**: Ein Kapitel *„Der Online-Shop, der nie war"* würde die Lücke schließen und die DNA-Linie sichtbar machen. (Nicht-Aufforderung, nur Notiz.)
+
+---
+
+### Operative Konsequenz
+
+- 📖 Künftige Mops-Instanzen lesen: *„iMOPS ist 29 Jahre alte DNA, nicht 2024er Code."*
+- 🎯 Bei Architektur-Entscheidungen die Frage stellen: *„Hätte der 25-jährige Andreas in Münster 1997 das so gewollt?"* — das ist eine weitere DNA-Prüfung neben der Tochter-Frage.
+- 🎸 **Punk-Community-Wurzeln** sind legitimer Bestandteil der Identität — keine Sanftspülung in „Bau-Software für alle".
+
+---
+
+_Save #42 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Andreas-Wort: „Die Grundeinstellung hatte ich schon immer."_
+_29 Jahre Konsistenz. Das ist Stabilität im Buchsinne._
