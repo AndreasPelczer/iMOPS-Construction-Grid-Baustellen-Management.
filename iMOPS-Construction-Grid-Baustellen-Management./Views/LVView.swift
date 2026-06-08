@@ -17,6 +17,7 @@ struct LVView: View {
     @State private var editPosition: LVPosition?
     @State private var kalkPosition: LVPosition?
     @State private var fortschrittPosition: LVPosition?
+    @State private var aufmassPosition: LVPosition?
     @State private var showBestellliste      = false
     @State private var showAngebotsVergleich = false
     @State private var showKostenübersicht   = false
@@ -120,6 +121,10 @@ struct LVView: View {
                                         Label("Fortschritt", systemImage: "chart.bar")
                                     }
                                     .tint(.green)
+                                    Button { aufmassPosition = pos } label: {
+                                        Label("Aufmaß", systemImage: "ruler")
+                                    }
+                                    .tint(.teal)
                                 }
                         }
                     } header: {
@@ -223,6 +228,10 @@ struct LVView: View {
         }
         .sheet(item: $fortschrittPosition) { pos in
             LVFortschrittSheet(position: pos)
+        }
+        .sheet(item: $aufmassPosition) { pos in
+            AufmassSheet(position: pos)
+                .environment(\.managedObjectContext, viewContext)
         }
         .sheet(isPresented: $showBestellliste) {
             LieferantenBestelllisteView(event: event, positionen: Array(positionen))
@@ -507,6 +516,10 @@ struct LVPositionRow: View {
                     Text(best.einzelpreis, format: .currency(code: "EUR"))
                         .font(.caption.monospacedDigit()).foregroundStyle(.green)
                     Text(best.lieferant).font(.caption).foregroundStyle(.secondary)
+                }
+                if position.hatAufmass {
+                    Image(systemName: "ruler").font(.caption2)
+                        .foregroundStyle(position.aufmassAmpel.farbe)
                 }
             }
             if let f = fortStore.fortschritt(for: positionID), f.prozent > 0 {
