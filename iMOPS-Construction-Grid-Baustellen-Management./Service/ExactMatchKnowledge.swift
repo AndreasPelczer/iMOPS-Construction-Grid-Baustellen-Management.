@@ -61,6 +61,7 @@ actor ExactMatchKnowledge {
         "wlg_werte",
         "moertelgruppen",
         "app_bedienung",
+        "easter_eggs",
     ]
 
     private init() {}

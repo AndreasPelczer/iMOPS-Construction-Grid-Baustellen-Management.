@@ -1,0 +1,27 @@
+# iMOPS Easter Eggs — versteckte Spaß-Antworten
+#
+# Lokale Treffer (ExactMatchKnowledge), kommen sofort & offline — kein Server,
+# kein LLM, deterministisch. kategorie: "easteregg" → eigenes Badge in der UI.
+# Substring-Match: ein Alias wie "Feierabend" fängt jede Frage mit dem Wort.
+
+- id: "egg_feierabend"
+  kategorie: "easteregg"
+  aliases:
+    - "Feierabend"
+  antwort: |
+    Der Kran steht still, der Mörtel ruht,
+    die Kelle hängt am Haken gut.
+    Die Sonne sinkt hinterm Rohbau sacht —
+    der Polier sagt leise: „Feierabend. Gute Nacht."
+
+    Kein Aufmaß mehr, kein Plan, kein Stress,
+    die Schnur ist straff, der Eimer less.
+    Was steht, das steht. Was fehlt, hat Zeit.
+    Der Mops liegt faul und ist bereit
+
+    für morgen — doch jetzt zählt nur eins:
+    Werkzeug weg und Helm beiseit's. 🍺
+
+    Du hast ihn dir verdient, Chef. 🐶
+  quelle_kurz: "iMOPS Easter Egg"
+  license_note: "Hausgemacht vom Mops"
