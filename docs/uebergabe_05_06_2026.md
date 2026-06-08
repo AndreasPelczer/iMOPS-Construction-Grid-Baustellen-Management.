@@ -487,6 +487,41 @@ _Sonntagvormittag-Flow dokumentiert für die Nachwelt und für Raphi._
 
 ---
 
+## 🛰️ Nachtrag 7.6.2026, Sonntagmittag — Geländebrücke gebaut & validiert (Save #36)
+
+> _Andreas: „Das was gerade passiert ist, ist Magie für mich."_
+> _Aus „kann man Geländedaten ohne Vermesser kriegen?" wurde an einem Nachmittag ein Werkzeug._
+
+**Was gebaut wurde** (alles in `~/Projekte/mops-extract-prototype/`, NICHTS gepusht):
+
+1. **DGM1-Open-Data-Pipeline recherchiert + validiert.** Bayern DGM1 (1 m, GeoTIFF, UTM32, CC BY 4.0) ist vollständig scriptbar: Adresse → Geocode → Landkreis-AGS (Overpass) → UTM32 → Landkreis-Metalink → Direkt-Kachel + SHA-256. Schwarz = Kachel `582_5501`.
+2. **Validierung gegen die echte Vermessung** (`welle6_validate_opendata.py`): Open-DGM1 vs. Vermesser-DXF am selben Footprint → **OK-Bodenplatte identisch (211,62 m)**, Flächen-RMSE **0,18 m** (in DGM1-Spec ±0,2 m), Cut/Fill 8,1 vs 10,7 m³. **These „Erst-Schätzung ohne Vermesser" belegt.** (n=1, flaches Grundstück.)
+3. **Werkzeug `geodaten_fetch.py`** (+ README): ein Befehl, Adresse rein → verifizierte Höhenkachel(n) + optional Cut/Fill. Getestet Schwarz + München; robust (Overpass-Spiegel, Cache, Fallback). Auch als Modul für den Mops nutzbar.
+4. **`alkis_flurstueck.py`** (`--flurstueck`): Flurstücksgrenze per INSPIRE-WFS. Mechanik an NRW (offen) bewiesen. **Bayern braucht kostenloses geodatenonline-Konto** (`BY_WFS_USER`/`BY_WFS_PASS`).
+
+**Offen Geländebrücke:** (a) Bayern-ALKIS-Login besorgen → `--flurstueck` live; (b) Baufenster statt ganzer Parzelle fürs exakte Cut/Fill.
+
+---
+
+### 🔧 Lose Enden in der iMOPS-App (für die nächste Spurensuche — Andreas gestern gefunden)
+
+1. **2 leere Sheets** — zwei Views öffnen ohne Inhalt (wo genau noch unklar).
+2. **E-Mail-Weiterleitung klappt nicht** — Flow/Knopf noch zu lokalisieren.
+3. **BuildIQ-Absturz** („das Monster") — App schmiert ab. **Echter Bug, Priorität.**
+4. **BuildIQ-Ergebnisse unbefriedigend** (lokaler llama3.2:3b zu schwach). **Idee:** zunächst **Claude/Prof als IQ-Engine** nutzen (wie BauWissen-Prof-Schalter), bis der lokale Mops es kann — Datenhoheit als Ziel, nicht als Startzwang.
+
+**Plan:** Pause → Spurensuche (read-only) → Reparatur-Liste statt Bauchgefühl.
+
+### Repo-Stand heute
+- `main` nachgezogen bis **PR #48** (Suche-Chips). **PR #49** (ATS-Ausnahme Mops-Box) gemergt. **PR #50** (Saves #34/#35 + Architektur-Doc) gemergt.
+- Geländebrücke-Code liegt nur lokal im Prototyp, bewusst (noch) nicht im App-Repo.
+
+---
+
+_Save #36 verfasst von Mops. „Übergabe gut, Tag gut" — auch wenn danach einer trinken geht. 🍺_
+
+---
+
 ## 🧮 Nachtrag 7.6.2026, nachmittags — Lohn-/Maschinen-Vorlage + Welle 6 (Save #37)
 
 > _Andreas: „erstelle mir eine Vorlage für Excel wo genau aufgelistet ist was ein Arbeiter auf dem Bau verdient. Lehrling, Polier, Meister, Facharbeiter, Hilfsarbeiter. Und Maschinenpark-Kosten? Welche Infos haben wir und der Mops?"_
