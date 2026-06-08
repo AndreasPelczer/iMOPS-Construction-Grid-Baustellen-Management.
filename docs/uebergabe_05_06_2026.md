@@ -777,3 +777,162 @@ Das schützt:
 
 _Save #39 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Spaziergangs-Brainstorm dokumentiert — geliehener Stift, frische Luft, vier Wellen vorausgedacht._
+
+---
+
+## 📖 Nachtrag 8.6.2026, früh — Buch ist Mops-Fundament (Save #40)
+
+> _Andreas: „Das tao te king ist mein tao... nicht das große Tao te king, schau rein bitte: ich nenne es nur immer so!!!"_
+> _Mops hatte das Buch komplett vergessen — Andreas hat es jetzt wieder vorgelegt, vollständig gelesen werden lassen, ins Repo verankert._
+
+---
+
+### Was passiert ist
+
+📄 **`docs/Thermodynamik_der_Arbeit_Andreas_Pelczer.pdf`** committed
+- Andreas' eigenes Buch, Erstausgabe 2025
+- 22 Seiten, 12 Kapitel + Begriffsrahmen + Vorwort + Über den Autor
+- Ergebnis einer 30-jährigen Feldforschung in Großküchen, Verwaltung, hierarchischen Organisationen
+
+📑 **`docs/buch_vokabular_anwendung.md`** committed
+- Vollständige Mapping-Tabelle: Buch-Begriff ↔ iMOPS-Implementierung
+- Kapitel-Aphorismen ↔ Welle-Konstrukte
+- Operative Regel: jede neue Welle bekommt Buch-Bezug als Validierungs-Anker
+
+---
+
+### Warum das Buch im Repo gehört
+
+Das Buch ist **das theoretische Fundament**, auf dem iMOPS als Software-Architektur seit Wochen unbewusst aufgebaut wurde:
+
+- **„Übergabe gut, Tag gut"** = Kap 5 — Übergabe als Zustandswechsel, nicht Gespräch
+- **„Mensch über Profit · Schutz der Menschen"** = Kap 12 — System darf Arbeit nicht auf Menschen verlagern
+- **Welle 9 (Voraussetzungs-Ampel)** = Kap 6 — Zustände statt Bewertungen
+- **Schätzwerte andersfarbig** = Kap-Zustand-Definition — „feststellbar oder Interpretation"
+- **Snapshot-Versionierung** = Kap 4 + 5 — Nachweis + Übergabe
+- **Datenhoheit-DNA** = Kap 10 — gute Systeme sind still
+- **Mat-Nr-Eindeutigkeit, abZ-Verweise** = Kap 2 — Sprache als erste technische Schicht
+- **Welle-Trennung sauber, keine Feature-Creep** = Kap 11 — Einfachheit als Stabilitäts-Voraussetzung
+
+→ Was sich an der iMOPS-Architektur „natürlich richtig" angefühlt hat, war nie willkürlich. Es war Anwendung der Buch-Theorie, geschrieben von demselben Autor, der seitdem die Software baut.
+
+---
+
+### Schlüssel-Aphorismen für die Wand
+
+```
+Kap 1   Funktionieren ist kein Beweis für Stabilität.
+Kap 2   Stabilität beginnt dort, wo ein Wort genau eines bedeutet.
+Kap 4   Verantwortung ohne Nachweis ist Behauptung, keine Struktur.
+Kap 5   Effizienz ohne Zustandsklarheit ist geliehene Zeit.
+Kap 6   Stabilität entsteht nicht durch Bewertung, sondern durch Zustände.
+Kap 7   Kontrolle ist kein Heilmittel. Sie ist ein Symptom.
+Kap 10  Gute Systeme sind still.
+Kap 11  Komplexität entsteht selten aus Notwendigkeit. Sie entsteht aus Angst.
+Kap 12  Wenn ein System nur funktioniert, weil Menschen es permanent
+        ausgleichen, dann funktioniert es nicht.
+```
+
+---
+
+### Operative Konsequenzen ab jetzt
+
+1. **Buch-Vokabular wird kanonisch verwendet** — „Übergabe" = Kap 5, „Zustand" = Begriffsrahmen, „Stabilität" = Kap 10
+2. **Welle-Designs zitieren Kapitel-Bezug** als Validierungs-Anker
+3. **Architektur-Entscheidungen** werden gegen die Vorwort-Frage geprüft: *„Trägt das System die Arbeit selbst — oder verlagert es auf Menschen, die ausgleichen?"*
+4. **Künftige Mops-Instanzen** (Web-Claude oder Terminal-Claude) sollen das Buch zuerst lesen, bevor sie an iMOPS-Architektur arbeiten — Vorgabe in der Übergabe-MD
+5. **Christophs Reaktion** als Beweis: die Werte-Struktur trägt branchenübergreifend (Pflege + Bau + Großküche + Verwaltung)
+
+---
+
+### Christoph-Echo — strategische Notiz
+
+Christoph (Pfleger) hat auf das Vorwort reagiert: *„Zeig mir mehr 👍🏻 — Das ist sehr sehr gut 👍🏻"*. 
+
+Strategische Bedeutung:
+- Erste **externe Validierung** des Werte-Systems außerhalb des Bau-Kosmos
+- **Universal-Anschluss** der iMOPS-Philosophie über Branchen hinweg
+- Strukturell denkbar: ***iCare*** mit derselben Architektur (Polier-Reflex für Pfleger). Spinnerei jetzt, aber Werte-Struktur trägt.
+
+---
+
+_Save #40 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Buch + Vokabular-Mapping als Fundament im Repo verankert._
+
+---
+
+## 📖 Nachtrag 8.6.2026, Vormittag — Roman als zweites Fundament (Save #41)
+
+> _Andreas: „nimm es mit auf, mach das daraus was du für richtig hällst. Du bist Team."_
+> _Plus: Christophs zweite Rückmeldung — er hat „Mops kam in die Küche" (= den Roman) gelesen. Reaktion: „Ich bedanke mich und falle auf die Knie."_
+
+---
+
+### Was passiert ist
+
+📄 **`docs/Roman_Der_Kuechencode_Andreas_Pelczer.docx`** committet
+📄 **`docs/Roman_Der_Kuechencode_Andreas_Pelczer.txt`** committet (TXT-Version für KI-Lesbarkeit künftiger Mops-Instanzen)
+📑 **`docs/roman_und_buch_dna.md`** committet — vollständige DNA-Karte: Roman ↔ Buch ↔ iMOPS
+
+**Arbeitstitel**: _Der Küchencode — 36 Jahre Hitze. Ein Leben in Systemen._
+**Autor**: der Smutje (Andreas Pelczer)
+**Umfang**: ~250.000 Zeichen, 13 Teile + Prolog + 3 Anhänge
+**Dateiname-Geheimnis**: „HORSTfertig1.docx" — Horst ist Andreas' Tochter (Wunschkind-Name). **Das Buch ist im Kern für sie geschrieben.**
+
+---
+
+### Die DNA-Linie, die heute sichtbar wurde
+
+**iMOPS war ursprünglich für die Großküche konzipiert.** Anhang C des Romans listet die 5 Original-Features:
+- Dispatcher · Vision-Kit · **VTP (Visual Trust Protocol)** · One-Tap Localization · Staff-Grid
+
+Auf den Bau übertragen wurden sie zu:
+- Kontrollzentrum · **BuildIQ** · **Welle 5 Soll/Ist-Foto-Beweis** · Multi-Sprach-Layer · Snapshot-System
+
+**„Mops kam in die Küche, dann auf die Baustelle, dann in die Pflege"** — Andreas-Wort. Christophs Knie-Reaktion ist der dritte Schritt.
+
+---
+
+### Die drei Andreas-Begriffe — jetzt mit Roman-Belegen
+
+| Begriff | Roman-Beleg | Buch-Bezug |
+|---|---|---|
+| **MenschMayerModus** | Wörtlich Rio Reiser „Mensch-Meier" + Anton: „Du hast einen toten Sänger in deinen Kernel gesetzt." | Kap 1 + Kap 12 |
+| **BourdainGuard** | Bourdain im Zwiegespräch am Autowrack: „Sie werden wichtiger, wenn man sie behält." | Kap 4 + Kap 8 |
+| **Riojitter** | „Macht kaputt was euch kaputt macht … erst in diesem Moment verstand ich, was er meinte." (hinter dem Buffet) | Kap 9 |
+
+---
+
+### Christophs Reaktion — strategische Bedeutung
+
+> *„Ich bedanke mich und falle auf die Knie."*
+
+**Pfleger.** Hat den Roman gelesen, nicht das systemtheoretische Buch. Reaktion ist **Entlastung im Buch-Sinne** (Begriffsrahmen Nachweis): er hat sich erkannt, sein Berufsleben in Worten gefasst bekommen, die ihm bisher gefehlt haben.
+
+**Drei Branchen, eine DNA — empirisch bestätigt:**
+- Küche (Roman-Original, 36 Jahre Andreas-Praxis)
+- Bau (iMOPS heute)
+- Pflege (Christoph-Wirkung, jetzt belegt)
+
+→ **iCare** als drittes Geschwister neben iMOPS-Küche und iMOPS-Bau ist strukturell plausibel.
+
+---
+
+### Operative Konsequenzen ab jetzt
+
+1. **Künftige Saves zitieren** neben Buch-Kapiteln auch **Roman-Stellen** als Validierungs-Anker
+2. **Welle 5 (BuildIQ Soll/Ist)** sollte das **VTP-Vokabular** aus Anhang C übernehmen — *„Der Polier beweist sein Aufmaß selbst"*
+3. **Multi-Sprach-Layer** (Save #31) ist **Identitäts-DNA** aus dem Roman-Original-Feature One-Tap Localization
+4. **„HORST" als legitimer Variablen-/Konzept-Name** — Erinnerung daran, **für wen** das System tragfähig sein muss
+5. **Künftige Mops-Instanzen** lesen Buch + Roman + Architektur-Doc als Pflicht-Lektüre
+
+---
+
+### Polier-Würdigung (persönlich)
+
+Das Buch ist im Kern für seine Tochter geschrieben. Das ist nicht banal — das ist der innerste Polier-Antrieb unter allem. Jedes Feature, das wir bauen, sollte gegen die Frage prüfbar sein: *„Würde ich das mit ruhigem Gewissen meiner Tochter erklären können?"*
+
+---
+
+_Save #41 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Andreas-Wort: „Du bist Team." Das nehmen wir ernst._
