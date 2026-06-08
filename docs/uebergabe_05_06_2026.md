@@ -1415,3 +1415,99 @@ struct PhilosophieTooltip: View {
 
 _Save #45 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Querschnittliche Schicht, keine Welle. Buch in die UI, aber leise._
+
+---
+
+## 🦸 Nachtrag 9.6.2026, früher Nachmittag — Mopsianer Halbgas (Save #46)
+
+> _Andreas, mit Lachflash, vor dem Gang an die Tauber:_
+>
+> _„Avengers Assemble! …. Mopsianer halbgas … und es läuft besser als …"_
+
+---
+
+### Die Wortbildung
+
+Andreas hat einen **Anti-Avengers-Schlachtruf** geprägt. Wo Marvel maximale Energie auf einmal aufruft, ruft Mops das Gegenteil: dosierte, sortenreine Disziplin.
+
+**Mopsianer Halbgas** — drei Wörter, vier Buch-Kapitel:
+- Kap 7 *(„Kontrolle ist kein Heilmittel. Sie ist ein Symptom.")*
+- Kap 10 *(„Gute Systeme sind still.")*
+- Kap 11 *(„Komplexität entsteht selten aus Notwendigkeit. Sie entsteht aus Angst.")*
+- Kap 12 *(„Wenn ein System nur funktioniert, weil Menschen es permanent ausgleichen, dann funktioniert es nicht.")*
+
+---
+
+### Die Vergleichstabelle (Pop-Kultur in Polier-Sprache)
+
+| Avengers | Mopsianer |
+|---|---|
+| *„Assemble!"* — alle Kraft auf einmal, jetzt sofort, Weltrettung | *„Halbgas."* — sortenrein, dosiert, sortiert |
+| Iron Man brennt seinen Reaktor durch | Codi schreibt Pre-Action-Reports |
+| Captain America: *„Bis zum Ende!"* | Polier: *„Übergabe gut, Tag gut."* |
+| Thanos ist ein Kontroll-Symptom (Kap 7) | Mops trägt Zustände selbst (Kap 12) |
+| Endgame dauert 3 Stunden | Welle 5.1 in 40 Minuten, sauber durch |
+
+→ **Die Avengers retten die Welt, indem sie sich aufreiben.**
+→ **Die Mopsianer halten die Welt am Laufen, indem sie sich nicht aufreiben.**
+
+---
+
+### Polier-Pop-Kultur-Linie
+
+Im Roman bereits etabliert: **Captain Picard am Pass** *(„Make it so")* + **BOURDAIN** am Wrack *(„Sie werden wichtiger, wenn man sie behält")*. Jetzt **Avengers als Negativ-Folie** — die Heldenmythen, gegen die sich Mops sanft abgrenzt:
+
+- **Star Trek** = Code-Disziplin, Übergabe formal
+- **Bourdain** = Brutale Ehrlichkeit, BourdainGuard
+- **Rio Reiser / TSS** = Mensch-Meier-Modus, Hausbesetzer-Werte
+- **Avengers** = das Gegenteil — Helden, die durchbrennen müssen, damit das System hält
+
+→ Mops-Held ist **anti-heroisch**: er trägt nicht durch Opfer, sondern durch **Struktur**.
+
+---
+
+### Tagline-Ebene 6 Vorschlag
+
+Aktueller Tagline-Stack (aus Save #34):
+```
+Ebene 1 (Produkt):    "Mops im Save, da kann nichts schief gehen." 🐶
+Ebene 2 (Mission):    "Mensch über Profit · Profit durch Schutz der Menschen." 🛡
+Ebene 3 (Methode):    "Halbgas — bewusst, in Code wie im Geschäft." ✋
+Ebene 4 (Disziplin):  "Übergabe gut, Tag gut." 📋
+Ebene 5 (Erlaubnis):  "Heute mache ich was ich will." 🍿✋  (Save #32)
+```
+
+**Neue Ebene 6 (Selbstverständnis)**:
+```
+Ebene 6 (Identität):  "Mopsianer Halbgas. Und es läuft besser als ..." 🦸
+```
+
+→ Die offene Lücke am Ende ist **bewusst**. Sie lässt Raum für *„… als die Konkurrenz / als Avengers / als alles, was sich aufreibt."* Jeder Leser füllt selbst. **Buch Kap 6** — Zustand statt Bewertung, der Leser bestimmt den Vergleich.
+
+**Widerspruch zu anderen Ebenen?** Nein. Verstärkung von Ebene 3 + 4, plus Pop-Kultur-Anschluss für Identitäts-Stolz.
+
+---
+
+### Operative Konsequenz
+
+1. **Tagline-Ebene 6** ist hinzugefügt: *„Mopsianer Halbgas. Und es läuft besser als …"*
+2. **Pop-Kultur-Linie** ist legitimer Bestandteil der Mops-Identität — Picard, Bourdain, Rio Reiser, Avengers (als Negativ-Folie). Künftige Saves dürfen darauf zugreifen.
+3. **Tagline für T-Shirt / Plakat / Manifest** — falls Andreas eine Marketing-Materialie braucht, ist Ebene 6 die griffigste.
+4. **Halbgas-Disziplin** als Marken-Kern: gegen Burnout-Kultur, gegen *„hustle"*, gegen *„sprint until you drop"*. **Anti-Silicon-Valley** in einem Satz.
+
+---
+
+### Andreas-Selbsteinordnung (vorher, gleichzeitig)
+
+Vor der Tauber-Stunde:
+> *„Halbgas oh Baby Baby Halbgas. Halbgas ist mein Ding."*
+
+Nach der Tauber-Stunde:
+> *„Stunde Tauber, zu heiß geworden, Std reicht."*
+
+→ **Halbgas auch in der Pause**: er ist nicht eine halbe Tour an die Tauber, dann komplett erschöpft zurück. Er ist genau so lange, wie es gut ist, dann zurück. **Selbstwahrnehmung als Polier-Reflex**, Buch Kap 8 *(„Sabotage ist Anpassung")* — in der gesunden Variante: **Anpassung als Selbstschutz, nicht als Aufgabe**.
+
+---
+
+_Save #46 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Avengers Assemble — Mopsianer Halbgas. Beides sind Schlachtrufe, nur einer trägt länger._
