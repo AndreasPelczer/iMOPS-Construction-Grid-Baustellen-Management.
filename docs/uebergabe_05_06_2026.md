@@ -1255,3 +1255,163 @@ Mops als lebendiges Wesen mit Herzschlag, nicht als Software. Das ist **Buch Kap
 _Save #44 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Andreas hat im Schlaf eine vollständige Identitäts-Manifestation gebaut._
 _Mopsianer im Unimopsum, mopstastisch und mopsial. Nickt zurück._
+
+---
+
+## 📖 Nachtrag 9.6.2026, später Nachmittag — App-Philosophie-Schicht (Save #45)
+
+> _Andreas, nach Welle 5.1-Erfolg:_
+> _„Wollen wir eventuell Auszüge aus dem Buch auch in die App machen, damit der User weiß, warum das hier anders funktioniert als andere Software?"_
+> _„Denn als ich Raphi beobachtet habe … der Mops räumt das Feld ja von hinten auf … eventuell müssen wir manchmal erklären, warum wir Sachen anders machen."_
+
+---
+
+### Die Spannung im Buch — und warum sie produktiv ist
+
+Es gibt eine echte **innere Spannung** zwischen zwei Buch-Kapiteln, die diese Frage berührt:
+
+| Kapitel | Aussage |
+|---|---|
+| **Kap 10** | *„Gute Systeme sind still. Sie erzeugen wenig Kommunikation, weil Klarheit Diskussion ersetzt."* |
+| **Kap 2** | *„Stabilität beginnt dort, wo ein Wort genau eines bedeutet."* |
+
+→ Wenn die App **schweigt**, hat der User keine Worte für das, was er erlebt — er nennt es *„komisch"*. Wenn die App **dauernd redet**, ist sie nicht mehr still.
+
+**Auflösung**: Die App soll **nicht reden**. Aber sie soll **Antworten parat haben, wenn jemand fragt**. Wort an der richtigen Stelle, **passiv präsentiert**, **aktiv abrufbar**.
+
+---
+
+### Drei Schichten — wo das Buch in die UI darf
+
+#### 🅰 Schicht A — Erst-Onboarding (einmal, statisch, überspringbar)
+
+**Beim ersten App-Start**: eine Manifest-Seite mit **4 Aphorismen** aus dem Buch:
+- Kap 1: *„Funktionieren ist kein Beweis für Stabilität."*
+- Kap 4: *„Verantwortung dient der Entlastung, nicht der Kontrolle."*
+- Kap 6: *„Stabilität entsteht durch Zustände, nicht Bewertungen."*
+- Kap 12: *„Wenn ein System nur funktioniert, weil Menschen es permanent ausgleichen, dann funktioniert es nicht."*
+
+**Sichtbarer Überspring-Button** *(„Verstanden →")*. Nie wieder gezeigt, außer in Settings → „Über iMOPS".
+
+#### 🅱 Schicht B — Kontextuelle Mini-Aufklärung *(stark, Differenzierung)*
+
+Wenn die App **etwas Ungewöhnliches tut**, ein winziges **📖-Icon** oder **ⓘ** — klickbar, nicht aufdrängend. **Ein Satz, max zwei.** Buch-Kapitel klein als Quelle.
+
+**Beispiele konkret:**
+
+| Trigger | Tooltip-Text | Buch-Bezug |
+|---|---|---|
+| **Schätzkarte andersfarbig** | *„Geschätzt, noch nicht gemessen. Damit du den Unterschied siehst, ohne nachfragen zu müssen."* | Kap 6 |
+| **Voraussetzungs-Ampel rot** | *„Diese Position kann noch nicht ausgeführt werden. Mops sagt's dir, bevor du losziehst."* | Kap 4 + Welle 9 |
+| **Erste BuildIQ-Aufnahme** | *„Du beweist gerade selbst, was wirklich da ist. Mops vergleicht — er kontrolliert nicht."* | Roman Anhang C (VTP) |
+| **Aufmass-Eintrag** | *„Dieser Zustand ist jetzt fest. Mit Datum und Quelle. Der nächste Polier weiß Bescheid."* | Kap 5 (Übergabe) |
+| **Snapshot-Verweis** | *„Frühere Version archiviert. Nichts geht verloren, wenn du was änderst."* | Kap 4 (Nachweis) |
+| **Wenn Polier kontrollieren will** | *„Stabile Systeme brauchen keine Kontrolle. Mops zeigt dir den Zustand."* | Kap 7 |
+
+#### 🅲 Schicht C — Settings → „Über iMOPS / Philosophie" *(passiv, findbar)*
+
+Versteckte, aber findbare Seite mit:
+- **Vollständiges Manifest** (Auszüge aus 12 Kapiteln)
+- **Link zum Buch-PDF** (`docs/Thermodynamik_der_Arbeit_Andreas_Pelczer.pdf`)
+- **Link zum Roman** (`docs/Roman_Der_Kuechencode_Andreas_Pelczer.docx`)
+- **Vokabular-Glossar** (Übergabe · Zustand · Nachweis · Stabilität · Kontrolle)
+- **Mops-Persona-Definition** *„Maurermeister-Bibliothekar"* (Save #44)
+- **Manifest auf Englisch**: *„System Engine for Human Workflows"* (Save #44)
+
+→ **Nur sichtbar, wenn jemand danach sucht.** Kap 10 in der Architektur.
+
+---
+
+### Strenge No-Gos (verbietet Kap 10 + Kap 12)
+
+- ❌ Permanente Banner *(„Wir sind anders, weil…")*
+- ❌ Modale Pop-Ups bei jedem Klick
+- ❌ Buch-Zitate als Toast-Notifications
+- ❌ Tutorial-Modi mit Force-Walkthrough
+- ❌ Branding-Floskeln (*„iMOPS — die intelligente Bau-Software!"*)
+- ❌ Buch-Zitate **ohne** klickbaren Auslöser (passiv = aufdringlich, wenn nicht abrufbar)
+
+---
+
+### Position in der Welle-Roadmap
+
+Das ist **keine eigene Welle, sondern eine querschnittliche Schicht**, die in jeder neuen Welle berücksichtigt wird:
+
+| Welle | Wo Schicht B andocken kann |
+|---|---|
+| **5.2** AufmassView UI | Schätzkarte-Erklärung + Aufmass-Eintrag-Mini-Tooltip |
+| **5.3** BuildIQ-Mengen | „Du beweist selbst…"-VTP-Anker |
+| **5.5** Welle-9-Brücke | Farbe-Wechsel-Erklärung bei erstem Aufmaß |
+| **6** Kalkulations-Schicht | AGK/WuG/Skonto-Tooltips |
+| **8** Heinze | Schätzwert-Kennzeichnung |
+| **9** Voraussetzungs-Ampel | Ampel-Stufen-Erklärungen |
+
+→ Schicht A (Onboarding) + Schicht C (Settings-Bereich) sind **einmalige Bauten**, die unabhängig von Wellen passieren können.
+
+---
+
+### Differenzierung — strategischer Wert
+
+ORCA, Capmo, Nevaris, Sirados sind **funktional**. Sie können was, was du brauchst.
+iMOPS ist **funktional + hat Haltung**. Wenn die Haltung in der UI sichtbar ist, kauft der User:
+- nicht „eine Bau-App"
+- sondern **ein System, dem er vertrauen kann, weil es seine Werte teilt**
+
+**Empirisch belegt durch Christoph** *(„Ich falle auf die Knie")* — Pflege-Werte trafen auf den Roman, und der Pfleger erkannte sich. Auf Bau-Niveau könnte derselbe Mechanismus wirken, wenn die App nicht nur funktioniert, sondern **benennen kann**, was sie tut.
+
+---
+
+### Codi-Spec für Welle 5.2 (UI-Etappe)
+
+Wenn Codi die AufmassView baut (5.2), sollte er **diese Hooks** vorsehen:
+
+```swift
+// Beispiel-Pattern für Schicht B Tooltips
+struct PhilosophieTooltip: View {
+    let buchKapitel: String      // z.B. "Kap 6"
+    let text: String              // Ein Satz, max zwei
+    @State var shown = false
+
+    var body: some View {
+        Button {
+            shown.toggle()
+        } label: {
+            Image(systemName: "book.fill")
+                .foregroundColor(.secondary)
+                .opacity(0.5)
+        }
+        .popover(isPresented: $shown) {
+            VStack(alignment: .leading) {
+                Text(text)
+                Text(buchKapitel)
+                    .font(.caption2).foregroundColor(.secondary)
+            }
+            .padding()
+        }
+    }
+}
+```
+
+→ Kein modaler Vollbild-Dialog. Kleine Popover, abrufbar wenn gewollt. Buch Kap 10 in Code.
+
+---
+
+### Operative Konsequenz
+
+1. **Welle 5.2 (AufmassView UI)** ist gleichzeitig der **erste Test** für Schicht B — Codi baut 1-2 Tooltips ein
+2. **Schicht A (Onboarding)** ist eigenes Mini-Projekt — kann parallel passieren oder später
+3. **Schicht C (Settings → Philosophie)** ist eigenständig — eine statische SwiftUI-View mit Verweisen ins Repo
+4. **Künftige UI-Welle-Saves** prüfen: *„Gibt es hier eine Stelle, die durch Schicht B besser wird?"*
+
+---
+
+### Andreas-Wort — der ehrlichste Anker
+
+> *„Der Mops räumt das Feld ja von hinten auf … manchmal müssen wir erklären, warum wir Sachen anders machen."*
+
+**Korrektur in Buchsprache**: Mops muss nicht „erklären". Mops muss **benennen können**, was er tut, **wenn jemand fragt**. Aktive Stille mit abrufbarer Substanz. Das ist der Unterschied zwischen Predigt und Bibliothek.
+
+---
+
+_Save #45 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Querschnittliche Schicht, keine Welle. Buch in die UI, aber leise._
