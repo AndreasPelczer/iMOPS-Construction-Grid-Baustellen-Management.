@@ -82,8 +82,12 @@ final class BauWissenViewModel {
     // MARK: - Lokale Antwort aus Knowledge-Entry bauen
 
     private static func buildLocalResponse(from hit: KnowledgeEntry) -> MopsResponse {
-        let isAppHelp = hit.resolvedKategorie == "app-bedienung"
-        let modelTag = isAppHelp ? "imops-bedienung-local" : "imops-wissen-local"
+        let modelTag: String
+        switch hit.resolvedKategorie {
+        case "app-bedienung": modelTag = "imops-bedienung-local"
+        case "easteregg":     modelTag = "imops-easteregg-local"
+        default:              modelTag = "imops-wissen-local"
+        }
 
         // Source-Card zeigt Herkunft (Norm-Nummer, Beuth-Hinweis etc.)
         let source = MopsSource(
@@ -134,6 +138,7 @@ final class BauWissenViewModel {
         switch model {
         case "imops-wissen-local":     return "📖 iMOPS-Wissensbasis"
         case "imops-bedienung-local":  return "🔧 Bedienungshilfe"
+        case "imops-easteregg-local":  return "🍺 Feierabend"
         default:
             if model.contains("claude") {
                 return "🎓 Prof (Claude Sonnet 4.5)"
@@ -145,6 +150,7 @@ final class BauWissenViewModel {
     /// Hintergrundfarbe fuer das Model-Badge (gruen lokal, lila Prof, orange Mops).
     var modelBadgeColor: ModelBadgeColor {
         guard let model = response?.model else { return .mops }
+        if model == "imops-easteregg-local" { return .mops }
         if model.hasSuffix("-local") { return .local }
         if model.contains("claude")  { return .prof }
         return .mops
