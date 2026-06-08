@@ -95,4 +95,38 @@ struct AufmassTests {
         a.quelleRaw = "buildiq"
         #expect(a.quelle == .buildiq)
     }
+
+    // MARK: - Ampel (Welle 5.2)
+
+    @MainActor
+    private func addAufmass(to pos: LVPosition, menge: Double) {
+        let a = Aufmass(context: ctx)
+        a.id = UUID()
+        a.istMenge = menge
+        a.erstelltAm = Date()
+        a.lvPosition = pos
+    }
+
+    @Test @MainActor func ampelOhneAufmassIstGrau() {
+        let pos = makePosition(menge: 100)
+        #expect(pos.aufmassAmpel == .keinAufmass)
+    }
+
+    @Test @MainActor func ampelNachAbweichung() {
+        let exakt = makePosition(menge: 100)
+        addAufmass(to: exakt, menge: 100)
+        #expect(exakt.aufmassAmpel == .gruen)      // 0 % Abweichung
+
+        let knapp = makePosition(menge: 100)
+        addAufmass(to: knapp, menge: 97)
+        #expect(knapp.aufmassAmpel == .gruen)      // 3 % ≤ 5 %
+
+        let mittel = makePosition(menge: 100)
+        addAufmass(to: mittel, menge: 90)
+        #expect(mittel.aufmassAmpel == .orange)    // 10 % ≤ 15 %
+
+        let weit = makePosition(menge: 100)
+        addAufmass(to: weit, menge: 70)
+        #expect(weit.aufmassAmpel == .rot)         // 30 % > 15 %
+    }
 }
