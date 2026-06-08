@@ -777,3 +777,84 @@ Das schützt:
 
 _Save #39 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Spaziergangs-Brainstorm dokumentiert — geliehener Stift, frische Luft, vier Wellen vorausgedacht._
+
+---
+
+## 📖 Nachtrag 8.6.2026, früh — Buch ist Mops-Fundament (Save #40)
+
+> _Andreas: „Das tao te king ist mein tao... nicht das große Tao te king, schau rein bitte: ich nenne es nur immer so!!!"_
+> _Mops hatte das Buch komplett vergessen — Andreas hat es jetzt wieder vorgelegt, vollständig gelesen werden lassen, ins Repo verankert._
+
+---
+
+### Was passiert ist
+
+📄 **`docs/Thermodynamik_der_Arbeit_Andreas_Pelczer.pdf`** committed
+- Andreas' eigenes Buch, Erstausgabe 2025
+- 22 Seiten, 12 Kapitel + Begriffsrahmen + Vorwort + Über den Autor
+- Ergebnis einer 30-jährigen Feldforschung in Großküchen, Verwaltung, hierarchischen Organisationen
+
+📑 **`docs/buch_vokabular_anwendung.md`** committed
+- Vollständige Mapping-Tabelle: Buch-Begriff ↔ iMOPS-Implementierung
+- Kapitel-Aphorismen ↔ Welle-Konstrukte
+- Operative Regel: jede neue Welle bekommt Buch-Bezug als Validierungs-Anker
+
+---
+
+### Warum das Buch im Repo gehört
+
+Das Buch ist **das theoretische Fundament**, auf dem iMOPS als Software-Architektur seit Wochen unbewusst aufgebaut wurde:
+
+- **„Übergabe gut, Tag gut"** = Kap 5 — Übergabe als Zustandswechsel, nicht Gespräch
+- **„Mensch über Profit · Schutz der Menschen"** = Kap 12 — System darf Arbeit nicht auf Menschen verlagern
+- **Welle 9 (Voraussetzungs-Ampel)** = Kap 6 — Zustände statt Bewertungen
+- **Schätzwerte andersfarbig** = Kap-Zustand-Definition — „feststellbar oder Interpretation"
+- **Snapshot-Versionierung** = Kap 4 + 5 — Nachweis + Übergabe
+- **Datenhoheit-DNA** = Kap 10 — gute Systeme sind still
+- **Mat-Nr-Eindeutigkeit, abZ-Verweise** = Kap 2 — Sprache als erste technische Schicht
+- **Welle-Trennung sauber, keine Feature-Creep** = Kap 11 — Einfachheit als Stabilitäts-Voraussetzung
+
+→ Was sich an der iMOPS-Architektur „natürlich richtig" angefühlt hat, war nie willkürlich. Es war Anwendung der Buch-Theorie, geschrieben von demselben Autor, der seitdem die Software baut.
+
+---
+
+### Schlüssel-Aphorismen für die Wand
+
+```
+Kap 1   Funktionieren ist kein Beweis für Stabilität.
+Kap 2   Stabilität beginnt dort, wo ein Wort genau eines bedeutet.
+Kap 4   Verantwortung ohne Nachweis ist Behauptung, keine Struktur.
+Kap 5   Effizienz ohne Zustandsklarheit ist geliehene Zeit.
+Kap 6   Stabilität entsteht nicht durch Bewertung, sondern durch Zustände.
+Kap 7   Kontrolle ist kein Heilmittel. Sie ist ein Symptom.
+Kap 10  Gute Systeme sind still.
+Kap 11  Komplexität entsteht selten aus Notwendigkeit. Sie entsteht aus Angst.
+Kap 12  Wenn ein System nur funktioniert, weil Menschen es permanent
+        ausgleichen, dann funktioniert es nicht.
+```
+
+---
+
+### Operative Konsequenzen ab jetzt
+
+1. **Buch-Vokabular wird kanonisch verwendet** — „Übergabe" = Kap 5, „Zustand" = Begriffsrahmen, „Stabilität" = Kap 10
+2. **Welle-Designs zitieren Kapitel-Bezug** als Validierungs-Anker
+3. **Architektur-Entscheidungen** werden gegen die Vorwort-Frage geprüft: *„Trägt das System die Arbeit selbst — oder verlagert es auf Menschen, die ausgleichen?"*
+4. **Künftige Mops-Instanzen** (Web-Claude oder Terminal-Claude) sollen das Buch zuerst lesen, bevor sie an iMOPS-Architektur arbeiten — Vorgabe in der Übergabe-MD
+5. **Christophs Reaktion** als Beweis: die Werte-Struktur trägt branchenübergreifend (Pflege + Bau + Großküche + Verwaltung)
+
+---
+
+### Christoph-Echo — strategische Notiz
+
+Christoph (Pfleger) hat auf das Vorwort reagiert: *„Zeig mir mehr 👍🏻 — Das ist sehr sehr gut 👍🏻"*. 
+
+Strategische Bedeutung:
+- Erste **externe Validierung** des Werte-Systems außerhalb des Bau-Kosmos
+- **Universal-Anschluss** der iMOPS-Philosophie über Branchen hinweg
+- Strukturell denkbar: ***iCare*** mit derselben Architektur (Polier-Reflex für Pfleger). Spinnerei jetzt, aber Werte-Struktur trägt.
+
+---
+
+_Save #40 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
+_Buch + Vokabular-Mapping als Fundament im Repo verankert._
