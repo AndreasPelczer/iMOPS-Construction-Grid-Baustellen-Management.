@@ -517,25 +517,45 @@ struct LVPositionRow: View {
                         .font(.caption.monospacedDigit()).foregroundStyle(.green)
                     Text(best.lieferant).font(.caption).foregroundStyle(.secondary)
                 }
-                if position.hatAufmass {
-                    Image(systemName: "ruler").font(.caption2)
-                        .foregroundStyle(position.aufmassAmpel.farbe)
-                }
             }
-            if let f = fortStore.fortschritt(for: positionID), f.prozent > 0 {
-                HStack(spacing: 6) {
-                    ProgressView(value: Double(f.prozent), total: 100)
-                        .progressViewStyle(.linear)
-                        .tint(f.prozent == 100 ? .green : .orange)
-                    Text("\(f.prozent) %")
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(f.prozent == 100 ? .green : .orange)
-                        .frame(width: 38, alignment: .trailing)
-                }
-            }
+            ZeilenFortschritt(
+                wert: position.displayedFortschritt(
+                    manuellerProzent: fortStore.fortschritt(for: positionID)?.prozent
+                )
+            )
         }
         .padding(.vertical, 2)
         .opacity(isAlt ? 0.85 : 1.0)
+    }
+}
+
+// Welle 5.2.1 — abgeleiteter Fortschritt in der LV-Zeile. Gemessen (Lineal, blau/grün)
+// verdrängt geschätzt (Stift, orange); die Zahl bleibt ehrlich (R2.b: > 100 % möglich,
+// Balken kappt nur visuell bei 100 %). Bei .unbestimmt nichts.
+private struct ZeilenFortschritt: View {
+    let wert: FortschrittWert
+
+    var body: some View {
+        switch wert {
+        case .unbestimmt:
+            EmptyView()
+        case .geschaetzt(let p):
+            balken(p, tint: .orange, icon: "pencil")
+        case .gemessen(let p):
+            balken(p, tint: p >= 100 ? .green : .blue, icon: "ruler")
+        }
+    }
+
+    @ViewBuilder
+    private func balken(_ prozent: Double, tint: Color, icon: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 9)).foregroundStyle(tint)
+            ProgressView(value: min(prozent, 100), total: 100)
+                .progressViewStyle(.linear).tint(tint)
+            Text("\(Int(prozent.rounded())) %")
+                .font(.caption2.monospacedDigit()).foregroundStyle(tint)
+                .frame(width: 46, alignment: .trailing)
+        }
     }
 }
 
@@ -564,6 +584,24 @@ struct LVFortschrittSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                if position.hatAufmass, let g = position.gemessenerFortschrittProzent {
+                    Section {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "ruler").foregroundStyle(.blue).padding(.top, 2)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Aufmaß übersteuert deine Schätzung.")
+                                    .font(.callout.weight(.medium))
+                                Text("Angezeigt wird die Messung: \(Int(g.rounded())) %. Deine Einschätzung (\(Int(prozent)) %) bleibt gespeichert.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 4)
+                            PhilosophieTooltip(
+                                buchKapitel: "Buch Kap 9",
+                                text: "Sag dir, warum dein Schieber den Balken nicht bewegt — statt dich rätseln zu lassen."
+                            )
+                        }
+                    }
+                }
                 Section {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(position.bezeichnung ?? "–")
