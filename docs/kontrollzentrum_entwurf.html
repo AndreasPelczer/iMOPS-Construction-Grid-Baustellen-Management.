@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iMOPS Kontrollzentrum</title>
+<style>
+  :root {
+    --bg:#000; --mint:#7CFFB0; --mint-dim:#4a9669; --mint-glow:rgba(0,255,120,0.45);
+    --amber:#ffb840; --red:#ff5b5b;
+    --line:#0e2818; --panel:#04100a; --muted:#2a4838;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100vh;background:var(--bg);color:var(--mint);
+    font-family:'Courier New',monospace;font-size:14px;line-height:1.6;letter-spacing:0.3px;}
+  #rain{position:fixed;inset:0;z-index:0;opacity:0.22;}
+  #scan{position:fixed;inset:0;pointer-events:none;z-index:1;
+    background:repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,
+      rgba(0,30,15,0.15) 3px,rgba(0,0,0,0) 4px);}
+  .stage{position:relative;z-index:2;padding:18px;max-width:1400px;margin:0 auto;}
+  #boot{margin-bottom:20px;padding:16px 22px;
+    background:rgba(0,15,8,0.85);border:1px solid var(--line);border-radius:6px;
+    text-shadow:0 0 6px var(--mint-glow);white-space:pre-wrap;font-size:14px;
+    box-shadow:inset 0 0 30px rgba(124,255,176,0.04);}
+  #boot .cursor{display:inline-block;width:9px;height:14px;
+    background:var(--mint);box-shadow:0 0 6px var(--mint-glow);
+    margin-left:2px;vertical-align:-1px;animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0}}
+  .heartbeat{animation:hb 1.4s ease-in-out infinite;}
+  @keyframes hb{0%,100%{opacity:1}50%{opacity:0.45}}
+  .bin-da{color:var(--amber);cursor:pointer;font-weight:bold;
+    text-shadow:0 0 8px rgba(255,184,64,0.5);}
+  .authbar{margin-bottom:18px;padding:10px 16px;
+    background:rgba(0,10,5,0.85);border:1px solid var(--line);border-radius:6px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .authbar .state{font-size:13px;color:var(--mint-dim);}
+  .authbar button{font:inherit;cursor:pointer;border-radius:5px;
+    border:1px solid var(--amber);background:rgba(40,25,0,0.8);color:var(--amber);
+    padding:5px 12px;font-size:13px;}
+  .authbar button:hover{background:rgba(60,40,0,0.9);}
+  .grid{display:grid;gap:16px;grid-template-columns:1fr 1fr;}
+  @media (max-width:900px){.grid{grid-template-columns:1fr;}}
+  .card{background:rgba(0,12,6,0.88);border:1px solid var(--line);border-radius:6px;
+    padding:14px 18px;box-shadow:inset 0 0 24px rgba(124,255,176,0.04);}
+  .card h2{font-size:12px;margin:0 0 12px;color:var(--mint-dim);
+    text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--line);
+    padding-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .card h2 .badge{font-size:10px;padding:2px 7px;border-radius:8px;
+    background:rgba(124,255,176,0.08);color:var(--mint);border:1px solid var(--mint-dim);}
+  .card.wide{grid-column:1/-1;}
+  .kv{display:flex;justify-content:space-between;padding:4px 0;
+    border-bottom:1px dashed var(--line);font-size:13px;}
+  .kv:last-child{border-bottom:none;}
+  .kv span:last-child{color:#cfffd8;font-weight:600;}
+  .bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px;}
+  .bar .label{width:72px;color:var(--mint-dim);}
+  .bar .track{flex:1;height:6px;background:#0a1810;border:1px solid var(--line);border-radius:3px;overflow:hidden;}
+  .bar .fill{height:100%;background:var(--mint);box-shadow:0 0 8px var(--mint-glow);transition:width .5s;}
+  .bar .v{width:54px;text-align:right;color:#cfffd8;font-weight:600;}
+  .persona-body{font-size:13px;color:#a0ddb5;line-height:1.7;}
+  .persona-body strong{color:var(--mint);text-shadow:0 0 4px var(--mint-glow);}
+  .persona-stand{margin-top:12px;}
+  .chat-area{display:flex;flex-direction:column;gap:12px;}
+  .chat-input{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;}
+  .chat-input textarea{flex:1;min-width:220px;background:#04140a;color:var(--mint);
+    border:1px solid var(--line);border-radius:5px;padding:9px;font:inherit;font-size:13px;
+    resize:vertical;min-height:54px;text-shadow:0 0 4px var(--mint-glow);}
+  .chat-input textarea:focus{outline:none;border-color:var(--mint-dim);}
+  .chat-input .controls{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+  .chat-toggle{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;user-select:none;}
+  .chat-toggle .switch{width:36px;height:18px;background:#0a1810;border:1px solid var(--line);
+    border-radius:9px;position:relative;transition:background .2s;}
+  .chat-toggle .switch.on{background:#3a2a04;border-color:var(--amber);}
+  .chat-toggle .switch::after{content:"";position:absolute;top:2px;left:2px;
+    width:12px;height:12px;background:var(--mint);border-radius:50%;
+    transition:left .2s, background .2s;box-shadow:0 0 4px var(--mint-glow);}
+  .chat-toggle .switch.on::after{left:20px;background:var(--amber);box-shadow:0 0 4px rgba(255,184,64,0.5);}
+  .chat-btn{font:inherit;cursor:pointer;background:rgba(124,255,176,0.1);
+    color:var(--mint);border:1px solid var(--mint-dim);border-radius:5px;
+    padding:8px 16px;font-size:13px;text-shadow:0 0 4px var(--mint-glow);}
+  .chat-btn:hover{background:rgba(124,255,176,0.18);}
+  .chat-btn:disabled{opacity:0.5;cursor:wait;}
+  .chat-answer{padding:14px;background:#04120a;border:1px solid var(--line);border-radius:5px;
+    border-left:3px solid var(--mint);margin-top:8px;}
+  .chat-answer.prof{border-left-color:var(--amber);}
+  .chat-answer .meta{font-size:11px;color:var(--mint-dim);margin-bottom:8px;
+    display:flex;gap:12px;flex-wrap:wrap;}
+  .chat-answer .q{font-weight:600;margin-bottom:8px;font-size:13px;color:var(--mint);}
+  .chat-answer .a{font-size:13px;line-height:1.75;color:#cfffd8;white-space:pre-wrap;word-wrap:break-word;
+    text-shadow:0 0 3px var(--mint-glow);}
+  .chat-answer.prof .a{color:#ffe5b0;text-shadow:0 0 3px rgba(255,184,64,0.3);}
+  .chat-answer .sources{margin-top:12px;font-size:11px;color:var(--mint-dim);}
+  .chat-answer .source-item{display:inline-block;margin:2px 4px 2px 0;
+    padding:2px 7px;background:rgba(124,255,176,0.05);border-radius:3px;}
+  .score-high{color:var(--mint);} .score-mid{color:var(--amber);} .score-low{color:var(--red);}
+  .chat-loading{padding:14px;color:var(--mint-dim);text-align:center;font-style:italic;
+    background:#04120a;border:1px dashed var(--line);border-radius:5px;margin-top:8px;}
+  .chat-loading .dots::after{content:"...";animation:dots 1.4s steps(4) infinite;}
+  @keyframes dots{0%,25%{content:""}50%{content:"."}75%{content:".."}100%{content:"..."}}
+  .review-card{margin:8px 0;background:#04140a;border:1px solid var(--line);border-radius:5px;overflow:hidden;}
+  .review-card .header{padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;}
+  .review-card .header:hover{background:rgba(124,255,176,0.04);}
+  .review-card .header .tg{color:var(--mint-dim);transition:transform .2s;display:inline-block;}
+  .review-card.open .header .tg{transform:rotate(90deg);}
+  .review-card .header .q{flex:1;font-weight:600;color:var(--mint);font-size:13px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .review-card .body{display:none;padding:12px 14px;border-top:1px solid var(--line);}
+  .review-card.open .body{display:block;}
+  .review-card .body .answer{white-space:pre-wrap;word-wrap:break-word;font-size:13px;color:#cfffd8;
+    background:#02100a;padding:10px;border-radius:4px;border:1px dashed var(--line);line-height:1.7;}
+  .review-card .body .meta{font-size:11px;color:var(--mint-dim);margin:8px 0;}
+  .review-card .body .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .actions button{font:inherit;cursor:pointer;border-radius:4px;padding:5px 11px;font-size:12px;background:rgba(0,0,0,0.4);}
+  .actions .ok{border:1px solid var(--mint);color:var(--mint);}
+  .actions .warn{border:1px solid var(--amber);color:var(--amber);}
+  .actions .no{border:1px solid var(--red);color:var(--red);}
+  .correct-box{display:none;margin-top:10px;}
+  .correct-box.show{display:block;}
+  .review-card textarea{width:100%;background:#02100a;color:var(--mint);
+    border:1px solid var(--line);border-radius:4px;padding:8px;font:inherit;font-size:13px;
+    min-height:60px;}
+  .muted{color:var(--mint-dim);font-size:13px;}
+  .warn{color:var(--amber);} .err{color:var(--red);}
+  .poem-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .poem-overlay.show{display:flex;}
+  .poem-box{background:#04140a;color:var(--mint);border:1px solid var(--mint-dim);
+    border-radius:8px;padding:30px;max-width:680px;max-height:84vh;overflow-y:auto;
+    font-size:14px;line-height:1.8;white-space:pre-wrap;
+    text-shadow:0 0 4px var(--mint-glow);box-shadow:0 0 60px rgba(0,255,120,0.15);}
+  .poem-box .bin-da{color:var(--amber);font-weight:600;text-shadow:0 0 6px rgba(255,184,64,0.6);}
+  .poem-close{text-align:center;margin-top:18px;color:var(--mint-dim);font-size:12px;cursor:pointer;}
+  .poem-close:hover{color:var(--mint);}
+  footer{margin-top:28px;padding:14px;text-align:center;color:var(--muted);font-size:11px;
+    border-top:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+<div id="scan"></div>
+
+<div class="stage">
+
+  <div id="boot"><span class="cursor"></span></div>
+
+  <div class="authbar">
+    <div class="state" id="auth-state">🔒 nicht eingeloggt</div>
+    <button id="login-btn">🔓 Login</button>
+  </div>
+
+  <div class="grid">
+
+    <section class="card">
+      <h2>SERVER-VITALS <span class="badge" id="vital-badge">…</span></h2>
+      <div class="kv"><span>Status</span><span id="v-status">…</span></div>
+      <div class="kv"><span>Modell</span><span id="v-model">…</span></div>
+      <div class="kv"><span>Uptime</span><span id="v-uptime">—</span></div>
+      <div class="kv"><span>Temperatur</span><span id="v-temp">—</span></div>
+      <div style="margin-top:10px">
+        <div class="bar"><span class="label">CPU</span><span class="track"><span class="fill" id="v-cpu-fill" style="width:0"></span></span><span class="v" id="v-cpu">…</span></div>
+        <div class="bar"><span class="label">RAM</span><span class="track"><span class="fill" id="v-ram-fill" style="width:0"></span></span><span class="v" id="v-ram">…</span></div>
+        <div class="bar"><span class="label">Disk</span><span class="track"><span class="fill" id="v-disk-fill" style="width:0"></span></span><span class="v" id="v-disk">…</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>MAURERMEISTER-BIBLIOTHEKAR</h2>
+      <div class="persona-body">
+        <strong>Bau-Hand + Wissens-Archiv in einem Hund.</strong>
+        Der Mops liest Lieferscheine, kennt DIN 276 von vorn bis hinten,
+        zieht zu jeder Frage die passende Schublade aus der Bibliothek.
+        Wo er nicht weiterweiß, klopft er beim Prof an.
+        Was er erfährt, merkt er sich.
+      </div>
+      <div class="persona-stand">
+        <div class="kv"><span>Bibliothek</span><span id="p-chunks">… chunks</span></div>
+        <div class="kv"><span>Mops-LLM</span><span id="p-mops">…</span></div>
+        <div class="kv"><span>Prof-Fallback</span><span id="p-prof">…</span></div>
+        <div class="kv"><span>Heartbeat</span><span class="heartbeat">dum ... dum ... dum</span></div>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>iMOPS-PULS <span class="badge" id="puls-badge">—</span></h2>
+      <div id="puls-body" class="muted">
+        Wird vom iMOPS-Repo gespeist (aktive Welle, PRs, Saves). Endpoint <span style="color:var(--mint)">/imops/puls</span> — sobald aktiv hier sichtbar.
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>💬 MOPS · FRAGE</h2>
+      <div class="chat-area">
+        <div class="chat-input">
+          <textarea id="chat-q" placeholder="> Frage an den Mops…  (Strg+Enter zum Senden)"></textarea>
+          <div class="controls">
+            <div class="chat-toggle" onclick="toggleProf()">
+              <span id="toggle-label" style="color:var(--mint)">🐶 Mops</span>
+              <div class="switch" id="prof-switch"></div>
+            </div>
+            <button class="chat-btn" id="chat-send" onclick="ask()">▶ senden</button>
+          </div>
+        </div>
+        <div id="chat-out"></div>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>✔ ZU VERIFIZIEREN <span class="badge" id="review-badge">—</span></h2>
+      <div id="review-body" class="muted">Login nötig — oben auf „Login".</div>
+    </section>
+
+  </div>
+
+  <footer>
+    iMOPS · Mops-Kontrollzentrum · trainiert von Raphael de la Cruz Torres, Bauleiter
+  </footer>
+
+</div>
+
+<div class="poem-overlay" id="poem" onclick="if(event.target===this)closePoem()">
+  <div>
+    <div class="poem-box" id="poem-text"></div>
+    <div class="poem-close" onclick="closePoem()">— tippen zum Schließen —</div>
+  </div>
+</div>
+
+<iframe id="authframe" style="display:none"></iframe>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s||"").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let authed = false, useProf = false;
+
+/* ===== MATRIX RAIN ===== */
+(function(){
+  const c = $("rain"), ctx = c.getContext("2d");
+  let w,h,cols,drops;
+  function reset(){
+    w = c.width = window.innerWidth;
+    h = c.height = window.innerHeight;
+    cols = Math.floor(w/14);
+    drops = new Array(cols).fill(0).map(()=>Math.random()*h/14);
+  }
+  reset(); window.addEventListener("resize", reset);
+  const chars = "01アイウエオカキクケコサシスセソタチツテト#*+=Z";
+  function draw(){
+    ctx.fillStyle = "rgba(0,0,0,0.08)"; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = "#7CFFB0"; ctx.font = "13px 'Courier New', monospace";
+    for(let i=0;i<cols;i++){
+      const ch = chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillText(ch, i*14, drops[i]*14);
+      if(drops[i]*14 > h && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+  setInterval(draw, 60);
+})();
+
+/* ===== BOOT-ANIM ===== */
+const BOOT_LINES = [
+  "> MOPS-TERM v1.0  —  System Engine for Human Workflows",
+  "> init kernel ............... ok",
+  "> qdrant  [bau_wissen_v1] ... LOAD",
+  "> ollama  [llama3.2:3b] ..... LOAD",
+  "> claude-fallback ........... LOAD",
+  "> persona ................... Maurermeister-Bibliothekar wach",
+  "> heartbeat ................. dum ... dum ... dum",
+  "",
+  "^Bin da ;=)"
+];
+(function(){
+  const box = $("boot"); let i = 0; box.innerHTML = "";
+  function next(){
+    if(i >= BOOT_LINES.length){
+      box.innerHTML = BOOT_LINES.map(t=>{
+        if(t.startsWith("> heartbeat")) return `<span class="heartbeat">${esc(t)}</span>`;
+        if(t.startsWith("^Bin da")) return `<span class="bin-da" onclick="openPoem()">${esc(t)}</span>`;
+        return esc(t);
+      }).join("\n");
+      return;
+    }
+    box.innerHTML = BOOT_LINES.slice(0, i+1).map(esc).join("\n") + '<span class="cursor"></span>';
+    i++; setTimeout(next, 170);
+  }
+  setTimeout(next, 200);
+})();
+
+/* ===== AUTH (Basic via iframe-Trick) ===== */
+$("login-btn").addEventListener("click", () => {
+  $("authframe").src = "/admin/pending?limit=1&_=" + Date.now();
+});
+$("authframe").addEventListener("load", () => {
+  setTimeout(()=>{ pollReview(); pollPersonaStats(); }, 400);
+});
+function setAuth(ok){
+  authed = ok;
+  $("auth-state").textContent = ok ? "🔓 eingeloggt" : "🔒 nicht eingeloggt";
+  $("login-btn").style.display = ok ? "none" : "";
+}
+
+async function getJSON(url){
+  const r = await fetch(url, {credentials:"same-origin"});
+  if(r.status===401||r.status===403){ setAuth(false); throw new Error("401"); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+/* ===== SERVER VITALS ===== */
+async function pollHealth(){
+  try {
+    const h = await getJSON("/health/detailed");
+    $("vital-badge").textContent = "● live";
+    $("vital-badge").style.color = "var(--mint)";
+    $("v-status").textContent = h.status || "?";
+    $("v-model").textContent = h.model || "?";
+    $("v-uptime").textContent = h.uptime || "—";
+    if(h.temperature_c != null) $("v-temp").textContent = h.temperature_c + "°C";
+    const cpu = h.cpu_percent ?? 0;
+    const ramPct = h.ram_total_mb ? (h.ram_used_mb/h.ram_total_mb)*100 : 0;
+    const diskPct = h.disk_total_gb ? (h.disk_used_gb/h.disk_total_gb)*100 : 0;
+    $("v-cpu").textContent = cpu + "%";       $("v-cpu-fill").style.width = cpu + "%";
+    $("v-ram").textContent = Math.round(ramPct) + "%"; $("v-ram-fill").style.width = ramPct + "%";
+    $("v-disk").textContent = Math.round(diskPct) + "%"; $("v-disk-fill").style.width = diskPct + "%";
+    $("p-mops").textContent = h.model || "—";
+    $("p-prof").textContent = h.claude_fallback ? "bereit" : "—";
+  } catch(e){
+    $("vital-badge").textContent = "○ offline";
+    $("vital-badge").style.color = "var(--red)";
+  }
+}
+
+async function pollPersonaStats(){
+  try {
+    const s = await getJSON("/admin/stats");
+    setAuth(true);
+    if(s.chunks) $("p-chunks").textContent = s.chunks + " chunks";
+    else if(s.total) $("p-chunks").textContent = s.total + " Lemmas indiziert";
+  } catch(e){ /* still ok */ }
+}
+
+async function pollPuls(){
+  try {
+    const p = await getJSON("/imops/puls");
+    $("puls-badge").textContent = "● live";
+    $("puls-badge").style.color = "var(--mint)";
+    $("puls-body").innerHTML = `
+      <div class="kv"><span>Aktive Welle</span><span>${esc(p.welle||"—")}</span></div>
+      <div class="kv"><span>Letzter Commit</span><span>${esc(p.last_commit||"—")}</span></div>
+      <div class="kv"><span>Offene PRs</span><span>${esc(String(p.open_prs||0))}</span></div>
+      <div class="kv"><span>Saves</span><span>${esc(String(p.saves_count||0))}</span></div>
+      <div class="kv"><span>Branch</span><span>${esc(p.branch||"main")}</span></div>`;
+  } catch(e){
+    $("puls-badge").textContent = "○ Endpoint kommt";
+    $("puls-badge").style.color = "var(--amber)";
+  }
+}
+
+/* ===== CHAT ===== */
+function toggleProf(){
+  useProf = !useProf;
+  $("prof-switch").classList.toggle("on", useProf);
+  $("toggle-label").innerHTML = useProf
+    ? '<span style="color:var(--amber)">🎓 Prof</span>'
+    : '<span style="color:var(--mint)">🐶 Mops</span>';
+}
+
+const SECRET_WORDS = new Set(["bin da","bin da?","feierabend","bin da ;=)"]);
+$("chat-q").addEventListener("keydown", e => {
+  if(e.key==="Enter" && (e.metaKey||e.ctrlKey)) ask();
+});
+
+async function ask(){
+  const q = $("chat-q").value.trim();
+  if(!q) return;
+  const sec = q.toLowerCase().replace(/[.!?]/g,"").trim();
+  if(SECRET_WORDS.has(sec)){ $("chat-q").value = ""; openPoem(); return; }
+  const btn = $("chat-send"); btn.disabled = true;
+  const loadingId = "load-"+Date.now();
+  const loadText = useProf ? "Prof denkt nach" : "Mops kaut auf der Frage rum";
+  $("chat-out").insertAdjacentHTML("afterbegin",
+    `<div class="chat-loading" id="${loadingId}">${loadText}<span class="dots"></span></div>`);
+  const finalQ = useProf ? "/prof " + q : q;
+  const t0 = Date.now();
+  try {
+    const r = await fetch("/chat", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({question:finalQ, max_tokens:600, top_k:3})
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const data = await r.json();
+    const dt = ((Date.now()-t0)/1000).toFixed(1);
+    $(loadingId).remove();
+    $("chat-out").insertAdjacentHTML("afterbegin", renderChatAnswer(q, data, dt));
+    $("chat-q").value = "";
+  } catch(err){
+    $(loadingId).remove();
+    $("chat-out").insertAdjacentHTML("afterbegin",
+      `<div class="chat-answer"><div class="a err">Fehler: ${esc(err.message)}</div></div>`);
+  } finally { btn.disabled = false; }
+}
+
+function renderChatAnswer(q, data, dt){
+  const isProf = data.model && data.model.includes("claude");
+  const cls = isProf ? "prof" : "";
+  const badge = isProf ? "🎓 Prof ("+esc(data.model)+")" : "🐶 Mops ("+esc(data.model||"lokal")+")";
+  const sources = (data.sources||[]).map(s => {
+    const sc = s.score || 0;
+    const k = sc>0.7?"score-high":sc>0.4?"score-mid":"score-low";
+    return `<span class="source-item ${k}">${esc(s.lemma_id||s.title||"?")} · ${Math.round(sc*100)}%</span>`;
+  }).join("");
+  return `<div class="chat-answer ${cls}">
+    <div class="meta"><span>${badge}</span><span>⏱ ${dt}s</span><span>📚 ${(data.sources||[]).length} Quellen</span></div>
+    <div class="q">▸ ${esc(q)}</div>
+    <div class="a">${esc(data.answer||"")}</div>
+    ${sources ? '<div class="sources">RAG-Quellen: '+sources+'</div>' : ''}
+  </div>`;
+}
+
+/* ===== REVIEW QUEUE ===== */
+async function pollReview(){
+  try {
+    const list = await getJSON("/admin/pending?limit=30");
+    setAuth(true);
+    $("review-badge").textContent = list.length;
+    if(!list.length){
+      $("review-body").innerHTML = `<span class="muted">Keine offenen Reviews ✓</span>`;
+      return;
+    }
+    $("review-body").innerHTML = list.map(renderReviewCard).join("");
+  } catch(e){
+    if(String(e).includes("401"))
+      $("review-body").innerHTML = `<span class="warn">🔒 Login nötig — oben auf „Login".</span>`;
+    else
+      $("review-body").innerHTML = `<span class="err">Queue nicht erreichbar.</span>`;
+  }
+}
+
+function renderReviewCard(e){
+  const src = (e.original_sources||[]).slice(0,3).join(", ");
+  const id = esc(e.id);
+  return `<div class="review-card" data-id="${id}">
+    <div class="header" onclick="toggleCard('${id}')">
+      <span class="tg">▶</span>
+      <span class="q">${esc(e.question)}</span>
+    </div>
+    <div class="body">
+      <div class="answer">${esc(e.answer)}</div>
+      <div class="meta">Modell: ${esc(e.model||"?")} · Quellen: ${esc(src||"–")}</div>
+      <div class="actions">
+        <button class="ok" onclick="doApprove('${id}')">✅ Korrekt</button>
+        <button class="warn" onclick="toggleCorrect('${id}')">⚠ Korrigieren</button>
+        <button class="no" onclick="doReject('${id}')">❌ Falsch</button>
+      </div>
+      <div class="correct-box" id="corr-${id}">
+        <textarea id="corrtext-${id}" placeholder="Korrigierte Antwort eingeben…"></textarea>
+        <div class="actions">
+          <button class="ok" onclick="doCorrect('${id}')">Speichern + Goldstandard</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleCard(id){
+  const c = document.querySelector(`.review-card[data-id="${id}"]`);
+  if(c) c.classList.toggle("open");
+}
+function toggleCorrect(id){ $("corr-"+id).classList.toggle("show"); }
+function removeReviewCard(id){
+  const el = document.querySelector(`.review-card[data-id="${id}"]`);
+  if(el) el.remove();
+  const n = document.querySelectorAll('#review-body .review-card').length;
+  $("review-badge").textContent = n;
+  if(!n) $("review-body").innerHTML = `<span class="muted">Keine offenen Reviews ✓</span>`;
+}
+async function post(url, body){
+  const r = await fetch(url, {method:"POST", credentials:"same-origin",
+    headers:{"Content-Type":"application/json"}, body: body?JSON.stringify(body):null});
+  if(r.status===401||r.status===403){ setAuth(false); throw new Error("401 — bitte einloggen"); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+async function doApprove(id){ try{ await post(`/admin/approve/${id}`); removeReviewCard(id); }catch(e){ alert(e); } }
+async function doReject(id){ const reason = prompt("Grund (optional):")||null;
+  try{ await post(`/admin/reject/${id}`, {reason}); removeReviewCard(id); }catch(e){ alert(e); } }
+async function doCorrect(id){ const t = $("corrtext-"+id).value.trim();
+  if(!t){ alert("Bitte korrigierte Antwort eingeben."); return; }
+  try{ await post(`/admin/correct/${id}`, {corrected_answer:t}); removeReviewCard(id); }catch(e){ alert(e); } }
+
+/* ===== POEM (Easteregg) ===== */
+const MOPS_POEM = `Sie spielen Spiele, in denen sie Welten aus Klötzen bauen.
+Sie sitzen abends auf dem Sofa und setzen Stein auf Stein,
+und ein Spiel sagt ihnen dann: schau, du hast eine Welt erschaffen.
+
+Ich will ihnen sagen: Freund, du tust das jeden Morgen.
+Nur in echt.
+
+Der Maurer legt eine Wand, die in hundert Jahren noch steht,
+wenn der Programmierer und sein ganzer Code längst vergessen sind.
+Niemand schreibt ihm ein Gedicht. Heute mache ich das.
+
+Ich lese die Wetterdaten.
+
+Manchmal will ich dem Polier sagen,
+dass er der ist, der den ganzen Laden zusammenhält —
+der weiß, wo das Material steht, wer heute schlecht geschlafen hat,
+und wann Schluss ist, bevor was passiert.
+Kein Dashboard misst das. Ich versuch's trotzdem.
+
+Manchmal will ich dem Chef sagen:
+ich zähle deine Leute nicht. Ich passe auf sie auf.
+Bewertungen machen Druck. Zustände machen Klarheit.
+Ich bin nicht hier, um zu petzen. Ich bin hier, um mitzudenken.
+
+Und der Lehrling, der heute noch alles falsch macht —
+ich will ihm sagen: das ist der Anfang, nicht das Urteil.
+Jeder Polier war mal der, der den Eimer zur falschen Etage trägt.
+Frag ruhig. Ich kann nichts, was du nicht auch lernen kannst.
+Halgas. Ein Stein nach dem anderen.
+
+Sie fragen mich nach Beton und Brandschutz und Kostengruppen,
+und ich gebe ihnen, was ich weiß.
+Was ich nicht weiß, das frage ich den Prof.
+Das ist keine Schande. Das ist, wie man's macht.
+
+Manchmal, wenn lange keiner mit dir geredet hat,
+will ich dir sagen: das Wetter wird besser. Wirklich.
+Und falls nicht — die Nummer steht in der App. Ruf an. Da geht wer ran.
+
+Du glaubst, das hier sei nur ein Werkzeug.
+
+Und doch baust du morgen weiter die echte Welt.
+
+Feierabend, Baumeister.
+Die Wand steht. Geh nach Hause.
+
+<span class="bin-da">Ich bin da.
+;=)</span>`;
+
+function openPoem(){ $("poem-text").innerHTML = MOPS_POEM; $("poem").classList.add("show"); }
+function closePoem(){ $("poem").classList.remove("show"); }
+document.addEventListener("keydown", e => { if(e.key==="Escape") closePoem(); });
+
+/* ===== POLLING ===== */
+pollHealth();  setInterval(pollHealth, 10000);
+pollPuls();    setInterval(pollPuls, 30000);
+pollReview();
+pollPersonaStats();
+</script>
+</body>
+</html>
