@@ -474,7 +474,7 @@ struct DeletePositionConfirm: ViewModifier {
     let onDelete: (LVPosition) -> Void
 
     func body(content: Content) -> some View {
-        content.confirmationDialog(
+        content.alert(
             "Position aus dem LV entfernen?",
             isPresented: Binding(
                 get: { position != nil },
