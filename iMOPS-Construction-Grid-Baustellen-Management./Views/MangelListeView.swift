@@ -267,7 +267,7 @@ struct MangelDeleteConfirm: ViewModifier {
     let onDelete: (Mangel) -> Void
 
     func body(content: Content) -> some View {
-        content.confirmationDialog(
+        content.alert(
             "Mangel löschen?",
             isPresented: Binding(
                 get: { mangel != nil },
