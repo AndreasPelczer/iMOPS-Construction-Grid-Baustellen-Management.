@@ -14,6 +14,7 @@ struct MangelListeView: View {
     @State private var gewerkFilter: String?        = nil
     @State private var pdfURL: URL?
     @State private var showFristen    = false
+    @State private var mangelToDelete: Mangel?
 
     init(event: Event) {
         self.event = event
@@ -66,11 +67,16 @@ struct MangelListeView: View {
                         } label: {
                             MangelZeile(mangel: mangel)
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) { mangelToDelete = mangel } label: {
+                                Label("Löschen", systemImage: "trash")
+                            }
+                        }
                     }
-                    .onDelete(perform: loeschen)
                 }
             }
             .listStyle(.insetGrouped)
+            .modifier(MangelDeleteConfirm(mangel: $mangelToDelete) { loeschen($0) })
             .navigationTitle("Mängel (\(maengel.count))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -244,16 +250,39 @@ struct MangelListeView: View {
         }
     }
 
-    private func loeschen(offsets: IndexSet) {
-        for i in offsets {
-            let m = gefiltert[i]
-            if let pfad = m.fotoPfad {
-                try? FileManager.default.removeItem(atPath: pfad)
-            }
-            NotificationService.shared.cancel(for: m)
-            ctx.delete(m)
+    private func loeschen(_ m: Mangel) {
+        if let pfad = m.fotoPfad {
+            try? FileManager.default.removeItem(atPath: pfad)
         }
+        NotificationService.shared.cancel(for: m)
+        ctx.delete(m)
         try? ctx.save()
+    }
+}
+
+// Sicherheitsabfrage vor dem Löschen eines Mangels (gegen Full-Swipe-Fehler).
+// Wie DeletePositionConfirm im LV ausgelagert (body bleibt type-checkbar). Buch Kap 4/9.
+struct MangelDeleteConfirm: ViewModifier {
+    @Binding var mangel: Mangel?
+    let onDelete: (Mangel) -> Void
+
+    func body(content: Content) -> some View {
+        content.confirmationDialog(
+            "Mangel löschen?",
+            isPresented: Binding(
+                get: { mangel != nil },
+                set: { if !$0 { mangel = nil } }
+            ),
+            presenting: mangel
+        ) { m in
+            Button("Ja, löschen", role: .destructive) {
+                onDelete(m)
+                mangel = nil
+            }
+            Button("Abbrechen", role: .cancel) { mangel = nil }
+        } message: { m in
+            Text("\(m.titel ?? "Mangel")\(m.fotoPfad != nil ? " (inkl. Foto)" : "") wird dauerhaft entfernt. Das lässt sich nicht rückgängig machen.")
+        }
     }
 }
 
