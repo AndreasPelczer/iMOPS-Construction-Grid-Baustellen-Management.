@@ -15,6 +15,7 @@ struct LVView: View {
 
     @State private var showingAdd            = false
     @State private var editPosition: LVPosition?
+    @State private var positionToDelete: LVPosition?
     @State private var kalkPosition: LVPosition?
     @State private var fortschrittPosition: LVPosition?
     @State private var aufmassPosition: LVPosition?
@@ -99,8 +100,8 @@ struct LVView: View {
                             LVPositionRow(position: pos)
                                 .contentShape(Rectangle())
                                 .onTapGesture { editPosition = pos }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) { delete(pos) } label: {
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) { positionToDelete = pos } label: {
                                         Label("Löschen", systemImage: "trash")
                                     }
                                 }
@@ -263,6 +264,7 @@ struct LVView: View {
         .sheet(isPresented: $showHelp) {
             LVHelpView()
         }
+        .modifier(DeletePositionConfirm(position: $positionToDelete) { delete($0) })
         .alert("Fehlende Preise", isPresented: $showMissingPricesAlert) {
             Button("Trotzdem exportieren") {
                 if let fmt = pendingExportFormat { doGAEBExport(fmt) }
@@ -463,6 +465,37 @@ enum LVPositionHelper {
 }
 
 // MARK: - Position Row
+
+// Sicherheitsabfrage vor dem Löschen einer LV-Position (gegen Baustellenfinger-
+// Fehlwischer). Ausgelagert als ViewModifier, damit die LVView-body type-checkbar bleibt.
+// Buch Kap 4: Nachweis dient der Entlastung — du hast bestätigt, also war's kein Versehen.
+struct DeletePositionConfirm: ViewModifier {
+    @Binding var position: LVPosition?
+    let onDelete: (LVPosition) -> Void
+
+    func body(content: Content) -> some View {
+        content.confirmationDialog(
+            "Position aus dem LV entfernen?",
+            isPresented: Binding(
+                get: { position != nil },
+                set: { if !$0 { position = nil } }
+            ),
+            presenting: position
+        ) { pos in
+            Button("Ja, löschen", role: .destructive) {
+                onDelete(pos)
+                position = nil
+            }
+            Button("Abbrechen", role: .cancel) { position = nil }
+        } message: { pos in
+            if let folgen = pos.loeschFolgen {
+                Text("\(pos.posNr ?? "") \(pos.bezeichnung ?? "") hat \(folgen). Alle werden mitgelöscht — das lässt sich nicht rückgängig machen.")
+            } else {
+                Text("\(pos.posNr ?? "") \(pos.bezeichnung ?? "") wird dauerhaft entfernt. Das lässt sich nicht rückgängig machen.")
+            }
+        }
+    }
+}
 
 struct LVPositionRow: View {
     @ObservedObject var position: LVPosition
