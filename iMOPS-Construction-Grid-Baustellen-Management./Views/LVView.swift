@@ -101,9 +101,10 @@ struct LVView: View {
                                 .contentShape(Rectangle())
                                 .onTapGesture { editPosition = pos }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) { positionToDelete = pos } label: {
+                                    Button { positionToDelete = pos } label: {
                                         Label("Löschen", systemImage: "trash")
                                     }
+                                    .tint(.red)
                                 }
                                 .swipeActions(edge: .leading) {
                                     Button { editPosition = pos } label: {

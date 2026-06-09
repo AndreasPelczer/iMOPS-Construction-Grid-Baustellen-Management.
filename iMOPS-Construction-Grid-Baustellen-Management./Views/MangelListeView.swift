@@ -68,9 +68,10 @@ struct MangelListeView: View {
                             MangelZeile(mangel: mangel)
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) { mangelToDelete = mangel } label: {
+                            Button { mangelToDelete = mangel } label: {
                                 Label("Löschen", systemImage: "trash")
                             }
+                            .tint(.red)
                         }
                     }
                 }
