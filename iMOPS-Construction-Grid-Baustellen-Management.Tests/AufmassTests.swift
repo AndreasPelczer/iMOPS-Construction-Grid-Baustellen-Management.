@@ -129,4 +129,34 @@ struct AufmassTests {
         addAufmass(to: weit, menge: 70)
         #expect(weit.aufmassAmpel == .rot)         // 30 % > 15 %
     }
+
+    // MARK: - Fortschritt-Ableitung (Welle 5.2.1)
+
+    @Test @MainActor func gemessenerFortschritt() {
+        let p = makePosition(menge: 240)
+        addAufmass(to: p, menge: 216)
+        #expect(p.gemessenerFortschrittProzent == 90)
+    }
+
+    @Test @MainActor func gemessenerFortschrittMehrmengeOhneCap() {
+        let p = makePosition(menge: 240)
+        addAufmass(to: p, menge: 300)
+        #expect(p.gemessenerFortschrittProzent == 125)   // R2.b: kein Capping
+    }
+
+    @Test @MainActor func gemessenerFortschrittOhneSoll() {
+        let p = makePosition(menge: 0)
+        addAufmass(to: p, menge: 50)
+        #expect(p.gemessenerFortschrittProzent == nil)   // R2.a: keine Division durch 0
+    }
+
+    @Test @MainActor func displayedFortschrittAbleitung() {
+        let leer = makePosition(menge: 240)
+        #expect(leer.displayedFortschritt(manuellerProzent: nil) == .unbestimmt)
+        #expect(leer.displayedFortschritt(manuellerProzent: 50) == .geschaetzt(prozent: 50))
+
+        let gemessen = makePosition(menge: 240)
+        addAufmass(to: gemessen, menge: 240)
+        #expect(gemessen.displayedFortschritt(manuellerProzent: 80) == .gemessen(prozent: 100))
+    }
 }
