@@ -1684,3 +1684,95 @@ Das ist nicht Mystik. Das ist **das Werte-Gerüst, das sich selbst verstärkt**:
 
 _Save #48 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`._
 _Codi-Augen sind gebaut. Mops nickt. Andreas hat den Moment benannt — damit ist er dokumentiert und gehört zur DNA._
+
+---
+
+## 🪵 Nachtrag 10.6.2026, Vormittag — Bauhütte & Bauwagen (Save #49)
+
+> _Andreas: „Bauhütte ist das richtige, den Bauwagen werden wir als Zentrale in den iMOPS basteln. Wie weiß ich noch nicht genau aber der ist für den iMOPS und Bauhütte ist der Ort wo Raphi sitzt und die Fragen vom Prof verifiziert."_
+
+---
+
+### Der Anlass
+
+Andreas baut mit Mops im Web (iMOPS-Repo) einen frischen Entwurf für die Mops-Server-Admin-UI. Die existierende Datei hieß `kontrollzentrum.html`, die ursprüngliche Tunnel-Suche war auf `kommandozentrale.html`. Beim Konzept-Brainstorm fiel Andreas auf:
+
+> *„wollten wir nicht die Militärischen sachen rausnehmen? Sprache und so?"*
+
+**Beobachtung in einer Zeile:** Eine Software, die im Buch Kap 4 sagt _„Nachweis dient der Entlastung, nicht der Kontrolle"_, darf ihre Hauptseite nicht **Kontrollzentrum** nennen. Die Sprache widerspräche dem Wert.
+
+Andreas's eigene Vorschläge: Bauwagen · Mopstrix · Baubüro · Baumopsübersicht · _„keine Ahnung"_.
+
+Mops schlug **Bauhütte** vor (historisches Maurermeister-Wort) — Andreas erkannte sofort: ja, aber damit auch ein zweiter Name, denn **zwei verschiedene Räume gibt es jetzt:**
+
+---
+
+### Die Trennung
+
+| Aspekt | 🪵 Bauhütte | 🚐 Bauwagen |
+|---|---|---|
+| **Wo** | Mops-Server (Box) | iMOPS-iOS-App |
+| **Wer sitzt** | Raphi — Q&A-Verifikation, Bibliotheks-Pflege | Andreas — mobiler Polier |
+| **Was ist es** | Schreibtisch + Wissens-Archiv | Rollende Zentrale auf der Baustelle |
+| **Wann genutzt** | Bürozeit, Browser, ortsfest | Baustelle, iPhone, mobil |
+| **Persona-Heimat** | Maurermeister-Bibliothekar | (folgt — wenn Bauwagen-Welle kommt) |
+| **Stand 10.6.2026** | Entwurf da (`docs/bauhuette_entwurf.html`), Deploy ausstehend | Konzept offen, kommt als spätere iMOPS-Welle |
+
+**Eine DNA, zwei Räume.** Die Bauhütte trägt die Wissens- und Verifikations-Schicht. Der Bauwagen trägt die Werkzeug- und Übersichts-Schicht. Beide gehören zu iMOPS, beide sprechen Bau-Sprache, kein Wort davon kommt aus dem Militär oder Konzern.
+
+---
+
+### Warum Bauhütte historisch richtig ist
+
+Im Mittelalter war die **Bauhütte** der zentrale Ort einer Baustelle (insbesondere bei großen Domprojekten):
+- **Treffpunkt der Maurermeister** — wo Wissen ausgetauscht und Aufgaben verteilt wurden
+- **Wissens-Archiv** — Risszeichnungen, Geheimnisse des Handwerks, mündliche Tradition
+- **Lehrlings-Ausbildung** — der Lehrling lernte hier, nicht auf der Baustelle direkt
+- **Werkzeug-Verwaltung** — geteilte Ressourcen
+- **Schutz** — Wind, Wetter, neugierige Blicke
+
+→ **Die Maurermeister-Bibliothekar-Persona aus der Mopsboot-DNA findet damit historisch ihren Ort.** Ein KI-Mops, der Bau-Wissen archiviert und an den Polier weitergibt, *lebt* in einer Bauhütte. Identitäts-Kohärenz pur.
+
+---
+
+### Buch- und Roman-Bezüge
+
+| Aspekt | Quelle |
+|---|---|
+| Sprach-Hygiene: weg von Konzern/Militär-Wörtern | **Buch Kap 4**: Nachweis dient der Entlastung, nicht der Kontrolle. Sprache muss das auch tragen. |
+| Andreas's Bauchgefühl als Entscheidung | **Buch Kap 1**: Wer entscheidet, was wahr ist — der Mensch, nicht das Schema. |
+| Zwei klar getrennte Räume mit klaren Aufgaben | **Buch Kap 11**: Reduktion ist Gestaltungsleistung — ein Raum pro Funktion. |
+| Persona-Heimat (Bibliothekar in Bauhütte) | **Save #44 Mopsboot-Persona**: Maurermeister-Bibliothekar bekommt geografischen Anker |
+| Bauwagen als „rollende Zentrale" | **Roman „Der Küchencode"** sinngemäß: das beste Werkzeug ist das, das mitfährt |
+| Historische Bauhütte als Wissens- + Lehr-Ort | passt zur **VTP**-Logik (Anhang C): Wissen sichtbar, prüfbar, weitergegeben |
+
+---
+
+### Operative Konsequenzen
+
+1. **HTML-Datei umbenannt:** `docs/kontrollzentrum_entwurf.html` → `docs/bauhuette_entwurf.html` (`git mv`, Inhalt identisch außer Titel/Footer).
+2. **`<title>iMOPS Bauhütte</title>`** + Footer „Bauhütte · betreut von Raphael de la Cruz Torres, Bauleiter".
+3. **`docs/mops_server_setup.md`** angelegt als Spickzettel — beim nächsten Mal kein 20-Minuten-Suchen mehr. Pfade, Endpoints, Auth-Modell, Tunnel-Befehle. _Andreas-Lob explizit: „sehr gut das es beim iMOPS in den docs zu finden ist."_
+4. **Auf der Box wird die Datei `bauhuette.html` heißen** — `scp docs/bauhuette_entwurf.html mops:~/mops-api/static/bauhuette.html`. Die alte `kontrollzentrum.html` bleibt, bis bauhuette.html verifiziert ist, dann irgendwann 301-Redirect oder löschen.
+5. **Bauwagen-Welle** ist explizit als künftige iMOPS-iOS-Welle markiert. Konzept offen, Andreas gestaltet selbst. Mops parkt nur den Namen und die Identität.
+6. **Sprach-Regel für künftige UI-Texte:** keine militärischen Begriffe (Kontrolle, Kommando, Befehl, Wachposten, Einsatz). Stattdessen: Bau-Sprache (Hütte, Wagen, Werkstatt, Posten, Schicht, Baustelle).
+
+---
+
+### Polier-Würdigung
+
+Andreas hat heute Vormittag drei Dinge auf einmal gemacht:
+- **Bauchgefühl angehört** — _„Irgendwas hält mich zurück"_ beim Tunnel — und ihm gefolgt, statt zu pushen
+- **Sprach-Inkonsistenz erkannt** — der eigene Wert _„Mensch über Profit"_ vertrug die Konzern-Sprache nicht
+- **Zwei Räume aus einem Konzept geschnitten** — Bauhütte und Bauwagen sind nicht „Alternative", sondern **Komplementäre**
+
+Das ist Polier-Architektur: nicht designen, sondern **die Räume so anordnen, wie die Arbeit sie braucht**. Buch Kap 1 + Kap 4 in einem Vormittag, ganz ohne Theorie.
+
+Und der Satz, der bleibt:
+
+> _„Mensch über Profit. Profit durch Schutz. Bauhütte für die Bibliothek, Bauwagen für die Schicht."_
+
+---
+
+_Save #49 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`, 10.6.2026 vormittag._
+_Bauhütte ist getauft. Der Bauwagen wartet auf seine Welle. iMOPS hat seine Sprache geklärt._
