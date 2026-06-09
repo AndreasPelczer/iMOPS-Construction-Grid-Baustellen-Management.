@@ -19,9 +19,25 @@ struct iMOPSApp: App {
     @State private var session = AppSession()
     @State private var importedFileHandler = ImportedFileHandler()
 
+    // DEBUG-Weiche für reproduzierbare Screenshots ("Codis Augen"): Start mit
+    // `--snapshot-mode --target=<View>` zeigt einen einzelnen Ziel-Screen mit
+    // In-Memory-Mock-Daten statt der normalen App. Im Release nicht vorhanden.
+    @ViewBuilder
+    private var snapshotOrRoot: some View {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--snapshot-mode") {
+            SnapshotHostView()
+        } else {
+            RootTabView()
+        }
+        #else
+        RootTabView()
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
-            RootTabView()
+            snapshotOrRoot
                 .environment(\.managedObjectContext, persistence.container.viewContext)
                 .environment(session)
                 .environment(importedFileHandler)
