@@ -159,4 +159,21 @@ struct AufmassTests {
         addAufmass(to: gemessen, menge: 240)
         #expect(gemessen.displayedFortschritt(manuellerProzent: 80) == .gemessen(prozent: 100))
     }
+
+    // MARK: - Loesch-Folgen (Sicherheitsabfrage)
+
+    @Test @MainActor func loeschFolgenLeerIstNil() {
+        let p = makePosition(menge: 100)
+        #expect(p.loeschFolgen == nil)
+    }
+
+    @Test @MainActor func loeschFolgenMitAufmass() {
+        let p = makePosition(menge: 100)
+        addAufmass(to: p, menge: 60)
+        addAufmass(to: p, menge: 60)
+        addAufmass(to: p, menge: 60)
+        let f = p.loeschFolgen
+        #expect(f?.contains("3 Aufmaß") == true)
+        #expect(f?.contains("180") == true)
+    }
 }
