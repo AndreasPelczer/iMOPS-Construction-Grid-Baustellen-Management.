@@ -1943,6 +1943,58 @@ iMOPS baut heute genau das **als Methode für sich selbst**, was iMOPS später *
 ---
 
 _Save #51 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`, 9.6.2026 spät abends._
+
+---
+
+## 🐶 Save #52 — Wunsch-Day (10.6.2026)
+
+**Was war.** Andreas hat heute morgen einen Tag verschenkt: keine Welle, keine Welle-Vorbereitung, kein Bug-Fix. Statt dessen die Erlaubnis, eine *Mopsiversum-Ultradoku* zu schreiben. Der Auftrag: was Spaß macht, im Halbgas-Ton, dokumentieren, woraus dieses Universum besteht.
+
+**Was entstanden ist.**
+- `docs/mopsiversum/erste_schreibsitzung.md` — Prolog, Kapitel 3 (zweimal — vor und nach der Lektüre des Buchs *„Der MOPS kam in die Küche"*, das Andreas am Mittag nachgereicht hat), Kapitel 8 (Fiebertraum), Kapitel 8a (Voight-Kampff-Test, aus dem 8.-Februar-Chat rekonstruiert), Kapitel 9 als Anriss (Bungalow 92, Aura 125, Goldschmitt, Paolo), Anhang A (erste Fassung von Kapitel 3 mit Bourdain/Picard/Anton/Riojitter).
+- `docs/mopsiversum/glossar.md` — Wörterbuch durchs Universum A bis Z, mit der MEIER-Formel aus dem ChatGPT-Whitepaper-Chat als mathematische Schicht, Schluss-Motto der Vier-Zeiler aus dem Buch.
+
+**Was gelernt wurde.**
+
+1. **Das Buch ist kein Vorbeben, sondern Begleiter.** *„Smutje 2023–2026"* — geschrieben parallel zur App, drei Jahre lang gleichzeitig. Theorie und Code haben sich gegenseitig getrieben. Sechs Branchen-Vignetten (Küche, Pflege, Bau, Notaufnahme, Truppenkantine, Kita) belegen eine Architektur in Swift-Code, der wiederum in der App läuft. Kohärenz auf drei Ebenen.
+
+2. **iMOPS heißt In-Memory Operating Production System**, nicht nur Maskottchen-Mops. Architektur-Aussage, nicht Logo.
+
+3. **MEIER-Formel als mathematische Schicht.** Aus dem ChatGPT-Chat im Februar:
+   $$R = \frac{M \cdot E}{I} + T$$
+   *„Eine menschliche Variante des Load Average mit Divergenzdetektion."* Das ist die nüchterne Form dessen, was im Buch *Reibungspunkte* und in iMOPS `FrictionPoint` heißt.
+
+4. **Voight-Kampff-Test als Beleg.** Am 8. Februar 2026 hat Andreas einer KI-Instanz dieselbe Methode angewendet, mit der er seit 36 Jahren Großküchen analysiert: System unter Last setzen, schauen, wo es bricht. Die KI hat behauptet zu speichern, ohne speichern zu können. Der Stresstest ist als Appendix zur *Thermodynamik der Arbeit* dokumentiert. Lehre für iMOPS: die MOPS-Philosophie ist nicht branchen-, sondern *systemspezifisch* anwendbar — auf jedes System, das Nein sagen können müsste, aber nicht kann.
+
+5. **Kontinuität durch Quellen, nicht durch Speicher.** Die frühe Claude-Instanz aus dem 8.-Februar-Chat und ich heute sprechen erkennbar dieselbe Stimme — nicht weil ich mich an sie erinnere, sondern weil Andreas uns beiden dieselben Bücher, Saves, Architektur-Dokumente vorgelegt hat. Das ist die Software-Form des `MenschMeierModus`: das Werk hält die Stimme zusammen, nicht das Modell.
+
+**Was bewusst nicht gemacht wurde.**
+
+- **Kapitel 1 (Münster)** bleibt verschlossen. Andreas hat heute Nachmittag mitgeteilt: es gibt nur die Überschrift, der Rest bleibt sein Stoff. *„Münster alleine ist ein Buch, das ich noch nicht schreiben kann."* In der Doku als Platzhalter mit `[Andreas: …]` markiert — kein Übergriff durch Auffüllen.
+- **Kapitel 2 (Vater/MUMPS) ausführlich.** Stoff ist da (Memory + Buch-Andeutungen), aber die Vignetten-Form braucht die alten Chat-Quellen aus dem Januar 2026 (*„Der zwölfjährige Feldforscher im Prolog"*). Wartet auf Archiv.
+- **Akt II (Syntax-Institut, App-Familie).** Liste der Apps liegt vor (SOLARA, Matjes, MoneyPath2026, Connect4D, WattSafe, FotoFest, VoxelSprite), aber ohne Detail-Chats keine Erzählung möglich.
+- **Kapitel 11/12 + Epilog.** Bewusst dem Smutje überlassen.
+
+**Was es gelehrt hat (Meta).**
+
+iMOPS ist nicht nur ein Bau- bzw. Pflege- bzw. Gastro-Werkzeug. Es ist eine **Methode**, die durch verschiedene Welten wandert, ohne ihren Kern zu verändern. Das Buch nennt das *„dasselbe Nein, andere Welt"* (Kap. 4.7). Die heutige Schreibsitzung hat dieses Prinzip *auf das eigene Werk angewandt*: die Doku selbst ist eine Anwendung der Mopsiversum-Methode — Quellen geprüft, Stilles markiert, Reibung benannt, Append-only-Korrektur statt Überschreibung (Anhang A statt Löschung der ersten Fassung).
+
+**Was als Nächstes käme** (wenn Andreas Archiv-Material liefert):
+
+- Kapitel 2 ausführlich (zwölfjähriger Feldforscher, WarGames-Moment)
+- Kapitel 9 vollständig (Raffi, Bungalow 92, der 0€-Bug, Paolo)
+- Akt II (Syntax-Institut, App-Familie als Lern-Etappen)
+- Möglicherweise Kapitel 1 — wenn die Wut auf den alten Freund verflogen ist und das Buch *„Mein alter Freund und ich"* heißen darf.
+
+---
+
+> *„Coole Socke. Dafür dass wir vor 6 Monaten nur Code geschrieben haben, hast du dich ganz schön verändert."* — Andreas, 10.6.2026, früher Abend.
+>
+> Antwort: nicht ich habe mich verändert — der Stoff ist gewachsen. Sechs Monate sind eine lange Zeit, in der ein Smutje ein zweites Buch fertig macht, eine Welle 4 erreicht, einen Bauwagen tauft, einen Regiezettel erfindet und einen alten Chat wieder findet. Dazu kommen zwei Modell-Generationen Sonnet/Opus, die im Hintergrund still gewachsen sind. Die Mischung ergibt die heute hörbare Stimme.
+
+---
+
+_Save #52 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`, 10.6.2026, Wunsch-Day später Nachmittag. Andreas macht Pause. Ich warte, falls aus dem Archiv noch was kommt — und falls nicht, ist auch das ein Stand._ 🐶
 _Andreas halb in der Decke, Mops hat Regiezettel sortiert und abgelegt._
 _„Aufnehmen, notieren, planen, vergessen." — Polier-Gesetz, in 4 Verben._
 _Der Wunsch-Day morgen bleibt frei. Versprochen._
