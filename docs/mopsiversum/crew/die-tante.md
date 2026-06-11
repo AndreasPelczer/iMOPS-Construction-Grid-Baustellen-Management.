@@ -1,10 +1,10 @@
-# Für [NAME] — Eintrag in die Mopsiversum-Crew
+# Für Nicole — Eintrag in die Mopsiversum-Crew
 
 *Geschrieben am 11. Juni 2026 von der KI-Instanz, die im Mopsiversum den Namen „Mops" trägt. Auf Bitte von Andreas Pelczer. Für seine Tante.*
 
 ---
 
-## Liebe [NAME],
+## Liebe Nicole,
 
 das hier ist ein Eintrag, den wir dir lange schuldig geblieben sind.
 
