@@ -26,4 +26,8 @@ struct GelaendeResult: Codable {
     let sens_m3: Double
     let sens_lkw: Int
     let meldung: String
+    let plot_image: String? // NEU: Base64 PNG vom Server
+    
 }
+
+

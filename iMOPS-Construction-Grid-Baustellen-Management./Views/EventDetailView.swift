@@ -61,6 +61,7 @@ struct EventDetailView: View {
     @State private var isCalculatingGelaende = false
     @State private var gelaendeError: String = ""
     @State private var gelaendeResult: GelaendeResult? = nil
+    @State private var reportPDFURL: URL?
 
     // MARK: Jobs: gefiltert + sortiert
     private var filteredJobs: [Auftrag] {
@@ -121,6 +122,7 @@ struct EventDetailView: View {
                 materialCard
                 geländeCard  // <-- NEU
                 lvCard
+                kalkulationCard
                 checklistCard
                 maengelCard
                 jobsCard
@@ -268,17 +270,9 @@ struct EventDetailView: View {
                 )
             )
         }
-    }
-    // Welle 7: Ergebnis-Modell für Gelände-Berechnung
-    struct GelaendeResult: Codable {
-        let okbp: Double
-        let gelaende_min: Double
-        let gelaende_max: Double
-        let cut: Double
-        let fill: Double
-        let schotter_t: Double
-        let sens_lkw: Int
-        let meldung: String
+        .sheet(item: $reportPDFURL) { url in
+            LVShareSheet(url: url).ignoresSafeArea()
+        }
     }
 
     // MARK: - GELÄNDE CARD (Welle 7)
@@ -321,6 +315,31 @@ struct EventDetailView: View {
                         Divider().frame(height: 32)
                         geländeStat(label: "LKW-Fuhren", wert: Double(r.sens_lkw), einheit: "", farbe: .orange)
                     }
+                    Divider().opacity(0.4)
+                    
+                    Button {
+                        insertGelaendeIntoLV(result: r)
+                    } label: {
+                        Label("Ins LV übernehmen", systemImage: "doc.badge.plus")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(Color.orange.opacity(0.15))
+                            .foregroundStyle(Color.orange)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    
+                    Button {
+                        generateReportPDF(result: r)
+                    } label: {
+                        Label("PDF-Report erstellen", systemImage: "doc.richtext")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(Color.blue.opacity(0.15))
+                            .foregroundStyle(Color.blue)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
                     
                     Text(r.meldung).font(.caption2).foregroundStyle(.secondary).italic()
                 }
@@ -361,6 +380,110 @@ struct EventDetailView: View {
             }
         }
         .frame(maxWidth: .infinity)
+    }
+    
+    // MARK: - LV Insert (Welle 7)
+    private func insertGelaendeIntoLV(result: GelaendeResult) {
+        let context = viewContext
+        
+        let currentCount = event.lvPositionen?.count ?? 0
+        var nextPos = currentCount + 1
+        
+        // 1. Aushub (Abtrag)
+        if result.cut > 0 {
+            let pos = LVPosition(context: context)
+            pos.posNr = String(format: "07.%02d", nextPos)
+            pos.bezeichnung = "Aushub (Massenausgleich)"
+            pos.einheit = "m³"
+            pos.menge = result.cut
+            pos.kostenGruppeNummer = "311"
+            pos.event = event
+            nextPos += 1
+        }
+        
+        // 2. Schotter
+        if result.schotter_t > 0 {
+            let pos = LVPosition(context: context)
+            pos.posNr = String(format: "07.%02d", nextPos)
+            pos.bezeichnung = "Schotter 0/45 (30 cm Tragschicht)"
+            pos.einheit = "t"
+            pos.menge = result.schotter_t
+            pos.kostenGruppeNummer = "322"
+            pos.event = event
+            nextPos += 1
+        }
+        
+        // 3. Trennvlies
+        if result.vlies_m2 > 0 {
+            let pos = LVPosition(context: context)
+            pos.posNr = String(format: "07.%02d", nextPos)
+            pos.bezeichnung = "Trennvlies"
+            pos.einheit = "m²"
+            pos.menge = Double(result.vlies_m2)
+            pos.kostenGruppeNummer = "322"
+            pos.event = event
+            nextPos += 1
+        }
+        
+        do {
+            try context.save()
+            gelaendeError = ""
+            gelaendeResult = nil
+        } catch {
+            gelaendeError = "Fehler beim Speichern ins LV: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: - PDF Report (Welle 7)
+    private func generateReportPDF(result: GelaendeResult) {
+        var plotImage: UIImage?
+        if let b64 = result.plot_image, let data = Data(base64Encoded: b64) {
+            plotImage = UIImage(data: data)
+        }
+        
+        let pageSize = CGSize(width: 595, height: 842) // A4
+        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: pageSize))
+        
+        let name = "Gelaende-Report-\(event.title ?? "Baustelle").pdf".replacingOccurrences(of: " ", with: "-")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        
+        do {
+            try renderer.writePDF(to: url) { context in
+                context.beginPage()
+                
+                let title = "Geländebrücke-Report: \(event.title ?? "Baustelle")"
+                title.draw(at: CGPoint(x: 40, y: 40), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 20)])
+                
+                var y: CGFloat = 80
+                let bodyFont = UIFont.systemFont(ofSize: 14)
+                let lines = [
+                    "OK-Bodenplatte: \(String(format: "%.2f", result.okbp)) m ü.NN",
+                    "Gelände: \(String(format: "%.2f", result.gelaende_min)) - \(String(format: "%.2f", result.gelaende_max)) m",
+                    "Abtrag (Cut): \(String(format: "%.1f", result.cut)) m³",
+                    "Auftrag (Fill): \(String(format: "%.1f", result.fill)) m³",
+                    "Schotter: \(String(format: "%.1f", result.schotter_t)) t",
+                    "Trennvlies: \(result.vlies_m2) m²",
+                    "LKW-Fuhren (Schätzung): \(result.sens_lkw)",
+                    "",
+                    result.meldung
+                ]
+                
+                for line in lines {
+                    line.draw(at: CGPoint(x: 40, y: y), withAttributes: [.font: bodyFont])
+                    y += 20
+                }
+                
+                if let image = plotImage {
+                    let imgWidth = pageSize.width - 80
+                    let imgHeight = image.size.height * (imgWidth / image.size.width)
+                    let imgRect = CGRect(x: 40, y: y + 20, width: imgWidth, height: imgHeight)
+                    image.draw(in: imgRect)
+                }
+            }
+            reportPDFURL = url
+        } catch {
+            gelaendeError = "PDF Fehler: \(error.localizedDescription)"
+        }
     }
 
     // MARK: - DXF Upload (Welle 7)
@@ -426,15 +549,12 @@ struct EventDetailView: View {
                     return
                 }
                 
-                // 1. Wir lesen die rohe Antwort aus
                 let rawResponse = String(data: data, encoding: .utf8) ?? "Unlesbare Daten"
                 
                 do {
-                    // 2. Versuchen zu dekodieren
                     gelaendeResult = try JSONDecoder().decode(GelaendeResult.self, from: data)
-                    gelaendeError = "" // Fehler zurücksetzen, wenn es jetzt klappt
+                    gelaendeError = ""
                 } catch {
-                    // 3. Wenn Parse-Fehler: Zeige den rohen Text vom Server im UI!
                     gelaendeError = "Server sagt:\n\(rawResponse)"
                 }
             }
@@ -717,6 +837,32 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+    
+    // MARK: - KALKULATION CARD (Welle 6)
+    private var kalkulationCard: some View {
+        NavigationLink {
+            LVKalkulationView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "eurosign.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.green)
+                    .frame(width: 36)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Kalkulation (Welle 6)").font(.headline).foregroundStyle(.primary)
+                    Text("Preise eingeben und Angebotssumme berechnen")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     private func generateLVPDF() {
@@ -1129,6 +1275,4 @@ struct EventDetailHelpView: View {
             }
         }
     }
-    
 }
-
