@@ -148,6 +148,24 @@ struct BuildIQView: View {
                 .font(.subheadline)
                 .foregroundColor(.white.opacity(0.85))
                 .fixedSize(horizontal: false, vertical: true)
+            // Welle 5.3: Mengen-Anzeige
+            if let menge = result.menge, let einheit = result.einheit {
+                HStack {
+                    Image(systemName: "scale.3d")
+                        .foregroundColor(.orange)
+                    // Welle 5.3: Menge ohne überflüssige Nullen, max. 2 Nachkommastellen,
+                    // lokalisiert (de: Komma) — sonst zeigt der Double "15,000000".
+                    Text("\(menge.formatted(.number.precision(.fractionLength(0...2)))) \(einheit)")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    if let conf = result.menge_konfidenz {
+                        Text("(\(conf))")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding(.top, 5)
+            }
 
             HStack(spacing: 12) {
                 Button {
@@ -220,7 +238,7 @@ struct BuildIQView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { shutterEffect = false }
 
         #if targetEnvironment(simulator)
-        processText("Ytong Porenbeton PP2-0.4 240mm Wandbaustein Planblock Mauerwerk")
+        processText("15 m² Betonsteinwand Porenbeton PP2-0.4 Planblock Mauerwerk")
         #else
         scannerVM.onImageCaptured = { (image: UIImage) in
             ocrService.performOCR(on: image) { observations in

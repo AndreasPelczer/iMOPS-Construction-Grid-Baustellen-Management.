@@ -2,6 +2,7 @@ import SwiftUI
 import SafariServices
 import CoreData
 import Combine
+import UniformTypeIdentifiers
 
 // MARK: - Helpers: Extras JSON (Checkliste)
 
@@ -54,6 +55,12 @@ struct EventDetailView: View {
     @State private var conversionError: String?
     @State private var showConversionError = false
     @State private var showSketchUpWeb = false
+
+    // Welle 7: Gelände/DXF Upload
+    @State private var showingDXFPicker = false
+    @State private var isCalculatingGelaende = false
+    @State private var gelaendeError: String = ""
+    @State private var gelaendeResult: GelaendeResult? = nil
 
     // MARK: Jobs: gefiltert + sortiert
     private var filteredJobs: [Auftrag] {
@@ -112,6 +119,7 @@ struct EventDetailView: View {
                 WetterKarteView(ort: event.location ?? "")
                 cadCard
                 materialCard
+                geländeCard  // <-- NEU
                 lvCard
                 checklistCard
                 maengelCard
@@ -260,6 +268,177 @@ struct EventDetailView: View {
                 )
             )
         }
+    }
+    // Welle 7: Ergebnis-Modell für Gelände-Berechnung
+    struct GelaendeResult: Codable {
+        let okbp: Double
+        let gelaende_min: Double
+        let gelaende_max: Double
+        let cut: Double
+        let fill: Double
+        let schotter_t: Double
+        let sens_lkw: Int
+        let meldung: String
+    }
+
+    // MARK: - GELÄNDE CARD (Welle 7)
+    private var geländeCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Geländebrücke (Welle 7)").font(.headline)
+                Spacer()
+                Button { showingDXFPicker = true } label: {
+                    Label("DXF auswerten", systemImage: "square.and.arrow.down").font(.subheadline)
+                }
+                .disabled(isCalculatingGelaende)
+            }
+            
+            if isCalculatingGelaende {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Rechne Cut/Fill...").font(.subheadline).foregroundStyle(.secondary)
+                }
+            } else if !gelaendeError.isEmpty {
+                Text(gelaendeError).font(.caption).foregroundColor(.red)
+            } else if let r = gelaendeResult {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "mountain.2.fill").font(.title3).foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("OK-Bodenplatte: \(String(format: "%.2f", r.okbp)) m ü.NN").font(.subheadline)
+                            Text("Gelände: \(String(format: "%.2f", r.gelaende_min))–\(String(format: "%.2f", r.gelaende_max)) m").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    
+                    Divider().opacity(0.4)
+                    
+                    HStack(spacing: 0) {
+                        geländeStat(label: "Abtrag", wert: r.cut, einheit: "m³", farbe: .red)
+                        Divider().frame(height: 32)
+                        geländeStat(label: "Auftrag", wert: r.fill, einheit: "m³", farbe: .blue)
+                        Divider().frame(height: 32)
+                        geländeStat(label: "Schotter", wert: r.schotter_t, einheit: "t", farbe: .brown)
+                        Divider().frame(height: 32)
+                        geländeStat(label: "LKW-Fuhren", wert: Double(r.sens_lkw), einheit: "", farbe: .orange)
+                    }
+                    
+                    Text(r.meldung).font(.caption2).foregroundStyle(.secondary).italic()
+                }
+            } else {
+                HStack(spacing: 10) {
+                    Image(systemName: "map").font(.title2).foregroundStyle(.secondary)
+                    VStack(alignment: .leading) {
+                        Text("Keine Geländedaten").font(.subheadline)
+                        Text("Vermessungs-DXF hochladen für Cut/Fill-Schätzung").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .fileImporter(
+            isPresented: $showingDXFPicker,
+            allowedContentTypes: [UTType(filenameExtension: "dxf") ?? .data],
+            allowsMultipleSelection: false
+        ) { result in
+            handleDXFPick(result: result)
+        }
+    }
+
+    private func geländeStat(label: String, wert: Double, einheit: String, farbe: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(String(format: "%.1f", wert))
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(farbe)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            if !einheit.isEmpty {
+                Text(einheit)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - DXF Upload (Welle 7)
+    private func handleDXFPick(result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            
+            guard url.startAccessingSecurityScopedResource() else {
+                gelaendeError = "Keine Berechtigung für die Datei."
+                return
+            }
+            defer { url.stopAccessingSecurityScopedResource() }
+            
+            do {
+                let dxfData = try Data(contentsOf: url)
+                uploadDXF(dxfData: dxfData)
+            } catch {
+                gelaendeError = "Fehler beim Lesen: \(error.localizedDescription)"
+            }
+            
+        case .failure(let error):
+            gelaendeError = "Fehler: \(error.localizedDescription)"
+        }
+    }
+
+    private func uploadDXF(dxfData: Data) {
+        isCalculatingGelaende = true
+        gelaendeError = ""
+        gelaendeResult = nil
+        
+        let urlString = "http://192.168.2.42:8080/gelaendebruecke/calculate"
+        guard let url = URL(string: urlString) else {
+            gelaendeError = "Ungültige Server-URL"
+            isCalculatingGelaende = false
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"dxf_file\"; filename=\"upload.dxf\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
+        body.append(dxfData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        URLSession.shared.uploadTask(with: request, from: body) { data, response, error in
+            DispatchQueue.main.async {
+                isCalculatingGelaende = false
+                
+                if let error = error {
+                    gelaendeError = "Netzwerkfehler: \(error.localizedDescription)"
+                    return
+                }
+                
+                guard let data = data else {
+                    gelaendeError = "Keine Antwort vom Server."
+                    return
+                }
+                
+                // 1. Wir lesen die rohe Antwort aus
+                let rawResponse = String(data: data, encoding: .utf8) ?? "Unlesbare Daten"
+                
+                do {
+                    // 2. Versuchen zu dekodieren
+                    gelaendeResult = try JSONDecoder().decode(GelaendeResult.self, from: data)
+                    gelaendeError = "" // Fehler zurücksetzen, wenn es jetzt klappt
+                } catch {
+                    // 3. Wenn Parse-Fehler: Zeige den rohen Text vom Server im UI!
+                    gelaendeError = "Server sagt:\n\(rawResponse)"
+                }
+            }
+        }.resume()
     }
 
     // MARK: - HEADER CARD
@@ -950,4 +1129,6 @@ struct EventDetailHelpView: View {
             }
         }
     }
+    
 }
+
