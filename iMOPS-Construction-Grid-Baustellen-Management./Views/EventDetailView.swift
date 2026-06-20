@@ -33,6 +33,7 @@ struct EventDetailView: View {
     @ObservedObject var event: Event
 
     @StateObject private var fortStore = LVFortschrittStore.shared
+    @State private var manualOkbp: String = ""
 
     @State private var showingEditSheet = false
     @State private var showingAddJobSheet = false
@@ -217,7 +218,7 @@ struct EventDetailView: View {
             )
         }
         .sheet(item: $lvPDFURL) { url in
-            LVShareSheet(url: url).ignoresSafeArea()
+            PDFPreviewView(url: url).ignoresSafeArea()
         }
         .sheet(item: $lvCSVURL) { url in
             LVShareSheet(url: url).ignoresSafeArea()
@@ -285,6 +286,23 @@ struct EventDetailView: View {
                     Label("DXF auswerten", systemImage: "square.and.arrow.down").font(.subheadline)
                 }
                 .disabled(isCalculatingGelaende)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("OK-BP fixieren:")
+                        .font(.caption)
+                    TextField("Auto (Mittelwert)", text: $manualOkbp)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 140)
+                    Text("m ü.NN")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text("Leer lassen = Auto (berechnet Mittelwert unterm Haus für Massenausgleich).\nWert eingeben = feste OK-Bodenplatte laut Plan (z.B. bei Keller).")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             
             if isCalculatingGelaende {
@@ -515,7 +533,10 @@ struct EventDetailView: View {
         gelaendeError = ""
         gelaendeResult = nil
         
-        let urlString = "http://192.168.2.42:8080/gelaendebruecke/calculate"
+        var urlString = "http://192.168.2.42:8080/gelaendebruecke/calculate"
+        if let okbpValue = Double(manualOkbp.replacingOccurrences(of: ",", with: ".")), okbpValue > 0 {
+            urlString += "?fix_okbp=\(okbpValue)"
+        }
         guard let url = URL(string: urlString) else {
             gelaendeError = "Ungültige Server-URL"
             isCalculatingGelaende = false
