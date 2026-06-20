@@ -55,9 +55,17 @@
         <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="timeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="gebaeude" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Gebaeude" inverseName="event" inverseEntity="Gebaeude"/>
         <relationship name="jobs" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="event" inverseEntity="Auftrag"/>
         <relationship name="lvPositionen" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="LVPosition" inverseName="event" inverseEntity="LVPosition"/>
         <relationship name="maengel" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Mangel" inverseName="event" inverseEntity="Mangel"/>
+    </entity>
+    <entity name="Gebaeude" representedClassName="Gebaeude" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="reihenfolge" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="gebaeude" inverseEntity="Event"/>
+        <relationship name="geschosse" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="gebaeude" inverseEntity="Geschoss"/>
     </entity>
     <entity name="Geraet" representedClassName="Geraet" syncable="YES">
         <attribute name="anschaffungsKosten" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
@@ -65,6 +73,13 @@
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="notiz" optional="YES" attributeType="String"/>
         <attribute name="nutzungsdauerStunden" optional="YES" attributeType="Integer 32" defaultValueString="1000" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="Geschoss" representedClassName="Geschoss" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="reihenfolge" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="gebaeude" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Gebaeude" inverseName="geschosse" inverseEntity="Gebaeude"/>
+        <relationship name="lvPositionen" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="geschoss" inverseEntity="LVPosition"/>
     </entity>
     <entity name="KalkMaterial" representedClassName="KalkMaterial" syncable="YES">
         <attribute name="einheit" optional="YES" attributeType="String"/>
@@ -97,6 +112,7 @@
         <attribute name="wagnisGewinnProzent" optional="YES" attributeType="Double" defaultValueString="0.08" usesScalarValueType="YES"/>
         <relationship name="aufmasse" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Aufmass" inverseName="lvPosition" inverseEntity="Aufmass"/>
         <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="lvPositionen" inverseEntity="Event"/>
+        <relationship name="geschoss" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="lvPositionen" inverseEntity="Geschoss"/>
         <relationship name="kalkGeraete" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionGeraet" inverseName="position" inverseEntity="PositionGeraet"/>
         <relationship name="kalkLohn" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionLohn" inverseName="position" inverseEntity="PositionLohn"/>
         <relationship name="kalkMaterialien" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionMaterial" inverseName="position" inverseEntity="PositionMaterial"/>
