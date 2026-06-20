@@ -30,44 +30,33 @@ struct LVTiefenkalkulationView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            List {
-                positionKopfSection
-                materialSection
-                lohnSection
-                geraeteSection
-                zuschlagSection
-                ergebnisSection
-                mopsBonusSection
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Tiefenkalkulation")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fertig") {
-                        speichern()
-                        dismiss()
-                    }
-                    .tint(.orange)
-                }
-            }
-            .sheet(isPresented: $showMaterialPicker) {
-                MaterialHinzufuegenView(position: position)
-                    .environment(\.managedObjectContext, viewContext)
-            }
-            .sheet(isPresented: $showLohnPicker) {
-                LohnHinzufuegenView(position: position)
-                    .environment(\.managedObjectContext, viewContext)
-            }
-            .sheet(isPresented: $showGeraetePicker) {
-                GeraetHinzufuegenView(position: position)
-                    .environment(\.managedObjectContext, viewContext)
-            }
-            .sheet(isPresented: $showMopsSheet) {
-                MopsVorschlagSheet(position: position, antwort: $mopsAntwort)
-                    .environment(\.managedObjectContext, viewContext)
-            }
+        List {
+            positionKopfSection
+            materialSection
+            lohnSection
+            geraeteSection
+            zuschlagSection
+            ergebnisSection
+            mopsBonusSection
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Kalkulation")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showMaterialPicker) {
+            MaterialHinzufuegenView(position: position)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showLohnPicker) {
+            LohnHinzufuegenView(position: position)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showGeraetePicker) {
+            GeraetHinzufuegenView(position: position)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showMopsSheet) {
+            MopsVorschlagSheet(position: position, antwort: $mopsAntwort)
+                .environment(\.managedObjectContext, viewContext)
         }
     }
 

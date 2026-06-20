@@ -97,7 +97,9 @@ struct EventDetailView: View {
         }
         return Double(total) / Double(positionen.count) / 100.0
     }
+    
 
+    
     // MARK: Mängel-Kennzahlen
     private var maengelAnzahl: Int { event.maengel?.count ?? 0 }
     private var maengelOffen: Int {
