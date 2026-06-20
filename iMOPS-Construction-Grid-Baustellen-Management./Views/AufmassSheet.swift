@@ -11,6 +11,7 @@ struct AufmassSheet: View {
     @ObservedObject var position: LVPosition
 
     @State private var zeigeNeuesAufmass = false
+    @State private var showHelp = false // NEU: Für den Hilfe-Button
 
     var body: some View {
         NavigationStack {
@@ -32,6 +33,18 @@ struct AufmassSheet: View {
             }
             .navigationTitle("Aufmaß")
             .navigationBarTitleDisplayMode(.inline)
+            // NEU: Nur EINE Toolbar mit beiden Buttons
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showHelp = true
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                    }
+                    .tint(.orange)
+                }
+                ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
+            }
             .safeAreaInset(edge: .bottom) {
                 Button { zeigeNeuesAufmass = true } label: {
                     Label("Neues Aufmaß", systemImage: "plus.circle.fill")
@@ -43,12 +56,34 @@ struct AufmassSheet: View {
                 .tint(.teal)
                 .padding()
             }
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
-            }
             .sheet(isPresented: $zeigeNeuesAufmass) {
                 NeuesAufmassSheet(position: position)
                     .environment(\.managedObjectContext, viewContext)
+            }
+            // NEU: Das Sheet für die Hilfe
+            .sheet(isPresented: $showHelp) {
+                AufmassHelpView()
+            }
+        }
+    }
+    
+    struct AufmassHelpView: View {
+        @Environment(\.dismiss) var dismiss
+        var body: some View {
+            NavigationStack {
+                List {
+                    Section("Wozu dient das Aufmaß?") {
+                        Text("Hier vergleicht Raffi die geplante Menge (SOLL) mit der echten, gemessenen Menge (IST) auf der Baustelle.")
+                    }
+                    Section("Die Ampel") {
+                        Label("Grün: Abweichung unter 5%", systemImage: "circle.fill").foregroundStyle(.green)
+                        Label("Orange: Abweichung 5-15%", systemImage: "circle.fill").foregroundStyle(.orange)
+                        Label("Rot: Abweichung über 15% (Mehr- oder Mindermenge)", systemImage: "circle.fill").foregroundStyle(.red)
+                    }
+                }
+                .navigationTitle("Hilfe: Aufmaß")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } } }
             }
         }
     }

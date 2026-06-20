@@ -10,7 +10,7 @@ struct LVTiefenkalkulationView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var position: LVPosition
-
+    @State private var showKalkHelp = false
     @State private var wgProzent: Double
     @State private var bgkProzent: Double
     @State private var showMaterialPicker = false
@@ -42,6 +42,22 @@ struct LVTiefenkalkulationView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Kalkulation")
         .navigationBarTitleDisplayMode(.inline)
+        
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showKalkHelp = true
+                } label: {
+                    Image(systemName: "questionmark.circle")
+                }
+                .tint(.orange)
+            }
+        }
+        .sheet(isPresented: $showKalkHelp) {
+            // Hier kannst du eine kurze Hilfe-View für die Kalkulation einbauen
+            // oder die bestehende LVHelpView nehmen.
+        }
+        
         .sheet(isPresented: $showMaterialPicker) {
             MaterialHinzufuegenView(position: position)
                 .environment(\.managedObjectContext, viewContext)
