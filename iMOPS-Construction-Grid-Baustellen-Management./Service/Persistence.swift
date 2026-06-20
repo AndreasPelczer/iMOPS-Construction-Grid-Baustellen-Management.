@@ -79,5 +79,10 @@ struct PersistenceController {
         })
         
         container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.automaticallyMergesChangesFromParent = true
+        
+        // NEU: Migration für Welle 9 Hierarchie aufrufen
+        HierarchieMigration.run(in: container.viewContext)
+    
     }
     }
