@@ -64,6 +64,21 @@ struct LVView: View {
         return Double(sum) / Double(base.count) / 100.0
     }
 
+    // NEU: Berechnung der Angebotssumme (Hierarchie: Tiefenkalk > Lieferant > Direkt)
+    private var gesamtSumme: Double {
+        Array(positionen).filter { !LVPositionHelper.isAlternative($0) }.reduce(0.0) { sum, pos in
+            let preis: Double
+            if pos.hatKalkulation {
+                preis = LVKalkulator.kalkuliere(position: pos).einheitspreisVK
+            } else if let best = store.guenstigster(for: pos.objectID.uriRepresentation().absoluteString) {
+                preis = best.einzelpreis
+            } else {
+                preis = pos.value(forKey: "einkaufspreis") as? Double ?? 0
+            }
+            return sum + (pos.menge * preis)
+        }
+    }
+
     var body: some View {
         List {
             if positionen.isEmpty {
@@ -82,7 +97,7 @@ struct LVView: View {
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(gesamtFortschritt >= 1 ? .green : .orange)
                                 Spacer()
-                                Text("\(Int(gesamtFortschritt * 100)) %")
+                                Text("\(Int(gesamtFortschritt * 100)) %")
                                     .font(.title3.weight(.bold).monospacedDigit())
                                     .foregroundStyle(gesamtFortschritt >= 1 ? .green : .orange)
                             }
@@ -100,6 +115,27 @@ struct LVView: View {
                             LVPositionRow(position: pos)
                                 .contentShape(Rectangle())
                                 .onTapGesture { editPosition = pos }
+                                .contextMenu {
+                                    Button { editPosition = pos } label: {
+                                        Label("Bearbeiten", systemImage: "pencil")
+                                    }
+                                    Button { kalkPosition = pos } label: {
+                                        Label("Kalkulation", systemImage: "function")
+                                    }
+                                    Button { duplicateAsAlternative(pos) } label: {
+                                        Label("Alternative", systemImage: "doc.on.doc")
+                                    }
+                                    Button { fortschrittPosition = pos } label: {
+                                        Label("Fortschritt", systemImage: "chart.bar")
+                                    }
+                                    Button { aufmassPosition = pos } label: {
+                                        Label("Aufmaß", systemImage: "ruler")
+                                    }
+                                    Divider()
+                                    Button(role: .destructive) { positionToDelete = pos } label: {
+                                        Label("Löschen", systemImage: "trash")
+                                    }
+                                }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button { positionToDelete = pos } label: {
                                         Label("Löschen", systemImage: "trash")
@@ -136,6 +172,21 @@ struct LVView: View {
             }
         }
         .listStyle(.insetGrouped)
+        // NEU: Klebende Summenleiste unten
+        .safeAreaInset(edge: .bottom) {
+            if gesamtSumme > 0 {
+                HStack {
+                    Text("Angebotssumme (netto):")
+                        .font(.headline)
+                    Spacer()
+                    Text(gesamtSumme, format: .currency(code: "EUR"))
+                        .font(.title3.bold().monospacedDigit())
+                        .foregroundColor(.green)
+                }
+                .padding()
+                .background(.regularMaterial)
+            }
+        }
         .gaebDropTarget { url in
             droppedGAEBURL = url
             showGAEBImport = true
@@ -224,7 +275,7 @@ struct LVView: View {
             AddLVPositionView(event: event, editPosition: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(item: $kalkPosition) { pos in
+        .navigationDestination(item: $kalkPosition) { pos in
             LVTiefenkalkulationView(position: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
@@ -351,8 +402,6 @@ struct LVView: View {
 
     private func triggerGAEBExport(_ format: GAEBExportFormat) {
         if format.includePrices {
-            // "Fehlt" == das, was der Export tatsächlich als 0 verrechnet:
-            // weder Angebot noch Kalkulation (siehe LVKalkulator.effektiverEP).
             let missing = Array(positionen).filter { pos in
                 LVKalkulator.effektiverEP(for: pos, store: store) == 0
             }.count
@@ -381,8 +430,6 @@ struct LVView: View {
 
     private func triggerXRechnungExport() {
         let nonAlt = Array(positionen).filter { !LVPositionHelper.isAlternative($0) }
-        // Hart blocken: eine Rechnung darf keine 0-€-Position enthalten.
-        // "Fehlt" == effektiverEP 0 (weder Angebot noch Kalkulation).
         let missing = nonAlt.filter { pos in
             LVKalkulator.effektiverEP(for: pos, store: store) == 0
         }.count
@@ -467,9 +514,6 @@ enum LVPositionHelper {
 
 // MARK: - Position Row
 
-// Sicherheitsabfrage vor dem Löschen einer LV-Position (gegen Baustellenfinger-
-// Fehlwischer). Ausgelagert als ViewModifier, damit die LVView-body type-checkbar bleibt.
-// Buch Kap 4: Nachweis dient der Entlastung — du hast bestätigt, also war's kein Versehen.
 struct DeletePositionConfirm: ViewModifier {
     @Binding var position: LVPosition?
     let onDelete: (LVPosition) -> Void
@@ -505,9 +549,11 @@ struct LVPositionRow: View {
 
     private var positionID: String { position.objectID.uriRepresentation().absoluteString }
     private var isAlt: Bool { LVPositionHelper.isAlternative(position) }
+    
+    @State private var direktPreis: String = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 if isAlt {
                     Text("ALT")
@@ -522,36 +568,69 @@ struct LVPositionRow: View {
                 Text(position.bezeichnung ?? "–")
                     .font(.body).lineLimit(2)
                     .foregroundStyle(isAlt ? .secondary : .primary)
+                
                 Spacer()
+                
                 Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "")")
                     .font(.footnote.monospacedDigit())
                     .foregroundStyle(isAlt ? .secondary : .primary)
             }
+            
+            // PREIS-ZEILE (direkte Eingabe oder Anzeige)
             HStack(spacing: 6) {
                 if position.hatKalkulation {
                     let kalk = LVKalkulator.kalkuliere(position: position)
                     Image(systemName: "function").font(.caption2).foregroundStyle(.indigo)
                     Text(kalk.einheitspreisVK, format: .currency(code: "EUR"))
                         .font(.caption.monospacedDigit()).foregroundStyle(.indigo)
-                    Text("EP").font(.caption2).foregroundStyle(.secondary)
-                    Text("·").foregroundStyle(.secondary)
-                }
-                if let art = position.artikelNummer, !art.isEmpty {
-                    Image(systemName: "barcode").font(.caption2).foregroundStyle(.secondary)
-                    Text(art).font(.caption).foregroundStyle(.secondary)
-                    if let lief = position.lieferant, !lief.isEmpty {
-                        Text("·").foregroundStyle(.secondary)
-                        Text(lief).font(.caption).foregroundStyle(.orange)
-                    }
-                    Text("·").foregroundStyle(.secondary)
-                }
-                if let best = store.guenstigster(for: positionID) {
+                    Text("EP (Tiefenkalk)").font(.caption2).foregroundStyle(.secondary)
+                    
+                    Spacer()
+                    
+                    Text((position.menge * kalk.einheitspreisVK).formatted(.currency(code: "EUR")))
+                        .font(.caption.weight(.semibold)).foregroundStyle(.indigo)
+                    
+                } else if let best = store.guenstigster(for: positionID) {
                     Image(systemName: "tag.fill").font(.caption2).foregroundStyle(.green)
                     Text(best.einzelpreis, format: .currency(code: "EUR"))
                         .font(.caption.monospacedDigit()).foregroundStyle(.green)
-                    Text(best.lieferant).font(.caption).foregroundStyle(.secondary)
+                    Text("EP (Angebot)").font(.caption2).foregroundStyle(.secondary)
+                    
+                    Spacer()
+                    
+                    Text((position.menge * best.einzelpreis).formatted(.currency(code: "EUR")))
+                        .font(.caption.weight(.semibold)).foregroundStyle(.green)
+                    
+                } else {
+                    // FALL 3: Direkte Eingabe (Pauschale)
+                    Text("EP:")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    TextField("0,00", text: $direktPreis)
+                        .keyboardType(.decimalPad)
+                        .frame(width: 70)
+                        .textFieldStyle(.roundedBorder)
+                        .onAppear {
+                            let val = position.value(forKey: "einkaufspreis") as? Double ?? 0
+                            if val > 0 { direktPreis = String(format: "%.2f", val).replacingOccurrences(of: ".", with: ",") }
+                        }
+                        .onChange(of: direktPreis) { _, newValue in
+                            let cleaned = newValue.replacingOccurrences(of: ",", with: ".")
+                            let preis = Double(cleaned) ?? 0.0
+                            position.setValue(preis, forKey: "einkaufspreis")
+                            try? position.managedObjectContext?.save()
+                        }
+                    
+                    Spacer()
+                    
+                    let val = position.value(forKey: "einkaufspreis") as? Double ?? 0
+                    if val > 0 {
+                        Text((position.menge * val).formatted(.currency(code: "EUR")))
+                            .font(.caption.weight(.semibold)).foregroundStyle(.gray)
+                    }
                 }
             }
+            
             ZeilenFortschritt(
                 wert: position.displayedFortschritt(
                     manuellerProzent: fortStore.fortschritt(for: positionID)?.prozent
@@ -563,9 +642,6 @@ struct LVPositionRow: View {
     }
 }
 
-// Welle 5.2.1 — abgeleiteter Fortschritt in der LV-Zeile. Gemessen (Lineal, blau/grün)
-// verdrängt geschätzt (Stift, orange); die Zahl bleibt ehrlich (R2.b: > 100 % möglich,
-// Balken kappt nur visuell bei 100 %). Bei .unbestimmt nichts.
 private struct ZeilenFortschritt: View {
     let wert: FortschrittWert
 
@@ -643,7 +719,7 @@ struct LVFortschrittSheet: View {
                         HStack {
                             Text(position.posNr ?? "").font(.caption).foregroundStyle(.secondary)
                             Spacer()
-                            Text("\(Int(prozent)) %")
+                            Text("\(Int(prozent)) %")
                                 .font(.title.weight(.bold).monospacedDigit())
                                 .foregroundStyle(farbe)
                         }
@@ -658,7 +734,7 @@ struct LVFortschrittSheet: View {
                     HStack(spacing: 6) {
                         ForEach([0, 25, 50, 75, 100], id: \.self) { v in
                             Button { prozent = Double(v) } label: {
-                                Text("\(v) %")
+                                Text("\(v) %")
                                     .font(.caption)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 7)
@@ -953,7 +1029,7 @@ struct LVHelpView: View {
                 Section("Positionen") {
                     Label("+  anlegen, Swipe-links bearbeiten, Swipe-rechts löschen", systemImage: "hand.point.left")
                     Label("Swipe-links: 'Alternative' erstellt Alternativposition (.A1, .A2 …)", systemImage: "doc.on.doc")
-                    Label("Swipe-links: 'Fortschritt' → Fertigstellungsgrad 0–100 %", systemImage: "chart.bar")
+                    Label("Swipe-links: 'Fortschritt' → Fertigstellungsgrad 0–100 %", systemImage: "chart.bar")
                     Label("Sortierung: DIN 276 Kostengruppe → Pos.-Nr.", systemImage: "list.number")
                 }
                 Section("Fortschrittserfassung") {
