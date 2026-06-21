@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Document Picker fuer CAD-Dateien (USDZ, OBJ, DAE, FBX, STL, glTF).
+/// Document Picker fuer CAD- und Plan-Dateien (USDZ, OBJ, DAE, FBX, STL, glTF, SKP sowie PDF, DXF, DWG, IFC, Excel und Word).
 /// Kopiert die Datei in die App-Sandbox und gibt die lokale URL zurueck.
 /// Formate die SceneKit nicht direkt lesen kann werden per Server zu USDZ konvertiert.
 struct CADDocumentPicker: UIViewControllerRepresentable {
@@ -14,18 +14,28 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
     var onSKPPicked: ((URL?) -> Void)?
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        // Unterstuetzte Typen: USDZ, OBJ, DAE + weitere 3D-Formate
         var types: [UTType] = []
-        if let usdz = UTType("com.pixar.universal-scene-description-mobile") {
-            types.append(usdz)
+        
+        // 1. Native 3D-Formate von Apple
+        if let usdz = UTType("com.pixar.universal-scene-description-mobile") { types.append(usdz) }
+        if let obj = UTType("public.geometry-definition-format") { types.append(obj) }
+        if let dae = UTType("org.khronos.collada.digital-asset-exchange") { types.append(dae) }
+        
+        // 2. Dokumenten- & Büro-Klassiker
+        types.append(.pdf)          // PDFs für 2D-Pläne
+        types.append(.spreadsheet)  // Excel-Dateien (.xlsx, .xls)
+        types.append(.text)         // Word-Dateien & Text-Protokolle (.docx, .doc, .txt)
+        types.append(.image)        // Fotos/Scans von Plänen (.png, .jpeg)
+        
+        // 3. Erweiterte CAD- & BIM-Formate per File-Extension registrieren
+        let customExtensions = ["dxf", "dwg", "ifc", "step", "stp", "x83", "d83", "x84", "d84"]
+        for ext in customExtensions {
+            if let customType = UTType(filenameExtension: ext) {
+                types.append(customType)
+            }
         }
-        if let obj = UTType("public.geometry-definition-format") {
-            types.append(obj)
-        }
-        if let dae = UTType("org.khronos.collada.digital-asset-exchange") {
-            types.append(dae)
-        }
-        // Fallback: alle 3D-Inhalte + beliebige Dateien (damit FBX, STL, glTF, SKP erkannt werden)
+        
+        // Fallbacks: Generischer 3D-Inhalt und allgemeine Elemente (damit fbx, stl, gltf, skp sicher ziehen)
         types.append(.threeDContent)
         types.append(.item)
 
@@ -47,20 +57,19 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
         return docsDir.appendingPathComponent("CADFiles", isDirectory: true)
     }
 
-    /// Formate die SceneKit direkt laden kann (keine Konvertierung noetig)
-    private static let nativeFormats: Set<String> = ["usdz", "usda", "usdc", "obj", "dae", "scn", "abc"]
-
-    /// Formate die lokal auf dem Geraet konvertiert werden koennen (ModelIO)
-    private static let localConvertFormats: Set<String> = ["stl", "ply"]
-
-    /// Formate die per Server zu USDZ konvertiert werden (Blender)
-    private static let convertFormats: Set<String> = ["fbx", "gltf", "glb"]
-
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         let onPicked: (URL) -> Void
         let onServerConvert: ((URL) -> Void)?
         let onSKPPicked: ((URL?) -> Void)?
         let cadDir: URL
+
+        // Formate direkt im Coordinator definiert, um Scope-Fehler zu vermeiden
+        private let nativeFormats: Set<String> = [
+            "usdz", "usda", "usdc", "obj", "dae", "scn", "abc",
+            "pdf", "xlsx", "xls", "docx", "doc", "txt", "png", "jpg", "jpeg"
+        ]
+        private let localConvertFormats: Set<String> = ["stl", "ply"]
+        private let convertFormats: Set<String> = ["fbx", "gltf", "glb", "dwg", "dxf", "ifc"]
 
         init(onPicked: @escaping (URL) -> Void, onServerConvert: ((URL) -> Void)?, onSKPPicked: ((URL?) -> Void)?, cadDir: URL) {
             self.onPicked = onPicked
@@ -78,17 +87,14 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
 
             let ext = sourceURL.pathExtension.lowercased()
 
-            // SKP-Dateien: In Sandbox kopieren und Callback mit URL aufrufen
+            // SKP-Dateien gesondert behandeln
             if ext == "skp" {
                 let localURL = copySKPToSandbox(sourceURL: sourceURL)
                 onSKPPicked?(localURL)
                 return
             }
 
-            // In App-Sandbox kopieren
             let fileManager = FileManager.default
-            let docsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-            let cadDir = docsDir.appendingPathComponent("CADFiles", isDirectory: true)
 
             do {
                 if !fileManager.fileExists(atPath: cadDir.path) {
@@ -104,8 +110,8 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
 
                 try fileManager.copyItem(at: sourceURL, to: destURL)
 
-                // Formate die lokal konvertiert werden koennen (STL, PLY)
-                if CADDocumentPicker.localConvertFormats.contains(ext) {
+                // 1. Formate die lokal konvertiert werden koennen (STL, PLY)
+                if localConvertFormats.contains(ext) {
                     do {
                         let usdzURL = try SKPConversionService.shared.convertLocally(fileURL: destURL)
                         onPicked(usdzURL)
@@ -116,15 +122,16 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
                         }
                     }
                 }
-                // Formate die Server-Konvertierung brauchen (FBX, glTF)
-                else if CADDocumentPicker.convertFormats.contains(ext), let handler = onServerConvert {
+                // 2. Formate die Server-Konvertierung brauchen (FBX, glTF, DWG, DXF, IFC)
+                else if convertFormats.contains(ext), let handler = onServerConvert {
                     handler(destURL)
-                } else {
-                    // Native Formate direkt anzeigen (USDZ, OBJ, DAE)
+                }
+                // 3. Native Formate direkt zurückgeben (PDF, Office, Bilder, USDZ)
+                else {
                     onPicked(destURL)
                 }
             } catch {
-                print("CAD Import Fehler: \(error)")
+                print("Datei Import Fehler: \(error)")
             }
         }
 

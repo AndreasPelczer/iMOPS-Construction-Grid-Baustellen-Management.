@@ -98,8 +98,6 @@ struct EventDetailView: View {
         return Double(total) / Double(positionen.count) / 100.0
     }
     
-
-    
     // MARK: Mängel-Kennzahlen
     private var maengelAnzahl: Int { event.maengel?.count ?? 0 }
     private var maengelOffen: Int {
@@ -120,11 +118,21 @@ struct EventDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 headerCard
-                AmpelCard(event: event) // <-- NEU: Die Ampel ganz oben!
+                Button {
+                    let offeneMaengel = (event.maengel?.allObjects as? [Mangel] ?? []).filter { $0.status == .offen || $0.status == .inArbeit }.count
+                    if offeneMaengel > 0 {
+                        showingMaengelListe = true
+                    } else {
+                        showingAddJobSheet = true
+                    }
+                } label: {
+                    AmpelCard(event: event)
+                }
+                .buttonStyle(.plain)
                 WetterKarteView(ort: event.location ?? "")
                 cadCard
                 materialCard
-                geländeCard  // <-- NEU
+                geländeCard
                 lvCard
                 kalkulationCard
                 checklistCard
@@ -138,7 +146,6 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .cadDropTarget { url in
             let ext = url.pathExtension.lowercased()
-            // CAD-Datei in Sandbox kopieren und zur Liste hinzufuegen
             let fm = FileManager.default
             let docsDir = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
             let cadDir = docsDir.appendingPathComponent("CADFiles", isDirectory: true)
@@ -334,7 +341,7 @@ struct EventDetailView: View {
                         Divider().frame(height: 32)
                         geländeStat(label: "Schotter", wert: r.schotter_t, einheit: "t", farbe: .brown)
                         Divider().frame(height: 32)
-                        geländeStat(label: "LKW-Fuhren", wert: Double(r.sens_lkw), einheit: "", farbe: .orange)
+                        geländeStat(label: "LKW-Fuhren", wert: Double(r.sens_lkw), einheit: "", farbe: .orange) // KORRIGIERT: Übergibt gerundeten LKW-Wert als Double
                     }
                     Divider().opacity(0.4)
                     
@@ -388,6 +395,7 @@ struct EventDetailView: View {
 
     private func geländeStat(label: String, wert: Double, einheit: String, farbe: Color) -> some View {
         VStack(spacing: 2) {
+            // Hier wird gerundet ausgegeben
             Text(String(format: "%.1f", wert))
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(farbe)
@@ -440,7 +448,7 @@ struct EventDetailView: View {
             pos.posNr = String(format: "07.%02d", nextPos)
             pos.bezeichnung = "Trennvlies"
             pos.einheit = "m²"
-            pos.menge = Double(result.vlies_m2)
+            pos.menge = result.vlies_m2 // KORRIGIERT: Nutzt direkt den vlies_m2 Wert ohne Cast-Verschachtelung
             pos.kostenGruppeNummer = "322"
             pos.event = event
             nextPos += 1
@@ -607,9 +615,9 @@ struct EventDetailView: View {
                 }
             }
             VStack(alignment: .leading, spacing: 8) {
-                if let setup = event.setupTime   { timeRow(icon: "timer",                         title: "Setup", date: setup, color: .orange) }
+                if let setup = event.setupTime   { timeRow(icon: "timer",                          title: "Setup", date: setup, color: .orange) }
                 if let start = event.eventStartTime { timeRow(icon: "calendar.day.timeline.leading", title: "Start", date: start, color: Color(uiColor: .tintColor)) }
-                if let end   = event.eventEndTime   { timeRow(icon: "clock.badge.checkmark",         title: "Ende",  date: end,   color: .green) }
+                if let end   = event.eventEndTime   { timeRow(icon: "clock.badge.checkmark",          title: "Ende",  date: end,   color: .green) }
                 EventTimelineBar(event: event)
             }
             let beteiligte: [(String, String)] = [
@@ -691,45 +699,55 @@ struct EventDetailView: View {
     @ViewBuilder
     private func cadFileRow(_ file: CADFileInfo) -> some View {
         if let url = file.fullURL {
-            if isSKPFile(file) {
-                Button { showSketchUpWeb = true } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "safari.fill").font(.title3).foregroundStyle(.orange)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(file.fileName).font(.body)
-                            Text("Oeffnet in SketchUp Web (Safari)").font(.caption).foregroundStyle(.secondary)
+            Group {
+                if isSKPFile(file) {
+                    Button { showSketchUpWeb = true } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "safari.fill").font(.title3).foregroundStyle(.orange)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(file.fileName).font(.body)
+                                Text("Oeffnet in SketchUp Web (Safari)").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square").font(.caption).foregroundStyle(.secondary)
                         }
-                        Spacer()
-                        Image(systemName: "arrow.up.right.square").font(.caption).foregroundStyle(.secondary)
+                        .padding(.vertical, 8).padding(.horizontal, 10)
+                        .background(.thinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
-                    .padding(.vertical, 8).padding(.horizontal, 10)
-                    .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .contextMenu {
-                    Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
-                    Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
-                    Button(role: .destructive) { cadFiles.removeAll { $0.id == file.id }; saveCADFiles() } label: { Label("Loeschen", systemImage: "trash") }
-                }
-            } else {
-                NavigationLink { CADViewerView(fileURL: url, fileName: file.fileName) } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "cube.fill").font(.title3).foregroundStyle(.tint)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(file.fileName).font(.body)
-                            Text(file.importDate.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                    .contextMenu {
+                        Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
+                        Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
+                        Button(role: .destructive) { cadFiles.removeAll { $0.id == file.id }; saveCADFiles() } label: { Label("Loeschen", systemImage: "trash") }
+                    }
+                } else {
+                    NavigationLink { CADViewerView(fileURL: url, fileName: file.fileName) } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "cube.fill").font(.title3).foregroundStyle(.tint)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(file.fileName).font(.body)
+                                Text(file.importDate.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
                         }
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                        .padding(.vertical, 8).padding(.horizontal, 10)
+                        .background(.thinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
-                    .padding(.vertical, 8).padding(.horizontal, 10)
-                    .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .contextMenu {
+                        Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
+                        Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
+                        Button(role: .destructive) { cadFiles.removeAll { $0.id == file.id }; saveCADFiles() } label: { Label("Loeschen", systemImage: "trash") }
+                    }
                 }
-                .contextMenu {
-                    Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
-                    Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
-                    Button(role: .destructive) { cadFiles.removeAll { $0.id == file.id }; saveCADFiles() } label: { Label("Loeschen", systemImage: "trash") }
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                    cadFiles.removeAll { $0.id == file.id }
+                    saveCADFiles()
+                } label: {
+                    Label("Löschen", systemImage: "trash")
                 }
             }
         }
@@ -904,6 +922,7 @@ struct EventDetailView: View {
 
     private func generateLVCSV() {
         let positionen = (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
+            .sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }
         let data = LVCSVExporter.generate(event: event, positionen: positionen)
         let name = "LV-\(event.title ?? "Baustelle")"
             .replacingOccurrences(of: " ", with: "-")
@@ -1002,7 +1021,7 @@ struct EventDetailView: View {
                 .padding(.top, 4)
             } else {
                 HStack(spacing: 0) {
-                    maengelStatZelle(label: "Gesamt",     wert: maengelAnzahl,      farbe: .primary)
+                    maengelStatZelle(label: "Gesamt",      wert: maengelAnzahl,      farbe: .primary)
                     Divider().frame(height: 32)
                     maengelStatZelle(label: "Offen",      wert: maengelOffen,       farbe: .orange)
                     Divider().frame(height: 32)
@@ -1249,6 +1268,7 @@ struct EventTimelineBar: View {
             }
             .frame(height: 10)
         }
+        .frame(height: 30)
         .onReceive(timer) { _ in now = Date() }
     }
 }

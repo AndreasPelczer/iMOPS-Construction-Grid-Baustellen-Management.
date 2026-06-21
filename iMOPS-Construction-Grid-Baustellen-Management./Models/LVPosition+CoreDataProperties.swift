@@ -6,7 +6,7 @@ extension LVPosition {
     @nonobjc class func fetchRequest() -> NSFetchRequest<LVPosition> {
         return NSFetchRequest<LVPosition>(entityName: "LVPosition")
     }
-
+    @NSManaged public var quellDatei: String?
     @NSManaged var posNr: String?
     @NSManaged var bezeichnung: String?
     @NSManaged var menge: Double

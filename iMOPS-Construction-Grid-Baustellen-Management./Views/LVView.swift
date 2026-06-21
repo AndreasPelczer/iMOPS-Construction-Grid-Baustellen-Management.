@@ -12,7 +12,7 @@ struct LVView: View {
     @ObservedObject var event: Event
 
     @FetchRequest private var positionen: FetchedResults<LVPosition>
-
+    @State private var sourcePDFURL: URL? = nil
     @State private var showingAdd            = false
     @State private var editPosition: LVPosition?
     @State private var positionToDelete: LVPosition?
@@ -112,7 +112,9 @@ struct LVView: View {
                 ForEach(grouped, id: \.kg) { gruppe in
                     Section {
                         ForEach(gruppe.items, id: \.objectID) { pos in
-                            LVPositionRow(position: pos)
+                            LVPositionRow(position: pos) { targetURL in
+                                sourcePDFURL = targetURL
+                            }
                                 .contentShape(Rectangle())
                                 .onTapGesture { editPosition = pos }
                                 .contextMenu {
@@ -315,6 +317,12 @@ struct LVView: View {
         }
         .sheet(isPresented: $showHelp) {
             LVHelpView()
+        }
+        .sheet(item: Binding(
+            get: { sourcePDFURL.map { IdentifiableURL(url: $0) } },
+            set: { sourcePDFURL = $0?.url }
+        )) { identifiableURL in
+            PDFPreviewView(url: identifiableURL.url)
         }
         .modifier(DeletePositionConfirm(position: $positionToDelete) { delete($0) })
         .alert("Fehlende Preise", isPresented: $showMissingPricesAlert) {
@@ -551,6 +559,9 @@ struct LVPositionRow: View {
     private var isAlt: Bool { LVPositionHelper.isAlternative(position) }
     
     @State private var direktPreis: String = ""
+    
+    // NEU: Callback nach oben an die Liste, um das PDF zu öffnen
+    var onOpenSourceDocument: ((URL) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -602,7 +613,6 @@ struct LVPositionRow: View {
                         .font(.caption.weight(.semibold)).foregroundStyle(.green)
                     
                 } else {
-                    // FALL 3: Direkte Eingabe (Pauschale)
                     Text("EP:")
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
@@ -629,6 +639,38 @@ struct LVPositionRow: View {
                             .font(.caption.weight(.semibold)).foregroundStyle(.gray)
                     }
                 }
+            }
+            
+            // NEU: Quellen-Chip unter dem Preis, falls aus einer Statik/PDF extrahiert
+            if let docName = position.value(forKey: "dokuName") as? String, !docName.isEmpty {
+                HStack {
+                    Button {
+                        if let pathString = position.value(forKey: "dokuPath") as? String, let url = URL(string: pathString) {
+                            onOpenSourceDocument?(url)
+                        } else {
+                            // Fallback: Suche im standardmäßigen App-Sandbox Ordner CADFiles
+                            let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                            let fallbackURL = docsDir.appendingPathComponent("CADFiles").appendingPathComponent(docName)
+                            onOpenSourceDocument?(fallbackURL)
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "doc.text.magnifyingglass")
+                            Text(docName)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.12))
+                        .foregroundStyle(.orange)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.borderless) // Verhindert, dass die List-Row den Klick abfängt
+                    Spacer()
+                }
+                .padding(.top, 2)
             }
             
             ZeilenFortschritt(
@@ -1069,4 +1111,12 @@ struct LVHelpView: View {
             }
         }
     }
+}
+
+// MARK: - Navigation Helpers
+
+// JETZT GLOBAL AUßERHALB DER VIEWS: Damit jede View im File darauf zugreifen kann!
+struct IdentifiableURL: Identifiable {
+    let id = UUID()
+    let url: URL
 }
