@@ -37,6 +37,7 @@
         <attribute name="isActive" optional="YES" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="notiz" optional="YES" attributeType="String"/>
+        <attribute name="pin" optional="YES" attributeType="String"/>
         <attribute name="rolle" optional="YES" attributeType="String"/>
         <attribute name="telefon" optional="YES" attributeType="String"/>
     </entity>
@@ -102,6 +103,8 @@
         <attribute name="artikelNummer" optional="YES" attributeType="String"/>
         <attribute name="bezeichnung" optional="YES" attributeType="String"/>
         <attribute name="bgkProzent" optional="YES" attributeType="Double" defaultValueString="0.12" usesScalarValueType="YES"/>
+        <attribute name="dokuName" optional="YES" attributeType="String"/>
+        <attribute name="dokuPath" optional="YES" attributeType="String"/>
         <attribute name="einheit" optional="YES" attributeType="String"/>
         <attribute name="einkaufspreis" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
@@ -109,6 +112,7 @@
         <attribute name="menge" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="mengenQuelleRaw" optional="YES" attributeType="String" defaultValueString="manuell"/>
         <attribute name="posNr" optional="YES" attributeType="String"/>
+        <attribute name="quellDatei" optional="YES" attributeType="String"/>
         <attribute name="wagnisGewinnProzent" optional="YES" attributeType="Double" defaultValueString="0.08" usesScalarValueType="YES"/>
         <relationship name="aufmasse" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Aufmass" inverseName="lvPosition" inverseEntity="Aufmass"/>
         <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="lvPositionen" inverseEntity="Event"/>

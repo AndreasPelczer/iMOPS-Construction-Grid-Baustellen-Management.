@@ -38,6 +38,9 @@ struct AuftragDetailView: View {
                 headerCard
                 modeCard
                 checklistCard
+                LVDeleteButtonView(currentLV: job)
+                    .padding(.horizontal, 4)
+                
                 Spacer(minLength: 8)
             }
             .padding()

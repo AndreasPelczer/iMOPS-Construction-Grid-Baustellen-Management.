@@ -31,6 +31,16 @@ struct CADViewerView: View {
     @State private var showSketchUpWeb = false
 
     var body: some View {
+                // NEU: Wenn es ein PDF ist, nutze unser internes PDFKit
+                if fileName.lowercased().hasSuffix(".pdf") {
+                    PDFKitView(url: fileURL)
+                        .ignoresSafeArea()
+                        .navigationTitle(fileName)
+                        .navigationBarTitleDisplayMode(.inline)
+                } else {
+                    // HIER STEHT DEIN BISHERIGER CODE FÜR USDZ/OBJ (SceneKit)
+                    // Den lassen wir genau so, wie er ist!
+                }
         Group {
             if let error = loadError {
                 VStack(spacing: 16) {

@@ -8,7 +8,7 @@ extension Employee {
     @nonobjc class func fetchRequest() -> NSFetchRequest<Employee> {
         return NSFetchRequest<Employee>(entityName: "Employee")
     }
-
+    @NSManaged public var pin: String?
     @NSManaged var id: UUID?
     @NSManaged var name: String?
     @NSManaged var rolle: String?

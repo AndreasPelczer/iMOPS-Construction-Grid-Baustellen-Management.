@@ -17,6 +17,9 @@ struct ParsedLVPosition: Identifiable {
     var kostenGruppe: String? = nil   // DIN 276 (KG)
     var artikelNummer: String? = nil  // Xella-Mat-Nr (abZ-Resolver)
     var lieferant: String? = nil
+    // NEU: Die Quell-Metadaten für den Reader
+    var quellDateiName: String? = nil
+    var quellDateiURL: URL? = nil
 }
 
 // MARK: - Importer
@@ -43,6 +46,7 @@ struct LVPDFImporter {
     /// Extracts text from every page of `url` and returns heuristically parsed LV positions.
     static func extract(from url: URL) -> [ParsedLVPosition] {
         guard let doc = PDFDocument(url: url) else { return [] }
+        let dateiName = url.lastPathComponent // Extrahiert z.B. "448-GO Statik 05.03.26 einseitig.pdf"
 
         var allLines: [String] = []
         for i in 0..<doc.pageCount {
@@ -54,12 +58,14 @@ struct LVPDFImporter {
             allLines += pageLines
         }
 
-        return parseLines(allLines)
+        // Wir übergeben den Dateinamen und die URL an die Parser-Logik
+        return parseLines(allLines, vonDatei: dateiName, mitURL: url)
     }
+    
 
     // MARK: - Internal Parser
 
-    private static func parseLines(_ lines: [String]) -> [ParsedLVPosition] {
+    private static func parseLines(_ lines: [String], vonDatei dateiName: String, mitURL url: URL) -> [ParsedLVPosition] {
         var result: [ParsedLVPosition] = []
 
         for line in lines {
@@ -97,14 +103,15 @@ struct LVPDFImporter {
                                   :                                  0.5
 
             result.append(ParsedLVPosition(
-                posNr:       posNr,
-                bezeichnung: bezeichnung,
-                menge:       menge,
-                einheit:     rawUnit,
-                confidence:  confidence
-            ))
-        }
-
-        return result
-    }
+                        posNr:       posNr,
+                        bezeichnung: bezeichnung,
+                        menge:       menge,
+                        einheit:     rawUnit,
+                        confidence:  confidence,
+                        quellDateiName: dateiName, // NEU
+                        quellDateiURL: url         // NEU
+                    ))
+                }
+                return result
+            }
 }

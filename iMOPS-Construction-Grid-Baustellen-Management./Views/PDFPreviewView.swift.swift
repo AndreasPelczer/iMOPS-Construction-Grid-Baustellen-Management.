@@ -51,4 +51,19 @@ struct PDFPreviewView: View {
                 }
         }
     }
+    // In eurem PDFKit-Wrapper für SwiftUI
+    struct MopsPDFReaderView: UIViewRepresentable {
+        let pdfURL: URL
+
+        func makeUIView(context: Context) -> PDFView {
+            let pdfView = PDFView()
+            pdfView.document = PDFDocument(url: pdfURL)
+            pdfView.autoScales = true
+            return pdfView
+        }
+
+        func updateUIView(_ uiView: PDFView, context: Context) {
+            // Eventuell Dokument aktualisieren, falls sich die URL ändert
+        }
+    }
 }

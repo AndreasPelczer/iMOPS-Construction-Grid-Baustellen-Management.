@@ -16,6 +16,10 @@ struct LVImportView: View {
     @State private var showError = false
     @State private var importQuelle: ImportQuelle = .lokal
     @State private var parsingHinweis = "PDF wird analysiert ..."
+    
+    // NEU: Hier merken wir uns die Metadaten der geladenen Datei für CoreData
+    @State private var geladenerDateiName: String? = nil
+    @State private var geladenerDateiPfad: String? = nil
 
     private enum ImportQuelle { case lokal, mops }
 
@@ -119,11 +123,12 @@ struct LVImportView: View {
                         .multilineTextAlignment(.center)
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(spacing: 12) {
                     Label("Unterstützte Formate", systemImage: "info.circle")
                         .font(.caption.bold()).foregroundStyle(.secondary)
                     Text("• Standard-LV, GAEB-Export, Planungsbüro-PDFs\n• Erkannt: Pos.-Nr. + Beschreibung + Menge + Einheit\n• Alle Positionen können vor dem Import bearbeitet werden\n• Eingescannte PDFs (nur Bilder) werden nicht unterstützt")
                         .font(.caption).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
                 .padding()
                 .background(Color(.secondarySystemBackground))
@@ -147,6 +152,8 @@ struct LVImportView: View {
                     Spacer()
                     Button("Neues PDF") {
                         parsedPositions = []
+                        geladenerDateiName = nil
+                        geladenerDateiPfad = nil
                         showDocumentPicker = true
                     }
                     .font(.caption).tint(.orange)
@@ -212,9 +219,9 @@ struct LVImportView: View {
     private func parsePDF(url: URL) {
         isParsing = true
         DispatchQueue.global(qos: .userInitiated).async {
-            // Copy to temp dir while we still have security-scoped access
             let tmp = FileManager.default.temporaryDirectory
                 .appendingPathComponent(url.lastPathComponent)
+            try? FileManager.default.removeItem(at: tmp)
             try? FileManager.default.copyItem(at: url, to: tmp)
 
             let positions = LVPDFImporter.extract(from: tmp)
@@ -233,6 +240,10 @@ struct LVImportView: View {
 
     /// Routet die ausgewählte PDF an den lokalen Parser oder an den Mops.
     private func handlePick(url: URL) {
+        // JETZT NEU: Hier sichern wir uns den Dateinamen und den echten Pfad der URL
+        geladenerDateiName = url.lastPathComponent
+        geladenerDateiPfad = url.absoluteString
+
         switch importQuelle {
         case .lokal:
             parsingHinweis = "PDF wird analysiert ..."
@@ -243,10 +254,7 @@ struct LVImportView: View {
         }
     }
 
-    /// Lädt die PDF an die Box (/extract-plan) und füllt die Vorschau aus dem
-    /// Mops-Ergebnis (inkl. Kostengruppe + Mat-Nr aus dem abZ-Resolver).
     private func parsePDFViaMops(url: URL) {
-        // Kopie ins Temp, solange der Security-Scope noch aktiv ist
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
         try? FileManager.default.removeItem(at: tmp)
         do {
@@ -287,9 +295,17 @@ struct LVImportView: View {
             pos.menge              = parsed.menge
             pos.einheit            = parsed.einheit
             pos.kostenGruppeNummer = parsed.kostenGruppe ?? "300"
-            pos.artikelNummer      = parsed.artikelNummer   // Mops-Import: Mat-Nr
+            pos.artikelNummer      = parsed.artikelNummer
             pos.lieferant          = parsed.lieferant
             pos.event              = event
+            
+            // JETZT NEU VERDRAHTET: Werte werden sicher in CoreData injiziert
+            if let dateiName = geladenerDateiName {
+                pos.setValue(dateiName, forKey: "dokuName")
+            }
+            if let dateiPfad = geladenerDateiPfad {
+                pos.setValue(dateiPfad, forKey: "dokuPath")
+            }
         }
         try? viewContext.save()
         dismiss()
