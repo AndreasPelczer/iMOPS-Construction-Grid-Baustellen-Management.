@@ -37,6 +37,7 @@
         <attribute name="isActive" optional="YES" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="notiz" optional="YES" attributeType="String"/>
+        <attribute name="pin" optional="YES" attributeType="String"/>
         <attribute name="rolle" optional="YES" attributeType="String"/>
         <attribute name="telefon" optional="YES" attributeType="String"/>
     </entity>

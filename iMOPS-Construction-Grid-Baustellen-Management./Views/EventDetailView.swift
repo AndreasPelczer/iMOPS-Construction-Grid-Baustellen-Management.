@@ -51,7 +51,7 @@ struct EventDetailView: View {
     @State private var lvPDFURL: URL?
     @State private var lvCSVURL: URL?
     @State private var showBautagesbericht = false
-
+    @State private var zeigeLVAbriss = false
     @State private var isConverting = false
     @State private var conversionError: String?
     @State private var showConversionError = false
@@ -209,6 +209,9 @@ struct EventDetailView: View {
         }
         .sheet(isPresented: $showingAddJobSheet, onDismiss: { refreshID = UUID() }) {
             AddJobView(event: event, viewContext: viewContext)
+        }
+        .sheet(isPresented: $zeigeLVAbriss) {
+            LVAbrissSheet(event: event, baustellenName: event.title ?? "Unbenannt")
         }
         .sheet(isPresented: $showingCADPicker) {
             CADDocumentPicker(
@@ -879,6 +882,14 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        // --- NEU: Context Menu für Laptop (Rechtsklick) & iPad (Langes Drücken) ---
+        .contextMenu {
+            Button(role: .destructive) {
+                zeigeLVAbriss = true
+            } label: {
+                Label("Gesamtes LV löschen", systemImage: "trash")
+            }
+        }
     }
     
     // MARK: - KALKULATION CARD (Welle 6)

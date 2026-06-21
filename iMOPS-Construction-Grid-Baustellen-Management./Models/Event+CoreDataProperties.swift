@@ -17,7 +17,6 @@ extension Event {
     @nonobjc class func fetchRequest() -> NSFetchRequest<Event> {
         return NSFetchRequest<Event>(entityName: "Event")
     }
-
     @NSManaged var eventEndTime: Date?
     @NSManaged var eventNumber: String?
     @NSManaged var eventStartTime: Date?
