@@ -120,6 +120,7 @@ struct EventDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 headerCard
+                AmpelCard(event: event) // <-- NEU: Die Ampel ganz oben!
                 WetterKarteView(ort: event.location ?? "")
                 cadCard
                 materialCard
