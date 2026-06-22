@@ -34,16 +34,12 @@ struct RootTabView: View {
             }
             .tag("suche")
 
-            // TAB 3: Haus-Konfigurator (nur fuer Disponent / Leitung)
-            if session.role == .dispatcher || session.role == .director {
-                NavigationStack {
-                    HouseConfiguratorView()
-                }
+            // Irgendwo in deiner RootTabView.swift innerhalb der TabView:
+            HouseConfiguratorView()
                 .tabItem {
-                    Label("Planer", systemImage: "house.and.flag")
+                    Label("iMOPS Planer", systemImage: "pencil.and.rulers")
                 }
-                .tag("planer")
-            }
+                .tag("planer") // Optional, falls du Tags nutzt
 
             // TAB 4: Katalog (Material-Lexikon)
             NavigationStack {

@@ -4,12 +4,14 @@ import CoreData
 import Combine
 import UniformTypeIdentifiers
 
+
 // MARK: - Helpers: Extras JSON (Checkliste)
 
 struct EventExtrasPayload: Codable {
     var checklist: [EventChecklistItem] = []
     var pinnedProductIDs: [String] = []
     var pinnedLexikonCodes: [String] = []
+    var savedHouseProject: HouseProject? = nil 
 }
 
 struct EventChecklistItem: Codable, Identifiable, Equatable {
@@ -56,6 +58,7 @@ struct EventDetailView: View {
     @State private var conversionError: String?
     @State private var showConversionError = false
     @State private var showSketchUpWeb = false
+    @State private var showingKausalKette = false // 🚀 Steuert das neue Ketten-Fenster
 
     // Welle 7: Gelände/DXF Upload
     @State private var showingDXFPicker = false
@@ -126,7 +129,17 @@ struct EventDetailView: View {
                         showingAddJobSheet = true
                     }
                 } label: {
-                    AmpelCard(event: event)
+                    // 🚥 Klick auf die Ampel öffnet jetzt direkt die interaktive Kausalbaukette!
+                    Button {
+                        showingKausalKette = true
+                    } label: {
+                        AmpelCard(event: event)
+                    }
+                    .buttonStyle(.plain)
+                    .sheet(isPresented: $showingKausalKette) {
+                        KausalbauketteView(event: event)
+                            .environment(\.managedObjectContext, viewContext)
+                    }
                 }
                 .buttonStyle(.plain)
                 WetterKarteView(ort: event.location ?? "")
@@ -194,6 +207,18 @@ struct EventDetailView: View {
                 }
                 .tint(.orange)
             }
+            // 🚀 NEU: Der dedizierte iMOPS Planer-Button innerhalb der Baustelle
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink {
+                    // Hier übergeben wir das aktuelle Event an den Konfigurator!
+                    // Dadurch springt die Weiche sofort auf Zustand B (Die 4 Reiter mitsamt Zeitstrahl)
+                    HouseConfiguratorView(spezielesEvent: event)
+                } label: {
+                    Label("Soll-Übersicht", systemImage: "pencil.and.rulers")
+                }
+                .tint(.orange)
+            }
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Bearbeiten") { showingEditSheet = true }
             }
