@@ -16,6 +16,12 @@ struct HouseConfiguratorView: View {
     @State private var result: HouseProjectResult?
     @State private var showingResult = false
 
+    var onCreated: ((Event) -> Void)? = nil
+
+    init(onCreated: ((Event) -> Void)? = nil) {
+        self.onCreated = onCreated
+    }
+
     var body: some View {
         Form {
             grunddatenSection
@@ -43,7 +49,7 @@ struct HouseConfiguratorView: View {
         .sheet(isPresented: $showingResult) {
             if let result {
                 NavigationStack {
-                    HouseProjectResultView(result: result)
+                    HouseProjectResultView(result: result, onCreated: onCreated)
                 }
             }
         }
@@ -146,6 +152,9 @@ struct HouseConfiguratorView: View {
 
 struct HouseProjectResultView: View {
     let result: HouseProjectResult
+    var allowsCreateEvent: Bool = true
+    var onCreated: ((Event) -> Void)? = nil
+
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab = 0
@@ -185,19 +194,22 @@ struct HouseProjectResultView: View {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Schliessen") { dismiss() }
             }
-            ToolbarItem(placement: .confirmationAction) {
-                Button {
-                    showingSaveConfirmation = true
-                } label: {
-                    Label("Als Baustelle anlegen", systemImage: "square.and.arrow.down")
+            if allowsCreateEvent {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        showingSaveConfirmation = true
+                    } label: {
+                        Label("Als Baustelle anlegen", systemImage: "square.and.arrow.down")
+                    }
                 }
             }
         }
         .alert("Baustelle anlegen?", isPresented: $showingSaveConfirmation) {
             Button("Anlegen") {
-                _ = HouseProjectGenerator.createEvent(from: result, into: viewContext)
+                let event = HouseProjectGenerator.createEvent(from: result, into: viewContext)
                 do {
                     try viewContext.save()
+                    onCreated?(event)
                     savedSuccessfully = true
                 } catch {
                     print("Fehler: \(error)")

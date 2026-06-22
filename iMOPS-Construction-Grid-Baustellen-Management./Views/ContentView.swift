@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var sortOrder: EventSortOrder = .datumNeuAlt
     @State private var searchText = ""
     @State private var showingAddEventSheet = false
+    @State private var showingHousePlanner = false
     @State private var showHelp = false
 
     var body: some View {
@@ -55,9 +56,22 @@ struct ContentView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showingHousePlanner = true } label: {
+                    Label("Hausplaner", systemImage: "house.and.flag")
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddEventSheet = true }) {
                     Label("Neue Baustelle", systemImage: "plus.circle.fill")
                 }
+            }
+        }
+        .sheet(isPresented: $showingHousePlanner) {
+            NavigationStack {
+                HouseConfiguratorView { _ in
+                    showingHousePlanner = false
+                }
+                .environment(\.managedObjectContext, viewContext)
             }
         }
         .sheet(isPresented: $showingAddEventSheet) {

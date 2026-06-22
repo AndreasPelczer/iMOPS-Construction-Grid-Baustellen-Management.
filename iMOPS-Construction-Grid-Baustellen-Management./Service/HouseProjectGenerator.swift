@@ -993,6 +993,7 @@ enum HouseProjectGenerator {
 
         // Checklist aus Bauphasen
         var extras = EventExtrasPayload()
+        extras.houseProject = result.project
         extras.checklist = result.phasen.map { phase in
             EventChecklistItem(title: "\(phase.name) (KW+\(phase.startWoche)–\(phase.endeWoche))")
         }
