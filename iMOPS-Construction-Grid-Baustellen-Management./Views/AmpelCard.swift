@@ -9,47 +9,107 @@ import SwiftUI
 struct AmpelCard: View {
     @ObservedObject var event: Event
 
-    // Vereinfachte Logik für das Sofa-MVP
-    private var ampelStatus: (farbe: Color, text: String) {
-        let offeneMaengel = (event.maengel?.allObjects as? [Mangel] ?? []).filter { $0.status == .offen || $0.status == .inArbeit }.count
-
-        // 1. Rote Ampel: Offene Mängel blockieren die Baufrei
-        if offeneMaengel > 0 {
-            return (.red, "Mängel offen – Baufrei blockiert")
+    // 🔗 DIE KAUSALBAUKETTE: Sequentielle Prüfung von oben nach unten
+    private var ampelStatus: (farbe: Color, text: String, subtext: String) {
+        
+        // -----------------------------------------------------------------
+        // GLIED 1 & 2: RECHTLICH & BEHÖRDLICH (Die harte iMOPS-Bremse)
+        // -----------------------------------------------------------------
+        let baugenehmigung = event.baugenehmigungNr?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if baugenehmigung.isEmpty {
+            return (
+                .red,
+                "Baustart BLOCKIERT",
+                "Keine Baugenehmigungsnummer hinterlegt. Operative Gewerke gesperrt."
+            )
         }
         
-        // 2. Orange Ampel: Baustelle läuft, aber noch nicht fertig
+        // -----------------------------------------------------------------
+        // GLIED 3: INFRASTRUCTUR (Baustrom, Bauwasser, Bauzaun)
+        // -----------------------------------------------------------------
         let auftraege = event.jobs?.allObjects as? [Auftrag] ?? []
-        if !auftraege.isEmpty && auftraege.contains(where: { !$0.isCompleted }) {
-            return (.orange, "Baustelle in Arbeit – teilweise Baufrei")
+        
+        // Wir suchen nach Infrastruktur-Aufträgen, die noch nicht fertig sind
+        let infraOffen = auftraege.contains { job in
+            let details = job.processingDetails?.lowercased() ?? ""
+            let istInfra = details.contains("bauzaun") ||
+                           details.contains("baustrom") ||
+                           details.contains("bauwasser") ||
+                           details.contains("einrichtung")
+            return istInfra && !job.isCompleted
+        }
+        
+        if infraOffen {
+            return (
+                .orange,
+                "Infrastruktur unvollständig",
+                "Baustelleneinrichtung, Strom oder Zaun fehlen. Teilweise Baufreiheit."
+            )
+        }
+        
+        // -----------------------------------------------------------------
+        // GLIED 4: OPERATIV & QUALITÄT (Laufende Arbeiten & Mängel)
+        // -----------------------------------------------------------------
+        let offeneMaengel = (event.maengel?.allObjects as? [Mangel] ?? [])
+            .filter { $0.status == .offen || $0.status == .inArbeit }.count
+        
+        if offeneMaengel > 0 {
+            return (
+                .red,
+                "Mängel offen (\(offeneMaengel))",
+                "Qualitätsmängel blockieren die nächste Abnahme-Stufe."
+            )
+        }
+        
+        // Prüfen, ob noch reguläre Handwerker-Aufträge offen sind
+        let handwerkOffen = auftraege.contains(where: { !$0.isCompleted })
+        if handwerkOffen {
+            return (
+                .orange,
+                "Gewerke in Arbeit",
+                "Baugenehmigung erteilt, Infrastruktur steht. Handwerker sind aktiv."
+            )
         }
 
-        // 3. Grüne Ampel: Alles erledigt
+        // -----------------------------------------------------------------
+        // ZIEL: ALLES ERLEDIGT
+        // -----------------------------------------------------------------
         if !auftraege.isEmpty && auftraege.allSatisfy({ $0.isCompleted }) {
-            return (.green, "Alle Aufträge erledigt – Baufrei erteilt")
+            return (
+                .green,
+                "Baufreiheit vollständig erteilt",
+                "Alle Aufträge abgeschlossen, keine offenen Mängel. Projekt bereit zur Abnahme."
+            )
         }
 
-        // Default: Noch nichts los
-        return (.gray, "Wartet auf Start – Voraussetzungen prüfen")
+        // Default-Sicherheitsnetz
+        return (
+            .gray,
+            "Wartet auf Start",
+            "Projekt angelegt. Kausalbaukette bereit zur Validierung."
+        )
     }
 
     var body: some View {
         HStack(spacing: 16) {
-            // Die Ampel selbst
+            // Die leuchtende iMOPS-Ampel
             Circle()
                 .fill(ampelStatus.farbe)
                 .frame(width: 50, height: 50)
                 .shadow(color: ampelStatus.farbe.opacity(0.5), radius: 8)
                 .overlay(
-                    Circle().stroke(Color.white.opacity(0.5), lineWidth: 2)
+                    Circle().stroke(Color.white.opacity(0.4), lineWidth: 2)
                 )
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Voraussetzungs-Ampel")
-                    .font(.headline)
                 Text(ampelStatus.text)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Text(ampelStatus.subtext)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
             Spacer()
@@ -63,4 +123,3 @@ struct AmpelCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
-

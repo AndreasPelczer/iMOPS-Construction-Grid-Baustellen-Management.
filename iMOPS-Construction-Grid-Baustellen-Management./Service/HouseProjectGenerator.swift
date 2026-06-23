@@ -991,7 +991,6 @@ enum HouseProjectGenerator {
         Gesamt: \(gk)
         """
 
-        // Checklist aus Bauphasen
         var extras = EventExtrasPayload()
         extras.houseProject = result.project
         extras.checklist = result.phasen.map { phase in

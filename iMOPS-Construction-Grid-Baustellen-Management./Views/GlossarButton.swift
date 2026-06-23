@@ -3,7 +3,8 @@
 //  iMOPS-Construction-Grid-Baustellen-Management.
 //
 //  Created by Andreas Pelczer on 22.06.26.
-/*
+//
+
 import SwiftUI
 
 struct GlossarButton: View {
@@ -53,9 +54,8 @@ struct GlossarButton: View {
                 }
                 .padding()
                 .frame(width: 280)
-                .presentationCompactAdaptation(.popover) // Erzwingt das kleine Fenster auch auf dem iPhone!
+                .presentationCompactAdaptation(.popover) // Erzwingt das kleine Popover auch auf dem iPhone
             }
         }
     }
 }
-*/
