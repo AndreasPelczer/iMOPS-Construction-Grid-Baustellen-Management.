@@ -149,7 +149,11 @@ extension UniversalAnfrage {
         }
 
         let warnschwelle = lieferung.warnschwelleStunden * 3_600
+        let kritischschwelle = warnschwelle / 4
         let restzeit = lieferung.lieferfensterVon.timeIntervalSince(now)
+        if restzeit <= kritischschwelle {
+            return .terminKritisch
+        }
         return restzeit <= warnschwelle ? .lieferungUnbestaetigt : .keine
     }
 }

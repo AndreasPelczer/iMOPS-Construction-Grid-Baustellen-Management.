@@ -452,7 +452,7 @@ private enum LieferwarnungDemoFactory {
         switch index % 3 {
         case 0: offset = warnschwelle + 24 * 3_600
         case 1: offset = 24 * 3_600
-        default: offset = -6 * 3_600
+        default: offset = 12 * 3_600
         }
 
         return UniversalAnfrage(

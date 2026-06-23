@@ -57,6 +57,15 @@ struct LieferantenSynchronisationTests {
         #expect(anfrage.warnstufe(now: date(900_000)) == .lieferungUnbestaetigt)
     }
 
+    @Test func terminKritischBeiZwölfStundenRestzeitUndFehlenderBestaetigung() {
+        let now = date(1_000_000)
+        let anfrage = makeAnfrage(
+            lieferfensterVon: now.addingTimeInterval(12 * 3_600),
+            lieferfensterBis: now.addingTimeInterval(16 * 3_600)
+        )
+        #expect(anfrage.warnstufe(now: now) == .terminKritisch)
+    }
+
     @Test func keineWarnungWennLieferungBestaetigt() {
         let anfrage = makeAnfrage(bestaetigtAm: date(910_000))
         #expect(anfrage.warnstufe(now: date(990_000)) == .keine)

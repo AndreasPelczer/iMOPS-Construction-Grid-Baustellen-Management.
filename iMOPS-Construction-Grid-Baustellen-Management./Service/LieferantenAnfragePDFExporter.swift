@@ -70,6 +70,8 @@ struct LieferantenAnfragePDFExporter {
             if let standort = kontext.standort, !standort.isEmpty { infoRow("Standort:", standort) }
             if let bauherr = kontext.bauherr, !bauherr.isEmpty { infoRow("Bauherr:", bauherr) }
             infoRow("Datum:", dateFormatter.string(from: kontext.datum))
+            infoRow("Status:", anfrage.status.rawValue)
+            infoRow("Lieferfenster:", lieferfensterText())
             infoRow("Positionen:", "\(anfrage.positionen.count)")
 
             y += 12
@@ -232,10 +234,23 @@ struct LieferantenAnfragePDFExporter {
             return parts.joined(separator: " / ")
         }
 
+        func lieferfensterText() -> String {
+            let von = dateTimeFormatter.string(from: anfrage.lieferung.lieferfensterVon)
+            let bis = dateTimeFormatter.string(from: anfrage.lieferung.lieferfensterBis)
+            return "\(von) - \(bis)"
+        }
+
         let dateFormatter: DateFormatter = {
             let formatter = DateFormatter()
             formatter.locale = Locale(identifier: "de_DE")
             formatter.dateFormat = "dd.MM.yyyy"
+            return formatter
+        }()
+
+        let dateTimeFormatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "de_DE")
+            formatter.dateFormat = "dd.MM.yyyy HH:mm"
             return formatter
         }()
 
