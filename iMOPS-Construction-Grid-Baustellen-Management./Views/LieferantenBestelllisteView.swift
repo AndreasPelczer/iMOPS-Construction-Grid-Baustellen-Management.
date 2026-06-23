@@ -1,5 +1,7 @@
 import SwiftUI
 import MessageUI
+import CoreData
+import UIKit
 
 // MARK: - Lieferanten-Kontakte
 
@@ -32,7 +34,11 @@ struct LieferantenBestelllisteView: View {
 
     @State private var activeMailLieferant: String?
     @State private var showMailCompose = false
-    @State private var showMailUnavailable = false
+    @State private var previewAnfrage: AnfrageTextPreview?
+
+    private var demoAnfragenByPositionId: [NSManagedObjectID: UniversalAnfrage] {
+        LieferwarnungDemoFactory.anfragenByPositionId(for: positionen)
+    }
 
     private var grouped: [(lieferant: String, positionen: [LVPosition])] {
         let known = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
@@ -76,10 +82,8 @@ struct LieferantenBestelllisteView: View {
                     .ignoresSafeArea()
                 }
             }
-            .alert("Mail nicht verfügbar", isPresented: $showMailUnavailable) {
-                Button("OK") {}
-            } message: {
-                Text("Auf diesem Gerät ist kein Mail-Account eingerichtet.")
+            .sheet(item: $previewAnfrage) { preview in
+                AnfrageTextPreviewView(preview: preview)
             }
         }
     }
@@ -115,9 +119,13 @@ struct LieferantenBestelllisteView: View {
         let info = lieferantInfos[gruppe.lieferant]
         Section {
             ForEach(gruppe.positionen, id: \.objectID) { pos in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(pos.bezeichnung ?? "–").font(.body)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(pos.bezeichnung ?? "–")
+                        .font(.body)
                     HStack(spacing: 6) {
+                        if let anfrage = demoAnfragenByPositionId[pos.objectID] {
+                            LieferwarnungBadge(warnstufe: anfrage.aktuelleWarnstufe)
+                        }
                         if let art = pos.artikelNummer, !art.isEmpty {
                             Text(art).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                             Text("·").foregroundStyle(.secondary)
@@ -135,11 +143,13 @@ struct LieferantenBestelllisteView: View {
             if let info {
                 Button {
                     activeMailLieferant = gruppe.lieferant
-                    if MFMailComposeViewController.canSendMail() {
-                        showMailCompose = true
-                    } else {
-                        showMailUnavailable = true
-                    }
+                    let preview = anfragePreview(lieferant: gruppe.lieferant)
+                    previewAnfrage = AnfrageTextPreview(
+                        empfaenger: preview.empfaenger,
+                        betreff: preview.betreff,
+                        body: preview.body,
+                        pdfURL: preview.pdfURL
+                    )
                 } label: {
                     Label("Mail an \(info.name)", systemImage: "envelope.badge")
                         .font(.subheadline.weight(.medium))
@@ -165,44 +175,312 @@ struct LieferantenBestelllisteView: View {
     // MARK: - Mail-Inhalte
 
     private func mailBetreff(lieferant: String) -> String {
-        let prefix = lieferantInfos[lieferant]?.betreffPrefix ?? "Anfrage"
-        return "\(prefix) – \(event.title ?? "Baustelle")"
+        LieferantenAnfrageFormatter.betreff(
+            kontakt: kontakt(for: lieferant),
+            kontext: anfrageKontext()
+        )
     }
 
     private func mailBody(lieferant: String) -> String {
         let pos = grouped.first(where: { $0.lieferant == lieferant })?.positionen ?? []
+        return LieferantenAnfrageFormatter.text(
+            kontakt: kontakt(for: lieferant),
+            kontext: anfrageKontext(),
+            anfrage: anfrage(positionen: pos)
+        )
+    }
+
+    private func anfragePreview(lieferant: String) -> AnfrageTextPreview {
+        let kontakt = kontakt(for: lieferant)
+        let kontext = anfrageKontext()
+        let pos = grouped.first(where: { $0.lieferant == lieferant })?.positionen ?? []
+        let anfrage = anfrage(positionen: pos)
+        let betreff = LieferantenAnfrageFormatter.betreff(kontakt: kontakt, kontext: kontext)
+        let body = LieferantenAnfrageFormatter.text(kontakt: kontakt, kontext: kontext, anfrage: anfrage)
+        let pdfURL = writeAnfragePDF(
+            data: LieferantenAnfragePDFExporter.generate(kontakt: kontakt, kontext: kontext, anfrage: anfrage),
+            lieferant: kontakt.name
+        )
+        return AnfrageTextPreview(
+            empfaenger: kontakt.email,
+            betreff: betreff,
+            body: body,
+            pdfURL: pdfURL
+        )
+    }
+
+    private func kontakt(for lieferant: String) -> LieferantenAnfrageKontakt {
         let info = lieferantInfos[lieferant]
-        var lines: [String] = []
-        lines.append("Guten Tag,")
-        lines.append("")
-        lines.append("für unser Bauprojekt \"\(event.title ?? "Baustelle")\"\(event.location.map { " in \($0)" } ?? "") benötigen wir folgende Materialien:")
-        lines.append("")
-        lines.append(String(repeating: "-", count: 60))
+        return LieferantenAnfrageKontakt(
+            name: info?.name ?? lieferant,
+            email: info?.email ?? "",
+            betreffPrefix: info?.betreffPrefix ?? "Anfrage"
+        )
+    }
 
-        for (i, p) in pos.enumerated() {
-            let nr = p.posNr ?? "\(i+1)"
-            let bez = p.bezeichnung ?? "–"
-            let menge = p.menge.formatted(.number.precision(.fractionLength(0...2)))
-            let einheit = p.einheit ?? ""
-            let art = p.artikelNummer.map { " [Art.-Nr.: \($0)]" } ?? ""
-            lines.append("\(nr). \(bez)\(art)")
-            lines.append("   Menge: \(menge) \(einheit)")
-            if let kg = p.kostenGruppeNummer, !kg.isEmpty {
-                lines.append("   KG \(kg)")
+    private func anfrageKontext() -> LieferantenAnfrageKontext {
+        LieferantenAnfrageKontext(
+            baustelle: event.title ?? "Baustelle",
+            baustellenNummer: event.eventNumber,
+            standort: event.location,
+            bauherr: event.bauherr
+        )
+    }
+
+    private func anfrage(positionen: [LVPosition]) -> UniversalAnfrage {
+        UniversalAnfrage(
+            baustelleId: event.objectID.uriRepresentation().absoluteString,
+            status: .angefragt,
+            positionen: positionen.enumerated().map { index, pos in
+                BedarfsPosition(
+                    lvPositionId: pos.objectID.uriRepresentation().absoluteString,
+                    posNr: pos.posNr ?? "\(index + 1)",
+                    material: pos.bezeichnung ?? "Material",
+                    menge: pos.menge,
+                    einheit: pos.einheit ?? "",
+                    bedarfsquelle: BedarfsQuelle(
+                        typ: .lv,
+                        ref: pos.posNr ?? "\(index + 1)",
+                        datei: pos.quellDatei,
+                        planblatt: nil,
+                        notiz: pos.artikelNummer.map { "Artikel: \($0)" },
+                        geprueftVon: nil
+                    )
+                )
+            },
+            lieferung: LieferDetails(
+                lieferfensterVon: Date(),
+                lieferfensterBis: Date().addingTimeInterval(48 * 3_600)
+            )
+        )
+    }
+
+    private func writeAnfragePDF(data: Data, lieferant: String) -> URL? {
+        let projekt = safeFilename(event.title ?? "Baustelle")
+        let name = "Anfrage-\(safeFilename(lieferant))-\(projekt).pdf"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        do {
+            try data.write(to: url)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    private func safeFilename(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: " ", with: "-")
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+    }
+}
+
+// MARK: - Anfrage Text Preview
+
+private struct AnfrageTextPreview: Identifiable {
+    let id = UUID()
+    let empfaenger: String
+    let betreff: String
+    let body: String
+    let pdfURL: URL?
+
+    var kopierText: String {
+        [
+            empfaenger.isEmpty ? nil : "An: \(empfaenger)",
+            "Betreff: \(betreff)",
+            "",
+            body
+        ]
+        .compactMap { $0 }
+        .joined(separator: "\n")
+    }
+}
+
+private struct AnfrageTextPreviewView: View {
+    let preview: AnfrageTextPreview
+
+    @Environment(\.openURL) private var openURL
+    @Environment(\.dismiss) private var dismiss
+    @State private var didCopy = false
+    @State private var activePDF: IdentifiableURL?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Empfänger") {
+                    Text(preview.empfaenger.isEmpty ? "Nicht hinterlegt" : preview.empfaenger)
+                        .font(.body.monospaced())
+                        .textSelection(.enabled)
+                }
+
+                Section("Betreff") {
+                    Text(preview.betreff)
+                        .textSelection(.enabled)
+                }
+
+                Section("Anfrage-Text") {
+                    Text(preview.body)
+                        .font(.body.monospaced())
+                        .textSelection(.enabled)
+                }
             }
-            lines.append("")
+            .navigationTitle("Anfrage")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Fertig") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Menu {
+                        Button {
+                            UIPasteboard.general.string = preview.kopierText
+                            didCopy = true
+                        } label: {
+                            Label(didCopy ? "Kopiert" : "Kopieren", systemImage: didCopy ? "checkmark" : "doc.on.doc")
+                        }
+
+                        if let mailURL = preview.mailtoURL {
+                            Button {
+                                openURL(mailURL)
+                            } label: {
+                                Label("Mail öffnen", systemImage: "envelope")
+                            }
+                        }
+
+                        if let pdfURL = preview.pdfURL {
+                            Button {
+                                activePDF = IdentifiableURL(url: pdfURL)
+                            } label: {
+                                Label("PDF Vorschau", systemImage: "doc.richtext")
+                            }
+                        }
+                    } label: {
+                        Label("Senden", systemImage: "square.and.arrow.up")
+                    }
+                    .tint(.orange)
+                }
+            }
+            .sheet(item: $activePDF) { pdf in
+                PDFPreviewView(url: pdf.url)
+                    .ignoresSafeArea()
+            }
+        }
+    }
+}
+
+private extension AnfrageTextPreview {
+    var mailtoURL: URL? {
+        guard !empfaenger.isEmpty else { return nil }
+
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = empfaenger
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: betreff),
+            URLQueryItem(name: "body", value: body)
+        ]
+        return components.url
+    }
+}
+
+// MARK: - Lieferwarnung Preview-Bausteine
+
+private struct LieferwarnungBadge: View {
+    let warnstufe: WarnStufe
+
+    var body: some View {
+        Label(label, systemImage: icon)
+            .font(.caption2.weight(.semibold))
+            .labelStyle(.titleAndIcon)
+            .foregroundStyle(foreground)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(background, in: Capsule())
+            .accessibilityLabel(label)
+    }
+
+    private var label: String {
+        switch warnstufe {
+        case .keine:
+            "OK"
+        case .lieferungUnbestaetigt:
+            "48h"
+        case .terminKritisch:
+            "KRIT"
+        }
+    }
+
+    private var icon: String {
+        switch warnstufe {
+        case .keine:
+            "checkmark"
+        case .lieferungUnbestaetigt:
+            "exclamationmark"
+        case .terminKritisch:
+            "exclamationmark.triangle.fill"
+        }
+    }
+
+    private var foreground: Color {
+        switch warnstufe {
+        case .keine:
+            .green
+        case .lieferungUnbestaetigt:
+            .orange
+        case .terminKritisch:
+            .red
+        }
+    }
+
+    private var background: Color {
+        foreground.opacity(0.14)
+    }
+}
+
+private enum LieferwarnungDemoFactory {
+    static func anfragenByPositionId(for positionen: [LVPosition], now: Date = Date()) -> [NSManagedObjectID: UniversalAnfrage] {
+        var result: [NSManagedObjectID: UniversalAnfrage] = [:]
+        for (index, position) in positionen.enumerated() {
+            result[position.objectID] = makeAnfrage(for: position, index: index, now: now)
+        }
+        return result
+    }
+
+    private static func makeAnfrage(for position: LVPosition, index: Int, now: Date) -> UniversalAnfrage {
+        let warnschwelle: TimeInterval = 48 * 3_600
+        let offset: TimeInterval
+        switch index % 3 {
+        case 0: offset = warnschwelle + 24 * 3_600
+        case 1: offset = 24 * 3_600
+        default: offset = 12 * 3_600
         }
 
-        lines.append(String(repeating: "-", count: 60))
-        lines.append("")
-        lines.append("Bitte senden Sie uns ein Angebot zu.")
-        lines.append("")
-        lines.append("Mit freundlichen Grüßen")
-        if let bauherr = event.bauherr, !bauherr.isEmpty {
-            lines.append(bauherr)
-        }
-
-        return lines.joined(separator: "\n")
+        return UniversalAnfrage(
+            baustelleId: position.event?.objectID.uriRepresentation().absoluteString ?? "demo-baustelle",
+            status: .beauftragt,
+            positionen: [
+                BedarfsPosition(
+                    lvPositionId: position.objectID.uriRepresentation().absoluteString,
+                    posNr: position.posNr ?? "",
+                    material: position.bezeichnung ?? "Material",
+                    menge: position.menge,
+                    einheit: position.einheit ?? "",
+                    bedarfsquelle: BedarfsQuelle(
+                        typ: .lv,
+                        ref: position.posNr ?? "LV",
+                        datei: position.quellDatei,
+                        planblatt: nil,
+                        notiz: "Demo-Lieferwarnung",
+                        geprueftVon: nil
+                    )
+                )
+            ],
+            lieferung: LieferDetails(
+                beauftragtAm: now.addingTimeInterval(-24 * 3_600),
+                lieferfensterVon: now.addingTimeInterval(offset),
+                lieferfensterBis: now.addingTimeInterval(offset + 4 * 3_600)
+            )
+        )
     }
 }
 

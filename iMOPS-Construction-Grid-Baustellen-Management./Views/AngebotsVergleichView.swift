@@ -63,7 +63,7 @@ struct AngebotsVergleichView: View {
                     Button("Fertig") { dismiss() }.tint(.orange)
                 }
             }
-            .sheet(item: $editTarget) { pos in
+            .fullScreenCover(item: $editTarget) { pos in
                 AngebotEingabeView(
                     position: pos,
                     initialAngebot: editAngebot,
@@ -137,16 +137,26 @@ struct AngebotsVergleichView: View {
                     editAngebot = nil
                     editTarget  = pos
                 } label: {
-                    Image(systemName: "plus.circle")
+                    Label("Rückmeldung", systemImage: "plus.circle")
+                        .font(.caption.weight(.semibold))
+                        .labelStyle(.titleAndIcon)
                         .foregroundStyle(.orange)
                 }
+                .buttonStyle(.borderless)
             }
 
             // Angebotszeilen
             if angebote.isEmpty {
-                Text("Noch kein Angebot erfasst")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .padding(.leading, 4)
+                Button {
+                    editAngebot = nil
+                    editTarget = pos
+                } label: {
+                    Label("Angebot / Rückmeldung erfassen", systemImage: "plus.circle")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.borderless)
+                .padding(.leading, 4)
             } else {
                 VStack(spacing: 4) {
                     ForEach(angebote, id: \.lieferant) { ang in
@@ -188,6 +198,25 @@ struct AngebotsVergleichView: View {
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(isBest ? Color.orange.opacity(0.07) : Color.clear)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                        HStack(spacing: 6) {
+                            Label(ang.lieferstatus.label, systemImage: ang.lieferstatus.icon)
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(ang.lieferstatus.color)
+                            if let lieferbarAb = ang.lieferbarAb {
+                                Text("ab \(lieferbarAb, format: .dateTime.day().month().year())")
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                            if !ang.notiz.isEmpty {
+                                Text("·").foregroundStyle(.secondary)
+                                Text(ang.notiz)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .padding(.horizontal, 30)
                     }
                 }
             }
@@ -207,6 +236,9 @@ struct AngebotEingabeView: View {
     @State private var lieferant = "Scharpegge"
     @State private var einzelpreis = ""
     @State private var notiz = ""
+    @State private var lieferstatus: AngebotsLieferstatus = .unbekannt
+    @State private var hatLieferdatum = false
+    @State private var lieferbarAb = Date()
 
     private let lieferanten = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
 
@@ -250,6 +282,18 @@ struct AngebotEingabeView: View {
                         }
                     }
                 }
+                Section("Verfügbarkeit") {
+                    Picker("Status", selection: $lieferstatus) {
+                        ForEach(AngebotsLieferstatus.allCases, id: \.self) { status in
+                            Label(status.label, systemImage: status.icon).tag(status)
+                        }
+                    }
+                    Toggle("Lieferdatum bekannt", isOn: $hatLieferdatum)
+                        .tint(.orange)
+                    if hatLieferdatum {
+                        DatePicker("Lieferbar ab", selection: $lieferbarAb, displayedComponents: .date)
+                    }
+                }
                 Section("Notiz (optional)") {
                     TextField("z.B. Gültig bis 31.12., Lieferzeit 2 Wochen", text: $notiz, axis: .vertical)
                         .lineLimit(2...4)
@@ -266,7 +310,9 @@ struct AngebotEingabeView: View {
                         onSave(Angebot(
                             lieferant: lieferant,
                             einzelpreis: epDouble,
-                            notiz: notiz
+                            notiz: notiz,
+                            lieferbarAb: hatLieferdatum ? lieferbarAb : nil,
+                            lieferstatus: lieferstatus
                         ))
                         dismiss()
                     }
@@ -279,8 +325,42 @@ struct AngebotEingabeView: View {
                     lieferant    = a.lieferant
                     einzelpreis  = String(format: "%.2f", a.einzelpreis).replacingOccurrences(of: ".", with: ",")
                     notiz        = a.notiz
+                    lieferstatus = a.lieferstatus
+                    if let datum = a.lieferbarAb {
+                        lieferbarAb = datum
+                        hatLieferdatum = true
+                    }
                 }
             }
+        }
+    }
+}
+
+private extension AngebotsLieferstatus {
+    var label: String {
+        switch self {
+        case .unbekannt: return "Lieferstatus offen"
+        case .verfuegbar: return "verfügbar"
+        case .aufAnfrage: return "auf Anfrage"
+        case .nichtVerfuegbar: return "nicht verfügbar"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .unbekannt: return "questionmark.circle"
+        case .verfuegbar: return "checkmark.circle.fill"
+        case .aufAnfrage: return "clock"
+        case .nichtVerfuegbar: return "xmark.circle.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .unbekannt: return .secondary
+        case .verfuegbar: return .green
+        case .aufAnfrage: return .orange
+        case .nichtVerfuegbar: return .red
         }
     }
 }

@@ -991,15 +991,11 @@ enum HouseProjectGenerator {
         Gesamt: \(gk)
         """
 
-        // Checklist aus Bauphasen
-        // Checklist aus Bauphasen
-                var extras = EventExtrasPayload()
-                extras.checklist = result.phasen.map { phase in
-                    EventChecklistItem(title: "\(phase.name) (KW+\(phase.startWoche)–\(phase.endeWoche))")
-                }
-                
-                // GENIALER iMOPS-ANTER: Hier brennen wir das Haus mitsamt allen Toiletten ins JSON!
-                extras.savedHouseProject = result.project
+        var extras = EventExtrasPayload()
+        extras.houseProject = result.project
+        extras.checklist = result.phasen.map { phase in
+            EventChecklistItem(title: "\(phase.name) (KW+\(phase.startWoche)–\(phase.endeWoche))")
+        }
 
         // Materialien aus Katalog verlinken
         let bekannteCodeMap: [String: String] = [

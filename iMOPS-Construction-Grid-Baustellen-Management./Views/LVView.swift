@@ -13,30 +13,31 @@ struct LVView: View {
 
     @FetchRequest private var positionen: FetchedResults<LVPosition>
     @State private var sourcePDFURL: URL? = nil
-    @State private var showingAdd            = false
+    @State private var showingAdd = false
     @State private var editPosition: LVPosition?
+    @State private var actionPosition: LVPosition?
     @State private var positionToDelete: LVPosition?
     @State private var kalkPosition: LVPosition?
     @State private var fortschrittPosition: LVPosition?
     @State private var aufmassPosition: LVPosition?
-    @State private var showBestellliste      = false
+    @State private var showBestellliste = false
     @State private var showAngebotsVergleich = false
-    @State private var showKostenübersicht   = false
-    @State private var showImport            = false
-    @State private var showGAEBImport        = false
+    @State private var showKostenübersicht = false
+    @State private var showImport = false
+    @State private var showGAEBImport = false
     @State private var droppedGAEBURL: URL?
-    @State private var showHelp              = false
+    @State private var showHelp = false
     @State private var exportURL: URL?
-    // GAEB X84 – Warnung wenn Preise fehlen
-    @State private var showMissingPricesAlert = false
-    @State private var missingPricesCount    = 0
-    @State private var pendingExportFormat: GAEBExportFormat?
-    // XRechnung – Warnung wenn Preise fehlen
-    @State private var showXRMissingAlert    = false
-    @State private var xrMissingCount        = 0
 
-    @StateObject private var store      = AngebotsStore.shared
-    @StateObject private var fortStore  = LVFortschrittStore.shared
+    @State private var showMissingPricesAlert = false
+    @State private var missingPricesCount = 0
+    @State private var pendingExportFormat: GAEBExportFormat?
+
+    @State private var showXRMissingAlert = false
+    @State private var xrMissingCount = 0
+
+    @StateObject private var store = AngebotsStore.shared
+    @StateObject private var fortStore = LVFortschrittStore.shared
 
     init(event: Event) {
         self.event = event
@@ -64,7 +65,6 @@ struct LVView: View {
         return Double(sum) / Double(base.count) / 100.0
     }
 
-    // NEU: Berechnung der Angebotssumme (Hierarchie: Tiefenkalk > Lieferant > Direkt)
     private var gesamtSumme: Double {
         Array(positionen).filter { !LVPositionHelper.isAlternative($0) }.reduce(0.0) { sum, pos in
             let preis: Double
@@ -88,7 +88,6 @@ struct LVView: View {
                     description: Text("Tippe auf + oder importiere ein LV.")
                 )
             } else {
-                // Gesamtfortschritt banner
                 if gesamtFortschritt > 0 {
                     Section {
                         VStack(alignment: .leading, spacing: 6) {
@@ -115,57 +114,57 @@ struct LVView: View {
                             LVPositionRow(position: pos) { targetURL in
                                 sourcePDFURL = targetURL
                             }
-                                .contentShape(Rectangle())
-                                .onTapGesture { editPosition = pos }
-                                .contextMenu {
-                                    Button { editPosition = pos } label: {
-                                        Label("Bearbeiten", systemImage: "pencil")
-                                    }
-                                    Button { kalkPosition = pos } label: {
-                                        Label("Kalkulation", systemImage: "function")
-                                    }
-                                    Button { duplicateAsAlternative(pos) } label: {
-                                        Label("Alternative", systemImage: "doc.on.doc")
-                                    }
-                                    Button { fortschrittPosition = pos } label: {
-                                        Label("Fortschritt", systemImage: "chart.bar")
-                                    }
-                                    Button { aufmassPosition = pos } label: {
-                                        Label("Aufmaß", systemImage: "ruler")
-                                    }
-                                    Divider()
-                                    Button(role: .destructive) { positionToDelete = pos } label: {
-                                        Label("Löschen", systemImage: "trash")
-                                    }
+                            .contentShape(Rectangle())
+                            .onTapGesture { actionPosition = pos }
+                            .contextMenu {
+                                Button { editPosition = pos } label: {
+                                    Label("Bearbeiten", systemImage: "pencil")
                                 }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button { positionToDelete = pos } label: {
-                                        Label("Löschen", systemImage: "trash")
-                                    }
-                                    .tint(.red)
+                                Button { kalkPosition = pos } label: {
+                                    Label("Kalkulation", systemImage: "function")
                                 }
-                                .swipeActions(edge: .leading) {
-                                    Button { editPosition = pos } label: {
-                                        Label("Bearbeiten", systemImage: "pencil")
-                                    }
-                                    .tint(.orange)
-                                    Button { kalkPosition = pos } label: {
-                                        Label("Kalkulation", systemImage: "function")
-                                    }
-                                    .tint(.indigo)
-                                    Button { duplicateAsAlternative(pos) } label: {
-                                        Label("Alternative", systemImage: "doc.on.doc")
-                                    }
-                                    .tint(.blue)
-                                    Button { fortschrittPosition = pos } label: {
-                                        Label("Fortschritt", systemImage: "chart.bar")
-                                    }
-                                    .tint(.green)
-                                    Button { aufmassPosition = pos } label: {
-                                        Label("Aufmaß", systemImage: "ruler")
-                                    }
-                                    .tint(.teal)
+                                Button { duplicateAsAlternative(pos) } label: {
+                                    Label("Alternative", systemImage: "doc.on.doc")
                                 }
+                                Button { fortschrittPosition = pos } label: {
+                                    Label("Fortschritt", systemImage: "chart.bar")
+                                }
+                                Button { aufmassPosition = pos } label: {
+                                    Label("Aufmaß", systemImage: "ruler")
+                                }
+                                Divider()
+                                Button(role: .destructive) { positionToDelete = pos } label: {
+                                    Label("Löschen", systemImage: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button { positionToDelete = pos } label: {
+                                    Label("Löschen", systemImage: "trash")
+                                }
+                                .tint(.red)
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button { editPosition = pos } label: {
+                                    Label("Bearbeiten", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                                Button { kalkPosition = pos } label: {
+                                    Label("Kalkulation", systemImage: "function")
+                                }
+                                .tint(.indigo)
+                                Button { duplicateAsAlternative(pos) } label: {
+                                    Label("Alternative", systemImage: "doc.on.doc")
+                                }
+                                .tint(.blue)
+                                Button { fortschrittPosition = pos } label: {
+                                    Label("Fortschritt", systemImage: "chart.bar")
+                                }
+                                .tint(.green)
+                                Button { aufmassPosition = pos } label: {
+                                    Label("Aufmaß", systemImage: "ruler")
+                                }
+                                .tint(.teal)
+                            }
                         }
                     } header: {
                         kgHeader(gruppe)
@@ -174,7 +173,6 @@ struct LVView: View {
             }
         }
         .listStyle(.insetGrouped)
-        // NEU: Klebende Summenleiste unten
         .safeAreaInset(edge: .bottom) {
             if gesamtSumme > 0 {
                 HStack {
@@ -204,7 +202,6 @@ struct LVView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    // --- Lieferanten & Preise ---
                     Button { showBestellliste = true } label: {
                         Label("Bestellliste", systemImage: "envelope.badge")
                     }
@@ -221,7 +218,6 @@ struct LVView: View {
 
                     Divider()
 
-                    // --- Exportieren ---
                     Button { generatePDF() } label: {
                         Label("LV als PDF", systemImage: "arrow.up.doc")
                     }
@@ -249,7 +245,6 @@ struct LVView: View {
 
                     Divider()
 
-                    // --- Importieren ---
                     Button { showImport = true } label: {
                         Label("Aus PDF importieren", systemImage: "doc.text.magnifyingglass")
                     }
@@ -269,11 +264,11 @@ struct LVView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingAdd) {
+        .fullScreenCover(isPresented: $showingAdd) {
             AddLVPositionView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(item: $editPosition) { pos in
+        .fullScreenCover(item: $editPosition) { pos in
             AddLVPositionView(event: event, editPosition: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
@@ -281,27 +276,27 @@ struct LVView: View {
             LVTiefenkalkulationView(position: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(item: $fortschrittPosition) { pos in
+        .fullScreenCover(item: $fortschrittPosition) { pos in
             LVFortschrittSheet(position: pos)
         }
-        .sheet(item: $aufmassPosition) { pos in
+        .fullScreenCover(item: $aufmassPosition) { pos in
             AufmassSheet(position: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showBestellliste) {
+        .fullScreenCover(isPresented: $showBestellliste) {
             LieferantenBestelllisteView(event: event, positionen: Array(positionen))
         }
-        .sheet(isPresented: $showAngebotsVergleich) {
+        .fullScreenCover(isPresented: $showAngebotsVergleich) {
             AngebotsVergleichView(event: event, positionen: Array(positionen))
         }
-        .sheet(isPresented: $showKostenübersicht) {
+        .fullScreenCover(isPresented: $showKostenübersicht) {
             KostenübersichtView(event: event, positionen: Array(positionen))
         }
-        .sheet(isPresented: $showImport) {
+        .fullScreenCover(isPresented: $showImport) {
             LVImportView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showGAEBImport, onDismiss: { droppedGAEBURL = nil }) {
+        .fullScreenCover(isPresented: $showGAEBImport, onDismiss: { droppedGAEBURL = nil }) {
             GAEBImportView(event: event, initialURL: droppedGAEBURL)
                 .environment(\.managedObjectContext, viewContext)
         }
@@ -312,17 +307,64 @@ struct LVView: View {
                 showGAEBImport = true
             }
         }
-        .sheet(item: $exportURL) { url in
+        .fullScreenCover(item: $exportURL) { url in
             LVShareSheet(url: url).ignoresSafeArea()
         }
-        .sheet(isPresented: $showHelp) {
+        .fullScreenCover(isPresented: $showHelp) {
             LVHelpView()
         }
-        .sheet(item: Binding(
+        .fullScreenCover(item: Binding(
             get: { sourcePDFURL.map { IdentifiableURL(url: $0) } },
             set: { sourcePDFURL = $0?.url }
         )) { identifiableURL in
             PDFPreviewView(url: identifiableURL.url)
+        }
+        .confirmationDialog(
+            actionPosition?.bezeichnung ?? "LV-Position",
+            isPresented: Binding(
+                get: { actionPosition != nil },
+                set: { if !$0 { actionPosition = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let pos = actionPosition {
+                Button {
+                    showAngebotsVergleich = true
+                    actionPosition = nil
+                } label: {
+                    Label("Rückmeldung / Angebot erfassen", systemImage: "chart.bar.doc.horizontal")
+                }
+                Button {
+                    editPosition = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Position bearbeiten", systemImage: "pencil")
+                }
+                Button {
+                    kalkPosition = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Kalkulation", systemImage: "function")
+                }
+                Button {
+                    fortschrittPosition = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Fortschritt", systemImage: "chart.bar")
+                }
+                Button {
+                    aufmassPosition = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Aufmaß", systemImage: "ruler")
+                }
+                Button(role: .destructive) {
+                    positionToDelete = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Löschen", systemImage: "trash")
+                }
+            }
         }
         .modifier(DeletePositionConfirm(position: $positionToDelete) { delete($0) })
         .alert("Fehlende Preise", isPresented: $showMissingPricesAlert) {
@@ -348,7 +390,7 @@ struct LVView: View {
             Text("KG \(gruppe.kg) – \(dinBezeichnung(gruppe.kg))")
                 .font(.caption.weight(.semibold))
             Spacer()
-            let basis    = gruppe.items.filter { !LVPositionHelper.isAlternative($0) }
+            let basis = gruppe.items.filter { !LVPositionHelper.isAlternative($0) }
             let altCount = gruppe.items.count - basis.count
             if altCount > 0 {
                 Text("\(altCount) Alt.")
@@ -383,14 +425,14 @@ struct LVView: View {
     private func duplicateAsAlternative(_ base: LVPosition) {
         let alt = LVPosition(context: viewContext)
         let baseNr = base.posNr ?? "1"
-        alt.posNr              = LVPositionHelper.nextAlternativeNr(for: baseNr, existing: Array(positionen))
-        alt.bezeichnung        = (base.bezeichnung ?? "") + " (Alternative)"
-        alt.menge              = base.menge
-        alt.einheit            = base.einheit
+        alt.posNr = LVPositionHelper.nextAlternativeNr(for: baseNr, existing: Array(positionen))
+        alt.bezeichnung = (base.bezeichnung ?? "") + " (Alternative)"
+        alt.menge = base.menge
+        alt.einheit = base.einheit
         alt.kostenGruppeNummer = base.kostenGruppeNummer
-        alt.artikelNummer      = base.artikelNummer
-        alt.lieferant          = base.lieferant
-        alt.event              = event
+        alt.artikelNummer = base.artikelNummer
+        alt.lieferant = base.lieferant
+        alt.event = event
         try? viewContext.save()
     }
 
@@ -414,7 +456,7 @@ struct LVView: View {
                 LVKalkulator.effektiverEP(for: pos, store: store) == 0
             }.count
             if missing > 0 {
-                missingPricesCount  = missing
+                missingPricesCount = missing
                 pendingExportFormat = format
                 showMissingPricesAlert = true
                 return
@@ -431,7 +473,7 @@ struct LVView: View {
             store: store
         )
         let title = (event.title ?? "Baustelle").replacingOccurrences(of: " ", with: "-")
-        let name  = "\(title)-\(format.filenameSuffix).xml"
+        let name = "\(title)-\(format.filenameSuffix).xml"
         writeAndShare(data: data, filename: name)
         pendingExportFormat = nil
     }
@@ -442,7 +484,7 @@ struct LVView: View {
             LVKalkulator.effektiverEP(for: pos, store: store) == 0
         }.count
         if missing > 0 {
-            xrMissingCount    = missing
+            xrMissingCount = missing
             showXRMissingAlert = true
             return
         }
@@ -489,634 +531,7 @@ struct LVView: View {
         case "500": return "Außenanlagen"
         case "600": return "Ausstattung"
         case "700": return "Baunebenkosten"
-        default:    return "Sonstige"
+        default: return "Sonstige"
         }
     }
-}
-
-// MARK: - Alternative Position Helper
-
-enum LVPositionHelper {
-    static func isAlternative(_ pos: LVPosition) -> Bool {
-        guard let nr = pos.posNr else { return false }
-        return nr.range(of: #"\.A\d"#, options: .regularExpression) != nil
-    }
-    static func baseNr(for nr: String) -> String {
-        guard let range = nr.range(of: #"\.A\d+$"#, options: .regularExpression) else { return nr }
-        return String(nr[nr.startIndex..<range.lowerBound])
-    }
-    static func nextAlternativeNr(for baseNr: String, existing: [LVPosition]) -> String {
-        let rootNr = isAlternativeNr(baseNr) ? Self.baseNr(for: baseNr) : baseNr
-        let maxIdx = existing.compactMap { $0.posNr }
-            .filter { $0.hasPrefix(rootNr + ".A") }
-            .compactMap { nr -> Int? in
-                guard let r = nr.range(of: #"\.A(\d+)$"#, options: .regularExpression) else { return nil }
-                return Int(nr[r].dropFirst(2))
-            }.max() ?? 0
-        return "\(rootNr).A\(maxIdx + 1)"
-    }
-    private static func isAlternativeNr(_ nr: String) -> Bool {
-        nr.range(of: #"\.A\d"#, options: .regularExpression) != nil
-    }
-}
-
-// MARK: - Position Row
-
-struct DeletePositionConfirm: ViewModifier {
-    @Binding var position: LVPosition?
-    let onDelete: (LVPosition) -> Void
-
-    func body(content: Content) -> some View {
-        content.alert(
-            "Position aus dem LV entfernen?",
-            isPresented: Binding(
-                get: { position != nil },
-                set: { if !$0 { position = nil } }
-            ),
-            presenting: position
-        ) { pos in
-            Button("Ja, löschen", role: .destructive) {
-                onDelete(pos)
-                position = nil
-            }
-            Button("Abbrechen", role: .cancel) { position = nil }
-        } message: { pos in
-            if let folgen = pos.loeschFolgen {
-                Text("\(pos.posNr ?? "") \(pos.bezeichnung ?? "") hat \(folgen). Alle werden mitgelöscht — das lässt sich nicht rückgängig machen.")
-            } else {
-                Text("\(pos.posNr ?? "") \(pos.bezeichnung ?? "") wird dauerhaft entfernt. Das lässt sich nicht rückgängig machen.")
-            }
-        }
-    }
-}
-
-struct LVPositionRow: View {
-    @ObservedObject var position: LVPosition
-    @StateObject private var store      = AngebotsStore.shared
-    @StateObject private var fortStore  = LVFortschrittStore.shared
-
-    private var positionID: String { position.objectID.uriRepresentation().absoluteString }
-    private var isAlt: Bool { LVPositionHelper.isAlternative(position) }
-    
-    @State private var direktPreis: String = ""
-    
-    // NEU: Callback nach oben an die Liste, um das PDF zu öffnen
-    var onOpenSourceDocument: ((URL) -> Void)? = nil
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                if isAlt {
-                    Text("ALT")
-                        .font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 5).padding(.vertical, 2)
-                        .background(Color.blue).clipShape(Capsule())
-                }
-                Text(position.posNr ?? "–")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(isAlt ? .blue : .secondary)
-                    .frame(width: isAlt ? nil : 52, alignment: .leading)
-                Text(position.bezeichnung ?? "–")
-                    .font(.body).lineLimit(2)
-                    .foregroundStyle(isAlt ? .secondary : .primary)
-                
-                Spacer()
-                
-                Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "")")
-                    .font(.footnote.monospacedDigit())
-                    .foregroundStyle(isAlt ? .secondary : .primary)
-            }
-            
-            // PREIS-ZEILE (direkte Eingabe oder Anzeige)
-            HStack(spacing: 6) {
-                if position.hatKalkulation {
-                    let kalk = LVKalkulator.kalkuliere(position: position)
-                    Image(systemName: "function").font(.caption2).foregroundStyle(.indigo)
-                    Text(kalk.einheitspreisVK, format: .currency(code: "EUR"))
-                        .font(.caption.monospacedDigit()).foregroundStyle(.indigo)
-                    Text("EP (Tiefenkalk)").font(.caption2).foregroundStyle(.secondary)
-                    
-                    Spacer()
-                    
-                    Text((position.menge * kalk.einheitspreisVK).formatted(.currency(code: "EUR")))
-                        .font(.caption.weight(.semibold)).foregroundStyle(.indigo)
-                    
-                } else if let best = store.guenstigster(for: positionID) {
-                    Image(systemName: "tag.fill").font(.caption2).foregroundStyle(.green)
-                    Text(best.einzelpreis, format: .currency(code: "EUR"))
-                        .font(.caption.monospacedDigit()).foregroundStyle(.green)
-                    Text("EP (Angebot)").font(.caption2).foregroundStyle(.secondary)
-                    
-                    Spacer()
-                    
-                    Text((position.menge * best.einzelpreis).formatted(.currency(code: "EUR")))
-                        .font(.caption.weight(.semibold)).foregroundStyle(.green)
-                    
-                } else {
-                    Text("EP:")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    TextField("0,00", text: $direktPreis)
-                        .keyboardType(.decimalPad)
-                        .frame(width: 70)
-                        .textFieldStyle(.roundedBorder)
-                        .onAppear {
-                            let val = position.value(forKey: "einkaufspreis") as? Double ?? 0
-                            if val > 0 { direktPreis = String(format: "%.2f", val).replacingOccurrences(of: ".", with: ",") }
-                        }
-                        .onChange(of: direktPreis) { _, newValue in
-                            let cleaned = newValue.replacingOccurrences(of: ",", with: ".")
-                            let preis = Double(cleaned) ?? 0.0
-                            position.setValue(preis, forKey: "einkaufspreis")
-                            try? position.managedObjectContext?.save()
-                        }
-                    
-                    Spacer()
-                    
-                    let val = position.value(forKey: "einkaufspreis") as? Double ?? 0
-                    if val > 0 {
-                        Text((position.menge * val).formatted(.currency(code: "EUR")))
-                            .font(.caption.weight(.semibold)).foregroundStyle(.gray)
-                    }
-                }
-            }
-            
-            // NEU: Quellen-Chip unter dem Preis, falls aus einer Statik/PDF extrahiert
-            if let docName = position.value(forKey: "dokuName") as? String, !docName.isEmpty {
-                HStack {
-                    Button {
-                        if let pathString = position.value(forKey: "dokuPath") as? String, let url = URL(string: pathString) {
-                            onOpenSourceDocument?(url)
-                        } else {
-                            // Fallback: Suche im standardmäßigen App-Sandbox Ordner CADFiles
-                            let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-                            let fallbackURL = docsDir.appendingPathComponent("CADFiles").appendingPathComponent(docName)
-                            onOpenSourceDocument?(fallbackURL)
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "doc.text.magnifyingglass")
-                            Text(docName)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        .font(.system(size: 11, weight: .medium))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.orange.opacity(0.12))
-                        .foregroundStyle(.orange)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.borderless) // Verhindert, dass die List-Row den Klick abfängt
-                    Spacer()
-                }
-                .padding(.top, 2)
-            }
-            
-            ZeilenFortschritt(
-                wert: position.displayedFortschritt(
-                    manuellerProzent: fortStore.fortschritt(for: positionID)?.prozent
-                )
-            )
-        }
-        .padding(.vertical, 2)
-        .opacity(isAlt ? 0.85 : 1.0)
-    }
-}
-
-private struct ZeilenFortschritt: View {
-    let wert: FortschrittWert
-
-    var body: some View {
-        switch wert {
-        case .unbestimmt:
-            EmptyView()
-        case .geschaetzt(let p):
-            balken(p, tint: .orange, icon: "pencil")
-        case .gemessen(let p):
-            balken(p, tint: p >= 100 ? .green : .blue, icon: "ruler")
-        }
-    }
-
-    @ViewBuilder
-    private func balken(_ prozent: Double, tint: Color, icon: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 9)).foregroundStyle(tint)
-            ProgressView(value: min(prozent, 100), total: 100)
-                .progressViewStyle(.linear).tint(tint)
-            Text("\(Int(prozent.rounded())) %")
-                .font(.caption2.monospacedDigit()).foregroundStyle(tint)
-                .frame(width: 46, alignment: .trailing)
-        }
-    }
-}
-
-// MARK: - Fortschritt Sheet
-
-struct LVFortschrittSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let position: LVPosition
-    @StateObject private var store = LVFortschrittStore.shared
-
-    @State private var prozent:   Double
-    @State private var bemerkung: String
-
-    init(position: LVPosition) {
-        self.position = position
-        let id = position.objectID.uriRepresentation().absoluteString
-        let existing = LVFortschrittStore.shared.fortschritt(for: id)
-        _prozent   = State(initialValue: Double(existing?.prozent ?? 0))
-        _bemerkung = State(initialValue: existing?.bemerkung ?? "")
-    }
-
-    private var farbe: Color {
-        Int(prozent) == 100 ? .green : Int(prozent) > 0 ? .orange : .secondary
-    }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                if position.hatAufmass, let g = position.gemessenerFortschrittProzent {
-                    Section {
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "ruler").foregroundStyle(.blue).padding(.top, 2)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Aufmaß übersteuert deine Schätzung.")
-                                    .font(.callout.weight(.medium))
-                                Text("Angezeigt wird die Messung: \(Int(g.rounded())) %. Deine Einschätzung (\(Int(prozent)) %) bleibt gespeichert.")
-                                    .font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer(minLength: 4)
-                            PhilosophieTooltip(
-                                buchKapitel: "Buch Kap 9",
-                                text: "Sag dir, warum dein Schieber den Balken nicht bewegt — statt dich rätseln zu lassen."
-                            )
-                        }
-                    }
-                }
-                Section {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(position.bezeichnung ?? "–")
-                            .font(.body).lineLimit(3)
-                        HStack {
-                            Text(position.posNr ?? "").font(.caption).foregroundStyle(.secondary)
-                            Spacer()
-                            Text("\(Int(prozent)) %")
-                                .font(.title.weight(.bold).monospacedDigit())
-                                .foregroundStyle(farbe)
-                        }
-                        ProgressView(value: prozent, total: 100)
-                            .progressViewStyle(.linear)
-                            .tint(farbe)
-                        Slider(value: $prozent, in: 0...100, step: 5)
-                            .tint(farbe)
-                    }
-                    .padding(.vertical, 4)
-
-                    HStack(spacing: 6) {
-                        ForEach([0, 25, 50, 75, 100], id: \.self) { v in
-                            Button { prozent = Double(v) } label: {
-                                Text("\(v) %")
-                                    .font(.caption)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 7)
-                                    .background(Int(prozent) == v ? farbe : Color(.tertiarySystemFill))
-                                    .foregroundStyle(Int(prozent) == v ? .white : .primary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                } header: { Text("Fertigstellungsgrad") }
-
-                Section("Bemerkung (optional)") {
-                    HStack(alignment: .top, spacing: 8) {
-                        TextField("Status-Notiz...", text: $bemerkung, axis: .vertical)
-                            .lineLimit(2...4)
-                        VoiceInputButton(text: $bemerkung).padding(.top, 2)
-                    }
-                }
-            }
-            .navigationTitle("Fortschritt")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Sichern") { save() }.tint(.orange)
-                }
-            }
-        }
-    }
-
-    private func save() {
-        let id = position.objectID.uriRepresentation().absoluteString
-        if Int(prozent) == 0 {
-            store.remove(for: id)
-        } else {
-            store.setFortschritt(
-                LVFortschritt(prozent: Int(prozent), bemerkung: bemerkung), for: id)
-        }
-        dismiss()
-    }
-}
-
-// MARK: - Add / Edit Sheet
-
-struct AddLVPositionView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-    @Environment(\.dismiss) private var dismiss
-
-    let event: Event
-    var editPosition: LVPosition?
-
-    @State private var posNr = ""
-    @State private var bezeichnung = ""
-    @State private var menge = ""
-    @State private var einheit = "m²"
-    @State private var kg = "320"
-    @State private var artikelNummer = ""
-    @State private var lieferant = ""
-    @State private var isAlternative = false
-    @State private var showKatalog = false
-
-    let einheiten  = ["m²", "m³", "lfm", "Stück", "kg", "t", "Psch", "h"]
-    let lieferanten = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
-
-    var isValid: Bool {
-        !bezeichnung.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        Double(menge.replacingOccurrences(of: ",", with: ".")) != nil
-    }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Position") {
-                    HStack {
-                        Text("Pos.-Nr.").foregroundStyle(.secondary).frame(width: 80, alignment: .leading)
-                        TextField("1.1.01", text: $posNr).keyboardType(.numbersAndPunctuation)
-                    }
-                    TextField("Bezeichnung *", text: $bezeichnung, axis: .vertical).lineLimit(2...4)
-                    Toggle(isOn: $isAlternative) {
-                        Label("Alternativposition", systemImage: "doc.on.doc")
-                            .foregroundStyle(isAlternative ? .blue : .primary)
-                    }
-                    .tint(.blue)
-                    if isAlternative {
-                        Text("Wird als .A1, .A2 … an die Basisposition angehängt.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                Section("Menge & Einheit") {
-                    HStack {
-                        TextField("0,00", text: $menge).keyboardType(.decimalPad).frame(maxWidth: 120)
-                        Picker("Einheit", selection: $einheit) {
-                            ForEach(einheiten, id: \.self) { Text($0) }
-                        }.pickerStyle(.menu)
-                    }
-                }
-                Section("DIN 276 Kostengruppe") {
-                    NavigationLink { KGPickerList(selected: $kg) } label: {
-                        HStack { Text("KG"); Spacer(); Text(kg).foregroundStyle(.orange) }
-                    }
-                }
-                Section("Material / Lieferant (optional)") {
-                    HStack {
-                        TextField("Artikelnummer", text: $artikelNummer)
-                        Button { showKatalog = true } label: {
-                            Image(systemName: "books.vertical").foregroundStyle(.orange)
-                        }
-                    }
-                    Picker("Lieferant", selection: $lieferant) {
-                        Text("–").tag("")
-                        ForEach(lieferanten, id: \.self) { Text($0).tag($0) }
-                    }
-                }
-            }
-            .navigationTitle(editPosition == nil ? "Neue Position" : "Position bearbeiten")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Sichern") { save() }.disabled(!isValid).tint(.orange)
-                }
-            }
-            .onAppear { prefill() }
-            .sheet(isPresented: $showKatalog) {
-                KatalogPickerSheet { entry in
-                    artikelNummer = entry.code ?? ""
-                    if lieferant.isEmpty {
-                        if (entry.kategorie ?? "").hasPrefix("Scharpegge") { lieferant = "Scharpegge" }
-                        else if (entry.kategorie ?? "").hasPrefix("Hauff") { lieferant = "Hauff" }
-                    }
-                    if bezeichnung.isEmpty { bezeichnung = entry.name ?? "" }
-                }
-                .environment(\.managedObjectContext, viewContext)
-            }
-        }
-    }
-
-    private func prefill() {
-        guard let p = editPosition else { return }
-        posNr         = p.posNr ?? ""
-        bezeichnung   = p.bezeichnung ?? ""
-        menge         = p.menge == 0 ? "" : String(format: "%.2f", p.menge).replacingOccurrences(of: ".", with: ",")
-        einheit       = p.einheit ?? "m²"
-        kg            = p.kostenGruppeNummer ?? "320"
-        artikelNummer = p.artikelNummer ?? ""
-        lieferant     = p.lieferant ?? ""
-        isAlternative = LVPositionHelper.isAlternative(p)
-    }
-
-    private func save() {
-        let pos = editPosition ?? LVPosition(context: viewContext)
-        var nr  = posNr.trimmingCharacters(in: .whitespacesAndNewlines)
-        if isAlternative && !nr.isEmpty && !nr.contains(".A") {
-            let req = NSFetchRequest<LVPosition>(entityName: "LVPosition")
-            req.predicate = NSPredicate(format: "event == %@", event)
-            let all = (try? viewContext.fetch(req)) ?? []
-            nr = LVPositionHelper.nextAlternativeNr(for: nr, existing: all)
-        }
-        pos.posNr              = nr.isEmpty ? nil : nr
-        pos.bezeichnung        = bezeichnung
-        pos.menge              = Double(menge.replacingOccurrences(of: ",", with: ".")) ?? 0
-        pos.einheit            = einheit
-        pos.kostenGruppeNummer = kg
-        pos.artikelNummer      = artikelNummer.isEmpty ? nil : artikelNummer
-        pos.lieferant          = lieferant.isEmpty ? nil : lieferant
-        pos.event              = event
-        try? viewContext.save()
-        dismiss()
-    }
-}
-
-// MARK: - KG Picker
-
-struct KGPickerList: View {
-    @Binding var selected: String
-    @Environment(\.dismiss) private var dismiss
-
-    let kgs: [(nr: String, name: String)] = [
-        ("100","Grundstück"),("200","Herrichten & Erschließen"),
-        ("300","Baukonstruktionen"),("310","Baugrube"),("320","Gründung"),
-        ("330","Außenwände"),("340","Innenwände"),("350","Decken"),
-        ("360","Dächer"),("370","Infrastruktur"),("380","Fenster & Türen"),
-        ("390","Sonstige Baukonstruktion"),("400","Technische Anlagen"),
-        ("410","Abwasser, Wasser, Gas"),("420","Wärmeversorgung"),
-        ("430","Lufttechnische Anlagen"),("440","Starkstrom"),
-        ("450","Fernmelde- & IT-Anlagen"),("500","Außenanlagen"),
-        ("600","Ausstattung"),("700","Baunebenkosten")
-    ]
-
-    var body: some View {
-        List(kgs, id: \.nr) { kg in
-            Button { selected = kg.nr; dismiss() } label: {
-                HStack {
-                    Text("KG \(kg.nr)").font(.body.monospacedDigit()).foregroundStyle(.primary)
-                    Text(kg.name).foregroundStyle(.secondary)
-                    Spacer()
-                    if selected == kg.nr { Image(systemName: "checkmark").foregroundStyle(.orange) }
-                }
-            }
-        }
-        .navigationTitle("Kostengruppe wählen")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-// MARK: - Katalog Picker
-
-struct KatalogPickerSheet: View {
-    @Environment(\.managedObjectContext) private var viewContext
-    @Environment(\.dismiss) private var dismiss
-    let onSelect: (CDLexikonEntry) -> Void
-
-    @FetchRequest(
-        sortDescriptors: [
-            NSSortDescriptor(keyPath: \CDLexikonEntry.kategorie, ascending: true),
-            NSSortDescriptor(keyPath: \CDLexikonEntry.name, ascending: true)
-        ]
-    ) private var entries: FetchedResults<CDLexikonEntry>
-
-    @State private var search = ""
-
-    private var filtered: [CDLexikonEntry] {
-        guard !search.isEmpty else { return Array(entries) }
-        let q = search.lowercased()
-        return entries.filter {
-            ($0.name ?? "").lowercased().contains(q) ||
-            ($0.code ?? "").lowercased().contains(q) ||
-            ($0.kategorie ?? "").lowercased().contains(q)
-        }
-    }
-
-    private var grouped: [(String, [CDLexikonEntry])] {
-        Dictionary(grouping: filtered, by: { $0.kategorie ?? "Sonstige" }).sorted { $0.key < $1.key }
-    }
-
-    var body: some View {
-        NavigationStack {
-            List {
-                ForEach(grouped, id: \.0) { kat, items in
-                    Section(kat) {
-                        ForEach(items, id: \.objectID) { entry in
-                            Button { onSelect(entry); dismiss() } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(entry.name ?? "").foregroundStyle(.primary)
-                                    HStack(spacing: 4) {
-                                        Text(entry.code ?? "").font(.caption).foregroundStyle(.secondary)
-                                        if let d = entry.details, !d.isEmpty {
-                                            Text("·").foregroundStyle(.secondary)
-                                            Text(d).font(.caption).foregroundStyle(.secondary)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .searchable(text: $search, prompt: "Artikel suchen...")
-            .navigationTitle("Katalog")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
-            }
-        }
-    }
-}
-
-// MARK: - Share Sheet
-
-struct LVShareSheet: UIViewControllerRepresentable {
-    let url: URL
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [url], applicationActivities: nil)
-    }
-    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
-}
-
-// MARK: - Hilfe LV
-
-struct LVHelpView: View {
-    @Environment(\.dismiss) var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Was ist das LV?") {
-                    Text("Das Leistungsverzeichnis listet alle Bauleistungen strukturiert auf — mit Nummer, Beschreibung, Menge und Einheit.")
-                }
-                Section("Positionen") {
-                    Label("+  anlegen, Swipe-links bearbeiten, Swipe-rechts löschen", systemImage: "hand.point.left")
-                    Label("Swipe-links: 'Alternative' erstellt Alternativposition (.A1, .A2 …)", systemImage: "doc.on.doc")
-                    Label("Swipe-links: 'Fortschritt' → Fertigstellungsgrad 0–100 %", systemImage: "chart.bar")
-                    Label("Sortierung: DIN 276 Kostengruppe → Pos.-Nr.", systemImage: "list.number")
-                }
-                Section("Fortschrittserfassung") {
-                    Label("Fortschritt pro Position: Slider + Schnell-Buttons (0/25/50/75/100 %)", systemImage: "chart.bar.fill")
-                    Label("Gesamtfortschritt-Banner oben in der Liste (Ø aller Positionen)", systemImage: "gauge.open.with.lines.needle.33percent")
-                    Label("Ø-Fortschritt pro KG im Abschnitts-Header", systemImage: "list.number")
-                }
-                Section("Kostenzusammenfassung") {
-                    Label("⋯ → 'Kostenzusammenfassung': Netto/MwSt/Brutto + KG-Balken", systemImage: "chart.pie")
-                    Label("MwSt-Satz aus Settings (Standard: 19 %)", systemImage: "percent")
-                    Label("Fehlende Preise werden rot markiert", systemImage: "exclamationmark.triangle")
-                }
-                Section("GAEB DA XML 3.3") {
-                    Label("⋯ → 'GAEB X83 importieren': Angebotsaufforderung einlesen", systemImage: "doc.badge.arrow.up")
-                    Label("⋯ → 'GAEB X84 exportieren': bepreistes Angebot rausschreiben", systemImage: "signature")
-                    Label("Preisquelle für X84: günstigster Eintrag im Angebotsvergleich", systemImage: "tag.fill")
-                }
-                Section("XRechnung (E-Rechnung)") {
-                    Label("⋯ → 'XRechnung exportieren': CII XML nach EN 16931 / XRechnung 2.2", systemImage: "eurosign.circle")
-                    Label("Firmendaten & MwSt-Satz in Settings konfigurierbar", systemImage: "gearshape")
-                }
-                Section("PDF Import & Export") {
-                    Label("⋯ → 'Aus PDF importieren': Heuristik-Parser für LV-PDFs", systemImage: "doc.text.magnifyingglass")
-                    Label("⋯ → 'LV als PDF': formatiertes PDF nach DIN 276", systemImage: "arrow.up.doc")
-                }
-                Section("Bestellliste & Angebotsvergleich") {
-                    Label("Bestellliste: vorausgefüllte Preisanfrage-Mail pro Lieferant", systemImage: "envelope.badge")
-                    Label("Angebotsvergleich: EP/GP erfassen, günstigster grün markiert", systemImage: "chart.bar.doc.horizontal")
-                }
-            }
-            .navigationTitle("Hilfe: Leistungsverzeichnis")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fertig") { dismiss() }.tint(.orange)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Navigation Helpers
-
-// JETZT GLOBAL AUßERHALB DER VIEWS: Damit jede View im File darauf zugreifen kann!
-struct IdentifiableURL: Identifiable {
-    let id = UUID()
-    let url: URL
 }

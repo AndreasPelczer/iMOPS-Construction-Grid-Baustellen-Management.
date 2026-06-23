@@ -11,7 +11,7 @@ struct EventExtrasPayload: Codable {
     var checklist: [EventChecklistItem] = []
     var pinnedProductIDs: [String] = []
     var pinnedLexikonCodes: [String] = []
-    var savedHouseProject: HouseProject? = nil 
+    var houseProject: HouseProject? = nil
 }
 
 struct EventChecklistItem: Codable, Identifiable, Equatable {
@@ -91,6 +91,11 @@ struct EventDetailView: View {
 
     private var lvPositionenCount: Int { event.lvPositionen?.count ?? 0 }
 
+    private var housePlanningResult: HouseProjectResult? {
+        guard let houseProject = extras.houseProject else { return nil }
+        return HouseProjectGenerator.generate(from: houseProject)
+    }
+
     private var lvGesamtFortschritt: Double {
         let positionen = (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
             .filter { !LVPositionHelper.isAlternative($0) }
@@ -121,6 +126,9 @@ struct EventDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 headerCard
+                if housePlanningResult != nil {
+                    grundplanungCard
+                }
                 Button {
                     let offeneMaengel = (event.maengel?.allObjects as? [Mangel] ?? []).filter { $0.status == .offen || $0.status == .inArbeit }.count
                     if offeneMaengel > 0 {
@@ -679,6 +687,51 @@ struct EventDetailView: View {
             Text("•").foregroundStyle(.secondary)
             Text(date, style: .time).font(.footnote).foregroundStyle(.secondary)
         }
+    }
+
+    // MARK: - GRUNDPLANUNG CARD
+    private var grundplanungCard: some View {
+        Group {
+            if let result = housePlanningResult {
+                NavigationLink {
+                    HouseProjectResultView(
+                        result: result,
+                        allowsCreateEvent: false
+                    )
+                    .environment(\.managedObjectContext, viewContext)
+                } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: "house.and.flag.fill")
+                            .font(.title2)
+                            .foregroundStyle(.orange)
+                            .frame(width: 36)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Grundplanung").font(.headline).foregroundStyle(.primary)
+                            Text("\(Int(result.project.wohnflaeche)) m² · \(result.project.geschosse) Geschoss(e) · \(formatCurrencyShort(result.gesamtkosten))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func formatCurrencyShort(_ value: Double) -> String {
+        let fmt = NumberFormatter()
+        fmt.numberStyle = .currency
+        fmt.currencyCode = "EUR"
+        fmt.locale = Locale(identifier: "de_DE")
+        fmt.maximumFractionDigits = 0
+        return fmt.string(from: NSNumber(value: value)) ?? "\(Int(value)) EUR"
     }
 
     // MARK: - CAD CARD

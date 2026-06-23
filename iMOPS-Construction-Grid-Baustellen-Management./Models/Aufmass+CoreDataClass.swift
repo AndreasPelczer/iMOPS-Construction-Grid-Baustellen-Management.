@@ -2,4 +2,6 @@ import Foundation
 import CoreData
 
 @objc(Aufmass)
-class Aufmass: NSManagedObject {}
+public class Aufmass: NSManagedObject {
+}
+
