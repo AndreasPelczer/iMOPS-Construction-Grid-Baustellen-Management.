@@ -1,5 +1,6 @@
 import SwiftUI
 import MessageUI
+import CoreData
 
 // MARK: - Lieferanten-Kontakte
 
@@ -33,6 +34,10 @@ struct LieferantenBestelllisteView: View {
     @State private var activeMailLieferant: String?
     @State private var showMailCompose = false
     @State private var showMailUnavailable = false
+
+    private var demoAnfragenByPosNr: [String: UniversalAnfrage] {
+        LieferwarnungDemoFactory.anfragenByPosNr(for: positionen)
+    }
 
     private var grouped: [(lieferant: String, positionen: [LVPosition])] {
         let known = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
@@ -115,18 +120,24 @@ struct LieferantenBestelllisteView: View {
         let info = lieferantInfos[gruppe.lieferant]
         Section {
             ForEach(gruppe.positionen, id: \.objectID) { pos in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(pos.bezeichnung ?? "–").font(.body)
-                    HStack(spacing: 6) {
-                        if let art = pos.artikelNummer, !art.isEmpty {
-                            Text(art).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                            Text("·").foregroundStyle(.secondary)
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(pos.bezeichnung ?? "–").font(.body)
+                        HStack(spacing: 6) {
+                            if let art = pos.artikelNummer, !art.isEmpty {
+                                Text(art).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                                Text("·").foregroundStyle(.secondary)
+                            }
+                            Text("\(pos.menge.formatted(.number.precision(.fractionLength(0...2)))) \(pos.einheit ?? "")")
+                                .font(.caption).foregroundStyle(.secondary)
+                            if let kg = pos.kostenGruppeNummer, !kg.isEmpty {
+                                Text("· KG \(kg)").font(.caption).foregroundStyle(.secondary)
+                            }
                         }
-                        Text("\(pos.menge.formatted(.number.precision(.fractionLength(0...2)))) \(pos.einheit ?? "")")
-                            .font(.caption).foregroundStyle(.secondary)
-                        if let kg = pos.kostenGruppeNummer, !kg.isEmpty {
-                            Text("· KG \(kg)").font(.caption).foregroundStyle(.secondary)
-                        }
+                    }
+                    Spacer(minLength: 8)
+                    if let posNr = pos.posNr, let anfrage = demoAnfragenByPosNr[posNr] {
+                        LieferwarnungBadge(warnstufe: anfrage.aktuelleWarnstufe)
                     }
                 }
                 .padding(.vertical, 2)
@@ -171,7 +182,6 @@ struct LieferantenBestelllisteView: View {
 
     private func mailBody(lieferant: String) -> String {
         let pos = grouped.first(where: { $0.lieferant == lieferant })?.positionen ?? []
-        let info = lieferantInfos[lieferant]
         var lines: [String] = []
         lines.append("Guten Tag,")
         lines.append("")
@@ -203,6 +213,113 @@ struct LieferantenBestelllisteView: View {
         }
 
         return lines.joined(separator: "\n")
+    }
+}
+
+// MARK: - Lieferwarnung Preview-Bausteine
+
+private struct LieferwarnungBadge: View {
+    let warnstufe: WarnStufe
+
+    var body: some View {
+        Label(label, systemImage: icon)
+            .font(.caption2.weight(.semibold))
+            .labelStyle(.iconOnly)
+            .foregroundStyle(foreground)
+            .frame(width: 26, height: 26)
+            .background(background, in: Circle())
+            .accessibilityLabel(label)
+    }
+
+    private var label: String {
+        switch warnstufe {
+        case .keine:
+            "Lieferung im Plan"
+        case .lieferungUnbestaetigt:
+            "Lieferung unbestätigt"
+        case .terminKritisch:
+            "Liefertermin kritisch"
+        }
+    }
+
+    private var icon: String {
+        switch warnstufe {
+        case .keine:
+            "checkmark"
+        case .lieferungUnbestaetigt:
+            "exclamationmark"
+        case .terminKritisch:
+            "exclamationmark.triangle.fill"
+        }
+    }
+
+    private var foreground: Color {
+        switch warnstufe {
+        case .keine:
+            .green
+        case .lieferungUnbestaetigt:
+            .orange
+        case .terminKritisch:
+            .red
+        }
+    }
+
+    private var background: Color {
+        foreground.opacity(0.14)
+    }
+}
+
+private enum LieferwarnungDemoFactory {
+    static func anfragenByPosNr(for positionen: [LVPosition], now: Date = Date()) -> [String: UniversalAnfrage] {
+        let demoPositionen = positionen
+            .compactMap { pos -> (String, LVPosition)? in
+                guard let posNr = pos.posNr, !posNr.isEmpty else { return nil }
+                return (posNr, pos)
+            }
+            .prefix(3)
+
+        var result: [String: UniversalAnfrage] = [:]
+        for (index, item) in demoPositionen.enumerated() {
+            result[item.0] = makeAnfrage(for: item.1, index: index, now: now)
+        }
+        return result
+    }
+
+    private static func makeAnfrage(for position: LVPosition, index: Int, now: Date) -> UniversalAnfrage {
+        let warnschwelle: TimeInterval = 48 * 3_600
+        let offset: TimeInterval
+        switch index {
+        case 0: offset = warnschwelle + 24 * 3_600
+        case 1: offset = 24 * 3_600
+        default: offset = -6 * 3_600
+        }
+
+        return UniversalAnfrage(
+            baustelleId: position.event?.objectID.uriRepresentation().absoluteString ?? "demo-baustelle",
+            status: .beauftragt,
+            positionen: [
+                BedarfsPosition(
+                    lvPositionId: position.objectID.uriRepresentation().absoluteString,
+                    posNr: position.posNr ?? "",
+                    material: position.bezeichnung ?? "Material",
+                    menge: position.menge,
+                    einheit: position.einheit ?? "",
+                    bedarfsquelle: BedarfsQuelle(
+                        typ: .lv,
+                        ref: position.posNr ?? "LV",
+                        datei: position.quellDatei,
+                        planblatt: nil,
+                        notiz: "Demo-Lieferwarnung",
+                        geprueftVon: nil
+                    )
+                )
+            ],
+            lieferung: LieferDetails(
+                beauftragtAm: now.addingTimeInterval(-24 * 3_600),
+                lieferfensterVon: now.addingTimeInterval(offset),
+                lieferfensterBis: now.addingTimeInterval(offset + 4 * 3_600)
+            )
+        )
     }
 }
 
