@@ -15,6 +15,7 @@ struct LVView: View {
     @State private var sourcePDFURL: URL? = nil
     @State private var showingAdd = false
     @State private var editPosition: LVPosition?
+    @State private var actionPosition: LVPosition?
     @State private var positionToDelete: LVPosition?
     @State private var kalkPosition: LVPosition?
     @State private var fortschrittPosition: LVPosition?
@@ -114,7 +115,7 @@ struct LVView: View {
                                 sourcePDFURL = targetURL
                             }
                             .contentShape(Rectangle())
-                            .onTapGesture { editPosition = pos }
+                            .onTapGesture { actionPosition = pos }
                             .contextMenu {
                                 Button { editPosition = pos } label: {
                                     Label("Bearbeiten", systemImage: "pencil")
@@ -263,11 +264,11 @@ struct LVView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingAdd) {
+        .fullScreenCover(isPresented: $showingAdd) {
             AddLVPositionView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(item: $editPosition) { pos in
+        .fullScreenCover(item: $editPosition) { pos in
             AddLVPositionView(event: event, editPosition: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
@@ -275,27 +276,27 @@ struct LVView: View {
             LVTiefenkalkulationView(position: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(item: $fortschrittPosition) { pos in
+        .fullScreenCover(item: $fortschrittPosition) { pos in
             LVFortschrittSheet(position: pos)
         }
-        .sheet(item: $aufmassPosition) { pos in
+        .fullScreenCover(item: $aufmassPosition) { pos in
             AufmassSheet(position: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
         .fullScreenCover(isPresented: $showBestellliste) {
             LieferantenBestelllisteView(event: event, positionen: Array(positionen))
         }
-        .sheet(isPresented: $showAngebotsVergleich) {
+        .fullScreenCover(isPresented: $showAngebotsVergleich) {
             AngebotsVergleichView(event: event, positionen: Array(positionen))
         }
-        .sheet(isPresented: $showKostenübersicht) {
+        .fullScreenCover(isPresented: $showKostenübersicht) {
             KostenübersichtView(event: event, positionen: Array(positionen))
         }
-        .sheet(isPresented: $showImport) {
+        .fullScreenCover(isPresented: $showImport) {
             LVImportView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showGAEBImport, onDismiss: { droppedGAEBURL = nil }) {
+        .fullScreenCover(isPresented: $showGAEBImport, onDismiss: { droppedGAEBURL = nil }) {
             GAEBImportView(event: event, initialURL: droppedGAEBURL)
                 .environment(\.managedObjectContext, viewContext)
         }
@@ -306,17 +307,64 @@ struct LVView: View {
                 showGAEBImport = true
             }
         }
-        .sheet(item: $exportURL) { url in
+        .fullScreenCover(item: $exportURL) { url in
             LVShareSheet(url: url).ignoresSafeArea()
         }
-        .sheet(isPresented: $showHelp) {
+        .fullScreenCover(isPresented: $showHelp) {
             LVHelpView()
         }
-        .sheet(item: Binding(
+        .fullScreenCover(item: Binding(
             get: { sourcePDFURL.map { IdentifiableURL(url: $0) } },
             set: { sourcePDFURL = $0?.url }
         )) { identifiableURL in
             PDFPreviewView(url: identifiableURL.url)
+        }
+        .confirmationDialog(
+            actionPosition?.bezeichnung ?? "LV-Position",
+            isPresented: Binding(
+                get: { actionPosition != nil },
+                set: { if !$0 { actionPosition = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let pos = actionPosition {
+                Button {
+                    showAngebotsVergleich = true
+                    actionPosition = nil
+                } label: {
+                    Label("Rückmeldung / Angebot erfassen", systemImage: "chart.bar.doc.horizontal")
+                }
+                Button {
+                    editPosition = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Position bearbeiten", systemImage: "pencil")
+                }
+                Button {
+                    kalkPosition = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Kalkulation", systemImage: "function")
+                }
+                Button {
+                    fortschrittPosition = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Fortschritt", systemImage: "chart.bar")
+                }
+                Button {
+                    aufmassPosition = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Aufmaß", systemImage: "ruler")
+                }
+                Button(role: .destructive) {
+                    positionToDelete = pos
+                    actionPosition = nil
+                } label: {
+                    Label("Löschen", systemImage: "trash")
+                }
+            }
         }
         .modifier(DeletePositionConfirm(position: $positionToDelete) { delete($0) })
         .alert("Fehlende Preise", isPresented: $showMissingPricesAlert) {

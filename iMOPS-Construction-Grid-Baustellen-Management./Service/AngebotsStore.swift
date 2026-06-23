@@ -8,6 +8,41 @@ struct Angebot: Codable, Equatable {
     var einzelpreis: Double
     var notiz: String = ""
     var datum: Date = Date()
+    var lieferbarAb: Date?
+    var lieferstatus: AngebotsLieferstatus = .unbekannt
+
+    init(
+        lieferant: String,
+        einzelpreis: Double,
+        notiz: String = "",
+        datum: Date = Date(),
+        lieferbarAb: Date? = nil,
+        lieferstatus: AngebotsLieferstatus = .unbekannt
+    ) {
+        self.lieferant = lieferant
+        self.einzelpreis = einzelpreis
+        self.notiz = notiz
+        self.datum = datum
+        self.lieferbarAb = lieferbarAb
+        self.lieferstatus = lieferstatus
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        lieferant = try container.decode(String.self, forKey: .lieferant)
+        einzelpreis = try container.decode(Double.self, forKey: .einzelpreis)
+        notiz = try container.decodeIfPresent(String.self, forKey: .notiz) ?? ""
+        datum = try container.decodeIfPresent(Date.self, forKey: .datum) ?? Date()
+        lieferbarAb = try container.decodeIfPresent(Date.self, forKey: .lieferbarAb)
+        lieferstatus = try container.decodeIfPresent(AngebotsLieferstatus.self, forKey: .lieferstatus) ?? .unbekannt
+    }
+}
+
+enum AngebotsLieferstatus: String, Codable, CaseIterable, Equatable {
+    case unbekannt
+    case verfuegbar
+    case aufAnfrage
+    case nichtVerfuegbar
 }
 
 // MARK: - Store
