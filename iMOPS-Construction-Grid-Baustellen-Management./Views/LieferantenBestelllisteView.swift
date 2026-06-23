@@ -173,43 +173,65 @@ struct LieferantenBestelllisteView: View {
     // MARK: - Mail-Inhalte
 
     private func mailBetreff(lieferant: String) -> String {
-        let prefix = lieferantInfos[lieferant]?.betreffPrefix ?? "Anfrage"
-        return "\(prefix) – \(event.title ?? "Baustelle")"
+        LieferantenAnfrageFormatter.betreff(
+            kontakt: kontakt(for: lieferant),
+            kontext: anfrageKontext()
+        )
     }
 
     private func mailBody(lieferant: String) -> String {
         let pos = grouped.first(where: { $0.lieferant == lieferant })?.positionen ?? []
-        var lines: [String] = []
-        lines.append("Guten Tag,")
-        lines.append("")
-        lines.append("für unser Bauprojekt \"\(event.title ?? "Baustelle")\"\(event.location.map { " in \($0)" } ?? "") benötigen wir folgende Materialien:")
-        lines.append("")
-        lines.append(String(repeating: "-", count: 60))
+        return LieferantenAnfrageFormatter.text(
+            kontakt: kontakt(for: lieferant),
+            kontext: anfrageKontext(),
+            anfrage: anfrage(positionen: pos)
+        )
+    }
 
-        for (i, p) in pos.enumerated() {
-            let nr = p.posNr ?? "\(i+1)"
-            let bez = p.bezeichnung ?? "–"
-            let menge = p.menge.formatted(.number.precision(.fractionLength(0...2)))
-            let einheit = p.einheit ?? ""
-            let art = p.artikelNummer.map { " [Art.-Nr.: \($0)]" } ?? ""
-            lines.append("\(nr). \(bez)\(art)")
-            lines.append("   Menge: \(menge) \(einheit)")
-            if let kg = p.kostenGruppeNummer, !kg.isEmpty {
-                lines.append("   KG \(kg)")
-            }
-            lines.append("")
-        }
+    private func kontakt(for lieferant: String) -> LieferantenAnfrageKontakt {
+        let info = lieferantInfos[lieferant]
+        return LieferantenAnfrageKontakt(
+            name: info?.name ?? lieferant,
+            email: info?.email ?? "",
+            betreffPrefix: info?.betreffPrefix ?? "Anfrage"
+        )
+    }
 
-        lines.append(String(repeating: "-", count: 60))
-        lines.append("")
-        lines.append("Bitte senden Sie uns ein Angebot zu.")
-        lines.append("")
-        lines.append("Mit freundlichen Grüßen")
-        if let bauherr = event.bauherr, !bauherr.isEmpty {
-            lines.append(bauherr)
-        }
+    private func anfrageKontext() -> LieferantenAnfrageKontext {
+        LieferantenAnfrageKontext(
+            baustelle: event.title ?? "Baustelle",
+            baustellenNummer: event.eventNumber,
+            standort: event.location,
+            bauherr: event.bauherr
+        )
+    }
 
-        return lines.joined(separator: "\n")
+    private func anfrage(positionen: [LVPosition]) -> UniversalAnfrage {
+        UniversalAnfrage(
+            baustelleId: event.objectID.uriRepresentation().absoluteString,
+            status: .angefragt,
+            positionen: positionen.enumerated().map { index, pos in
+                BedarfsPosition(
+                    lvPositionId: pos.objectID.uriRepresentation().absoluteString,
+                    posNr: pos.posNr ?? "\(index + 1)",
+                    material: pos.bezeichnung ?? "Material",
+                    menge: pos.menge,
+                    einheit: pos.einheit ?? "",
+                    bedarfsquelle: BedarfsQuelle(
+                        typ: .lv,
+                        ref: pos.posNr ?? "\(index + 1)",
+                        datei: pos.quellDatei,
+                        planblatt: nil,
+                        notiz: pos.artikelNummer.map { "Artikel: \($0)" },
+                        geprueftVon: nil
+                    )
+                )
+            },
+            lieferung: LieferDetails(
+                lieferfensterVon: Date(),
+                lieferfensterBis: Date().addingTimeInterval(48 * 3_600)
+            )
+        )
     }
 }
 
