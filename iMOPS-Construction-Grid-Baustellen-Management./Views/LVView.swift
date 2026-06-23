@@ -288,7 +288,7 @@ struct LVView: View {
             AufmassSheet(position: pos)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showBestellliste) {
+        .fullScreenCover(isPresented: $showBestellliste) {
             LieferantenBestelllisteView(event: event, positionen: Array(positionen))
         }
         .sheet(isPresented: $showAngebotsVergleich) {
