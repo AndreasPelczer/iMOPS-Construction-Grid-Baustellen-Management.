@@ -1,6 +1,7 @@
 import SwiftUI
 import MessageUI
 import CoreData
+import UIKit
 
 // MARK: - Lieferanten-Kontakte
 
@@ -33,7 +34,7 @@ struct LieferantenBestelllisteView: View {
 
     @State private var activeMailLieferant: String?
     @State private var showMailCompose = false
-    @State private var showMailUnavailable = false
+    @State private var previewAnfrage: AnfrageTextPreview?
 
     private var demoAnfragenByPositionId: [NSManagedObjectID: UniversalAnfrage] {
         LieferwarnungDemoFactory.anfragenByPositionId(for: positionen)
@@ -81,10 +82,8 @@ struct LieferantenBestelllisteView: View {
                     .ignoresSafeArea()
                 }
             }
-            .alert("Mail nicht verfügbar", isPresented: $showMailUnavailable) {
-                Button("OK") {}
-            } message: {
-                Text("Auf diesem Gerät ist kein Mail-Account eingerichtet.")
+            .sheet(item: $previewAnfrage) { preview in
+                AnfrageTextPreviewView(preview: preview)
             }
         }
     }
@@ -147,7 +146,11 @@ struct LieferantenBestelllisteView: View {
                     if MFMailComposeViewController.canSendMail() {
                         showMailCompose = true
                     } else {
-                        showMailUnavailable = true
+                        previewAnfrage = AnfrageTextPreview(
+                            empfaenger: lieferantInfos[gruppe.lieferant]?.email ?? "",
+                            betreff: mailBetreff(lieferant: gruppe.lieferant),
+                            body: mailBody(lieferant: gruppe.lieferant)
+                        )
                     }
                 } label: {
                     Label("Mail an \(info.name)", systemImage: "envelope.badge")
@@ -211,6 +214,72 @@ struct LieferantenBestelllisteView: View {
         }
 
         return lines.joined(separator: "\n")
+    }
+}
+
+// MARK: - Anfrage Text Preview
+
+private struct AnfrageTextPreview: Identifiable {
+    let id = UUID()
+    let empfaenger: String
+    let betreff: String
+    let body: String
+
+    var kopierText: String {
+        [
+            empfaenger.isEmpty ? nil : "An: \(empfaenger)",
+            "Betreff: \(betreff)",
+            "",
+            body
+        ]
+        .compactMap { $0 }
+        .joined(separator: "\n")
+    }
+}
+
+private struct AnfrageTextPreviewView: View {
+    let preview: AnfrageTextPreview
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var didCopy = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Empfänger") {
+                    Text(preview.empfaenger.isEmpty ? "Nicht hinterlegt" : preview.empfaenger)
+                        .font(.body.monospaced())
+                        .textSelection(.enabled)
+                }
+
+                Section("Betreff") {
+                    Text(preview.betreff)
+                        .textSelection(.enabled)
+                }
+
+                Section("Anfrage-Text") {
+                    Text(preview.body)
+                        .font(.body.monospaced())
+                        .textSelection(.enabled)
+                }
+            }
+            .navigationTitle("Anfrage")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Fertig") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        UIPasteboard.general.string = preview.kopierText
+                        didCopy = true
+                    } label: {
+                        Label(didCopy ? "Kopiert" : "Kopieren", systemImage: didCopy ? "checkmark" : "doc.on.doc")
+                    }
+                    .tint(.orange)
+                }
+            }
+        }
     }
 }
 
