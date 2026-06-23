@@ -143,10 +143,12 @@ struct LieferantenBestelllisteView: View {
             if let info {
                 Button {
                     activeMailLieferant = gruppe.lieferant
+                    let preview = anfragePreview(lieferant: gruppe.lieferant)
                     previewAnfrage = AnfrageTextPreview(
-                        empfaenger: lieferantInfos[gruppe.lieferant]?.email ?? "",
-                        betreff: mailBetreff(lieferant: gruppe.lieferant),
-                        body: mailBody(lieferant: gruppe.lieferant)
+                        empfaenger: preview.empfaenger,
+                        betreff: preview.betreff,
+                        body: preview.body,
+                        pdfURL: preview.pdfURL
                     )
                 } label: {
                     Label("Mail an \(info.name)", systemImage: "envelope.badge")
@@ -185,6 +187,25 @@ struct LieferantenBestelllisteView: View {
             kontakt: kontakt(for: lieferant),
             kontext: anfrageKontext(),
             anfrage: anfrage(positionen: pos)
+        )
+    }
+
+    private func anfragePreview(lieferant: String) -> AnfrageTextPreview {
+        let kontakt = kontakt(for: lieferant)
+        let kontext = anfrageKontext()
+        let pos = grouped.first(where: { $0.lieferant == lieferant })?.positionen ?? []
+        let anfrage = anfrage(positionen: pos)
+        let betreff = LieferantenAnfrageFormatter.betreff(kontakt: kontakt, kontext: kontext)
+        let body = LieferantenAnfrageFormatter.text(kontakt: kontakt, kontext: kontext, anfrage: anfrage)
+        let pdfURL = writeAnfragePDF(
+            data: LieferantenAnfragePDFExporter.generate(kontakt: kontakt, kontext: kontext, anfrage: anfrage),
+            lieferant: kontakt.name
+        )
+        return AnfrageTextPreview(
+            empfaenger: kontakt.email,
+            betreff: betreff,
+            body: body,
+            pdfURL: pdfURL
         )
     }
 
@@ -233,6 +254,25 @@ struct LieferantenBestelllisteView: View {
             )
         )
     }
+
+    private func writeAnfragePDF(data: Data, lieferant: String) -> URL? {
+        let projekt = safeFilename(event.title ?? "Baustelle")
+        let name = "Anfrage-\(safeFilename(lieferant))-\(projekt).pdf"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        do {
+            try data.write(to: url)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    private func safeFilename(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: " ", with: "-")
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+    }
 }
 
 // MARK: - Anfrage Text Preview
@@ -242,6 +282,7 @@ private struct AnfrageTextPreview: Identifiable {
     let empfaenger: String
     let betreff: String
     let body: String
+    let pdfURL: URL?
 
     var kopierText: String {
         [
@@ -261,6 +302,7 @@ private struct AnfrageTextPreviewView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
     @State private var didCopy = false
+    @State private var activePDF: IdentifiableURL?
 
     var body: some View {
         NavigationStack {
@@ -304,11 +346,23 @@ private struct AnfrageTextPreviewView: View {
                                 Label("Mail öffnen", systemImage: "envelope")
                             }
                         }
+
+                        if let pdfURL = preview.pdfURL {
+                            Button {
+                                activePDF = IdentifiableURL(url: pdfURL)
+                            } label: {
+                                Label("PDF Vorschau", systemImage: "doc.richtext")
+                            }
+                        }
                     } label: {
                         Label("Senden", systemImage: "square.and.arrow.up")
                     }
                     .tint(.orange)
                 }
+            }
+            .sheet(item: $activePDF) { pdf in
+                PDFPreviewView(url: pdf.url)
+                    .ignoresSafeArea()
             }
         }
     }
