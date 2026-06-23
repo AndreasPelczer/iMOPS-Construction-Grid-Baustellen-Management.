@@ -143,15 +143,11 @@ struct LieferantenBestelllisteView: View {
             if let info {
                 Button {
                     activeMailLieferant = gruppe.lieferant
-                    if MFMailComposeViewController.canSendMail() {
-                        showMailCompose = true
-                    } else {
-                        previewAnfrage = AnfrageTextPreview(
-                            empfaenger: lieferantInfos[gruppe.lieferant]?.email ?? "",
-                            betreff: mailBetreff(lieferant: gruppe.lieferant),
-                            body: mailBody(lieferant: gruppe.lieferant)
-                        )
-                    }
+                    previewAnfrage = AnfrageTextPreview(
+                        empfaenger: lieferantInfos[gruppe.lieferant]?.email ?? "",
+                        betreff: mailBetreff(lieferant: gruppe.lieferant),
+                        body: mailBody(lieferant: gruppe.lieferant)
+                    )
                 } label: {
                     Label("Mail an \(info.name)", systemImage: "envelope.badge")
                         .font(.subheadline.weight(.medium))
