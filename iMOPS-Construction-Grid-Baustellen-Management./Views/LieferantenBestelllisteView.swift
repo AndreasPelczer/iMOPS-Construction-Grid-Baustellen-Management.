@@ -35,8 +35,8 @@ struct LieferantenBestelllisteView: View {
     @State private var showMailCompose = false
     @State private var showMailUnavailable = false
 
-    private var demoAnfragenByPosNr: [String: UniversalAnfrage] {
-        LieferwarnungDemoFactory.anfragenByPosNr(for: positionen)
+    private var demoAnfragenByPositionId: [NSManagedObjectID: UniversalAnfrage] {
+        LieferwarnungDemoFactory.anfragenByPositionId(for: positionen)
     }
 
     private var grouped: [(lieferant: String, positionen: [LVPosition])] {
@@ -136,7 +136,7 @@ struct LieferantenBestelllisteView: View {
                         }
                     }
                     Spacer(minLength: 8)
-                    if let posNr = pos.posNr, let anfrage = demoAnfragenByPosNr[posNr] {
+                    if let anfrage = demoAnfragenByPositionId[pos.objectID] {
                         LieferwarnungBadge(warnstufe: anfrage.aktuelleWarnstufe)
                     }
                 }
@@ -224,21 +224,22 @@ private struct LieferwarnungBadge: View {
     var body: some View {
         Label(label, systemImage: icon)
             .font(.caption2.weight(.semibold))
-            .labelStyle(.iconOnly)
+            .labelStyle(.titleAndIcon)
             .foregroundStyle(foreground)
-            .frame(width: 26, height: 26)
-            .background(background, in: Circle())
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(background, in: Capsule())
             .accessibilityLabel(label)
     }
 
     private var label: String {
         switch warnstufe {
         case .keine:
-            "Lieferung im Plan"
+            "OK"
         case .lieferungUnbestaetigt:
-            "Lieferung unbestätigt"
+            "48h"
         case .terminKritisch:
-            "Liefertermin kritisch"
+            "KRIT"
         }
     }
 
@@ -270,17 +271,12 @@ private struct LieferwarnungBadge: View {
 }
 
 private enum LieferwarnungDemoFactory {
-    static func anfragenByPosNr(for positionen: [LVPosition], now: Date = Date()) -> [String: UniversalAnfrage] {
-        let demoPositionen = positionen
-            .compactMap { pos -> (String, LVPosition)? in
-                guard let posNr = pos.posNr, !posNr.isEmpty else { return nil }
-                return (posNr, pos)
-            }
-            .prefix(3)
+    static func anfragenByPositionId(for positionen: [LVPosition], now: Date = Date()) -> [NSManagedObjectID: UniversalAnfrage] {
+        let demoPositionen = positionen.prefix(3)
 
-        var result: [String: UniversalAnfrage] = [:]
-        for (index, item) in demoPositionen.enumerated() {
-            result[item.0] = makeAnfrage(for: item.1, index: index, now: now)
+        var result: [NSManagedObjectID: UniversalAnfrage] = [:]
+        for (index, position) in demoPositionen.enumerated() {
+            result[position.objectID] = makeAnfrage(for: position, index: index, now: now)
         }
         return result
     }
