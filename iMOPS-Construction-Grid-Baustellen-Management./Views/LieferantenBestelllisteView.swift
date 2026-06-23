@@ -236,6 +236,7 @@ private struct AnfrageTextPreview: Identifiable {
 private struct AnfrageTextPreviewView: View {
     let preview: AnfrageTextPreview
 
+    @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
     @State private var didCopy = false
 
@@ -266,16 +267,43 @@ private struct AnfrageTextPreviewView: View {
                     Button("Fertig") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        UIPasteboard.general.string = preview.kopierText
-                        didCopy = true
+                    Menu {
+                        Button {
+                            UIPasteboard.general.string = preview.kopierText
+                            didCopy = true
+                        } label: {
+                            Label(didCopy ? "Kopiert" : "Kopieren", systemImage: didCopy ? "checkmark" : "doc.on.doc")
+                        }
+
+                        if let mailURL = preview.mailtoURL {
+                            Button {
+                                openURL(mailURL)
+                            } label: {
+                                Label("Mail öffnen", systemImage: "envelope")
+                            }
+                        }
                     } label: {
-                        Label(didCopy ? "Kopiert" : "Kopieren", systemImage: didCopy ? "checkmark" : "doc.on.doc")
+                        Label("Senden", systemImage: "square.and.arrow.up")
                     }
                     .tint(.orange)
                 }
             }
         }
+    }
+}
+
+private extension AnfrageTextPreview {
+    var mailtoURL: URL? {
+        guard !empfaenger.isEmpty else { return nil }
+
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = empfaenger
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: betreff),
+            URLQueryItem(name: "body", value: body)
+        ]
+        return components.url
     }
 }
 
