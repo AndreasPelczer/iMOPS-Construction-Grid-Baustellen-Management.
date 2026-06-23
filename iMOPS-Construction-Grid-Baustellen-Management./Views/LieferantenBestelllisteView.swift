@@ -120,24 +120,22 @@ struct LieferantenBestelllisteView: View {
         let info = lieferantInfos[gruppe.lieferant]
         Section {
             ForEach(gruppe.positionen, id: \.objectID) { pos in
-                HStack(alignment: .top, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(pos.bezeichnung ?? "–").font(.body)
-                        HStack(spacing: 6) {
-                            if let art = pos.artikelNummer, !art.isEmpty {
-                                Text(art).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                                Text("·").foregroundStyle(.secondary)
-                            }
-                            Text("\(pos.menge.formatted(.number.precision(.fractionLength(0...2)))) \(pos.einheit ?? "")")
-                                .font(.caption).foregroundStyle(.secondary)
-                            if let kg = pos.kostenGruppeNummer, !kg.isEmpty {
-                                Text("· KG \(kg)").font(.caption).foregroundStyle(.secondary)
-                            }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(pos.bezeichnung ?? "–")
+                        .font(.body)
+                    HStack(spacing: 6) {
+                        if let anfrage = demoAnfragenByPositionId[pos.objectID] {
+                            LieferwarnungBadge(warnstufe: anfrage.aktuelleWarnstufe)
                         }
-                    }
-                    Spacer(minLength: 8)
-                    if let anfrage = demoAnfragenByPositionId[pos.objectID] {
-                        LieferwarnungBadge(warnstufe: anfrage.aktuelleWarnstufe)
+                        if let art = pos.artikelNummer, !art.isEmpty {
+                            Text(art).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            Text("·").foregroundStyle(.secondary)
+                        }
+                        Text("\(pos.menge.formatted(.number.precision(.fractionLength(0...2)))) \(pos.einheit ?? "")")
+                            .font(.caption).foregroundStyle(.secondary)
+                        if let kg = pos.kostenGruppeNummer, !kg.isEmpty {
+                            Text("· KG \(kg)").font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .padding(.vertical, 2)
@@ -272,10 +270,8 @@ private struct LieferwarnungBadge: View {
 
 private enum LieferwarnungDemoFactory {
     static func anfragenByPositionId(for positionen: [LVPosition], now: Date = Date()) -> [NSManagedObjectID: UniversalAnfrage] {
-        let demoPositionen = positionen.prefix(3)
-
         var result: [NSManagedObjectID: UniversalAnfrage] = [:]
-        for (index, position) in demoPositionen.enumerated() {
+        for (index, position) in positionen.enumerated() {
             result[position.objectID] = makeAnfrage(for: position, index: index, now: now)
         }
         return result
@@ -284,7 +280,7 @@ private enum LieferwarnungDemoFactory {
     private static func makeAnfrage(for position: LVPosition, index: Int, now: Date) -> UniversalAnfrage {
         let warnschwelle: TimeInterval = 48 * 3_600
         let offset: TimeInterval
-        switch index {
+        switch index % 3 {
         case 0: offset = warnschwelle + 24 * 3_600
         case 1: offset = 24 * 3_600
         default: offset = -6 * 3_600
