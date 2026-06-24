@@ -144,6 +144,15 @@ struct LVView: View {
                     description: Text("Tippe auf + oder importiere ein LV.")
                 )
             } else {
+                Section {
+                    Picker("LV-Ansicht", selection: $gruppierung) {
+                        ForEach(LVGruppierung.allCases) { option in
+                            Label(option.label, systemImage: option.systemImage).tag(option)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 if gesamtFortschritt > 0 {
                     Section {
                         VStack(alignment: .leading, spacing: 6) {
