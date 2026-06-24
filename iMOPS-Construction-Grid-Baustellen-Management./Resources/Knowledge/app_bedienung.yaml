@@ -182,6 +182,28 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_LV_Ansicht_umstellen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "LV Ansicht umstellen"
+    - "LV Dokumentstruktur"
+    - "LV nach Dokument sortieren"
+    - "LV nach KG anzeigen"
+    - "Leistungsverzeichnis Ansicht"
+    - "Wo sehe ich die Dokumentstruktur im LV"
+  antwort: |
+    Die LV-Liste kann in zwei Strukturen angezeigt werden:
+    1. Baustelle oeffnen und ins LV gehen
+    2. Oben rechts das Drei-Punkte-Menue oeffnen
+    3. Unter "Ansicht" zwischen "KG" und "Dokument" wechseln
+
+    "KG" gruppiert die Positionen nach DIN-276-Kostengruppe.
+    "Dokument" gruppiert sie nach der Positionsnummer, damit die Liste eher
+    wie das importierte LV, Angebot oder die Rechnung gelesen werden kann.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_CAD_Viewer"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
