@@ -213,6 +213,8 @@
     - "Positionen aus Vorlage übernehmen"
     - "Titel Baustelleneinrichtung anlegen"
     - "Standardpositionen ins LV übernehmen"
+    - "Eigene LV-Position hinzufügen"
+    - "Eigene Position im LV anlegen"
     - "LV Werkbank"
   antwort: |
     LV-Positionen aus lokalen Bausteinen übernehmen:
@@ -223,8 +225,14 @@
     5. Gewünschte Positionen anhaken
     6. "Übernehmen" tippen
 
+    Eigene Position im selben Sheet anlegen:
+    1. Im Abschnitt "Eigene Position" Pos.-Nr., Bezeichnung, Menge,
+       Einheit, EP und KG eintragen
+    2. "Eigene Position übernehmen" tippen
+
     Die Bausteine sind Vorlagen. iMOPS übernimmt Positionsnummer, Text, Menge,
-    Einheit, EP und KG. Menge, Preis und KG danach fachlich prüfen.
+    Einheit, EP und KG. Eigene Positionen werden direkt ins LV geschrieben.
+    Menge, Preis und KG danach fachlich prüfen.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
