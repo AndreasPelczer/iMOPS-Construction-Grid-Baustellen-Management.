@@ -37,15 +37,9 @@ struct BauWissenView: View {
 
     private var headerSection: some View {
         VStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(Color.orange.opacity(0.12))
-                    .frame(width: 80, height: 80)
-                Text("🐶")
-                    .font(.system(size: 40))
-            }
+            MopsAvatarView(kind: viewModel.useProf ? .prof : .mops, size: 88)
 
-            Text("Frag den Mops")
+            Text(viewModel.useProf ? "Frag den Prof" : "Frag den Mops")
                 .font(.title2)
                 .bold()
 
@@ -75,7 +69,7 @@ struct BauWissenView: View {
                 // Prof-Toggle
                 Toggle(isOn: $viewModel.useProf) {
                     HStack(spacing: 6) {
-                        Text(viewModel.useProf ? "🎓" : "🐶")
+                        MopsAvatarView(kind: viewModel.useProf ? .prof : .mops, size: 28)
                         Text(viewModel.useProf ? "Frag den Prof" : "Frag den Mops")
                             .font(.subheadline)
                     }
@@ -271,6 +265,47 @@ struct BauWissenView: View {
     }
 }
 
+private struct MopsAvatarView: View {
+    let kind: BauWissenExample.Kind
+    let size: CGFloat
+
+    private var imageName: String? {
+        switch kind {
+        case .mops:
+            return "bau_mops_avatar"
+        case .prof:
+            return "prof_mops_avatar"
+        case .localFachwissen, .localBedienung:
+            return nil
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(kind.accentColor.opacity(0.14))
+
+            if let imageName {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            } else {
+                Text(kind.icon)
+                    .font(.system(size: size * 0.46))
+            }
+        }
+        .frame(width: size, height: size)
+        .overlay(
+            Circle()
+                .stroke(kind.accentColor.opacity(0.28), lineWidth: max(1, size / 44))
+        )
+        .shadow(color: kind.accentColor.opacity(0.18), radius: size / 9, x: 0, y: size / 16)
+        .accessibilityHidden(true)
+    }
+}
+
 // MARK: - Example-Modell + Card
 
 struct BauWissenExample: Identifiable {
@@ -288,8 +323,8 @@ struct BauWissenExample: Identifiable {
     enum Kind {
         case localFachwissen   // 📖 grün, lokal
         case localBedienung    // 🔧 grün, lokal
-        case mops              // 🐶 orange, Server lokales LLM
-        case prof              // 🎓 lila, Server Claude
+        case mops              // Baustellenmops, Server lokales LLM
+        case prof              // Professormops, Server Cloud-Prof
 
         var icon: String {
             switch self {
@@ -318,8 +353,7 @@ struct ExampleCard: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
-                    Text(example.kind.icon)
-                        .font(.title3)
+                    MopsAvatarView(kind: example.kind, size: 30)
                     Spacer()
                 }
                 Text(example.frage)
