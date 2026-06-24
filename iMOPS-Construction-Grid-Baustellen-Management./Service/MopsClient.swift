@@ -7,10 +7,10 @@ private let logger = Logger(subsystem: "com.deadrabbit.imops", category: "MopsCl
 // Server-Konfiguration fuer den Mops. Die Base-URL ist konfigurierbar
 // (Settings → Mops-Server), damit User von unterwegs auch einen
 // Cloudflare-Tunnel oder Tailscale-Address eintragen koennen.
-// Default ist die Mops-Box im Heimnetz.
+// Default ist der dauerhafte Cloudflare-Tunnel zur Mops-Box.
 struct MopsConfig {
     /// Fallback-URL wenn der User nichts in Settings konfiguriert hat.
-    static let defaultHost = "http://192.168.2.42:8080"
+    static let defaultHost = "https://mops.baumops.com"
 
     /// UserDefaults-Keys fuer Server-Settings.
     enum Keys {
