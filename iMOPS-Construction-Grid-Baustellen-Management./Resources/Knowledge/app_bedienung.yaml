@@ -204,6 +204,30 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_LV_Bausteine"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "LV Bausteine"
+    - "LV-Bausteine auswählen"
+    - "Positionen aus Vorlage übernehmen"
+    - "Titel Baustelleneinrichtung anlegen"
+    - "Standardpositionen ins LV übernehmen"
+    - "LV Werkbank"
+  antwort: |
+    LV-Positionen aus lokalen Bausteinen übernehmen:
+    1. Baustelle öffnen und ins LV gehen
+    2. Oben rechts das Drei-Punkte-Menü öffnen
+    3. "LV-Bausteine auswählen" tippen
+    4. Titel wählen, z.B. "01 Baustelleneinrichtung"
+    5. Gewünschte Positionen anhaken
+    6. "Übernehmen" tippen
+
+    Die Bausteine sind Vorlagen. iMOPS übernimmt Positionsnummer, Text, Menge,
+    Einheit, EP und KG. Menge, Preis und KG danach fachlich prüfen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_CAD_Viewer"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

@@ -52,6 +52,7 @@ struct LVView: View {
     @State private var showKostenübersicht = false
     @State private var showImport = false
     @State private var showGAEBImport = false
+    @State private var showBausteine = false
     @State private var droppedGAEBURL: URL?
     @State private var showHelp = false
     @State private var exportURL: URL?
@@ -326,6 +327,10 @@ struct LVView: View {
                         Label("GAEB X83 importieren", systemImage: "doc.badge.arrow.up")
                     }
 
+                    Button { showBausteine = true } label: {
+                        Label("LV-Bausteine auswählen", systemImage: "checklist")
+                    }
+
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -371,6 +376,10 @@ struct LVView: View {
         }
         .fullScreenCover(isPresented: $showGAEBImport, onDismiss: { droppedGAEBURL = nil }) {
             GAEBImportView(event: event, initialURL: droppedGAEBURL)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .fullScreenCover(isPresented: $showBausteine) {
+            LVBausteinAuswahlView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
         .onChange(of: importedFileHandler.pendingGAEBURL) { _, newURL in
