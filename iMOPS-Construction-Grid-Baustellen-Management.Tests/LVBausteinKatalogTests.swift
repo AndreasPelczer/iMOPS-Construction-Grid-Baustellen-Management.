@@ -36,4 +36,17 @@ struct LVBausteinKatalogTests {
         #expect(sicherung?.bezeichnung == "Sicherungsmaßnahmen")
         #expect(herrichten?.kinder.contains { $0.nummer == "211" } == true)
     }
+
+    @Test func phase0UndAussenanlagenHabenDetailgruppen() {
+        let detailPflicht = ["230", "240", "250", "560", "570", "580"]
+
+        for nummer in detailPflicht {
+            let knoten = DIN276BaumKatalog.knoten(mitNummer: nummer)
+            #expect(knoten != nil)
+            #expect(knoten?.kinder.isEmpty == false)
+        }
+
+        #expect(DIN276BaumKatalog.knoten(mitNummer: "231")?.bezeichnung == "Abwasserentsorgung")
+        #expect(DIN276BaumKatalog.knoten(mitNummer: "571")?.bezeichnung == "Oberboden und Pflanzflächen")
+    }
 }
