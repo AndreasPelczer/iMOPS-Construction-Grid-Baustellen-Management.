@@ -182,6 +182,72 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_LV_Ansicht_umstellen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "LV Ansicht umstellen"
+    - "LV Dokumentstruktur"
+    - "LV nach Dokument sortieren"
+    - "LV nach KG anzeigen"
+    - "Leistungsverzeichnis Ansicht"
+    - "Wo sehe ich die Dokumentstruktur im LV"
+  antwort: |
+    Die LV-Liste kann in zwei Strukturen angezeigt werden:
+    1. Baustelle oeffnen und ins LV gehen
+    2. Oben rechts das Drei-Punkte-Menue oeffnen
+    3. Unter "Ansicht" zwischen "KG" und "Dokument" wechseln
+
+    "KG" gruppiert die Positionen nach DIN-276-Kostengruppe.
+    "Dokument" gruppiert sie nach der Positionsnummer, damit die Liste eher
+    wie das importierte LV, Angebot oder die Rechnung gelesen werden kann.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_LV_Bausteine"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "LV Bausteine"
+    - "LV-Bausteine auswählen"
+    - "Positionen aus Vorlage übernehmen"
+    - "Titel Baustelleneinrichtung anlegen"
+    - "Standardpositionen ins LV übernehmen"
+    - "Eigene LV-Position hinzufügen"
+    - "Eigene Position im LV anlegen"
+    - "DIN Ebene im LV wählen"
+    - "Kostengruppe drei Ebenen"
+    - "Fachvorschlag KG"
+    - "Expert Validation"
+    - "KG Vorschlag übernehmen"
+    - "LV Werkbank"
+  antwort: |
+    LV-Positionen aus lokalen Bausteinen übernehmen:
+    1. Baustelle öffnen und ins LV gehen
+    2. Oben rechts das Drei-Punkte-Menü öffnen
+    3. "LV-Bausteine auswählen" tippen
+    4. DIN-Zuordnung in drei Ebenen wählen, z.B.
+       200 Vorbereitende Maßnahmen → 210 Herrichten → 211 Sicherungsmaßnahmen
+    5. Titel wählen, z.B. "01 Baustelleneinrichtung"
+    6. Gewünschte Positionen anhaken
+    7. "Übernehmen" tippen
+
+    Eigene Position im selben Sheet anlegen:
+    1. Im Abschnitt "Eigene Position" Pos.-Nr., Bezeichnung, Menge,
+       Einheit und EP eintragen
+    2. "Eigene Position übernehmen" tippen
+
+    Die Bausteine sind Vorlagen. iMOPS übernimmt Positionsnummer, Text, Menge,
+    Einheit, EP und die gewählte DIN-Zuordnung. Eigene Positionen werden direkt
+    ins LV geschrieben. Menge, Preis und KG danach fachlich prüfen.
+
+    Bei eigenen Positionen und beim Bearbeiten einer LV-Position kann iMOPS lokal
+    einen Fachvorschlag für die Kostengruppe anzeigen. Dafür werden nur
+    Bezeichnung und Einheit ausgewertet. Der Vorschlag wird erst übernommen, wenn
+    der Nutzer aktiv auf "Vorschlag übernehmen" tippt.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_CAD_Viewer"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

@@ -72,7 +72,7 @@ struct LieferantenBestelllisteView: View {
                     Button("Fertig") { dismiss() }.tint(.orange)
                 }
             }
-            .sheet(isPresented: $showMailCompose) {
+            .fullScreenCover(isPresented: $showMailCompose) {
                 if let lieferant = activeMailLieferant {
                     MailComposeView(
                         recipient: lieferantInfos[lieferant]?.email ?? "",
@@ -82,7 +82,7 @@ struct LieferantenBestelllisteView: View {
                     .ignoresSafeArea()
                 }
             }
-            .sheet(item: $previewAnfrage) { preview in
+            .fullScreenCover(item: $previewAnfrage) { preview in
                 AnfrageTextPreviewView(preview: preview)
             }
         }
@@ -360,7 +360,7 @@ private struct AnfrageTextPreviewView: View {
                     .tint(.orange)
                 }
             }
-            .sheet(item: $activePDF) { pdf in
+            .fullScreenCover(item: $activePDF) { pdf in
                 PDFPreviewView(url: pdf.url)
                     .ignoresSafeArea()
             }

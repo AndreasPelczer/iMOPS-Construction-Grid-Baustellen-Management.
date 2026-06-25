@@ -6,6 +6,33 @@ import UIKit
 
 // MARK: - LV Hauptansicht
 
+private enum LVGruppierung: String, CaseIterable, Identifiable {
+    case kostenGruppe
+    case dokumentStruktur
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .kostenGruppe: return "KG"
+        case .dokumentStruktur: return "Dokument"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .kostenGruppe: return "folder"
+        case .dokumentStruktur: return "doc.text"
+        }
+    }
+}
+
+private struct LVSectionGroup: Identifiable {
+    let id: String
+    let title: String
+    let items: [LVPosition]
+}
+
 struct LVView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(ImportedFileHandler.self) private var importedFileHandler
@@ -25,9 +52,11 @@ struct LVView: View {
     @State private var showKostenübersicht = false
     @State private var showImport = false
     @State private var showGAEBImport = false
+    @State private var showBausteine = false
     @State private var droppedGAEBURL: URL?
     @State private var showHelp = false
     @State private var exportURL: URL?
+    @State private var gruppierung: LVGruppierung = .kostenGruppe
 
     @State private var showMissingPricesAlert = false
     @State private var missingPricesCount = 0
@@ -51,9 +80,37 @@ struct LVView: View {
         )
     }
 
-    private var grouped: [(kg: String, items: [LVPosition])] {
+    private var grouped: [LVSectionGroup] {
+        switch gruppierung {
+        case .kostenGruppe:
+            return groupedByKostenGruppe
+        case .dokumentStruktur:
+            return groupedByDokumentStruktur
+        }
+    }
+
+    private var groupedByKostenGruppe: [LVSectionGroup] {
         let dict = Dictionary(grouping: Array(positionen), by: { $0.kostenGruppeNummer ?? "—" })
-        return dict.sorted { $0.key < $1.key }.map { (kg: $0.key, items: $0.value) }
+        return dict.sorted { $0.key < $1.key }.map { key, items in
+            LVSectionGroup(
+                id: "kg-\(key)",
+                title: "KG \(key) – \(dinBezeichnung(key))",
+                items: items
+            )
+        }
+    }
+
+    private var groupedByDokumentStruktur: [LVSectionGroup] {
+        let dict = Dictionary(grouping: Array(positionen), by: dokumentAbschnitt)
+        return dict.sorted { lhs, rhs in
+            documentSortBefore(lhs.key, rhs.key)
+        }.map { key, items in
+            LVSectionGroup(
+                id: "doc-\(key)",
+                title: key == "—" ? "Ohne Abschnitt" : "Abschnitt \(key)",
+                items: items
+            )
+        }
     }
 
     private var gesamtFortschritt: Double {
@@ -88,6 +145,15 @@ struct LVView: View {
                     description: Text("Tippe auf + oder importiere ein LV.")
                 )
             } else {
+                Section {
+                    Picker("LV-Ansicht", selection: $gruppierung) {
+                        ForEach(LVGruppierung.allCases) { option in
+                            Label(option.label, systemImage: option.systemImage).tag(option)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 if gesamtFortschritt > 0 {
                     Section {
                         VStack(alignment: .leading, spacing: 6) {
@@ -108,7 +174,7 @@ struct LVView: View {
                     }
                 }
 
-                ForEach(grouped, id: \.kg) { gruppe in
+                ForEach(grouped) { gruppe in
                     Section {
                         ForEach(gruppe.items, id: \.objectID) { pos in
                             LVPositionRow(position: pos) { targetURL in
@@ -167,7 +233,7 @@ struct LVView: View {
                             }
                         }
                     } header: {
-                        kgHeader(gruppe)
+                        sectionHeader(gruppe)
                     }
                 }
             }
@@ -202,6 +268,14 @@ struct LVView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
+                    Picker("Ansicht", selection: $gruppierung) {
+                        ForEach(LVGruppierung.allCases) { option in
+                            Label(option.label, systemImage: option.systemImage).tag(option)
+                        }
+                    }
+
+                    Divider()
+
                     Button { showBestellliste = true } label: {
                         Label("Bestellliste", systemImage: "envelope.badge")
                     }
@@ -253,6 +327,10 @@ struct LVView: View {
                         Label("GAEB X83 importieren", systemImage: "doc.badge.arrow.up")
                     }
 
+                    Button { showBausteine = true } label: {
+                        Label("LV-Bausteine auswählen", systemImage: "checklist")
+                    }
+
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -298,6 +376,10 @@ struct LVView: View {
         }
         .fullScreenCover(isPresented: $showGAEBImport, onDismiss: { droppedGAEBURL = nil }) {
             GAEBImportView(event: event, initialURL: droppedGAEBURL)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .fullScreenCover(isPresented: $showBausteine) {
+            LVBausteinAuswahlView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
         .onChange(of: importedFileHandler.pendingGAEBURL) { _, newURL in
@@ -382,12 +464,12 @@ struct LVView: View {
         }
     }
 
-    // MARK: - KG Section Header
+    // MARK: - Section Header
 
     @ViewBuilder
-    private func kgHeader(_ gruppe: (kg: String, items: [LVPosition])) -> some View {
+    private func sectionHeader(_ gruppe: LVSectionGroup) -> some View {
         HStack {
-            Text("KG \(gruppe.kg) – \(dinBezeichnung(gruppe.kg))")
+            Text(gruppe.title)
                 .font(.caption.weight(.semibold))
             Spacer()
             let basis = gruppe.items.filter { !LVPositionHelper.isAlternative($0) }
@@ -413,6 +495,40 @@ struct LVView: View {
                 }
             }
         }
+    }
+
+    private func dokumentAbschnitt(_ position: LVPosition) -> String {
+        let nr = (position.posNr ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !nr.isEmpty else { return "—" }
+
+        let parts = nr.split(separator: ".").map(String.init)
+        if parts.count >= 3 {
+            return parts.prefix(2).joined(separator: ".")
+        }
+        if parts.count >= 2, parts[0].count <= 2 {
+            return parts[0]
+        }
+        if parts.count >= 2 {
+            return parts.prefix(2).joined(separator: ".")
+        }
+        return nr
+    }
+
+    private func documentSortBefore(_ lhs: String, _ rhs: String) -> Bool {
+        if lhs == "—" { return false }
+        if rhs == "—" { return true }
+
+        let left = lhs.split(separator: ".").map { Int($0) ?? Int.max }
+        let right = rhs.split(separator: ".").map { Int($0) ?? Int.max }
+        let count = max(left.count, right.count)
+
+        for index in 0..<count {
+            let l = index < left.count ? left[index] : 0
+            let r = index < right.count ? right[index] : 0
+            if l != r { return l < r }
+        }
+
+        return lhs < rhs
     }
 
     // MARK: - Actions

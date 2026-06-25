@@ -17,6 +17,7 @@ struct AddLVPositionView: View {
     @State private var lieferant = ""
     @State private var isAlternative = false
     @State private var showKatalog = false
+    @State private var kgProposal: KGProposal?
 
     let einheiten = ["m²", "m³", "lfm", "Stück", "kg", "t", "Psch", "h"]
     let lieferanten = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
@@ -57,6 +58,12 @@ struct AddLVPositionView: View {
                     NavigationLink { KGPickerList(selected: $kg) } label: {
                         HStack { Text("KG"); Spacer(); Text(kg).foregroundStyle(.orange) }
                     }
+
+                    if let kgProposal {
+                        KGProposalBox(proposal: kgProposal) {
+                            kg = kgProposal.suggestedKG
+                        }
+                    }
                 }
                 Section("Material / Lieferant (optional)") {
                     HStack {
@@ -80,7 +87,13 @@ struct AddLVPositionView: View {
                 }
             }
             .onAppear { prefill() }
-            .sheet(isPresented: $showKatalog) {
+            .onChange(of: bezeichnung) { _, _ in
+                refreshKGProposal()
+            }
+            .onChange(of: einheit) { _, _ in
+                refreshKGProposal()
+            }
+            .fullScreenCover(isPresented: $showKatalog) {
                 KatalogPickerSheet { entry in
                     artikelNummer = entry.code ?? ""
                     if lieferant.isEmpty {
@@ -104,6 +117,7 @@ struct AddLVPositionView: View {
         artikelNummer = p.artikelNummer ?? ""
         lieferant = p.lieferant ?? ""
         isAlternative = LVPositionHelper.isAlternative(p)
+        refreshKGProposal()
     }
 
     private func save() {
@@ -126,5 +140,13 @@ struct AddLVPositionView: View {
         try? viewContext.save()
         dismiss()
     }
-}
 
+    private func refreshKGProposal() {
+        kgProposal = ExpertValidationService.proposeKG(
+            for: LVDraftPosition(
+                bezeichnung: bezeichnung,
+                einheit: einheit
+            )
+        )
+    }
+}
