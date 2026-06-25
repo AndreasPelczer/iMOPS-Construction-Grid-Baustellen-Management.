@@ -137,6 +137,8 @@
     - "Prof-Schalter"
     - "Prof Modus"
     - "Wann nehme ich Prof"
+    - "Antwort kopieren"
+    - "BauWissen Antwort übernehmen"
   antwort: |
     Der Tab "BauWissen" verbindet die App mit dem Mops-Server fuer
     Bau-Fachfragen. Zwei Modi:
@@ -145,13 +147,13 @@
       Schnell genug fuer einfache Fragen, kostenlos, offline-tolerant
       (wenn Server erreichbar). Antwort in 30-120 Sekunden.
 
-    - Prof (Schalter rechts oben): leitet die Frage an Claude Sonnet 4.5
-      ueber die Anthropic-API weiter. Schneller (5-15 Sekunden), klueger
-      bei komplexen Fragen, kostet pro Anfrage. Fuer Spezialfaelle wo
-      Mops nicht ausreicht.
+    - Prof (Schalter rechts oben): leitet die Frage an den Cloud-Prof
+      weiter. Schneller (5-15 Sekunden), gruendlicher bei komplexen
+      Fragen, kostet pro Anfrage. Fuer Spezialfaelle wo Mops nicht ausreicht.
 
     Quellen werden unter jeder Antwort als Karten mit Relevanz-Score
-    angezeigt.
+    angezeigt. Lange Antworten koennen ueber "Antwort kopieren" direkt in
+    die Zwischenablage gelegt werden.
   quelle_kurz: "iMOPS App-Bedienung (Phase 4)"
   license_note: "Eigene Bedienungshilfe"
 
@@ -389,7 +391,8 @@
     - "Wie funktioniert der Prof-Schalter?"
 
     Bei langen Wartezeiten (>60s) den Prof-Schalter aktivieren — schneller
-    und gruendlicher fuer komplexe Fragen.
+    und gruendlicher fuer komplexe Fragen. Antworten lassen sich mit
+    "Antwort kopieren" ohne Textmarkieren in die Zwischenablage legen.
   quelle_kurz: "iMOPS BauWissen-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
@@ -414,7 +417,7 @@
     - Gut fuer einfache Fakten-Fragen mit guter RAG-Quelle
 
     Prof (Schalter an):
-    - Claude Sonnet 4.5 ueber die Anthropic-API
+    - Cloud-Prof ueber den Mops-Server
     - 5 bis 15 Sekunden Antwortzeit
     - Kostet pro Anfrage (API-Tokens)
     - Besser fuer komplexe, mehrteilige oder ungewoehnliche Fragen

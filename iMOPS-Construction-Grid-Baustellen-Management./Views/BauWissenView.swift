@@ -1,12 +1,14 @@
 import SwiftUI
+import UIKit
 
 // MARK: - BauWissenView
 // Hauptansicht fuer die Mops/Prof-Integration.
 // Der Polier kann hier Bau-Fachfragen stellen:
 // - Mops (lokal, llama3.2:3b, CPU-only, 30-120s)
-// - Prof (Claude Sonnet 4.5, 5-15s, braucht "/prof " Prefix)
+// - Prof (Cloud-Provider, 5-15s, braucht "/prof " Prefix)
 struct BauWissenView: View {
     @State private var viewModel = BauWissenViewModel()
+    @State private var didCopyResponse = false
 
     var body: some View {
         ScrollView {
@@ -144,7 +146,7 @@ struct BauWissenView: View {
         BauWissenExample(
             kind: .prof,
             frage: "Was unterscheidet Eurocode 2 und DIN 1045-2?",
-            untertitel: "Prof (Claude, 5-15s)"
+            untertitel: "Prof (Cloud, 5-15s)"
         )
     ]
 
@@ -236,6 +238,21 @@ struct BauWissenView: View {
                 .font(.body)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
+
+            Button {
+                UIPasteboard.general.string = response.answer
+                didCopyResponse = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                    didCopyResponse = false
+                }
+            } label: {
+                Label(
+                    didCopyResponse ? "Antwort kopiert" : "Antwort kopieren",
+                    systemImage: didCopyResponse ? "checkmark.circle.fill" : "doc.on.doc"
+                )
+            }
+            .buttonStyle(.bordered)
+            .tint(didCopyResponse ? .green : .orange)
 
             // Quellen-Liste
             if let sources = response.sources, !sources.isEmpty {

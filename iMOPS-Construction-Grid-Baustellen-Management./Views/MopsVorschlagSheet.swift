@@ -16,6 +16,8 @@ struct MopsVorschlagSheet: View {
     @State private var mopsText: String?
     @State private var errorText: String?
     @State private var selectedAction = 0
+    @State private var showApplyConfirmation = false
+    @State private var didApplyText = false
 
     private let aktionen = ["Aufwandswert", "Material-Alternative", "Positionstext"]
 
@@ -84,6 +86,22 @@ struct MopsVorschlagSheet: View {
                     }
                     .frame(maxHeight: 200)
                     .padding(.horizontal)
+
+                    if selectedAction == 2 {
+                        Button {
+                            showApplyConfirmation = true
+                        } label: {
+                            Label(
+                                didApplyText ? "Positionstext übernommen" : "Positionstext übernehmen",
+                                systemImage: didApplyText ? "checkmark.circle.fill" : "text.badge.checkmark"
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(didApplyText ? .green : .orange)
+                        .padding(.horizontal)
+                        .disabled(didApplyText)
+                    }
                 }
 
                 if let err = errorText {
@@ -121,6 +139,14 @@ struct MopsVorschlagSheet: View {
             .padding(.top)
             .navigationTitle("Mops-Vorschlag")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Positionstext übernehmen?", isPresented: $showApplyConfirmation) {
+                Button("Abbrechen", role: .cancel) { }
+                Button("Übernehmen", role: .destructive) {
+                    positionstextUebernehmen()
+                }
+            } message: {
+                Text("Der bestehende Positionstext wird ersetzt. Bitte nur übernehmen, wenn du den Vorschlag fachlich geprüft hast.")
+            }
         }
     }
 
@@ -133,6 +159,7 @@ struct MopsVorschlagSheet: View {
 
         let helper = MopsKalkulationsHelper.shared
         let leistung = "\(position.menge.formatted()) \(position.einheit ?? "") \(position.bezeichnung ?? "")"
+        didApplyText = false
 
         Task {
             switch selectedAction {
@@ -187,5 +214,16 @@ struct MopsVorschlagSheet: View {
                 await MainActor.run { isLoading = false }
             }
         }
+    }
+
+    private func positionstextUebernehmen() {
+        guard let text = mopsText?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+            return
+        }
+
+        position.bezeichnung = text
+        try? viewContext.save()
+        antwort = text
+        didApplyText = true
     }
 }
