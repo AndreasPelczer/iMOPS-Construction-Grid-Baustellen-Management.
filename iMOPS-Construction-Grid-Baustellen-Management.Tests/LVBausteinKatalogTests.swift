@@ -27,6 +27,17 @@ struct LVBausteinKatalogTests {
         }
     }
 
+    @Test func lvTitelEnthaltenRohbauUndAussenanlagen() {
+        let nummern = Set(LVBausteinKatalog.titel.map(\.nummer))
+
+        #expect(nummern.contains("01"))
+        #expect(nummern.contains("05"))
+        #expect(nummern.contains("06"))
+        #expect(nummern.contains("07"))
+        #expect(nummern.contains("14"))
+        #expect(nummern.contains("99"))
+    }
+
     @Test func dinBaumHatDreiEbenen() {
         let herrichten = DIN276BaumKatalog.knoten(mitNummer: "210")
         let sicherung = DIN276BaumKatalog.knoten(mitNummer: "211")

@@ -105,6 +105,71 @@ enum LVBausteinKatalog {
                     kostenGruppeNummer: "390"
                 )
             ]
+        ),
+        LVBausteinTitel(
+            nummer: "03",
+            bezeichnung: "Erdarbeiten",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "04",
+            bezeichnung: "Entwässerung und Grundleitungen",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "05",
+            bezeichnung: "Fundamente und Bodenplatte",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "06",
+            bezeichnung: "Mauerarbeiten",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "07",
+            bezeichnung: "Beton- und Stahlbetonarbeiten",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "08",
+            bezeichnung: "Dach- und Zimmererarbeiten",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "09",
+            bezeichnung: "Abdichtung und Dämmung",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "10",
+            bezeichnung: "Fenster, Türen und Öffnungen",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "11",
+            bezeichnung: "Innenausbau",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "12",
+            bezeichnung: "Putz, Estrich und Oberflächen",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "13",
+            bezeichnung: "Technische Anlagen",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "14",
+            bezeichnung: "Außenanlagen",
+            positionen: []
+        ),
+        LVBausteinTitel(
+            nummer: "99",
+            bezeichnung: "Sonstiges",
+            positionen: []
         )
     ]
 }

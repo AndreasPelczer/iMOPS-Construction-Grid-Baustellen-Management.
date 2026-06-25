@@ -123,14 +123,20 @@ struct LVBausteinAuswahlView: View {
 
                 if let titel = selectedTitel {
                     Section(titel.anzeige) {
-                        ForEach(titel.positionen) { baustein in
-                            Button {
-                                toggle(baustein)
-                            } label: {
-                                bausteinRow(baustein)
+                        if titel.positionen.isEmpty {
+                            Text("Noch keine Vorlagen für diesen Titel. Eigene Position unten anlegen.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(titel.positionen) { baustein in
+                                Button {
+                                    toggle(baustein)
+                                } label: {
+                                    bausteinRow(baustein)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(vorhandenePosNr.contains(baustein.posNr))
                             }
-                            .buttonStyle(.plain)
-                            .disabled(vorhandenePosNr.contains(baustein.posNr))
                         }
                     }
                 }
