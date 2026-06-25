@@ -72,9 +72,41 @@ public enum DIN276BaumKatalog {
                         DIN276BaumKnoten(nummer: "229", bezeichnung: "Öffentliche Erschließung, Sonstiges")
                     ]
                 ),
-                DIN276BaumKnoten(nummer: "230", bezeichnung: "Nichtöffentliche Erschließung"),
-                DIN276BaumKnoten(nummer: "240", bezeichnung: "Ausgleichsmaßnahmen und -abgaben"),
-                DIN276BaumKnoten(nummer: "250", bezeichnung: "Übergangsmaßnahmen")
+                DIN276BaumKnoten(
+                    nummer: "230",
+                    bezeichnung: "Nichtöffentliche Erschließung",
+                    kinder: [
+                        DIN276BaumKnoten(nummer: "231", bezeichnung: "Abwasserentsorgung"),
+                        DIN276BaumKnoten(nummer: "232", bezeichnung: "Wasserversorgung"),
+                        DIN276BaumKnoten(nummer: "233", bezeichnung: "Gasversorgung"),
+                        DIN276BaumKnoten(nummer: "234", bezeichnung: "Wärmeversorgung"),
+                        DIN276BaumKnoten(nummer: "235", bezeichnung: "Stromversorgung"),
+                        DIN276BaumKnoten(nummer: "236", bezeichnung: "Telekommunikation"),
+                        DIN276BaumKnoten(nummer: "237", bezeichnung: "Verkehrserschließung"),
+                        DIN276BaumKnoten(nummer: "238", bezeichnung: "Abfallentsorgung"),
+                        DIN276BaumKnoten(nummer: "239", bezeichnung: "Nichtöffentliche Erschließung, Sonstiges")
+                    ]
+                ),
+                DIN276BaumKnoten(
+                    nummer: "240",
+                    bezeichnung: "Ausgleichsmaßnahmen und -abgaben",
+                    kinder: [
+                        DIN276BaumKnoten(nummer: "241", bezeichnung: "Ausgleichsflächen"),
+                        DIN276BaumKnoten(nummer: "242", bezeichnung: "Ersatzmaßnahmen"),
+                        DIN276BaumKnoten(nummer: "243", bezeichnung: "Ablösebeträge und Abgaben"),
+                        DIN276BaumKnoten(nummer: "249", bezeichnung: "Ausgleichsmaßnahmen, Sonstiges")
+                    ]
+                ),
+                DIN276BaumKnoten(
+                    nummer: "250",
+                    bezeichnung: "Übergangsmaßnahmen",
+                    kinder: [
+                        DIN276BaumKnoten(nummer: "251", bezeichnung: "Provisorische Ver- und Entsorgung"),
+                        DIN276BaumKnoten(nummer: "252", bezeichnung: "Provisorische Verkehrsführung"),
+                        DIN276BaumKnoten(nummer: "253", bezeichnung: "Interimsnutzung und Ersatzflächen"),
+                        DIN276BaumKnoten(nummer: "259", bezeichnung: "Übergangsmaßnahmen, Sonstiges")
+                    ]
+                )
             ]
         ),
         DIN276BaumKnoten(
@@ -397,9 +429,39 @@ public enum DIN276BaumKatalog {
                         DIN276BaumKnoten(nummer: "559", bezeichnung: "Technische Anlagen, Sonstiges")
                     ]
                 ),
-                DIN276BaumKnoten(nummer: "560", bezeichnung: "Einbauten in Außenanlagen und Freiflächen"),
-                DIN276BaumKnoten(nummer: "570", bezeichnung: "Vegetationsflächen"),
-                DIN276BaumKnoten(nummer: "580", bezeichnung: "Wasserflächen"),
+                DIN276BaumKnoten(
+                    nummer: "560",
+                    bezeichnung: "Einbauten in Außenanlagen und Freiflächen",
+                    kinder: [
+                        DIN276BaumKnoten(nummer: "561", bezeichnung: "Allgemeine Einbauten"),
+                        DIN276BaumKnoten(nummer: "562", bezeichnung: "Besondere Einbauten"),
+                        DIN276BaumKnoten(nummer: "563", bezeichnung: "Ausstattung von Freiflächen"),
+                        DIN276BaumKnoten(nummer: "564", bezeichnung: "Spiel- und Sportgeräte"),
+                        DIN276BaumKnoten(nummer: "565", bezeichnung: "Orientierungs- und Informationssysteme"),
+                        DIN276BaumKnoten(nummer: "569", bezeichnung: "Einbauten in Außenanlagen, Sonstiges")
+                    ]
+                ),
+                DIN276BaumKnoten(
+                    nummer: "570",
+                    bezeichnung: "Vegetationsflächen",
+                    kinder: [
+                        DIN276BaumKnoten(nummer: "571", bezeichnung: "Oberboden und Pflanzflächen"),
+                        DIN276BaumKnoten(nummer: "572", bezeichnung: "Rasen- und Wiesenflächen"),
+                        DIN276BaumKnoten(nummer: "573", bezeichnung: "Pflanzungen"),
+                        DIN276BaumKnoten(nummer: "574", bezeichnung: "Vegetationstechnische Arbeiten"),
+                        DIN276BaumKnoten(nummer: "579", bezeichnung: "Vegetationsflächen, Sonstiges")
+                    ]
+                ),
+                DIN276BaumKnoten(
+                    nummer: "580",
+                    bezeichnung: "Wasserflächen",
+                    kinder: [
+                        DIN276BaumKnoten(nummer: "581", bezeichnung: "Teiche und Wasserbecken"),
+                        DIN276BaumKnoten(nummer: "582", bezeichnung: "Wasserläufe"),
+                        DIN276BaumKnoten(nummer: "583", bezeichnung: "Wassertechnische Ausstattung"),
+                        DIN276BaumKnoten(nummer: "589", bezeichnung: "Wasserflächen, Sonstiges")
+                    ]
+                ),
                 DIN276BaumKnoten(
                     nummer: "590",
                     bezeichnung: "Sonstige Maßnahmen für Außenanlagen und Freiflächen",

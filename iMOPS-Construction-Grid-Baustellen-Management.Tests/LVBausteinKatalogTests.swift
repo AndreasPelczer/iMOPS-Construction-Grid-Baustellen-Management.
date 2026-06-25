@@ -27,6 +27,17 @@ struct LVBausteinKatalogTests {
         }
     }
 
+    @Test func lvTitelEnthaltenRohbauUndAussenanlagen() {
+        let nummern = Set(LVBausteinKatalog.titel.map(\.nummer))
+
+        #expect(nummern.contains("01"))
+        #expect(nummern.contains("05"))
+        #expect(nummern.contains("06"))
+        #expect(nummern.contains("07"))
+        #expect(nummern.contains("14"))
+        #expect(nummern.contains("99"))
+    }
+
     @Test func dinBaumHatDreiEbenen() {
         let herrichten = DIN276BaumKatalog.knoten(mitNummer: "210")
         let sicherung = DIN276BaumKatalog.knoten(mitNummer: "211")
@@ -35,5 +46,18 @@ struct LVBausteinKatalogTests {
         #expect(herrichten?.bezeichnung == "Herrichten")
         #expect(sicherung?.bezeichnung == "Sicherungsmaßnahmen")
         #expect(herrichten?.kinder.contains { $0.nummer == "211" } == true)
+    }
+
+    @Test func phase0UndAussenanlagenHabenDetailgruppen() {
+        let detailPflicht = ["230", "240", "250", "560", "570", "580"]
+
+        for nummer in detailPflicht {
+            let knoten = DIN276BaumKatalog.knoten(mitNummer: nummer)
+            #expect(knoten != nil)
+            #expect(knoten?.kinder.isEmpty == false)
+        }
+
+        #expect(DIN276BaumKatalog.knoten(mitNummer: "231")?.bezeichnung == "Abwasserentsorgung")
+        #expect(DIN276BaumKatalog.knoten(mitNummer: "571")?.bezeichnung == "Oberboden und Pflanzflächen")
     }
 }
