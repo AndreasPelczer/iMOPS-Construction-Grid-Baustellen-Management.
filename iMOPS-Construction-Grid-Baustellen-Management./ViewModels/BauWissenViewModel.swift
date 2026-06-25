@@ -20,7 +20,7 @@ final class BauWissenViewModel {
     /// Die eingetippte Frage
     var questionText: String = ""
 
-    /// Toggle: true = Prof (Claude Sonnet), false = Mops (lokales LLM)
+    /// Toggle: true = Prof (Cloud-Provider), false = Mops (lokales LLM)
     /// Wird ignoriert wenn ExactMatch lokal greift.
     var useProf: Bool = false
 
@@ -140,8 +140,8 @@ final class BauWissenViewModel {
         case "imops-bedienung-local":  return "🔧 Bedienungshilfe"
         case "imops-easteregg-local":  return "🍺 Feierabend"
         default:
-            if model.contains("claude") {
-                return "🎓 Prof (Claude Sonnet 4.5)"
+            if Self.isProfModel(model) {
+                return "🎓 Prof (\(model))"
             }
             return "🐶 Mops (\(model))"
         }
@@ -152,8 +152,16 @@ final class BauWissenViewModel {
         guard let model = response?.model else { return .mops }
         if model == "imops-easteregg-local" { return .mops }
         if model.hasSuffix("-local") { return .local }
-        if model.contains("claude")  { return .prof }
+        if Self.isProfModel(model)  { return .prof }
         return .mops
+    }
+
+    private static func isProfModel(_ model: String) -> Bool {
+        let lowercased = model.lowercased()
+        return lowercased.contains("claude")
+            || lowercased.contains("gpt")
+            || lowercased.contains("openai")
+            || lowercased.contains("gemini")
     }
 
     enum ModelBadgeColor {
