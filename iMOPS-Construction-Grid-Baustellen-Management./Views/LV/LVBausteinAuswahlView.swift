@@ -19,8 +19,16 @@ struct LVBausteinAuswahlView: View {
     @State private var selectedUntergruppeID = DIN276BaumKatalog.hauptgruppen.first?.kinder.first?.id ?? ""
     @State private var selectedDetailgruppeID = DIN276BaumKatalog.hauptgruppen.first?.kinder.first?.kinder.first?.id ?? ""
     @State private var eigeneKGProposal: KGProposal?
+    @FocusState private var focusedField: EingabeFeld?
 
     private let einheiten = ["Pau", "Psch", "Wo", "m", "m²", "m³", "m*W", "Stück", "kg", "t", "h"]
+
+    private enum EingabeFeld: Hashable {
+        case posNr
+        case bezeichnung
+        case menge
+        case einzelPreis
+    }
 
     private var selectedTitel: LVBausteinTitel? {
         LVBausteinKatalog.titel.first { $0.id == selectedTitelID }
@@ -65,6 +73,23 @@ struct LVBausteinAuswahlView: View {
         NavigationStack {
             List {
                 Section {
+                    Picker("Titel", selection: $selectedTitelID) {
+                        ForEach(LVBausteinKatalog.titel) { titel in
+                            Text(titel.anzeige).tag(titel.id)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .onChange(of: selectedTitelID) { _, _ in
+                        selectedPositionIDs.removeAll()
+                        eigenePosNr = naechstePositionsnummer()
+                    }
+                } header: {
+                    Text("Titel")
+                } footer: {
+                    Text("Der Titel bestimmt die Positionsnummer, z.B. 05.0010 fuer Fundamente und Bodenplatte.")
+                }
+
+                Section {
                     Picker("Ebene 1", selection: $selectedHauptgruppeID) {
                         ForEach(DIN276BaumKatalog.hauptgruppen) { gruppe in
                             Text(gruppe.anzeige).tag(gruppe.id)
@@ -107,55 +132,23 @@ struct LVBausteinAuswahlView: View {
                 }
 
                 Section {
-                    Picker("Titel", selection: $selectedTitelID) {
-                        ForEach(LVBausteinKatalog.titel) { titel in
-                            Text(titel.anzeige).tag(titel.id)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .onChange(of: selectedTitelID) { _, _ in
-                        selectedPositionIDs.removeAll()
-                        eigenePosNr = naechstePositionsnummer()
-                    }
-                } footer: {
-                    Text("Bausteine sind Vorlagen. Mengen, Preise und KG bitte nach dem Übernehmen prüfen.")
-                }
-
-                if let titel = selectedTitel {
-                    Section(titel.anzeige) {
-                        if titel.positionen.isEmpty {
-                            Text("Noch keine Vorlagen für diesen Titel. Eigene Position unten anlegen.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(titel.positionen) { baustein in
-                                Button {
-                                    toggle(baustein)
-                                } label: {
-                                    bausteinRow(baustein)
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(vorhandenePosNr.contains(baustein.posNr))
-                            }
-                        }
-                    }
-                }
-
-                Section {
                     HStack {
                         Text("Pos.-Nr.").foregroundStyle(.secondary).frame(width: 88, alignment: .leading)
                         TextField("01.0050", text: $eigenePosNr)
                             .keyboardType(.numbersAndPunctuation)
                             .monospacedDigit()
+                            .focused($focusedField, equals: .posNr)
                     }
 
                     TextField("Bezeichnung", text: $eigeneBezeichnung, axis: .vertical)
                         .lineLimit(2...4)
+                        .focused($focusedField, equals: .bezeichnung)
 
                     HStack {
                         TextField("Menge", text: $eigeneMenge)
                             .keyboardType(.decimalPad)
                             .frame(maxWidth: 120)
+                            .focused($focusedField, equals: .menge)
                         Picker("Einheit", selection: $eigeneEinheit) {
                             ForEach(einheiten, id: \.self) { Text($0).tag($0) }
                         }
@@ -163,9 +156,29 @@ struct LVBausteinAuswahlView: View {
                     }
 
                     HStack {
-                        Text("EP").foregroundStyle(.secondary).frame(width: 88, alignment: .leading)
-                        TextField("0,00", text: $eigenerEinzelPreis)
-                            .keyboardType(.decimalPad)
+                        Text("Einzelpreis")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 88, alignment: .leading)
+                        HStack(spacing: 8) {
+                            TextField("0,00", text: $eigenerEinzelPreis)
+                                .keyboardType(.decimalPad)
+                                .focused($focusedField, equals: .einzelPreis)
+                                .monospacedDigit()
+                            Text("EUR")
+                                .font(.caption.bold())
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(
+                                    focusedField == .einzelPreis ? Color.orange : Color(.separator),
+                                    lineWidth: focusedField == .einzelPreis ? 2 : 1
+                                )
+                        }
                     }
 
                     NavigationLink { KGPickerList(selected: $eigeneKG) } label: {
@@ -195,6 +208,30 @@ struct LVBausteinAuswahlView: View {
                         Text("Diese Positionsnummer ist bereits im LV vorhanden.")
                     } else {
                         Text("Eigene Positionen werden direkt ins LV geschrieben und als manuelle Quelle markiert.")
+                    }
+                }
+
+                if let titel = selectedTitel {
+                    Section {
+                        if titel.positionen.isEmpty {
+                            Text("Noch keine Vorlagen für diesen Titel.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(titel.positionen) { baustein in
+                                Button {
+                                    toggle(baustein)
+                                } label: {
+                                    bausteinRow(baustein)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(vorhandenePosNr.contains(baustein.posNr))
+                            }
+                        }
+                    } header: {
+                        Text("Vorlagen aus \(titel.anzeige)")
+                    } footer: {
+                        Text("Vorlagen sind vorbereitete LV-/GAEB-Texte. Mengen, Preise und KG bitte nach dem Übernehmen prüfen.")
                     }
                 }
             }
