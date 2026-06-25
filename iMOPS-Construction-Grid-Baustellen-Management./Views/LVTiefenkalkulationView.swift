@@ -53,24 +53,24 @@ struct LVTiefenkalkulationView: View {
                 .tint(.orange)
             }
         }
-        .sheet(isPresented: $showKalkHelp) {
+        .fullScreenCover(isPresented: $showKalkHelp) {
             // Hier kannst du eine kurze Hilfe-View für die Kalkulation einbauen
             // oder die bestehende LVHelpView nehmen.
         }
         
-        .sheet(isPresented: $showMaterialPicker) {
+        .fullScreenCover(isPresented: $showMaterialPicker) {
             MaterialHinzufuegenView(position: position)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showLohnPicker) {
+        .fullScreenCover(isPresented: $showLohnPicker) {
             LohnHinzufuegenView(position: position)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showGeraetePicker) {
+        .fullScreenCover(isPresented: $showGeraetePicker) {
             GeraetHinzufuegenView(position: position)
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showMopsSheet) {
+        .fullScreenCover(isPresented: $showMopsSheet) {
             MopsVorschlagSheet(position: position, antwort: $mopsAntwort)
                 .environment(\.managedObjectContext, viewContext)
         }

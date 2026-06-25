@@ -93,7 +93,7 @@ struct AddLVPositionView: View {
             .onChange(of: einheit) { _, _ in
                 refreshKGProposal()
             }
-            .sheet(isPresented: $showKatalog) {
+            .fullScreenCover(isPresented: $showKatalog) {
                 KatalogPickerSheet { entry in
                     artikelNummer = entry.code ?? ""
                     if lieferant.isEmpty {
