@@ -15,11 +15,31 @@ struct LVBausteinAuswahlView: View {
     @State private var eigeneEinheit = "Pau"
     @State private var eigenerEinzelPreis = "0,00"
     @State private var eigeneKG = "390"
+    @State private var selectedHauptgruppeID = DIN276BaumKatalog.hauptgruppen.first?.id ?? ""
+    @State private var selectedUntergruppeID = DIN276BaumKatalog.hauptgruppen.first?.kinder.first?.id ?? ""
+    @State private var selectedDetailgruppeID = DIN276BaumKatalog.hauptgruppen.first?.kinder.first?.kinder.first?.id ?? ""
+    @State private var eigeneKGProposal: KGProposal?
 
     private let einheiten = ["Pau", "Psch", "Wo", "m", "m²", "m³", "m*W", "Stück", "kg", "t", "h"]
 
     private var selectedTitel: LVBausteinTitel? {
         LVBausteinKatalog.titel.first { $0.id == selectedTitelID }
+    }
+
+    private var selectedHauptgruppe: DIN276BaumKnoten? {
+        DIN276BaumKatalog.hauptgruppen.first { $0.id == selectedHauptgruppeID }
+    }
+
+    private var selectedUntergruppe: DIN276BaumKnoten? {
+        selectedHauptgruppe?.kinder.first { $0.id == selectedUntergruppeID }
+    }
+
+    private var selectedDetailgruppe: DIN276BaumKnoten? {
+        selectedUntergruppe?.kinder.first { $0.id == selectedDetailgruppeID }
+    }
+
+    private var aktiveDINZuordnung: DIN276BaumKnoten? {
+        selectedDetailgruppe ?? selectedUntergruppe ?? selectedHauptgruppe
     }
 
     private var vorhandenePosNr: Set<String> {
@@ -44,6 +64,48 @@ struct LVBausteinAuswahlView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    Picker("Ebene 1", selection: $selectedHauptgruppeID) {
+                        ForEach(DIN276BaumKatalog.hauptgruppen) { gruppe in
+                            Text(gruppe.anzeige).tag(gruppe.id)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .onChange(of: selectedHauptgruppeID) { _, _ in
+                        waehleErsteUntergruppe()
+                    }
+
+                    if let hauptgruppe = selectedHauptgruppe, !hauptgruppe.kinder.isEmpty {
+                        Picker("Ebene 2", selection: $selectedUntergruppeID) {
+                            ForEach(hauptgruppe.kinder) { gruppe in
+                                Text(gruppe.anzeige).tag(gruppe.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .onChange(of: selectedUntergruppeID) { _, _ in
+                            waehleErsteDetailgruppe()
+                        }
+                    }
+
+                    if let untergruppe = selectedUntergruppe, !untergruppe.kinder.isEmpty {
+                        Picker("Ebene 3", selection: $selectedDetailgruppeID) {
+                            ForEach(untergruppe.kinder) { gruppe in
+                                Text(gruppe.anzeige).tag(gruppe.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .onChange(of: selectedDetailgruppeID) { _, _ in
+                            eigeneKG = aktiveDINZuordnung?.nummer ?? eigeneKG
+                        }
+                    }
+                } header: {
+                    Text("DIN-Zuordnung")
+                } footer: {
+                    if let zuordnung = aktiveDINZuordnung {
+                        Text("Übernommene Positionen werden dieser Kostengruppe zugeordnet: \(zuordnung.anzeige).")
+                    }
+                }
+
                 Section {
                     Picker("Titel", selection: $selectedTitelID) {
                         ForEach(LVBausteinKatalog.titel) { titel in
@@ -108,6 +170,12 @@ struct LVBausteinAuswahlView: View {
                         }
                     }
 
+                    if let eigeneKGProposal {
+                        KGProposalBox(proposal: eigeneKGProposal) {
+                            eigeneKG = eigeneKGProposal.suggestedKG
+                        }
+                    }
+
                     Button {
                         eigenePositionUebernehmen()
                     } label: {
@@ -130,6 +198,14 @@ struct LVBausteinAuswahlView: View {
                 if eigenePosNr.isEmpty {
                     eigenePosNr = naechstePositionsnummer()
                 }
+                eigeneKG = aktiveDINZuordnung?.nummer ?? eigeneKG
+                refreshEigeneKGProposal()
+            }
+            .onChange(of: eigeneBezeichnung) { _, _ in
+                refreshEigeneKGProposal()
+            }
+            .onChange(of: eigeneEinheit) { _, _ in
+                refreshEigeneKGProposal()
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -167,7 +243,11 @@ struct LVBausteinAuswahlView: View {
                 HStack(spacing: 8) {
                     Text("\(baustein.menge.formatted(.number.precision(.fractionLength(0...3)))) \(baustein.einheit)")
                     Text("EP \(baustein.einzelPreis.formatted(.currency(code: "EUR")))")
-                    Text("KG \(baustein.kostenGruppeNummer)")
+                    if let zuordnung = aktiveDINZuordnung {
+                        Text("KG \(zuordnung.nummer)")
+                    } else {
+                        Text("KG \(baustein.kostenGruppeNummer)")
+                    }
                     if istVorhanden {
                         Text("bereits im LV")
                     }
@@ -195,7 +275,7 @@ struct LVBausteinAuswahlView: View {
             pos.bezeichnung = baustein.bezeichnung
             pos.menge = baustein.menge
             pos.einheit = baustein.einheit
-            pos.kostenGruppeNummer = baustein.kostenGruppeNummer
+            pos.kostenGruppeNummer = aktiveDINZuordnung?.nummer ?? baustein.kostenGruppeNummer
             pos.mengenQuelleRaw = "manuell"
             pos.quellDatei = "LV-Bausteinkatalog"
             pos.setValue(baustein.einzelPreis, forKey: "einkaufspreis")
@@ -249,5 +329,24 @@ struct LVBausteinAuswahlView: View {
 
         let next = ((maxSuffix / 10) + 1) * 10
         return "\(titel).\(String(format: "%04d", next))"
+    }
+
+    private func waehleErsteUntergruppe() {
+        selectedUntergruppeID = selectedHauptgruppe?.kinder.first?.id ?? ""
+        waehleErsteDetailgruppe()
+    }
+
+    private func waehleErsteDetailgruppe() {
+        selectedDetailgruppeID = selectedUntergruppe?.kinder.first?.id ?? ""
+        eigeneKG = aktiveDINZuordnung?.nummer ?? eigeneKG
+    }
+
+    private func refreshEigeneKGProposal() {
+        eigeneKGProposal = ExpertValidationService.proposeKG(
+            for: LVDraftPosition(
+                bezeichnung: eigeneBezeichnung,
+                einheit: eigeneEinheit
+            )
+        )
     }
 }

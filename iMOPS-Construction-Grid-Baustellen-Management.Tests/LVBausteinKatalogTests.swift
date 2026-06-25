@@ -26,4 +26,14 @@ struct LVBausteinKatalogTests {
             #expect(!position.kostenGruppeNummer.isEmpty)
         }
     }
+
+    @Test func dinBaumHatDreiEbenen() {
+        let herrichten = DIN276BaumKatalog.knoten(mitNummer: "210")
+        let sicherung = DIN276BaumKatalog.knoten(mitNummer: "211")
+
+        #expect(DIN276BaumKatalog.knoten(mitNummer: "200")?.bezeichnung == "Vorbereitende Maßnahmen")
+        #expect(herrichten?.bezeichnung == "Herrichten")
+        #expect(sicherung?.bezeichnung == "Sicherungsmaßnahmen")
+        #expect(herrichten?.kinder.contains { $0.nummer == "211" } == true)
+    }
 }
