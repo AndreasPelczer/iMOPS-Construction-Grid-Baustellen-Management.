@@ -19,6 +19,7 @@ struct LVBausteinAuswahlView: View {
     @State private var selectedUntergruppeID = DIN276BaumKatalog.hauptgruppen.first?.kinder.first?.id ?? ""
     @State private var selectedDetailgruppeID = DIN276BaumKatalog.hauptgruppen.first?.kinder.first?.kinder.first?.id ?? ""
     @State private var eigeneKGProposal: KGProposal?
+    @State private var suchtext = ""
     @FocusState private var focusedField: EingabeFeld?
 
     private let einheiten = ["Pau", "Psch", "Wo", "m", "m²", "m³", "m*W", "Stück", "kg", "t", "h"]
@@ -32,6 +33,28 @@ struct LVBausteinAuswahlView: View {
 
     private var selectedTitel: LVBausteinTitel? {
         LVBausteinKatalog.titel.first { $0.id == selectedTitelID }
+    }
+
+    private var gefilterteTitel: [LVBausteinTitel] {
+        let query = normalisiere(suchtext)
+        guard !query.isEmpty else { return LVBausteinKatalog.titel }
+
+        return LVBausteinKatalog.titel.filter { titel in
+            normalisiere(titel.anzeige).contains(query) ||
+                titel.positionen.contains { baustein in
+                    normalisiere("\(baustein.posNr) \(baustein.bezeichnung) \(baustein.einheit)").contains(query)
+                }
+        }
+    }
+
+    private var gefiltertePositionen: [LVBausteinPosition] {
+        guard let titel = selectedTitel else { return [] }
+        let query = normalisiere(suchtext)
+        guard !query.isEmpty else { return titel.positionen }
+
+        return titel.positionen.filter { baustein in
+            normalisiere("\(baustein.posNr) \(baustein.bezeichnung) \(baustein.einheit)").contains(query)
+        }
     }
 
     private var selectedHauptgruppe: DIN276BaumKnoten? {
@@ -73,15 +96,42 @@ struct LVBausteinAuswahlView: View {
         NavigationStack {
             List {
                 Section {
-                    Picker("Titel", selection: $selectedTitelID) {
-                        ForEach(LVBausteinKatalog.titel) { titel in
-                            Text(titel.anzeige).tag(titel.id)
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+
+                        TextField("Titel oder Vorlage suchen", text: $suchtext)
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+
+                        if !suchtext.isEmpty {
+                            Button {
+                                suchtext = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
-                    .pickerStyle(.menu)
-                    .onChange(of: selectedTitelID) { _, _ in
-                        selectedPositionIDs.removeAll()
-                        eigenePosNr = naechstePositionsnummer()
+                }
+
+                Section {
+                    if gefilterteTitel.isEmpty {
+                        Text("Kein passender Titel gefunden.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("Titel", selection: $selectedTitelID) {
+                            ForEach(gefilterteTitel) { titel in
+                                Text(titel.anzeige).tag(titel.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .onChange(of: selectedTitelID) { _, _ in
+                            selectedPositionIDs.removeAll()
+                            eigenePosNr = naechstePositionsnummer()
+                        }
                     }
                 } header: {
                     Text("Titel")
@@ -213,12 +263,12 @@ struct LVBausteinAuswahlView: View {
 
                 if let titel = selectedTitel {
                     Section {
-                        if titel.positionen.isEmpty {
-                            Text("Noch keine Vorlagen für diesen Titel.")
+                        if gefiltertePositionen.isEmpty {
+                            Text(titel.positionen.isEmpty ? "Noch keine Vorlagen für diesen Titel." : "Keine passende Vorlage gefunden.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         } else {
-                            ForEach(titel.positionen) { baustein in
+                            ForEach(gefiltertePositionen) { baustein in
                                 Button {
                                     toggle(baustein)
                                 } label: {
@@ -249,6 +299,9 @@ struct LVBausteinAuswahlView: View {
             }
             .onChange(of: eigeneEinheit) { _, _ in
                 refreshEigeneKGProposal()
+            }
+            .onChange(of: suchtext) { _, _ in
+                waehleErstenGefiltertenTitelWennNoetig()
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -353,6 +406,22 @@ struct LVBausteinAuswahlView: View {
 
     private func parseDecimal(_ text: String) -> Double? {
         Double(text.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private func normalisiere(_ text: String) -> String {
+        text
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func waehleErstenGefiltertenTitelWennNoetig() {
+        guard !gefilterteTitel.contains(where: { $0.id == selectedTitelID }) else { return }
+        guard let ersterTitel = gefilterteTitel.first else { return }
+
+        selectedTitelID = ersterTitel.id
+        selectedPositionIDs.removeAll()
+        eigenePosNr = naechstePositionsnummer()
     }
 
     private func naechstePositionsnummer() -> String {
