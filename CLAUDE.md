@@ -78,7 +78,8 @@ MVVM. Quellbaum liegt unter `iMOPS-Construction-Grid-Baustellen-Management./`:
 ### Mops-Backend (eigenes Repo)
 
 Die App spricht mit einem lokalen LLM-Server (`AndreasPelczer/mops-api`, Default
-`http://192.168.2.42:8080`, in Settings konfigurierbar). `MopsClient` ruft `/chat`,
+`https://mops.baumops.com` — dauerhafter Cloudflare-Tunnel zur Mops-Box, in Settings
+konfigurierbar). `MopsClient` ruft `/chat`,
 `/classify`, `/health`; CPU-only, daher Timeout 180s. Prefix `/prof ` in einer Frage
 routet serverseitig an Claude. **Backend-Code gehört NICHT hierher** — dieses Repo ist
 nur der iOS-Client.

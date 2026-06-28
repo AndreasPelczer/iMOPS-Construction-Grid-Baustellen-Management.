@@ -56,7 +56,7 @@ Datenhaltung: Core Data, Offline-First. Core-Data-Model: test25B.xcdatamodeld.
 Frontend kommuniziert mit dem lokalen Python-Backend mops-api:
 - Repo: AndreasPelczer/mops-api
 - Stack: FastAPI / Python
-- Host: Mops-Box 192.168.2.42:8080 (Ubuntu, CPU-only)
+- Host: Mops-Box (Ubuntu, CPU-only) im Heimnetz, erreichbar über Tunnel https://mops.baumops.com (Default in der App, in Settings änderbar)
 - Endpoints u. a.: /chat, /classify, /health, /admin-ui, /prof, /gelaendebruecke/calculate (Welle 7)
 
 ---

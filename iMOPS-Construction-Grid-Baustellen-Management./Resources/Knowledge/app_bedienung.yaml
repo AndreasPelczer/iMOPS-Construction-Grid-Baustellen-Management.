@@ -309,8 +309,11 @@
     - "Wer bist du"
     - "Wer ist Mops"
   antwort: |
-    Der Mops ist ein lokales LLM (llama3.2:3b), das auf einem CPU-Server im
-    Heimnetz laeuft (192.168.2.42) und Bau-Fachfragen beantwortet. Er nutzt
+    Der Mops ist ein lokales LLM (llama3.2:3b), das auf einem CPU-Server
+    (Mops-Box im Heimnetz) laeuft und Bau-Fachfragen beantwortet. Erreichbar
+    ist er ueber den Tunnel mops.baumops.com — also auch von der Baustelle aus,
+    nicht nur im Heimnetz. Die Server-Adresse ist in den Einstellungen
+    aenderbar. Er nutzt
     eine RAG-Wissensbasis aus ~85 Wikipedia-Lemmas zu Bau-Themen (Mauerwerk,
     Beton, DIN-Normen etc.).
 

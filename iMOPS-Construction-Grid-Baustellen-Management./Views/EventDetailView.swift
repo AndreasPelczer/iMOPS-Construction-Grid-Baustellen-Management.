@@ -580,7 +580,9 @@ struct EventDetailView: View {
         gelaendeError = ""
         gelaendeResult = nil
         
-        var urlString = "http://192.168.2.42:8080/gelaendebruecke/calculate"
+        // Nutzt dieselbe Server-Einstellung wie der Chat (Default: mops.baumops.com-Tunnel,
+        // in Settings überschreibbar) — damit die Geländebrücke auch von unterwegs läuft.
+        var urlString = MopsConfig.host + "/gelaendebruecke/calculate"
         if let okbpValue = Double(manualOkbp.replacingOccurrences(of: ",", with: ".")), okbpValue > 0 {
             urlString += "?fix_okbp=\(okbpValue)"
         }
