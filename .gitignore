@@ -51,3 +51,6 @@ Secrets.plist
 
 # Lokale Patch-Backups (Konvention: .backup_<timestamp>)
 *.backup_*
+
+# Große CAD-Testartefakte (nicht ins Repo)
+/test.DXF
