@@ -307,6 +307,32 @@
   quelle_kurz: "iMOPS App-Bedienung (Phase 3)"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Stammdaten_Pflege"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Stammdaten"
+    - "Stammdaten pflegen"
+    - "Loehne bearbeiten"
+    - "Materialpreise pflegen"
+    - "Geraete verwalten"
+  antwort: |
+    Stammdaten sind die app-weiten Kalkulations-Vorlagen: Loehne (Qualifikation +
+    Stundenlohn + Zuschlagsfaktor), Materialien (Preis je Einheit) und Geraete
+    (Anschaffungskosten + Nutzungsdauer). Daraus zieht die Tiefenkalkulation ihre Werte.
+
+    Oeffnen: im LV ueber das "⋯"-Menue -> "Stammdaten pflegen". Oben umschalten
+    zwischen Loehne / Materialien / Geraete. Mit "+" anlegen, Eintrag antippen zum
+    Bearbeiten, nach links wischen zum Loeschen.
+
+    Loeschen entfernt nur die Vorlage - bereits kalkulierte LV-Positionen behalten
+    ihre Werte (die Position kopiert die Zahlen beim Hinzufuegen, sie referenziert
+    die Stammdaten nicht).
+
+    Verfuegbar nur auf iOS (nicht auf macCatalyst).
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Mops_Selbsterklaerung"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

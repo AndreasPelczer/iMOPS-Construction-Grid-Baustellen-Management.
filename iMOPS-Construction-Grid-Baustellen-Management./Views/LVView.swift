@@ -50,6 +50,7 @@ struct LVView: View {
     @State private var showBestellliste = false
     @State private var showAngebotsVergleich = false
     @State private var showKostenübersicht = false
+    @State private var showStammdaten = false
     @State private var showImport = false
     @State private var showGAEBImport = false
     @State private var showBausteine = false
@@ -290,6 +291,10 @@ struct LVView: View {
                     }
                     .disabled(positionen.isEmpty)
 
+                    Button { showStammdaten = true } label: {
+                        Label("Stammdaten pflegen", systemImage: "slider.horizontal.3")
+                    }
+
                     Divider()
 
                     Button { generatePDF() } label: {
@@ -369,6 +374,9 @@ struct LVView: View {
         }
         .fullScreenCover(isPresented: $showKostenübersicht) {
             KostenübersichtView(event: event, positionen: Array(positionen))
+        }
+        .fullScreenCover(isPresented: $showStammdaten) {
+            StammdatenPflegeView()
         }
         .fullScreenCover(isPresented: $showImport) {
             LVImportView(event: event)
