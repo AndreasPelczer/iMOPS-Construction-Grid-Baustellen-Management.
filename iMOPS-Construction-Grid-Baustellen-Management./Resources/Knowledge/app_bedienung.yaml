@@ -92,14 +92,19 @@
     Statik-/Bewehrungsplan vom Mops auswerten lassen (Mengen + Kostengruppe + Mat-Nr):
     1. In einer Baustelle "LV aus PDF importieren" oeffnen
     2. Button "Statik per Mops auswerten" tippen (blau)
-    3. Die Plan-PDF (Statik oder Bewehrung) waehlen
-    4. Der Mops liest den Plan auf der Box (kann etwas dauern, CPU-only)
+    3. Die Plan-PDF(s) (Statik oder Bewehrung) waehlen — mehrere gleichzeitig moeglich
+    4. Der Mops liest die Plaene nacheinander auf der Box (kann dauern, CPU-only)
     5. Positionen pruefen/abwaehlen — inkl. erkannter Kostengruppe und Xella-Mat-Nr
     6. "Importieren" -> Positionen sind im LV der Baustelle
 
-    Unterschied zu "PDF auswaehlen": der lokale Import liest einfache LV-PDFs auf
+    Unterschied zu "PDFs auswaehlen": der lokale Import liest einfache LV-PDFs auf
     dem Geraet; "Statik per Mops" wertet echte Statik-/Bewehrungsplaene aus und
     schlaegt Material-Nummern vor (abZ-Aufloesung).
+
+    Mehrere PDFs: Beim Auswaehlen koennen mehrere Dateien auf einmal markiert und
+    zu einem LV zusammengefuehrt werden. Ueber "PDF hinzufuegen" (in der Pruefliste)
+    lassen sich weitere PDFs anhaengen, ohne die bereits erkannten Positionen zu
+    verlieren. Jede Position merkt sich ihre Quelldatei.
   quelle_kurz: "iMOPS App-Bedienung (Welle 4)"
   license_note: "Eigene Bedienungshilfe"
 
