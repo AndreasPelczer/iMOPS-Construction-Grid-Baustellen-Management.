@@ -50,7 +50,7 @@ struct LVImportView: View {
                 }
             }
             .sheet(isPresented: $showDocumentPicker) {
-                PDFDocumentPicker { url in handlePick(url: url) }
+                PDFDocumentPicker { urls in handlePicks(urls: urls) }
                     .ignoresSafeArea()
             }
             .alert("Nicht erkannt", isPresented: $showError) {
@@ -88,7 +88,7 @@ struct LVImportView: View {
                 VStack(spacing: 8) {
                     Text("PDF-LV importieren")
                         .font(.title2.bold())
-                    Text("Wähle eine PDF-Datei mit einem Leistungsverzeichnis.\niMOPS erkennt Positionen automatisch.")
+                    Text("Wähle eine oder mehrere PDF-Dateien mit einem Leistungsverzeichnis.\niMOPS erkennt Positionen automatisch und führt sie zusammen.")
                         .font(.subheadline).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -98,7 +98,7 @@ struct LVImportView: View {
                         importQuelle = .lokal
                         showDocumentPicker = true
                     } label: {
-                        Label("PDF auswählen", systemImage: "doc.badge.plus")
+                        Label("PDFs auswählen", systemImage: "doc.badge.plus")
                             .font(.headline)
                             .padding(.horizontal, 32).padding(.vertical, 14)
                             .background(.orange)
@@ -150,10 +150,8 @@ struct LVImportView: View {
                     Label("\(parsedPositions.count) erkannte Positionen", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                     Spacer()
-                    Button("Neues PDF") {
-                        parsedPositions = []
-                        geladenerDateiName = nil
-                        geladenerDateiPfad = nil
+                    Button("PDF hinzufügen") {
+                        // hängt an die bereits erkannten Positionen an (kein Zurücksetzen)
                         showDocumentPicker = true
                     }
                     .font(.caption).tint(.orange)
@@ -216,73 +214,75 @@ struct LVImportView: View {
 
     // MARK: - Actions
 
-    private func parsePDF(url: URL) {
+    /// Liest lokal aus einer oder mehreren PDFs und HÄNGT die Positionen an
+    /// (erlaubt schrittweises Zusammenführen mehrerer LV-Dateien).
+    private func parsePDFs(urls: [URL]) {
         isParsing = true
         DispatchQueue.global(qos: .userInitiated).async {
-            let tmp = FileManager.default.temporaryDirectory
-                .appendingPathComponent(url.lastPathComponent)
-            try? FileManager.default.removeItem(at: tmp)
-            try? FileManager.default.copyItem(at: url, to: tmp)
-
-            let positions = LVPDFImporter.extract(from: tmp)
+            var collected: [ParsedLVPosition] = []
+            for url in urls {
+                collected.append(contentsOf: LVPDFImporter.extract(from: url))
+            }
 
             DispatchQueue.main.async {
                 isParsing = false
-                if positions.isEmpty {
-                    parseError = "Keine LV-Positionen erkannt.\n\nBitte prüfe ob die PDF Texte enthält (nicht nur gescannte Bilder) und mindestens Pos.-Nr., Beschreibung, Menge und Einheit vorhanden sind."
+                if collected.isEmpty {
+                    parseError = "Keine LV-Positionen erkannt.\n\nBitte prüfe ob die PDF(s) Texte enthalten (nicht nur gescannte Bilder) und mindestens Pos.-Nr., Beschreibung, Menge und Einheit vorhanden sind."
                     showError = true
                 } else {
-                    parsedPositions = positions
+                    parsedPositions.append(contentsOf: collected)
                 }
             }
         }
     }
 
-    /// Routet die ausgewählte PDF an den lokalen Parser oder an den Mops.
-    private func handlePick(url: URL) {
-        // JETZT NEU: Hier sichern wir uns den Dateinamen und den echten Pfad der URL
-        geladenerDateiName = url.lastPathComponent
-        geladenerDateiPfad = url.absoluteString
+    /// Routet die gewählten PDFs an den lokalen Parser oder an den Mops.
+    private func handlePicks(urls: [URL]) {
+        guard !urls.isEmpty else { return }
+        // Fallback-Metadaten (nur genutzt, falls eine Position keine eigene Herkunft trägt)
+        geladenerDateiName = urls.first?.lastPathComponent
+        geladenerDateiPfad = urls.first?.absoluteString
 
+        let mehrere = urls.count > 1
         switch importQuelle {
         case .lokal:
-            parsingHinweis = "PDF wird analysiert ..."
-            parsePDF(url: url)
+            parsingHinweis = mehrere ? "\(urls.count) PDFs werden analysiert …" : "PDF wird analysiert …"
+            parsePDFs(urls: urls)
         case .mops:
-            parsingHinweis = "Mops liest den Plan … (kann etwas dauern)"
-            parsePDFViaMops(url: url)
+            parsingHinweis = mehrere ? "Mops liest \(urls.count) Pläne … (kann dauern)" : "Mops liest den Plan … (kann etwas dauern)"
+            parsePDFsViaMops(urls: urls)
         }
     }
 
-    private func parsePDFViaMops(url: URL) {
-        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
-        try? FileManager.default.removeItem(at: tmp)
-        do {
-            try FileManager.default.copyItem(at: url, to: tmp)
-        } catch {
-            parseError = "PDF konnte nicht gelesen werden."
-            showError = true
-            return
-        }
+    /// Schickt mehrere PDFs nacheinander an den Mops (jeder Call ist CPU-teuer) und
+    /// hängt alle erkannten Positionen an. Herkunft pro Position wird nachgetragen.
+    private func parsePDFsViaMops(urls: [URL]) {
         isParsing = true
         Task {
-            do {
-                let data = try Data(contentsOf: tmp)
-                let result = try await MopsClient().extractPlan(
-                    pdf: data, filename: tmp.lastPathComponent,
-                    projekt: event.eventNumber, baustelle: event.title)
-                let parsed = ExtractPlanMapper.toParsed(result)
-                isParsing = false
-                if parsed.isEmpty {
-                    parseError = "Der Mops hat keine Positionen aus dem Plan gelesen."
-                    showError = true
-                } else {
-                    parsedPositions = parsed
+            var collected: [ParsedLVPosition] = []
+            var letzterFehler: String?
+            for url in urls {
+                do {
+                    let data = try Data(contentsOf: url)
+                    let result = try await MopsClient().extractPlan(
+                        pdf: data, filename: url.lastPathComponent,
+                        projekt: event.eventNumber, baustelle: event.title)
+                    var parsed = ExtractPlanMapper.toParsed(result)
+                    for i in parsed.indices where parsed[i].quellDateiName == nil {
+                        parsed[i].quellDateiName = url.lastPathComponent
+                        parsed[i].quellDateiURL  = url
+                    }
+                    collected.append(contentsOf: parsed)
+                } catch {
+                    letzterFehler = (error as? MopsClientError)?.errorDescription ?? error.localizedDescription
                 }
-            } catch {
-                isParsing = false
-                parseError = (error as? MopsClientError)?.errorDescription ?? error.localizedDescription
+            }
+            isParsing = false
+            if collected.isEmpty {
+                parseError = letzterFehler ?? "Der Mops hat keine Positionen aus den Plänen gelesen."
                 showError = true
+            } else {
+                parsedPositions.append(contentsOf: collected)
             }
         }
     }
@@ -299,11 +299,12 @@ struct LVImportView: View {
             pos.lieferant          = parsed.lieferant
             pos.event              = event
             
-            // JETZT NEU VERDRAHTET: Werte werden sicher in CoreData injiziert
-            if let dateiName = geladenerDateiName {
+            // Herkunft PRO Position (Merge mehrerer PDFs) — mit Fallback auf die
+            // zuletzt geladene Datei, falls eine Position keine eigene Quelle trägt.
+            if let dateiName = parsed.quellDateiName ?? geladenerDateiName {
                 pos.setValue(dateiName, forKey: "dokuName")
             }
-            if let dateiPfad = geladenerDateiPfad {
+            if let dateiPfad = parsed.quellDateiURL?.absoluteString ?? geladenerDateiPfad {
                 pos.setValue(dateiPfad, forKey: "dokuPath")
             }
         }
@@ -315,28 +316,43 @@ struct LVImportView: View {
 // MARK: - PDF Document Picker
 
 struct PDFDocumentPicker: UIViewControllerRepresentable {
-    let onPick: (URL) -> Void
+    /// Liefert lokale tmp-Kopien der gewählten PDFs (eine oder mehrere).
+    let onPick: ([URL]) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let vc = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.pdf])
         vc.delegate = context.coordinator
-        vc.allowsMultipleSelection = false
+        vc.allowsMultipleSelection = true
         return vc
     }
 
     func updateUIViewController(_ vc: UIDocumentPickerViewController, context: Context) {}
 
     final class Coordinator: NSObject, UIDocumentPickerDelegate {
-        let onPick: (URL) -> Void
-        init(onPick: @escaping (URL) -> Void) { self.onPick = onPick }
+        let onPick: ([URL]) -> Void
+        init(onPick: @escaping ([URL]) -> Void) { self.onPick = onPick }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            guard let url = urls.first else { return }
-            let secured = url.startAccessingSecurityScopedResource()
-            onPick(url)
-            if secured { url.stopAccessingSecurityScopedResource() }
+            // Jede Datei UNTER dem Security-Scope in den tmp-Ordner kopieren — sonst
+            // ist sie nach dem Schließen des Pickers nicht mehr lesbar. So bleiben auch
+            // mehrere Dateien gleichzeitig gültig (Scope lässt sich nicht async halten).
+            let fm = FileManager.default
+            var localCopies: [URL] = []
+            for url in urls {
+                let secured = url.startAccessingSecurityScopedResource()
+                defer { if secured { url.stopAccessingSecurityScopedResource() } }
+                let tmp = fm.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
+                try? fm.removeItem(at: tmp)
+                do {
+                    try fm.copyItem(at: url, to: tmp)
+                    localCopies.append(tmp)
+                } catch {
+                    // einzelne, nicht kopierbare Datei überspringen statt alles abzubrechen
+                }
+            }
+            onPick(localCopies)
         }
     }
 }

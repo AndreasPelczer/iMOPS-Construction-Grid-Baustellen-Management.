@@ -7,16 +7,18 @@ Offline-First mit Core Data, MVVM, keine externen Dependencies im Frontend.
 
 ---
 
-## Stand der Wellen
+## Stand der Wellen (Stand 2026-07-03)
 
-| Welle | Feature | Status |
+| Welle / Stufe | Feature | Status |
 |-------|---------|--------|
-| 5.1 | Aufmaß-Entity + Soll/Ist-Skelett | erledigt, gemergt (PR #56) |
-| 5.2 | AufmassSheet + Soll/Ist-Karte | erledigt, gemergt (PR #58) |
-| 5.2.1 | Fortschritt-Ableitung — gemessen verdrängt geschätzt | erledigt, gemergt (PR #61) |
-| 6 | Kalkulation — LVKalkulationView mit Live-Summe und Einkaufspreisen | erledigt, gemergt (PR #68) |
-| 7 | Geländebrücke — DXF-Upload, IDW-Interpolation, Cut/Fill, PDF-Report, Brücke ins LV | erledigt, gemergt (PR #67) |
-| 9 | Voraussetzungs-Ampel (Rot/Grün Baufrei) | geplant — Fundament mengenQuelleRaw liegt (PR #54) |
+| 5.1 | Aufmaß-Entity + Soll/Ist-Skelett | gemergt (PR #56) |
+| 5.2 / 5.2.1 | AufmassSheet, Soll/Ist-Ampel, Fortschritt-Ableitung (gemessen verdrängt geschätzt) | gemergt (PR #58/#61) |
+| 5.3 | BuildIQ: Menge erkennen (`/classify-material`) + Scan auf LV-Position buchen (Aufmaß, quelle=buildiq) | Buchung auf `codex/lv-baustein-search` (PR ausstehend) |
+| 6 | Kalkulation (Live-Summe, EK), Kostenzusammenfassung, GAEB-X84→AngebotsStore | gemergt (PR #68); **Stammdaten-Pflege** (Löhne/Material/Geräte) auf Branch (PR ausstehend) |
+| 7 | Geländebrücke — DXF-Upload, IDW/Cut-Fill, Schotter/Vlies/LKW, PDF-Report, Brücke ins LV | gemergt (PR #67); Massen jetzt als `mengenQuelle=schaetzung` gekennzeichnet (Branch) |
+| 9 | Voraussetzungs-Ampel (Rot/Grün baufrei) + Hierarchie Gebäude/Geschoss | MVP gemergt (PR #73–75); Ausbau offen |
+| Stufe 1 | Mehrfach-PDF-Upload im LV-Import | auf Branch (PR ausstehend) |
+| Stufe 2 | Dokumenten-Extraktion (Text-PDF → strukturierte Felder, `/extract-doc`) | Box-Route live; iOS-Client offen (Spec) |
 
 ---
 
@@ -56,8 +58,8 @@ Datenhaltung: Core Data, Offline-First. Core-Data-Model: test25B.xcdatamodeld.
 Frontend kommuniziert mit dem lokalen Python-Backend mops-api:
 - Repo: AndreasPelczer/mops-api
 - Stack: FastAPI / Python
-- Host: Mops-Box 192.168.2.42:8080 (Ubuntu, CPU-only)
-- Endpoints u. a.: /chat, /classify, /health, /admin-ui, /prof, /gelaendebruecke/calculate (Welle 7)
+- Host: Mops-Box (Ubuntu, CPU-only) im Heimnetz, erreichbar über Tunnel https://mops.baumops.com (Default in der App, in Settings änderbar)
+- Endpoints u. a.: /chat, /prof (→ Claude/OpenAI, umschaltbar), /classify, /classify-material (BuildIQ, Welle 5.3), /health, /extract-plan, /extract-doc (Stufe 2), /gelaendebruecke/calculate (Welle 7)
 
 ---
 
@@ -81,12 +83,13 @@ Keine externen Dependencies via SPM nötig.
 
 ---
 
-## Roadmap
+## Roadmap (Stand 2026-07-03)
 
-Welle 9 — Voraussetzungs-Ampel (nächster Sprint):
-- [GRÜN] Fundament liegt: LVPosition.mengenQuelleRaw (gemessen/geschätzt) bereits in Core Data + Import (PR #54).
-- [GELB] Zu bauen: Hierarchie (Gebäude/Geschoss), ReadinessManager-Rollup, Voraussetzungs-Katalog, AmpelCard-UI, Polier-Freigabe.
-- Siehe docs/roadmap_wellen_5_bis_9.md.
+- **Welle 9 — Voraussetzungs-Ampel:** MVP gemergt (Hierarchie Gebäude/Geschoss, AmpelCard in EventDetailView). Ausbau offen: Voraussetzungs-Katalog, ReadinessManager-Rollup, Polier-Freigabe. Profitiert davon, dass Geländebrücke- und Import-Mengen als `mengenQuelle=schaetzung` gekennzeichnet sind.
+- **Welle 6 Rest:** XLSX-Import für Stammdaten, Mittellohn-Aggregat.
+- **Welle 7 — Adresse→Automatik:** neuer Box-Endpoint (Adresse→DGM1→Cut/Fill) + Adressfeld/Auto-Aufruf in der App. Spec: docs/Welle7-Adresse-Automatik.md.
+- **Stufe 2 — iOS-Client:** `/extract-doc` anbinden (Multi-Picker + Review-Liste). Spec: docs/Stufe2-Dokumenten-Extraktion.md.
+- Hinweis: docs/roadmap_wellen_5_bis_9.md ist teils veraltet — der Code ist oft weiter als die Roadmap.
 
 ---
 
@@ -96,3 +99,4 @@ Welle 9 — Voraussetzungs-Ampel (nächster Sprint):
 - docs/uebergabe_05_06_2026.md
 - docs/uebergabe_09_06_2026.md
 - docs/uebergabe_19_06_2026.md — Welle 7 abgeschlossen, Welle 6 MVP, Welle 9 als nächstes
+- docs/HANDOFF-2026-07-03.md — Stufe 1 (Multi-Upload), Stufe 2 (Doku-Extraktion), Geländebrücke-Fix, Box-Runbook

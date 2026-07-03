@@ -92,14 +92,19 @@
     Statik-/Bewehrungsplan vom Mops auswerten lassen (Mengen + Kostengruppe + Mat-Nr):
     1. In einer Baustelle "LV aus PDF importieren" oeffnen
     2. Button "Statik per Mops auswerten" tippen (blau)
-    3. Die Plan-PDF (Statik oder Bewehrung) waehlen
-    4. Der Mops liest den Plan auf der Box (kann etwas dauern, CPU-only)
+    3. Die Plan-PDF(s) (Statik oder Bewehrung) waehlen — mehrere gleichzeitig moeglich
+    4. Der Mops liest die Plaene nacheinander auf der Box (kann dauern, CPU-only)
     5. Positionen pruefen/abwaehlen — inkl. erkannter Kostengruppe und Xella-Mat-Nr
     6. "Importieren" -> Positionen sind im LV der Baustelle
 
-    Unterschied zu "PDF auswaehlen": der lokale Import liest einfache LV-PDFs auf
+    Unterschied zu "PDFs auswaehlen": der lokale Import liest einfache LV-PDFs auf
     dem Geraet; "Statik per Mops" wertet echte Statik-/Bewehrungsplaene aus und
     schlaegt Material-Nummern vor (abZ-Aufloesung).
+
+    Mehrere PDFs: Beim Auswaehlen koennen mehrere Dateien auf einmal markiert und
+    zu einem LV zusammengefuehrt werden. Ueber "PDF hinzufuegen" (in der Pruefliste)
+    lassen sich weitere PDFs anhaengen, ohne die bereits erkannten Positionen zu
+    verlieren. Jede Position merkt sich ihre Quelldatei.
   quelle_kurz: "iMOPS App-Bedienung (Welle 4)"
   license_note: "Eigene Bedienungshilfe"
 
@@ -285,16 +290,47 @@
   antwort: |
     Der Tab "BuildIQ" ist ein KI-Foto-Scanner fuer DIN-276-Kostengruppen.
     Workflow:
-    1. Foto vom Bauwerk/Bauteil aufnehmen oder aus Galerie
-    2. BuildIQ schickt das Bild an Gemini (Google) zur Klassifikation
-    3. Antwort: vermutete DIN-276-Kostengruppe + Konfidenz + Begruendung
-    4. Optional: Ergebnis ins Maengel-/Auftrags-System uebernehmen
+    1. Lieferschein oder Bauteil fotografieren
+    2. Die Texterkennung laeuft on-device (Apple Vision); der erkannte Text
+       geht zur Klassifikation an die Mops-Box (nicht an Google/Gemini)
+    3. Antwort: vermutete DIN-276-Kostengruppe + Menge/Einheit + Konfidenz + Begruendung
+    4. Mit "Auf Position buchen" das Ergebnis einer LV-Position zuordnen:
+       die gescannte Menge wird als Aufmass (Quelle BuildIQ) gebucht und gegen
+       die Soll-Menge verglichen (Ampel). Du bestaetigst die Buchung — die KI
+       bucht nicht allein. Bei einem Scan ohne erkannte Menge traegst du sie
+       von Hand ein.
 
-    Hinweis: Foto-Daten werden an Gemini geschickt. Fuer sensible
-    Baustellen ggf. nicht verwenden.
+    Hinweis: Das Foto bleibt auf dem Geraet; nur der erkannte Text geht an die
+    Mops-Box im Heimnetz.
 
     Verfuegbar nur auf iOS (nicht auf macCatalyst).
   quelle_kurz: "iMOPS App-Bedienung (Phase 3)"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Stammdaten_Pflege"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Stammdaten"
+    - "Stammdaten pflegen"
+    - "Loehne bearbeiten"
+    - "Materialpreise pflegen"
+    - "Geraete verwalten"
+  antwort: |
+    Stammdaten sind die app-weiten Kalkulations-Vorlagen: Loehne (Qualifikation +
+    Stundenlohn + Zuschlagsfaktor), Materialien (Preis je Einheit) und Geraete
+    (Anschaffungskosten + Nutzungsdauer). Daraus zieht die Tiefenkalkulation ihre Werte.
+
+    Oeffnen: im LV ueber das "⋯"-Menue -> "Stammdaten pflegen". Oben umschalten
+    zwischen Loehne / Materialien / Geraete. Mit "+" anlegen, Eintrag antippen zum
+    Bearbeiten, nach links wischen zum Loeschen.
+
+    Loeschen entfernt nur die Vorlage - bereits kalkulierte LV-Positionen behalten
+    ihre Werte (die Position kopiert die Zahlen beim Hinzufuegen, sie referenziert
+    die Stammdaten nicht).
+
+    Verfuegbar nur auf iOS (nicht auf macCatalyst).
+  quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
 - id: "App_Mops_Selbsterklaerung"
@@ -309,8 +345,11 @@
     - "Wer bist du"
     - "Wer ist Mops"
   antwort: |
-    Der Mops ist ein lokales LLM (llama3.2:3b), das auf einem CPU-Server im
-    Heimnetz laeuft (192.168.2.42) und Bau-Fachfragen beantwortet. Er nutzt
+    Der Mops ist ein lokales LLM (llama3.2:3b), das auf einem CPU-Server
+    (Mops-Box im Heimnetz) laeuft und Bau-Fachfragen beantwortet. Erreichbar
+    ist er ueber den Tunnel mops.baumops.com — also auch von der Baustelle aus,
+    nicht nur im Heimnetz. Die Server-Adresse ist in den Einstellungen
+    aenderbar. Er nutzt
     eine RAG-Wissensbasis aus ~85 Wikipedia-Lemmas zu Bau-Themen (Mauerwerk,
     Beton, DIN-Normen etc.).
 
