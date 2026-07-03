@@ -160,6 +160,38 @@ struct AufmassTests {
         #expect(gemessen.displayedFortschritt(manuellerProzent: 80) == .gemessen(prozent: 100))
     }
 
+    // MARK: - BuildIQ-Buchung (Welle 5.3.2)
+
+    /// Eine BuildIQ-Buchung landet als Aufmaß-Zeile mit quelle == .buildiq (Option B2)
+    /// und zählt neben manuellen Aufmaßen in dieselbe Ist-Summe. Spiegelt, was
+    /// BuildIQBuchungBestaetigenView.buchen() im Modell tut. Bewusst OHNE ctx.save()
+    /// (wie die Summen-/Ampel-Tests) — der geteilte Context wird nicht geflusht.
+    @Test @MainActor func buildIQBuchungZaehltAlsIst() {
+        let pos = makePosition(menge: 100)
+
+        // manuelles Aufmaß (bestehende Quelle)
+        addAufmass(to: pos, menge: 40)
+
+        // BuildIQ-Buchung: Menge aus dem Scan, quelle = .buildiq
+        let scan = Aufmass(context: ctx)
+        scan.id = UUID()
+        scan.istMenge = 55
+        scan.istEinheit = "m²"
+        scan.notiz = "BuildIQ: 312 Baugrubenaushub"
+        scan.quelle = .buildiq
+        scan.erstelltAm = Date()
+        scan.lvPosition = pos
+
+        // B2: beide Quellen zählen in dieselbe Ist-Summe.
+        #expect(abs(pos.istMengeSumme - 95) < 0.0001)
+        #expect(pos.aufmassArray.count == 2)
+        #expect(pos.aufmassAmpel == .gruen)          // 5 % Abweichung ≤ 5 %
+
+        // Die BuildIQ-Zeile ist als solche gekennzeichnet.
+        #expect(scan.quelle == .buildiq)
+        #expect(pos.aufmassArray.contains { $0.quelle == .buildiq })
+    }
+
     // MARK: - Loesch-Folgen (Sicherheitsabfrage)
 
     @Test @MainActor func loeschFolgenLeerIstNil() {

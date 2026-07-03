@@ -290,13 +290,18 @@
   antwort: |
     Der Tab "BuildIQ" ist ein KI-Foto-Scanner fuer DIN-276-Kostengruppen.
     Workflow:
-    1. Foto vom Bauwerk/Bauteil aufnehmen oder aus Galerie
-    2. BuildIQ schickt das Bild an Gemini (Google) zur Klassifikation
-    3. Antwort: vermutete DIN-276-Kostengruppe + Konfidenz + Begruendung
-    4. Optional: Ergebnis ins Maengel-/Auftrags-System uebernehmen
+    1. Lieferschein oder Bauteil fotografieren
+    2. Die Texterkennung laeuft on-device (Apple Vision); der erkannte Text
+       geht zur Klassifikation an die Mops-Box (nicht an Google/Gemini)
+    3. Antwort: vermutete DIN-276-Kostengruppe + Menge/Einheit + Konfidenz + Begruendung
+    4. Mit "Auf Position buchen" das Ergebnis einer LV-Position zuordnen:
+       die gescannte Menge wird als Aufmass (Quelle BuildIQ) gebucht und gegen
+       die Soll-Menge verglichen (Ampel). Du bestaetigst die Buchung — die KI
+       bucht nicht allein. Bei einem Scan ohne erkannte Menge traegst du sie
+       von Hand ein.
 
-    Hinweis: Foto-Daten werden an Gemini geschickt. Fuer sensible
-    Baustellen ggf. nicht verwenden.
+    Hinweis: Das Foto bleibt auf dem Geraet; nur der erkannte Text geht an die
+    Mops-Box im Heimnetz.
 
     Verfuegbar nur auf iOS (nicht auf macCatalyst).
   quelle_kurz: "iMOPS App-Bedienung (Phase 3)"

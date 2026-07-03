@@ -118,7 +118,7 @@ struct BuildIQView: View {
         .onDisappear { session.stopRunning() }
         .sheet(isPresented: $showAssignSheet) {
             if let result = scanResult {
-                AuftragZuweisungView(result: result) {
+                BuildIQBuchungView(result: result) {
                     dismiss()
                 }
                 .environment(\.managedObjectContext, ctx)
@@ -171,7 +171,7 @@ struct BuildIQView: View {
                 Button {
                     showAssignSheet = true
                 } label: {
-                    Label("Auftrag zuweisen", systemImage: "link.badge.plus")
+                    Label("Auf Position buchen", systemImage: "ruler")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -273,83 +273,232 @@ struct BuildIQView: View {
     }
 }
 
-// MARK: - Auftrag-Zuweisung
-
-struct AuftragZuweisungView: View {
+// MARK: - BuildIQ-Buchung (Welle 5.3.2)
+// Scan-Ergebnis (KG + Menge) auf eine konkrete LV-Position buchen — als Aufmaß mit
+// quelle = .buildiq (Option B2). Polier bestätigt immer (Option C1, Buch Kap 1:
+// BuildIQ ist Werkzeug, der Mensch entscheidet). A1: ein Material pro Scan.
+struct BuildIQBuchungView: View {
     @Environment(\.managedObjectContext) var ctx
     @Environment(\.dismiss) var dismiss
 
     let result: BuildIQResult
-    let onAssigned: () -> Void
+    let onGebucht: () -> Void
 
     @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Auftrag.processingDetails, ascending: true)],
-        predicate: NSPredicate(format: "isCompleted == NO")
-    ) private var auftraege: FetchedResults<Auftrag>
+        sortDescriptors: [NSSortDescriptor(keyPath: \LVPosition.posNr, ascending: true)]
+    ) private var positionen: FetchedResults<LVPosition>
+
+    @State private var gewaehlt: LVPosition?
+
+    // Weicher KG-Filter (Vorauswahl, nicht hart): passende Positionen zuerst.
+    private var passende: [LVPosition] {
+        positionen.filter { $0.kostenGruppeNummer == result.kg_nummer }
+    }
+    private var uebrige: [LVPosition] {
+        positionen.filter { $0.kostenGruppeNummer != result.kg_nummer }
+    }
 
     var body: some View {
         NavigationStack {
-            List(auftraege) { auftrag in
-                Button {
-                    auftrag.kostenGruppeNummer = result.kg_nummer
-                    auftrag.kostenGruppeBezeichnung = result.kg_bezeichnung
-                    try? ctx.save()
-                    onAssigned()
-                } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(auftrag.processingDetails ?? "Auftrag")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        HStack {
-                            if let emp = auftrag.employeeName, !emp.isEmpty {
-                                Label(emp, systemImage: "person")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            if let kg = auftrag.kostenGruppeNummer {
-                                Text("KG \(kg)")
-                                    .font(.caption2)
-                                    .foregroundColor(.orange)
-                            }
-                        }
+            List {
+                if !passende.isEmpty {
+                    Section("Passend zu KG \(result.kg_nummer)") {
+                        ForEach(passende, id: \.objectID, content: positionRow)
+                    }
+                }
+                if !uebrige.isEmpty {
+                    Section(passende.isEmpty ? "Alle LV-Positionen" : "Andere Positionen") {
+                        ForEach(uebrige, id: \.objectID, content: positionRow)
                     }
                 }
             }
-            .navigationTitle("Auftrag auswählen")
+            .navigationTitle("Position wählen")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") { dismiss() }
                 }
             }
-            .safeAreaInset(edge: .top) {
-                HStack {
-                    Image(systemName: "brain.head.profile")
-                        .foregroundColor(.orange)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(result.kg_nummer) · \(result.kg_bezeichnung)")
-                            .font(.subheadline).bold()
-                        Text(result.begruendung)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
-                    Spacer()
-                }
-                .padding()
-                .background(Color.orange.opacity(0.1))
-            }
+            .safeAreaInset(edge: .top) { scanKopf }
             .overlay {
-                if auftraege.isEmpty {
+                if positionen.isEmpty {
                     ContentUnavailableView(
-                        "Keine offenen Aufträge",
+                        "Keine LV-Positionen",
                         systemImage: "tray",
-                        description: Text("Lege zuerst einen Auftrag an.")
+                        description: Text("Importiere zuerst ein Leistungsverzeichnis.")
                     )
                 }
             }
+            .sheet(item: $gewaehlt) { pos in
+                BuildIQBuchungBestaetigenView(result: result, position: pos) {
+                    gewaehlt = nil
+                    onGebucht()
+                }
+                .environment(\.managedObjectContext, ctx)
+            }
         }
+    }
+
+    private func positionRow(_ p: LVPosition) -> some View {
+        Button { gewaehlt = p } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(p.bezeichnung ?? "Position")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                HStack(spacing: 8) {
+                    if let nr = p.posNr, !nr.isEmpty {
+                        Text("Pos \(nr)").font(.caption2).foregroundColor(.secondary)
+                    }
+                    if let kg = p.kostenGruppeNummer, !kg.isEmpty {
+                        Text("KG \(kg)").font(.caption2).foregroundColor(.orange)
+                    }
+                    if let bau = p.event?.title ?? p.event?.name, !bau.isEmpty {
+                        Text("· \(bau)").font(.caption2).foregroundColor(.secondary).lineLimit(1)
+                    }
+                    Spacer()
+                    Text("Soll \(p.sollMenge.formatted(.number.precision(.fractionLength(0...2)))) \(p.einheit ?? "")")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+            }
+        }
+    }
+
+    private var scanKopf: some View {
+        HStack {
+            Image(systemName: "brain.head.profile").foregroundColor(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(result.kg_nummer) · \(result.kg_bezeichnung)")
+                    .font(.subheadline).bold()
+                if let menge = result.menge {
+                    Text("Scan: \(menge.formatted(.number.precision(.fractionLength(0...2)))) \(result.einheit ?? "")")
+                        .font(.caption).foregroundColor(.secondary)
+                } else {
+                    Text("Scan ohne Menge — beim Buchen von Hand eintragen")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+    }
+}
+
+// MARK: - BuildIQ-Buchung bestätigen
+// Zeigt die Soll/Ist-Vorschau MIT dem gescannten Wert, bevor gebucht wird (der Polier
+// sieht die Konsequenz). Buchung = neue Aufmaß-Zeile mit quelle = .buildiq.
+private struct BuildIQBuchungBestaetigenView: View {
+    @Environment(\.managedObjectContext) var ctx
+    @Environment(\.dismiss) var dismiss
+
+    let result: BuildIQResult
+    @ObservedObject var position: LVPosition
+    let onGebucht: () -> Void
+
+    @State private var mengeText: String
+    @State private var einheit: String
+
+    init(result: BuildIQResult, position: LVPosition, onGebucht: @escaping () -> Void) {
+        self.result = result
+        self.position = position
+        self.onGebucht = onGebucht
+        _mengeText = State(initialValue: result.menge.map {
+            $0.formatted(.number.precision(.fractionLength(0...2)))
+        } ?? "")
+        _einheit = State(initialValue: result.einheit ?? position.einheit ?? "")
+    }
+
+    private var neueMenge: Double? {
+        Double(mengeText.replacingOccurrences(of: ",", with: "."))
+    }
+    private var valid: Bool { (neueMenge ?? 0) > 0 }
+    private var neuesIst: Double { position.istMengeSumme + (neueMenge ?? 0) }
+    private var neueAbweichung: Double { position.sollMenge - neuesIst }
+    private var neueAbwProzent: Double {
+        position.sollMenge > 0 ? neueAbweichung / position.sollMenge : 0
+    }
+    // Gleiche Schwellen wie LVPosition.aufmassAmpel (5 %/15 %), auf den Vorschauwert.
+    private var vorschauAmpel: AufmassAmpel {
+        guard position.sollMenge > 0 else { return .keinAufmass }
+        let a = abs(neueAbwProzent)
+        if a <= 0.05 { return .gruen }
+        if a <= 0.15 { return .orange }
+        return .rot
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack {
+                        TextField("0,00", text: $mengeText)
+                            .keyboardType(.decimalPad)
+                            .font(.title3.monospacedDigit())
+                        TextField("Einheit", text: $einheit)
+                            .frame(maxWidth: 90)
+                            .multilineTextAlignment(.trailing)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Gescannte Menge *")
+                } footer: {
+                    Text("Soll laut LV: \(position.sollMenge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "")")
+                }
+
+                Section("Vorschau nach Buchung") {
+                    vorschauZeile("SOLL", position.sollMenge)
+                    vorschauZeile("bisher IST", position.istMengeSumme)
+                    vorschauZeile("+ Scan", neueMenge ?? 0)
+                    vorschauZeile("= neues IST", neuesIst, betont: true)
+                    HStack {
+                        Text("ABWEICHUNG").font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(neueAbweichung.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "") (\((neueAbwProzent * 100).formatted(.number.precision(.fractionLength(0...1)))) %)")
+                            .font(.callout.monospacedDigit())
+                        Circle().fill(vorschauAmpel.farbe).frame(width: 12, height: 12)
+                    }
+                }
+
+                Section {
+                    HStack(spacing: 8) {
+                        Image(systemName: "brain.head.profile").foregroundColor(.orange)
+                        Text("Wird als Aufmaß mit Quelle BuildIQ festgehalten. Du bestätigst — die KI bucht nicht allein.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle(position.bezeichnung ?? "Position")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Zurück") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Buchen") { buchen() }.disabled(!valid).tint(.orange)
+                }
+            }
+        }
+    }
+
+    private func vorschauZeile(_ label: String, _ value: Double, betont: Bool = false) -> some View {
+        HStack {
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Text("\(value.formatted(.number.precision(.fractionLength(0...2)))) \(einheit.isEmpty ? (position.einheit ?? "") : einheit)")
+                .font(betont ? .body.monospacedDigit().weight(.semibold) : .callout.monospacedDigit())
+        }
+    }
+
+    private func buchen() {
+        let a = Aufmass(context: ctx)
+        a.id = UUID()
+        a.istMenge = neueMenge ?? 0
+        a.istEinheit = einheit.isEmpty ? nil : einheit
+        a.notiz = "BuildIQ: \(result.kg_nummer) \(result.kg_bezeichnung)"
+        a.quelle = .buildiq
+        a.erstelltAm = Date()
+        a.lvPosition = position
+        try? ctx.save()
+        dismiss()
+        onGebucht()
     }
 }
 
