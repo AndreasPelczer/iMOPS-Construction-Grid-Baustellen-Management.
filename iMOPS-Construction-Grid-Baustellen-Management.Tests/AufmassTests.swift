@@ -12,13 +12,17 @@ import CoreData
 
 struct AufmassTests {
 
-    /// EIN In-Memory-CoreData-Stack, dauerhaft festgehalten (struct → statischer
-    /// Halter, sonst gibt der Container die Objekte sofort frei). Siehe CLAUDE.md.
-    @MainActor
-    private static let testController = PersistenceController(inMemory: true)
+    /// Jeder Test bekommt seinen EIGENEN In-Memory-Stack. Swift Testing erzeugt die
+    /// Suite-Struct pro @Test neu, die stored-Property lebt also genau einen Test lang
+    /// (festgehalten → Objekte behalten ihre Attribute, vgl. CLAUDE.md). Damit sind die
+    /// Tests vollständig isoliert: kein geteilter Context mehr, deshalb kann ein save()
+    /// in einem Test keine halbfertigen Objekte anderer, parallel laufender Tests mit
+    /// flushen — das war die Ursache der nicht-deterministischen Flakes.
+    /// (Mehrere Container teilen sich das immutable static managedObjectModel — ok.)
+    private let controller = PersistenceController(inMemory: true)
 
     @MainActor
-    private var ctx: NSManagedObjectContext { Self.testController.container.viewContext }
+    private var ctx: NSManagedObjectContext { controller.container.viewContext }
 
     @MainActor
     private func makePosition(menge: Double) -> LVPosition {
@@ -46,7 +50,7 @@ struct AufmassTests {
 
         try ctx.save()
 
-        // Über Prädikat laden (robust gegen Objekte anderer Tests im geteilten Stack).
+        // Über Prädikat laden (eigener isolierter Stack pro Test, s. oben).
         let req = Aufmass.fetchRequest()
         req.predicate = NSPredicate(format: "notiz == %@", "EG, Außenwand West")
         let geladen = try ctx.fetch(req)
