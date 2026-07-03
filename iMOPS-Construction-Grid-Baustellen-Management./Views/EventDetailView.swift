@@ -461,6 +461,7 @@ struct EventDetailView: View {
             pos.bezeichnung = "Aushub (Massenausgleich)"
             pos.einheit = "m³"
             pos.menge = result.cut
+            pos.mengenQuelle = .schaetzung   // DGM-Interpolation → Schätzwert (Welle-9-Ampel)
             pos.kostenGruppeNummer = "311"
             pos.event = event
             nextPos += 1
@@ -473,6 +474,7 @@ struct EventDetailView: View {
             pos.bezeichnung = "Schotter 0/45 (30 cm Tragschicht)"
             pos.einheit = "t"
             pos.menge = result.schotter_t
+            pos.mengenQuelle = .schaetzung   // DGM-Interpolation → Schätzwert (Welle-9-Ampel)
             pos.kostenGruppeNummer = "322"
             pos.event = event
             nextPos += 1
@@ -485,6 +487,7 @@ struct EventDetailView: View {
             pos.bezeichnung = "Trennvlies"
             pos.einheit = "m²"
             pos.menge = result.vlies_m2 // KORRIGIERT: Nutzt direkt den vlies_m2 Wert ohne Cast-Verschachtelung
+            pos.mengenQuelle = .schaetzung   // DGM-Interpolation → Schätzwert (Welle-9-Ampel)
             pos.kostenGruppeNummer = "322"
             pos.event = event
             nextPos += 1
