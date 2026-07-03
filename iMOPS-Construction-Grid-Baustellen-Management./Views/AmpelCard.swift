@@ -90,6 +90,15 @@ struct AmpelCard: View {
         )
     }
 
+    // Faden gemessen/geschätzt (Welle-9-Ziel „Schätzwerte andersfarbig bis gemessen"):
+    // Positionen, deren Menge noch eine Schätzung ist (nicht harte Statik) UND die noch
+    // kein Aufmaß haben → „noch nicht belastbar". Kein Baufrei-Blocker, nur ein ehrlicher
+    // Hinweis auf die Datengüte.
+    private var geschaetztOffen: Int {
+        ((event.lvPositionen?.allObjects as? [LVPosition]) ?? [])
+            .filter { $0.istGeschaetzt && !$0.hatAufmass }.count
+    }
+
     var body: some View {
         HStack(spacing: 16) {
             // Die leuchtende iMOPS-Ampel
@@ -110,6 +119,12 @@ struct AmpelCard: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
+                if geschaetztOffen > 0 {
+                    Label("\(geschaetztOffen) Position\(geschaetztOffen == 1 ? "" : "en") noch geschätzt (nicht gemessen)",
+                          systemImage: "ruler")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                }
             }
             
             Spacer()
