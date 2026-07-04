@@ -79,8 +79,20 @@
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="reihenfolge" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="freigegeben" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="freigegebenAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="freigegebenVon" optional="YES" attributeType="String"/>
         <relationship name="gebaeude" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Gebaeude" inverseName="geschosse" inverseEntity="Gebaeude"/>
         <relationship name="lvPositionen" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="geschoss" inverseEntity="LVPosition"/>
+        <relationship name="voraussetzungen" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Voraussetzung" inverseName="geschoss" inverseEntity="Voraussetzung"/>
+    </entity>
+    <entity name="Voraussetzung" representedClassName="Voraussetzung" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="typ" optional="YES" attributeType="String" defaultValueString="manuell"/>
+        <attribute name="erfuellt" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="reihenfolge" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="geschoss" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="voraussetzungen" inverseEntity="Geschoss"/>
     </entity>
     <entity name="KalkMaterial" representedClassName="KalkMaterial" syncable="YES">
         <attribute name="einheit" optional="YES" attributeType="String"/>

@@ -18,6 +18,10 @@ extension LVPosition {
     @NSManaged var bgkProzent: Double
     @NSManaged var mengenQuelleRaw: String?
     @NSManaged var event: Event?
+    // Welle 9 — Bau-Hierarchie: Position hängt (zusätzlich zu event) an einem Geschoss.
+    // Relation + Inverse (Geschoss.lvPositionen) sind im Modell schon definiert; hier nur
+    // der getypte Accessor freigelegt (bisher nur per KVC in HierarchieMigration gesetzt).
+    @NSManaged var geschoss: Geschoss?
 
     // Kalkulations-Relationships
     @NSManaged var kalkMaterialien: NSSet?

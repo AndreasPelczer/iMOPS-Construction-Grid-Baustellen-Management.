@@ -18,6 +18,7 @@ struct AddLVPositionView: View {
     @State private var isAlternative = false
     @State private var showKatalog = false
     @State private var kgProposal: KGProposal?
+    @State private var selectedGeschoss: Geschoss?   // Welle 9 — Ebene der Position
 
     let einheiten = ["m²", "m³", "lfm", "Stück", "kg", "t", "Psch", "h"]
     let lieferanten = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
@@ -54,6 +55,19 @@ struct AddLVPositionView: View {
                         }.pickerStyle(.menu)
                     }
                 }
+                Section {
+                    Picker("Geschoss", selection: $selectedGeschoss) {
+                        ForEach(verfuegbareGeschosse, id: \.objectID) { g in
+                            Text(geschossLabel(g)).tag(Optional(g))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text("Ebene (Welle 9)")
+                } footer: {
+                    Text("Ordnet die Position einem Geschoss zu (Gruppierung Ebene + Kosten nach Ebene). Verwaltung: LV → ⋯ → Ebenen verwalten.")
+                }
+
                 Section("DIN 276 Kostengruppe") {
                     NavigationLink { KGPickerList(selected: $kg) } label: {
                         HStack { Text("KG"); Spacer(); Text(kg).foregroundStyle(.orange) }
@@ -86,7 +100,7 @@ struct AddLVPositionView: View {
                     Button("Sichern") { save() }.disabled(!isValid).tint(.orange)
                 }
             }
-            .onAppear { prefill() }
+            .onAppear { prefill(); setupGeschoss() }
             .onChange(of: bezeichnung) { _, _ in
                 refreshKGProposal()
             }
@@ -137,8 +151,31 @@ struct AddLVPositionView: View {
         pos.artikelNummer = artikelNummer.isEmpty ? nil : artikelNummer
         pos.lieferant = lieferant.isEmpty ? nil : lieferant
         pos.event = event
+        // Welle 9 — Ebene setzen (nie nil): gewähltes Geschoss oder Default der Baustelle.
+        pos.geschoss = selectedGeschoss
+            ?? HierarchieHelfer.sichereDefaultGeschoss(for: event, in: viewContext).geschoss
         try? viewContext.save()
         dismiss()
+    }
+
+    // MARK: - Welle 9: Ebene
+
+    private var verfuegbareGeschosse: [Geschoss] {
+        HierarchieHelfer.alleGeschosse(for: event)
+    }
+
+    private func geschossLabel(_ g: Geschoss) -> String {
+        "\(g.gebaeude?.name ?? "—") · \(g.name ?? "Geschoss")"
+    }
+
+    /// Sichert, dass die Baustelle mind. ein Geschoss hat, und setzt die Vorauswahl
+    /// (bearbeitete Position: ihr Geschoss; neue Position: Default-Geschoss).
+    private func setupGeschoss() {
+        let ergebnis = HierarchieHelfer.sichereDefaultGeschoss(for: event, in: viewContext)
+        if ergebnis.geaendert { try? viewContext.save() }
+        if selectedGeschoss == nil {
+            selectedGeschoss = editPosition?.geschoss ?? ergebnis.geschoss
+        }
     }
 
     private func refreshKGProposal() {

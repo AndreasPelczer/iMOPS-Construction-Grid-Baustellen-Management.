@@ -333,6 +333,36 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Ebenen_Freigabe"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Ebenen-Freigabe"
+    - "Geschoss freigeben"
+    - "Voraussetzungen"
+    - "Bau-Hierarchie"
+    - "Gebaeude Geschoss"
+  antwort: |
+    Welle 9 gliedert eine Baustelle in Gebaeude -> Geschosse. LV-Positionen haengen an
+    einem Geschoss (Zuordnung im "Position anlegen"-Dialog, Abschnitt "Ebene").
+
+    Verwalten: LV -> "..."-Menue -> "Ebenen verwalten" (Gebaeude/Geschosse anlegen,
+    umbenennen, per Drag sortieren, loeschen).
+
+    Freigabe/Status: LV -> "..."-Menue -> "Ebenen-Freigabe / Status". Pro Geschoss:
+    - Automatische Voraussetzungen (live berechnet, nur Anzeige): z.B. "keine
+      geschaetzten Mengen offen".
+    - Manuelle Voraussetzungen (Polier hakt ab): Leistungen erfasst, Aufmass geprueft,
+      keine Maengel, Fotodoku, Nachtraege geklaert.
+    - Freigabe-Schalter (haelt Datum + Firma fest). Das Gebaeude wird gruen, wenn alle
+      seine Geschosse freigegeben sind.
+
+    Wichtig: reine STATUSANZEIGE. Blockiert NICHTS - Bestellungen und Bautagesbericht
+    laufen unabhaengig weiter. Die Ampel warnt nur, wenn trotz offener Voraussetzung
+    freigegeben wurde.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Mops_Selbsterklaerung"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
