@@ -18,41 +18,18 @@ struct HierarchieMigration {
             return
         }
 
+        // Bootstrap-Logik lebt jetzt in HierarchieHelfer (auch für neue Events/Importe
+        // im laufenden Betrieb genutzt) — hier nur einmalig über alle Alt-Baustellen.
         var needsSave = false
-
         for event in events {
-            // Prüfen, ob das Event schon Gebäude hat (via KVC, um Compiler-Fehler zu umgehen)
-            let existingGebaeude = event.value(forKey: "gebaeude") as? NSSet
-            if (existingGebaeude?.count ?? 0) == 0 {
-                
-                let hauptgebaeude = Gebaeude(context: context)
-                hauptgebaeude.id = UUID()
-                hauptgebaeude.name = "Hauptgebäude"
-                hauptgebaeude.reihenfolge = 0
-                hauptgebaeude.setValue(event, forKey: "event") // KVC statt hauptgebaeude.event = event
-
-                let egGeschoss = Geschoss(context: context)
-                egGeschoss.id = UUID()
-                egGeschoss.name = "Allgemein / EG"
-                egGeschoss.reihenfolge = 0
-                egGeschoss.setValue(hauptgebaeude, forKey: "gebaeude") // KVC
-
-                // Alle bestehenden LVPositionen diesem Geschoss zuordnen
-                if let positions = event.lvPositionen as? Set<LVPosition> {
-                    for pos in positions {
-                        if pos.value(forKey: "geschoss") == nil {
-                            pos.setValue(egGeschoss, forKey: "geschoss") // KVC
-                        }
-                    }
-                }
-                needsSave = true
-            }
+            let (_, geaendert) = HierarchieHelfer.sichereDefaultGeschoss(for: event, in: context)
+            needsSave = needsSave || geaendert
         }
 
         if needsSave {
             try? context.save()
         }
-        
+
         UserDefaults.standard.set(true, forKey: "welle9_hierarchie_migrated")
     }
 }

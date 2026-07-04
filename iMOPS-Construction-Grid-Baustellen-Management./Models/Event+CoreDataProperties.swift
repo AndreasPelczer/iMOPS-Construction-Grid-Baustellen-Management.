@@ -34,6 +34,9 @@ extension Event {
     @NSManaged var jobs: NSSet?
     @NSManaged var maengel: NSSet?
     @NSManaged var lvPositionen: NSSet?
+    // Welle 9 — Bau-Hierarchie: Gebäude dieser Baustelle (Relation im Modell definiert,
+    // Inverse Gebaeude.event). Getypter Accessor freigelegt für den Hierarchie-Helfer.
+    @NSManaged var gebaeude: NSSet?
 
 }
 

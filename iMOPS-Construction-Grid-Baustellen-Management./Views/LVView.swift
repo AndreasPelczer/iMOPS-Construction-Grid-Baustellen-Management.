@@ -9,6 +9,7 @@ import UIKit
 private enum LVGruppierung: String, CaseIterable, Identifiable {
     case kostenGruppe
     case dokumentStruktur
+    case gebaeudeGeschoss
 
     var id: String { rawValue }
 
@@ -16,6 +17,7 @@ private enum LVGruppierung: String, CaseIterable, Identifiable {
         switch self {
         case .kostenGruppe: return "KG"
         case .dokumentStruktur: return "Dokument"
+        case .gebaeudeGeschoss: return "Ebene"
         }
     }
 
@@ -23,6 +25,7 @@ private enum LVGruppierung: String, CaseIterable, Identifiable {
         switch self {
         case .kostenGruppe: return "folder"
         case .dokumentStruktur: return "doc.text"
+        case .gebaeudeGeschoss: return "building.2"
         }
     }
 }
@@ -50,6 +53,8 @@ struct LVView: View {
     @State private var showBestellliste = false
     @State private var showAngebotsVergleich = false
     @State private var showKostenübersicht = false
+    @State private var showGeschossKosten = false
+    @State private var showHierarchieVerwalten = false
     @State private var showStammdaten = false
     @State private var showImport = false
     @State private var showGAEBImport = false
@@ -87,6 +92,8 @@ struct LVView: View {
             return groupedByKostenGruppe
         case .dokumentStruktur:
             return groupedByDokumentStruktur
+        case .gebaeudeGeschoss:
+            return groupedByGebaeudeGeschoss
         }
     }
 
@@ -99,6 +106,32 @@ struct LVView: View {
                 items: items
             )
         }
+    }
+
+    // Welle 9 — dritte Achse: nach Bau-Hierarchie (Gebäude · Geschoss). Sortiert nach
+    // reihenfolge; Positionen ohne Geschoss (falls doch mal eine durchrutscht) landen unten.
+    private var groupedByGebaeudeGeschoss: [LVSectionGroup] {
+        let dict = Dictionary(grouping: Array(positionen), by: { $0.geschoss })
+        return dict.map { geschoss, items -> (sort: (Int16, Int16, String), group: LVSectionGroup) in
+            let gebName = geschoss?.gebaeude?.name ?? "—"
+            let gesName = geschoss?.name ?? "Ohne Geschoss"
+            let gebReihe = geschoss?.gebaeude?.reihenfolge ?? Int16.max
+            let gesReihe = geschoss?.reihenfolge ?? Int16.max
+            return (
+                sort: (gebReihe, gesReihe, gesName),
+                group: LVSectionGroup(
+                    id: "geschoss-\(geschoss?.id?.uuidString ?? "ohne")",
+                    title: "\(gebName) · \(gesName)",
+                    items: items
+                )
+            )
+        }
+        .sorted { l, r in
+            if l.sort.0 != r.sort.0 { return l.sort.0 < r.sort.0 }
+            if l.sort.1 != r.sort.1 { return l.sort.1 < r.sort.1 }
+            return l.sort.2 < r.sort.2
+        }
+        .map { $0.group }
     }
 
     private var groupedByDokumentStruktur: [LVSectionGroup] {
@@ -260,6 +293,13 @@ struct LVView: View {
         }
         .navigationTitle("LV – \(event.title ?? "Baustelle")")
         .navigationBarTitleDisplayMode(.inline)
+        // Welle 9: Baustelle erhält ein Default-Geschoss und alle noch nicht zugeordneten
+        // Positionen werden eingehängt (deckt neue Events + frisch importierte/angelegte
+        // Positionen ab, unabhängig von der Einmal-Migration). Idempotent.
+        .onAppear {
+            let ergebnis = HierarchieHelfer.sichereDefaultGeschoss(for: event, in: viewContext)
+            if ergebnis.geaendert { try? viewContext.save() }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showHelp = true } label: {
@@ -288,6 +328,15 @@ struct LVView: View {
 
                     Button { showKostenübersicht = true } label: {
                         Label("Kostenzusammenfassung", systemImage: "chart.pie")
+                    }
+
+                    Button { showGeschossKosten = true } label: {
+                        Label("Kosten nach Ebene (Geschoss)", systemImage: "building.2")
+                    }
+                    .disabled(positionen.isEmpty)
+
+                    Button { showHierarchieVerwalten = true } label: {
+                        Label("Ebenen verwalten", systemImage: "building.2.crop.circle")
                     }
                     .disabled(positionen.isEmpty)
 
@@ -374,6 +423,12 @@ struct LVView: View {
         }
         .fullScreenCover(isPresented: $showKostenübersicht) {
             KostenübersichtView(event: event, positionen: Array(positionen))
+        }
+        .fullScreenCover(isPresented: $showGeschossKosten) {
+            GeschossKostenView(event: event, positionen: Array(positionen))
+        }
+        .fullScreenCover(isPresented: $showHierarchieVerwalten) {
+            HierarchieVerwaltenView(event: event)
         }
         .fullScreenCover(isPresented: $showStammdaten) {
             StammdatenPflegeView()
