@@ -87,4 +87,68 @@ struct HierarchieTests {
         #expect(HierarchieHelfer.alleGebaeude(for: e).count == 2)
         #expect(HierarchieHelfer.alleGeschosse(for: e).count == 2)
     }
+
+    // MARK: - Stufe C
+
+    /// Neues Geschoss: freigegeben=false + 5 manuelle Voraussetzungen geseedet.
+    @Test @MainActor func neuesGeschossFreigabeFalseUndKatalog() {
+        let e = makeEvent(mitPositionen: 0)
+        let geb = HierarchieHelfer.neuesGebaeude(name: "A", for: e, in: ctx)
+        let g = HierarchieHelfer.neuesGeschoss(name: "EG", in: geb, context: ctx)
+        #expect(g.freigegeben == false)
+        #expect(g.manuelleVoraussetzungen.count == 5)
+        #expect(g.voraussetzungenArray.map { $0.reihenfolge } == [0, 1, 2, 3, 4])
+    }
+
+    /// Katalog-Seed ist idempotent — zweiter Aufruf legt nichts an.
+    @Test @MainActor func katalogSeedIdempotent() {
+        let e = makeEvent(mitPositionen: 0)
+        let geb = HierarchieHelfer.neuesGebaeude(name: "A", for: e, in: ctx)
+        let g = HierarchieHelfer.neuesGeschoss(name: "EG", in: geb, context: ctx) // seedet 5
+        let nochmal = HierarchieHelfer.sichereVoraussetzungen(for: g, in: ctx)
+        #expect(nochmal == false)
+        #expect(g.voraussetzungenArray.count == 5)
+    }
+
+    /// Auto-Check „keine geschätzten Mengen offen" kippt bei statik / gemessen.
+    @Test @MainActor func autoCheckGeschaetzteMengen() {
+        let e = makeEvent(mitPositionen: 0)
+        let (g, _) = HierarchieHelfer.sichereDefaultGeschoss(for: e, in: ctx)
+        let p = LVPosition(context: ctx)
+        p.menge = 5; p.event = e; p.geschoss = g
+        p.mengenQuelle = .schaetzung
+        #expect(g.geschaetztOffen == 1)
+        #expect(Welle9AutoKatalog.alle[0].erfuellt(g) == false)
+
+        p.mengenQuelle = .statik   // harte Statik = belastbar
+        #expect(g.geschaetztOffen == 0)
+        #expect(Welle9AutoKatalog.alle[0].erfuellt(g) == true)
+    }
+
+    /// Gebäude-Freigabe = abgeleiteter Rollup: false ohne Geschosse / solange eins offen.
+    @Test @MainActor func gebaeudeFreigabeRollup() {
+        let e = makeEvent(mitPositionen: 0)
+        let geb = HierarchieHelfer.neuesGebaeude(name: "A", for: e, in: ctx)
+        #expect(geb.freigegeben == false)                 // keine Geschosse
+        let g1 = HierarchieHelfer.neuesGeschoss(name: "EG", in: geb, context: ctx)
+        let g2 = HierarchieHelfer.neuesGeschoss(name: "OG", in: geb, context: ctx)
+        #expect(geb.freigegeben == false)                 // keins frei
+        g1.freigegeben = true
+        #expect(geb.freigegeben == false)                 // eins offen
+        g2.freigegeben = true
+        #expect(geb.freigegeben == true)                  // alle frei
+    }
+
+    /// Freigabe-Felder halten Timestamp + Name.
+    @Test @MainActor func freigabeMitTimestampUndName() {
+        let e = makeEvent(mitPositionen: 0)
+        let geb = HierarchieHelfer.neuesGebaeude(name: "A", for: e, in: ctx)
+        let g = HierarchieHelfer.neuesGeschoss(name: "EG", in: geb, context: ctx)
+        g.freigegeben = true
+        g.freigegebenAm = Date(timeIntervalSince1970: 1_700_000_000)
+        g.freigegebenVon = "Polier Test"
+        #expect(g.freigegeben)
+        #expect(g.freigegebenAm != nil)
+        #expect(g.freigegebenVon == "Polier Test")
+    }
 }

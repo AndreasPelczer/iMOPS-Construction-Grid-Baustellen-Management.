@@ -55,6 +55,7 @@ struct LVView: View {
     @State private var showKostenübersicht = false
     @State private var showGeschossKosten = false
     @State private var showHierarchieVerwalten = false
+    @State private var showFreigabeStatus = false
     @State private var showStammdaten = false
     @State private var showImport = false
     @State private var showGAEBImport = false
@@ -338,6 +339,10 @@ struct LVView: View {
                     Button { showHierarchieVerwalten = true } label: {
                         Label("Ebenen verwalten", systemImage: "building.2.crop.circle")
                     }
+
+                    Button { showFreigabeStatus = true } label: {
+                        Label("Ebenen-Freigabe / Status", systemImage: "checkmark.seal")
+                    }
                     .disabled(positionen.isEmpty)
 
                     Button { showStammdaten = true } label: {
@@ -429,6 +434,9 @@ struct LVView: View {
         }
         .fullScreenCover(isPresented: $showHierarchieVerwalten) {
             HierarchieVerwaltenView(event: event)
+        }
+        .fullScreenCover(isPresented: $showFreigabeStatus) {
+            FreigabeStatusView(event: event)
         }
         .fullScreenCover(isPresented: $showStammdaten) {
             StammdatenPflegeView()

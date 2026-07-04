@@ -60,6 +60,11 @@ enum HierarchieHelfer {
             }
         }
 
+        // Voraussetzungs-Katalog (5 manuelle) für alle Geschosse der Baustelle sichern (idempotent).
+        for g in alleGeschosse(for: event) {
+            if sichereVoraussetzungen(for: g, in: context) { geaendert = true }
+        }
+
         // `geschoss` ist hier garantiert gesetzt.
         return (geschoss!, geaendert)
     }
@@ -100,6 +105,37 @@ enum HierarchieHelfer {
         s.name = name
         s.reihenfolge = Int16(geschosse(of: gebaeude).count)
         s.gebaeude = gebaeude
+        sichereVoraussetzungen(for: s, in: context)   // Default-Katalog gleich mitgeben
         return s
+    }
+
+    // MARK: - Voraussetzungs-Katalog (Stufe C, §3)
+
+    /// Manuelle Default-Voraussetzungen je Geschoss (Fertigmeldung / Abrechnungsreife).
+    /// Reihenfolge = Index. Freigegeben von Andreas 2026-07-04.
+    static let manuelleDefaultVoraussetzungen: [String] = [
+        "Alle Leistungen des Geschosses erfasst",
+        "Aufmaß gemeinsam mit AN geprüft",
+        "Keine offenen Mängel im Geschoss",
+        "Fotodoku / Bautagesbericht vorhanden",
+        "Nachträge geklärt",
+    ]
+
+    /// Legt die 5 manuellen Voraussetzungen an, falls das Geschoss noch keine hat.
+    /// Idempotent (keine Doubletten). Gibt zurück, ob etwas angelegt wurde.
+    @discardableResult
+    static func sichereVoraussetzungen(for geschoss: Geschoss,
+                                       in context: NSManagedObjectContext) -> Bool {
+        guard (geschoss.voraussetzungen?.count ?? 0) == 0 else { return false }
+        for (i, name) in manuelleDefaultVoraussetzungen.enumerated() {
+            let v = Voraussetzung(context: context)
+            v.id = UUID()
+            v.name = name
+            v.typ = VoraussetzungsTyp.manuell.rawValue
+            v.erfuellt = false
+            v.reihenfolge = Int16(i)
+            v.geschoss = geschoss
+        }
+        return true
     }
 }
