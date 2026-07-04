@@ -129,27 +129,18 @@ struct EventDetailView: View {
                 if housePlanningResult != nil {
                     grundplanungCard
                 }
+                // 🚥 Klick auf die Ampel öffnet direkt die interaktive Kausalbaukette.
+                // (Mängelliste + Auftrag-anlegen sind über eigene Buttons erreichbar.)
                 Button {
-                    let offeneMaengel = (event.maengel?.allObjects as? [Mangel] ?? []).filter { $0.status == .offen || $0.status == .inArbeit }.count
-                    if offeneMaengel > 0 {
-                        showingMaengelListe = true
-                    } else {
-                        showingAddJobSheet = true
-                    }
+                    showingKausalKette = true
                 } label: {
-                    // 🚥 Klick auf die Ampel öffnet jetzt direkt die interaktive Kausalbaukette!
-                    Button {
-                        showingKausalKette = true
-                    } label: {
-                        AmpelCard(event: event)
-                    }
-                    .buttonStyle(.plain)
-                    .sheet(isPresented: $showingKausalKette) {
-                        KausalbauketteView(event: event)
-                            .environment(\.managedObjectContext, viewContext)
-                    }
+                    AmpelCard(event: event)
                 }
                 .buttonStyle(.plain)
+                .sheet(isPresented: $showingKausalKette) {
+                    KausalbauketteView(event: event)
+                        .environment(\.managedObjectContext, viewContext)
+                }
                 WetterKarteView(ort: event.location ?? "")
                 cadCard
                 materialCard
@@ -1146,6 +1137,35 @@ struct EventDetailView: View {
     }
 
     // MARK: - JOBS CARD
+    // Aufträge nach DIN-276-Kostengruppe gruppieren (für die Abschnitts-Ansicht).
+    private var groupedJobs: [(kg: String, items: [Auftrag])] {
+        let dict = Dictionary(grouping: filteredJobs, by: { $0.kostenGruppeNummer ?? "—" })
+        return dict.sorted { $0.key < $1.key }.map { (kg: $0.key, items: $0.value) }
+    }
+
+    // KG-Klartext für die Abschnitts-Überschriften (wie im LV).
+    private func dinBezeichnungJobs(_ kg: String) -> String {
+        switch kg {
+        case "300": return "Baukonstruktionen"
+        case "310": return "Baugrube"
+        case "320": return "Gründung"
+        case "330": return "Außenwände"
+        case "340": return "Innenwände"
+        case "350": return "Decken"
+        case "360": return "Dächer"
+        case "370": return "Infrastruktur"
+        case "380": return "Fenster & Türen"
+        case "400": return "Technische Anlagen"
+        case "410": return "Abwasser, Wasser, Gas"
+        case "420": return "Wärmeversorgung"
+        case "430": return "Lufttechnische Anlagen"
+        case "440": return "Starkstrom"
+        case "450": return "Fernmelde- & IT-Anlagen"
+        case "500": return "Außenanlagen"
+        default:    return "Sonstige"
+        }
+    }
+
     private var jobsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -1161,14 +1181,28 @@ struct EventDetailView: View {
             if filteredJobs.isEmpty {
                 Text("Keine Auftraege gefunden.").font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
             } else {
-                VStack(spacing: 10) {
-                    ForEach(filteredJobs, id: \.objectID) { job in
-                        NavigationLink { AuftragDetailView(job: job) } label: {
-                            AuftragRowView(auftrag: job) { refreshID = UUID() }
-                                .padding(12)
-                                .background(Color(.systemBackground))
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                .shadow(radius: 1, y: 1)
+                VStack(spacing: 12) {
+                    ForEach(groupedJobs, id: \.kg) { gruppe in
+                        // Abschnitts-Überschrift je Kostengruppe
+                        HStack {
+                            Text("KG \(gruppe.kg) – \(dinBezeichnungJobs(gruppe.kg))")
+                                .font(.caption.weight(.semibold))
+                            Spacer()
+                            Text("\(gruppe.items.count) Aufträge")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        // Aufträge dieser Kostengruppe
+                        VStack(spacing: 10) {
+                            ForEach(gruppe.items, id: \.objectID) { job in
+                                NavigationLink { AuftragDetailView(job: job) } label: {
+                                    AuftragRowView(auftrag: job) { refreshID = UUID() }
+                                        .padding(12)
+                                        .background(Color(.systemBackground))
+                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                        .shadow(radius: 1, y: 1)
+                                }
+                            }
                         }
                     }
                 }
