@@ -28,6 +28,7 @@ struct MopsConfig {
     static let healthEndpoint = "/health"
     static let classifyEndpoint = "/classify"
     static let extractPlanEndpoint = "/extract-plan"
+    static let extractDocEndpoint = "/extract-doc"
     static let defaultMaxTokens = 500
     static let defaultTopK = 3
     // Mops laeuft CPU-only, kann bis zu 120s+ brauchen
@@ -215,6 +216,74 @@ final class MopsClient {
         let result = try JSONDecoder().decode(ExtractPlanResult.self, from: respData)
         logger.info("extract-plan: \(result.lvPositionen.count) LV-Pos, \(result.bestellliste.count) Bestellzeilen")
         return result
+    }
+
+    // MARK: - Dokumenten-Extraktion (Stufe 2 — /extract-doc)
+
+    /// Lädt ein Text-PDF (Bodengutachten, Wohnflächenberechnung, B-Plan, Erschließung)
+    /// zur Box (POST /extract-doc, multipart) und bekommt doctype-spezifische Fakten
+    /// als Entwurf zurück. `doctype` ist ein optionaler Hint; ohne ihn erkennt die Box
+    /// den Typ heuristisch. CPU/LLM-only → bis 180s.
+    func extractDoc(pdf data: Data, filename: String,
+                    doctype: String? = nil) async throws -> ExtractDocResult {
+        guard let url = URL(string: MopsConfig.host + MopsConfig.extractDocEndpoint) else {
+            throw MopsClientError.invalidURL
+        }
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Self.multipartDocBody(boundary: boundary, pdf: data,
+                                                 filename: filename, doctype: doctype)
+
+        logger.info("Mops extract-doc: \(filename) (\(data.count) bytes, doctype=\(doctype ?? "auto"))")
+
+        let respData: Data
+        let response: URLResponse
+        do {
+            (respData, response) = try await urlSession.data(for: request)
+        } catch let error as URLError {
+            if error.code == .timedOut {
+                logger.error("extract-doc Timeout nach \(MopsConfig.requestTimeoutSeconds)s")
+                throw MopsClientError.timeout
+            }
+            logger.error("extract-doc nicht erreichbar: \(error.localizedDescription)")
+            throw MopsClientError.serverOffline
+        }
+
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            let body = String(data: respData, encoding: .utf8) ?? "<keine Antwort>"
+            logger.error("extract-doc HTTP \(http.statusCode): \(body)")
+            throw MopsClientError.httpError(statusCode: http.statusCode, body: body)
+        }
+
+        let result = try JSONDecoder().decode(ExtractDocResult.self, from: respData)
+        logger.info("extract-doc: doctype=\(result.doctypeErkannt) (conf \(result.confidence)), model=\(result.model)")
+        return result
+    }
+
+    /// Baut den multipart/form-data-Body für /extract-doc: Datei-Feld heißt hier
+    /// **`doc_file`** (nicht `file` wie bei /extract-plan!) + optionaler `doctype`-Hint.
+    private static func multipartDocBody(boundary: String, pdf: Data,
+                                         filename: String, doctype: String?) -> Data {
+        var body = Data()
+        let nl = "\r\n"
+
+        body.append("--\(boundary)\(nl)".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"doc_file\"; filename=\"\(filename)\"\(nl)".data(using: .utf8)!)
+        body.append("Content-Type: application/pdf\(nl)\(nl)".data(using: .utf8)!)
+        body.append(pdf)
+        body.append(nl.data(using: .utf8)!)
+
+        if let doctype, !doctype.isEmpty {
+            body.append("--\(boundary)\(nl)".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"doctype\"\(nl)\(nl)".data(using: .utf8)!)
+            body.append("\(doctype)\(nl)".data(using: .utf8)!)
+        }
+
+        body.append("--\(boundary)--\(nl)".data(using: .utf8)!)
+        return body
     }
 
     /// Baut den multipart/form-data-Body: PDF-Datei + optionale Projekt-/Baustellen-Felder.

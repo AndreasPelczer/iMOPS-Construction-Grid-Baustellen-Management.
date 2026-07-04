@@ -67,6 +67,14 @@ struct EventDetailView: View {
     @State private var gelaendeResult: GelaendeResult? = nil
     @State private var reportPDFURL: URL?
 
+    // Stufe 2: Unterlagen auswerten (/extract-doc)
+    @State private var showingUnterlagenPicker = false
+    @State private var isAuswerten = false
+    @State private var auswertResults: [ExtractDocResult] = []
+    @State private var auswertFehler: [String] = []
+    @State private var auswertFortschritt = ""
+    @State private var zeigeAuswertung = false
+
     // MARK: Jobs: gefiltert + sortiert
     private var filteredJobs: [Auftrag] {
         _ = refreshID
@@ -143,6 +151,7 @@ struct EventDetailView: View {
                 }
                 WetterKarteView(ort: event.location ?? "")
                 cadCard
+                unterlagenCard
                 materialCard
                 geländeCard
                 lvCard
@@ -310,6 +319,13 @@ struct EventDetailView: View {
         }
         .sheet(item: $reportPDFURL) { url in
             LVShareSheet(url: url).ignoresSafeArea()
+        }
+        .sheet(isPresented: $showingUnterlagenPicker) {
+            PDFDocumentPicker { urls in starteUnterlagenAuswertung(urls: urls) }
+                .ignoresSafeArea()
+        }
+        .sheet(isPresented: $zeigeAuswertung) {
+            UnterlageAuswertungView(ergebnisse: auswertResults, fehler: auswertFehler)
         }
     }
 
@@ -826,6 +842,96 @@ struct EventDetailView: View {
                 } label: {
                     Label("Löschen", systemImage: "trash")
                 }
+            }
+        }
+    }
+
+    // MARK: - UNTERLAGEN-AUSWERTUNG CARD (Stufe 2 — /extract-doc)
+    private var unterlagenCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Unterlagen auswerten").font(.headline)
+                Spacer()
+                Button { showingUnterlagenPicker = true } label: {
+                    Label("Auswerten", systemImage: "doc.text.magnifyingglass").font(.subheadline)
+                }
+                .disabled(isAuswerten)
+            }
+
+            if isAuswerten {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text(auswertFortschritt.isEmpty ? "Wird ausgewertet…" : auswertFortschritt)
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(.top, 2)
+            } else if auswertResults.isEmpty && auswertFehler.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "doc.text.magnifyingglass").font(.title2).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Bodengutachten, Wohnflaeche, B-Plan, Erschliessung").font(.subheadline)
+                        Text("Text-PDF waehlen — Mops zieht die Fakten heraus (Entwurf, pruefen).")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.top, 4)
+            } else {
+                Button { zeigeAuswertung = true } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "checkmark.circle.fill").font(.title3).foregroundStyle(.green)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(auswertResults.count) Dokument(e) ausgewertet").font(.subheadline)
+                            if !auswertFehler.isEmpty {
+                                Text("\(auswertFehler.count) uebersprungen").font(.caption).foregroundStyle(.orange)
+                            }
+                            Text("Ergebnis ansehen").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8).padding(.horizontal, 10)
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// Wertet die gewählten Text-PDFs nacheinander über die Box aus (`/extract-doc`).
+    /// Sequenziell, weil die Box CPU/LLM-seriell arbeitet. Zeichnungen ohne Textebene
+    /// liefern 422 → landen als „übersprungen" in der Fehlerliste, brechen nicht ab.
+    private func starteUnterlagenAuswertung(urls: [URL]) {
+        showingUnterlagenPicker = false
+        guard !urls.isEmpty else { return }
+        isAuswerten = true
+        auswertResults = []
+        auswertFehler = []
+        auswertFortschritt = ""
+        let client = MopsClient()
+        Task {
+            var results: [ExtractDocResult] = []
+            var fehler: [String] = []
+            for (i, url) in urls.enumerated() {
+                await MainActor.run { auswertFortschritt = "Dokument \(i + 1) von \(urls.count) …" }
+                do {
+                    let data = try Data(contentsOf: url)
+                    let res = try await client.extractDoc(pdf: data, filename: url.lastPathComponent)
+                    results.append(res)
+                } catch {
+                    let msg = (error as? MopsClientError)?.errorDescription ?? error.localizedDescription
+                    fehler.append("\(url.lastPathComponent): \(msg)")
+                }
+            }
+            await MainActor.run {
+                auswertResults = results
+                auswertFehler = fehler
+                isAuswerten = false
+                auswertFortschritt = ""
+                if !results.isEmpty || !fehler.isEmpty { zeigeAuswertung = true }
             }
         }
     }
