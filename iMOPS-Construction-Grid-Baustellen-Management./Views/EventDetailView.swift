@@ -184,9 +184,69 @@ struct EventDetailView: View {
         .padding(.horizontal, 4)
     }
 
+    /// Prominente Baustellen-Übersicht: „gemessen verdrängt geschätzt" — sind echte
+    /// LV-Daten da, führt die Karte in die Ist-Übersicht (Planer nur noch kleiner Link);
+    /// sonst bietet sie das Planen (Soll) an.
+    private var uebersichtKarte: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Baustellen-Übersicht", systemImage: "chart.bar.doc.horizontal")
+                .font(.headline)
+
+            if lvPositionenCount > 0 {
+                NavigationLink {
+                    BaustellenIstUebersichtView(event: event)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Ist-Übersicht").font(.subheadline.bold())
+                            Text("\(lvPositionenCount) Position\(lvPositionenCount == 1 ? "" : "en") · echte importierte Daten")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 10).padding(.horizontal, 12)
+                    .background(Color.orange.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+
+                NavigationLink {
+                    HouseConfiguratorView(spezielesEvent: event)
+                } label: {
+                    Label("Soll/Planer-Schätzung ansehen", systemImage: "pencil.and.ruler")
+                        .font(.caption)
+                }
+                .tint(.secondary)
+            } else {
+                NavigationLink {
+                    HouseConfiguratorView(spezielesEvent: event)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Noch keine LV-Daten").font(.subheadline.bold())
+                            Text("Soll planen oder ein LV importieren").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "pencil.and.ruler").foregroundStyle(.orange)
+                    }
+                    .padding(.vertical, 10).padding(.horizontal, 12)
+                    .background(Color(.tertiarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
+                uebersichtKarte
+
                 kartenGruppe("Übersicht & Wetter", systemImage: "building.2", isExpanded: $gruppeUebersicht) {
                     headerCard
                     if housePlanningResult != nil {
@@ -283,28 +343,8 @@ struct EventDetailView: View {
                 }
                 .tint(.orange)
             }
-            // 🚀 NEU: Der dedizierte iMOPS Planer-Button innerhalb der Baustelle
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink {
-                    // Hier übergeben wir das aktuelle Event an den Konfigurator!
-                    // Dadurch springt die Weiche sofort auf Zustand B (Die 4 Reiter mitsamt Zeitstrahl)
-                    HouseConfiguratorView(spezielesEvent: event)
-                } label: {
-                    Label("Soll-Übersicht", systemImage: "pencil.and.ruler")
-                }
-                .tint(.orange)
-            }
-
-            // Ist-Übersicht: echte importierte LV-Daten (Weg B) — parallel zur Soll-Übersicht.
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink {
-                    BaustellenIstUebersichtView(event: event)
-                } label: {
-                    Label("Ist-Übersicht", systemImage: "chart.bar.doc.horizontal")
-                }
-                .tint(.orange)
-            }
-
+            // Soll-/Ist-Übersicht sind jetzt in der prominenten „Baustellen-Übersicht"-Karte
+            // oben im Screen (uebersichtKarte) — Toolbar bleibt schlank.
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Bearbeiten") { showingEditSheet = true }
             }

@@ -629,7 +629,10 @@
   antwort: |
     Die Ist-Übersicht zeigt die Baustelle aus den ECHTEN importierten LV-Daten
     (nicht die Planer-Schaetzung):
-    1. Baustelle oeffnen -> oben rechts "Ist-Übersicht" (Balken-Symbol).
+    1. Baustelle oeffnen -> oben die Karte "Baustellen-Übersicht" -> "Ist-Übersicht"
+       antippen. Die Karte erscheint automatisch: sind LV-Daten da, fuehrt sie in die
+       Ist-Übersicht (der Planer/Soll ist nur noch ein kleiner Link darunter); ist die
+       Baustelle leer, bietet sie stattdessen das Planen (Soll) an.
     2. Kopf: Projekt/Baustelle/Quelldatei aus dem Import + Positionsanzahl, Netto, Brutto.
     3. Reiter:
        - Kosten: nach DIN-276-Kostengruppe (Netto/MwSt/Brutto).
