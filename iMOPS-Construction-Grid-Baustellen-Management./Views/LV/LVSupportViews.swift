@@ -16,6 +16,73 @@ struct PDFFileDocument: FileDocument {
     }
 }
 
+/// Generisches Export-Dokument (Daten von einer URL) für den Mac-„Speichern"-Dialog —
+/// funktioniert für PDF, CSV, … (contentType kommt getrennt in den fileExporter).
+struct ExportFileDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.data, .pdf, .commaSeparatedText] }
+    var data: Data
+    init(url: URL?) { data = (url.flatMap { try? Data(contentsOf: $0) }) ?? Data() }
+    init(configuration: ReadConfiguration) throws {
+        data = configuration.file.regularFileContents ?? Data()
+    }
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
+    }
+}
+
+/// Läuft die App am Mac (Catalyst ODER „Designed for iPad" auf Apple Silicon)?
+/// Nur so erkennt man beide Mac-Varianten — `#if targetEnvironment(macCatalyst)` verpasst die zweite.
+private var laeuftAmMac: Bool {
+    ProcessInfo.processInfo.isiOSAppOnMac || ProcessInfo.processInfo.isMacCatalystApp
+}
+
+private func exportContentType(_ url: URL?) -> UTType {
+    switch url?.pathExtension.lowercased() {
+    case "csv": return .commaSeparatedText
+    case "pdf": return .pdf
+    default:    return .data
+    }
+}
+
+/// iPhone/iPad: Teilen-Sheet. Mac: echter „Speichern unter…"-Dialog (der Teilen-Sheet
+/// legt am Mac keine Datei ab). Muster via `item: Binding<URL?>`.
+struct TeilenOderSpeichernModifier: ViewModifier {
+    @Binding var datei: URL?
+    func body(content: Content) -> some View {
+        if laeuftAmMac {
+            content.fileExporter(
+                isPresented: Binding(get: { datei != nil }, set: { if !$0 { datei = nil } }),
+                document: ExportFileDocument(url: datei),
+                contentType: exportContentType(datei),
+                defaultFilename: datei?.deletingPathExtension().lastPathComponent
+            ) { _ in datei = nil }
+        } else {
+            content.sheet(item: $datei) { url in LVShareSheet(url: url).ignoresSafeArea() }
+        }
+    }
+}
+
+extension View {
+    /// iPhone: Teilen-Sheet, Mac: Speichern-Dialog — für eine per `item:` gebundene Datei-URL.
+    func teilenOderSpeichern(datei: Binding<URL?>) -> some View {
+        modifier(TeilenOderSpeichernModifier(datei: datei))
+    }
+    /// Variante mit Bool + fester URL (für Views, die die URL schon halten).
+    @ViewBuilder
+    func teilenOderSpeichern(isPresented: Binding<Bool>, url: URL) -> some View {
+        if laeuftAmMac {
+            fileExporter(
+                isPresented: isPresented,
+                document: ExportFileDocument(url: url),
+                contentType: exportContentType(url),
+                defaultFilename: url.deletingPathExtension().lastPathComponent
+            ) { _ in }
+        } else {
+            sheet(isPresented: isPresented) { LVShareSheet(url: url).ignoresSafeArea() }
+        }
+    }
+}
+
 struct LVShareSheet: UIViewControllerRepresentable {
     let url: URL
 

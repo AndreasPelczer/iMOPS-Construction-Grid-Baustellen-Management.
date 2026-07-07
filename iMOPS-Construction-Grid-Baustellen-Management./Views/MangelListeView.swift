@@ -104,9 +104,7 @@ struct MangelListeView: View {
                 MangelErfassenView(event: event)
                     .environment(\.managedObjectContext, ctx)
             }
-            .sheet(item: $pdfURL) { url in
-                LVShareSheet(url: url).ignoresSafeArea()
-            }
+            .teilenOderSpeichern(datei: $pdfURL)
             .sheet(isPresented: $showFristen) {
                 FristenView()
                     .environment(\.managedObjectContext, ctx)

@@ -384,9 +384,7 @@ struct EventDetailView: View {
         .sheet(item: $lvPDFURL) { url in
             PDFPreviewView(url: url).ignoresSafeArea()
         }
-        .sheet(item: $lvCSVURL) { url in
-            LVShareSheet(url: url).ignoresSafeArea()
-        }
+        .teilenOderSpeichern(datei: $lvCSVURL)
         .sheet(isPresented: $showBautagesbericht) {
             BautagesberichtView(event: event)
                 .environment(\.managedObjectContext, viewContext)
@@ -435,9 +433,7 @@ struct EventDetailView: View {
                 )
             )
         }
-        .sheet(item: $reportPDFURL) { url in
-            LVShareSheet(url: url).ignoresSafeArea()
-        }
+        .teilenOderSpeichern(datei: $reportPDFURL)
         .sheet(isPresented: $showingUnterlagenPicker) {
             PDFDocumentPicker { urls in starteUnterlagenAuswertung(urls: urls) }
                 .ignoresSafeArea()
