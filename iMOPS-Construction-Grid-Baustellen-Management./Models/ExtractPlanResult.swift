@@ -18,6 +18,19 @@ struct ExtractPlanResult: Codable {
         case bestellliste
         case etiketten
     }
+
+    // Vom Endpoint kommen immer alle Felder. Extern (per Vision) erzeugte JSON-Dateien
+    // enthalten aber evtl. nur metadata + lv_positionen — bestellliste/etiketten/metadata
+    // werden daher tolerant auf leer defaulted. lv_positionen bleibt Pflicht.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        metadata = try c.decodeIfPresent(ExtractMetadata.self, forKey: .metadata)
+            ?? ExtractMetadata(projekt: nil, baustelle: nil, datei: nil)
+        lvPositionen = try c.decode([ExtractLVPosition].self, forKey: .lvPositionen)
+        bestellliste = try c.decodeIfPresent([ExtractBestellzeile].self, forKey: .bestellliste) ?? []
+        etiketten = try c.decodeIfPresent(ExtractEtiketten.self, forKey: .etiketten)
+            ?? ExtractEtiketten(hart: [], geschaetzt: [])
+    }
 }
 
 struct ExtractMetadata: Codable {

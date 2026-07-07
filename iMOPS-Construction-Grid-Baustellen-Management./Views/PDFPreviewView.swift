@@ -46,9 +46,7 @@ struct PDFPreviewView: View {
                         }
                     }
                 }
-                .sheet(isPresented: $showingShareSheet) {
-                    LVShareSheet(url: url).ignoresSafeArea()
-                }
+                .teilenOderSpeichern(isPresented: $showingShareSheet, url: url)
         }
     }
     // In eurem PDFKit-Wrapper für SwiftUI

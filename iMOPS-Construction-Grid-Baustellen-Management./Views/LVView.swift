@@ -460,9 +460,7 @@ struct LVView: View {
                 showGAEBImport = true
             }
         }
-        .fullScreenCover(item: $exportURL) { url in
-            LVShareSheet(url: url).ignoresSafeArea()
-        }
+        .teilenOderSpeichern(datei: $exportURL)
         .fullScreenCover(isPresented: $showHelp) {
             LVHelpView()
         }

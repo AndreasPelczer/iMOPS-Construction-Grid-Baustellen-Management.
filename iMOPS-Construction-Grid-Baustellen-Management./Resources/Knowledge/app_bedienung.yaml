@@ -108,6 +108,31 @@
   quelle_kurz: "iMOPS App-Bedienung (Welle 4)"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_LV_JSON_Import"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "LV aus JSON"
+    - "JSON importieren"
+    - "LV aus JSON-Datei"
+    - "Town and Country importieren"
+    - "Vision-LV importieren"
+    - "Wie importiere ich eine LV-JSON"
+  antwort: |
+    Ein extern erzeugtes LV als JSON-Datei importieren (Format ExtractPlanResult):
+    1. In einer Baustelle "LV aus PDF importieren" oeffnen
+    2. Button "LV aus JSON-Datei" tippen (gruen)
+    3. Eine oder mehrere .json-Dateien waehlen
+    4. Positionen pruefen/abwaehlen wie beim PDF-Import
+    5. "Importieren" -> Positionen sind im LV der Baustelle
+
+    Wofuer: Manche LV-PDFs (z.B. Town & Country, Export "ComponentOne C1Pdf") haben
+    einen kaputten Text-Layer und werden extern per Vision zu JSON gemacht. Dieser
+    Weg laedt so eine fertige JSON-Datei direkt in die Pruefliste — ohne den Mops zu
+    rufen. Die Datei muss das ExtractPlanResult-Format haben (mindestens lv_positionen).
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Mangel_erfassen"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
@@ -557,5 +582,68 @@
     Unten die Kategorie-Chips (Alle / Baustellen / LV / Maengel / Katalog /
     Auftraege) grenzen ein. Tipp: Chip "LV" bei leerem Suchfeld listet
     ALLE Leistungsverzeichnisse (pro Baustelle) zum Durchspringen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Unterlagen_auswerten"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Unterlagen auswerten"
+    - "Dokument auswerten"
+    - "Bodengutachten auswerten"
+    - "Wohnflaeche auslesen"
+    - "Bebauungsplan auslesen"
+    - "Erschliessung auslesen"
+    - "PDF Fakten herausziehen"
+    - "Wo werte ich Unterlagen aus"
+  antwort: |
+    In einer Baustelle gibt es die Karte "Unterlagen auswerten" (zwischen
+    "Plaene & CAD" und "Material").
+    1. Button "Auswerten" tippen
+    2. Ein oder mehrere Text-PDFs waehlen (Mehrfachauswahl erlaubt)
+    3. Der Mops liest die Textebene und zieht die LV-relevanten Fakten heraus:
+       - Bodengutachten (Bodenklassen, Frosttiefe, Grundwasser, Abdichtung)
+       - Wohnflaechen-/Rauminhaltsberechnung (m2 je Raum, BRI)
+       - Bebauungsplan (GRZ/GFZ, Hoehen, Dach, Erdarbeiten)
+       - Erschliessung (Medien/Dimensionen, Warnungen z.B. 20-kV-Leitung)
+    4. Das Ergebnis oeffnet sich als Liste zum Pruefen ("Ergebnis ansehen").
+
+    WICHTIG: Das ist ein KI-Entwurf aus der PDF-Textebene, kein Gutachten und
+    kein Vermesser-Ergebnis — vor Verwendung pruefen. Reine Zeichnungen ohne
+    Textebene werden uebersprungen (die gehoeren zur Vision-Auswertung).
+    Braucht Verbindung zum Mops-Server (wie die Plan-Auswertung).
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Ist_Uebersicht"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Ist-Übersicht"
+    - "Baustellen-Übersicht"
+    - "Ist-Kosten"
+    - "echte LV-Daten anzeigen"
+    - "Übersicht aus importierten Daten"
+    - "Wo sehe ich die echten Kosten der Baustelle"
+  antwort: |
+    Die Ist-Übersicht zeigt die Baustelle aus den ECHTEN importierten LV-Daten
+    (nicht die Planer-Schaetzung):
+    1. Baustelle oeffnen -> oben die Karte "Baustellen-Übersicht" -> "Ist-Übersicht"
+       antippen. Die Karte erscheint automatisch: sind LV-Daten da, fuehrt sie in die
+       Ist-Übersicht (der Planer/Soll ist nur noch ein kleiner Link darunter); ist die
+       Baustelle leer, bietet sie stattdessen das Planen (Soll) an.
+    2. Kopf: Projekt/Baustelle/Quelldatei aus dem Import + Positionsanzahl, Netto, Brutto.
+    3. Reiter:
+       - Kosten: nach DIN-276-Kostengruppe (Netto/MwSt/Brutto).
+       - Massen: nach LV-Titel (fuehrende Positionsnummer), Menge + Einheit je Position.
+       - Material: Positionen mit Artikel-Nr./Lieferant (bei Statik-/Bestell-Import gefuellt).
+       - Zeitplan: Bauzeitraum (Start/Ende) + eigene Bauphasen anlegen (Name/Gewerk +
+         Start/Ende) als Terminplan; Balken = Zeit-Fortschritt der Phase. Antippen = bearbeiten,
+         Wischen = loeschen. (Bauzeitraum-Termine selbst setzt du ueber "Bearbeiten".)
+
+    Unterschied zur "Soll-Übersicht": die Soll-Übersicht ist die Planer-Schaetzung
+    (Angebot), die Ist-Übersicht sind die tatsaechlich importierten Daten. Geschaetzte
+    Mengen sind mit "geschaetzt" markiert (gemessen verdraengt geschaetzt).
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"

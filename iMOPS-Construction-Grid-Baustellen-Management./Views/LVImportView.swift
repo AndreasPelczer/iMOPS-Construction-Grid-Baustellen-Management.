@@ -10,6 +10,7 @@ struct LVImportView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var showDocumentPicker = false
+    @State private var showJSONPicker = false
     @State private var parsedPositions: [ParsedLVPosition] = []
     @State private var isParsing = false
     @State private var parseError: String?
@@ -20,6 +21,7 @@ struct LVImportView: View {
     // NEU: Hier merken wir uns die Metadaten der geladenen Datei für CoreData
     @State private var geladenerDateiName: String? = nil
     @State private var geladenerDateiPfad: String? = nil
+    @State private var importMetadata: ExtractMetadata? = nil   // projekt/baustelle/datei aus dem Import
 
     private enum ImportQuelle { case lokal, mops }
 
@@ -51,6 +53,10 @@ struct LVImportView: View {
             }
             .sheet(isPresented: $showDocumentPicker) {
                 PDFDocumentPicker { urls in handlePicks(urls: urls) }
+                    .ignoresSafeArea()
+            }
+            .sheet(isPresented: $showJSONPicker) {
+                JSONDocumentPicker { urls in importJSONFiles(urls: urls) }
                     .ignoresSafeArea()
             }
             .alert("Nicht erkannt", isPresented: $showError) {
@@ -114,6 +120,17 @@ struct LVImportView: View {
                             .font(.headline)
                             .padding(.horizontal, 28).padding(.vertical, 14)
                             .background(.blue)
+                            .foregroundStyle(.white)
+                            .clipShape(Capsule())
+                    }
+
+                    Button {
+                        showJSONPicker = true
+                    } label: {
+                        Label("LV aus JSON-Datei", systemImage: "curlybraces.square")
+                            .font(.headline)
+                            .padding(.horizontal, 28).padding(.vertical, 14)
+                            .background(.green)
                             .foregroundStyle(.white)
                             .clipShape(Capsule())
                     }
@@ -267,6 +284,9 @@ struct LVImportView: View {
                     let result = try await MopsClient().extractPlan(
                         pdf: data, filename: url.lastPathComponent,
                         projekt: event.eventNumber, baustelle: event.title)
+                    if result.metadata.projekt != nil || result.metadata.baustelle != nil || result.metadata.datei != nil {
+                        importMetadata = result.metadata
+                    }
                     var parsed = ExtractPlanMapper.toParsed(result)
                     for i in parsed.indices where parsed[i].quellDateiName == nil {
                         parsed[i].quellDateiName = url.lastPathComponent
@@ -280,6 +300,46 @@ struct LVImportView: View {
             isParsing = false
             if collected.isEmpty {
                 parseError = letzterFehler ?? "Der Mops hat keine Positionen aus den Plänen gelesen."
+                showError = true
+            } else {
+                parsedPositions.append(contentsOf: collected)
+            }
+        }
+    }
+
+    /// Lädt eine oder mehrere lokale JSON-Dateien im ExtractPlanResult-Format
+    /// (extern per Vision erzeugt, z.B. Town-&-Country-LVs) und hängt die Positionen
+    /// an. Dekodiert lokal statt den Mops zu rufen — sonst identisch zum Mops-Weg.
+    private func importJSONFiles(urls: [URL]) {
+        guard !urls.isEmpty else { return }
+        geladenerDateiName = urls.first?.lastPathComponent
+        geladenerDateiPfad = urls.first?.absoluteString
+        parsingHinweis = urls.count > 1 ? "\(urls.count) JSON-Dateien werden gelesen …" : "JSON wird gelesen …"
+        isParsing = true
+        Task {
+            var collected: [ParsedLVPosition] = []
+            var letzterFehler: String?
+            for url in urls {
+                do {
+                    let data = try Data(contentsOf: url)
+                    let result = try JSONDecoder().decode(ExtractPlanResult.self, from: data)
+                    if result.metadata.projekt != nil || result.metadata.baustelle != nil || result.metadata.datei != nil {
+                        importMetadata = result.metadata
+                    }
+                    var parsed = ExtractPlanMapper.toParsed(result)
+                    for i in parsed.indices where parsed[i].quellDateiName == nil {
+                        parsed[i].quellDateiName = url.lastPathComponent
+                        parsed[i].quellDateiURL  = url
+                    }
+                    collected.append(contentsOf: parsed)
+                } catch {
+                    letzterFehler = "‚\(url.lastPathComponent)‘ ist keine gültige LV-JSON "
+                                  + "(erwartet ExtractPlanResult mit lv_positionen): \(error.localizedDescription)"
+                }
+            }
+            isParsing = false
+            if collected.isEmpty {
+                parseError = letzterFehler ?? "Keine Positionen in der JSON gefunden."
                 showError = true
             } else {
                 parsedPositions.append(contentsOf: collected)
@@ -307,6 +367,17 @@ struct LVImportView: View {
             if let dateiPfad = parsed.quellDateiURL?.absoluteString ?? geladenerDateiPfad {
                 pos.setValue(dateiPfad, forKey: "dokuPath")
             }
+        }
+        // Herkunft der importierten Daten (aus PDF/JSON) am Event festhalten — für den
+        // Kopf der künftigen Ist-Baustellen-Übersicht. Alte extras (Checkliste/houseProject)
+        // bleiben erhalten (laden → nur importHerkunft setzen → speichern).
+        if let md = importMetadata,
+           md.projekt != nil || md.baustelle != nil || md.datei != nil {
+            var extras = EventExtrasPayload.laden(aus: event)
+            extras.importHerkunft = ImportHerkunft(
+                projekt: md.projekt, baustelle: md.baustelle,
+                datei: md.datei, importiertAm: Date())
+            extras.speichern(in: event)
         }
         try? viewContext.save()
         dismiss()
@@ -338,6 +409,51 @@ struct PDFDocumentPicker: UIViewControllerRepresentable {
             // Jede Datei UNTER dem Security-Scope in den tmp-Ordner kopieren — sonst
             // ist sie nach dem Schließen des Pickers nicht mehr lesbar. So bleiben auch
             // mehrere Dateien gleichzeitig gültig (Scope lässt sich nicht async halten).
+            let fm = FileManager.default
+            var localCopies: [URL] = []
+            for url in urls {
+                let secured = url.startAccessingSecurityScopedResource()
+                defer { if secured { url.stopAccessingSecurityScopedResource() } }
+                let tmp = fm.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
+                try? fm.removeItem(at: tmp)
+                do {
+                    try fm.copyItem(at: url, to: tmp)
+                    localCopies.append(tmp)
+                } catch {
+                    // einzelne, nicht kopierbare Datei überspringen statt alles abzubrechen
+                }
+            }
+            onPick(localCopies)
+        }
+    }
+}
+
+// MARK: - JSON Document Picker
+
+/// Wie `PDFDocumentPicker`, aber für extern erzeugte LV-JSONs (ExtractPlanResult).
+struct JSONDocumentPicker: UIViewControllerRepresentable {
+    /// Liefert lokale tmp-Kopien der gewählten JSON-Dateien (eine oder mehrere).
+    let onPick: ([URL]) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        // UTType.json ist Standard; Fallback über die Endung, falls das System den
+        // Typ für eine Datei nicht meldet.
+        let jsonTypes = [UTType.json, UTType(filenameExtension: "json")].compactMap { $0 }
+        let vc = UIDocumentPickerViewController(forOpeningContentTypes: jsonTypes)
+        vc.delegate = context.coordinator
+        vc.allowsMultipleSelection = true
+        return vc
+    }
+
+    func updateUIViewController(_ vc: UIDocumentPickerViewController, context: Context) {}
+
+    final class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onPick: ([URL]) -> Void
+        init(onPick: @escaping ([URL]) -> Void) { self.onPick = onPick }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             let fm = FileManager.default
             var localCopies: [URL] = []
             for url in urls {

@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import UniformTypeIdentifiers
 
 // MARK: - Witterung
 
@@ -49,6 +50,10 @@ struct BautagesberichtView: View {
     @State private var notizen            = ""
     @State private var showShare          = false
     @State private var pdfURL: URL?
+    // Mac: echter „Speichern"-Dialog (fileExporter) statt Teilen-Sheet.
+    @State private var showSaveDialog     = false
+    @State private var pdfData: Data?
+    @State private var saveFilename       = "Bautagesbericht"
 
     private var auftraege: [Auftrag]  { (event.jobs?.allObjects as? [Auftrag]) ?? [] }
     private var lvAnzahl:  Int        { event.lvPositionen?.count ?? 0 }
@@ -159,6 +164,14 @@ struct BautagesberichtView: View {
             .sheet(isPresented: $showShare) {
                 if let url = pdfURL { LVShareSheet(url: url).ignoresSafeArea() }
             }
+            .fileExporter(
+                isPresented: $showSaveDialog,
+                document: PDFFileDocument(data: pdfData ?? Data()),
+                contentType: .pdf,
+                defaultFilename: saveFilename
+            ) { result in
+                if case .success = result { dismiss() }
+            }
         }
     }
 
@@ -177,13 +190,26 @@ struct BautagesberichtView: View {
         let data = BautagesberichtPDFExporter.generate(event: event, config: config)
         let fmt  = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
-        let name = "Bautagesbericht-\(fmt.string(from: datum))-\(event.title ?? "Baustelle")"
+        let base = "Bautagesbericht-\(fmt.string(from: datum))-\(event.title ?? "Baustelle")"
             .replacingOccurrences(of: " ", with: "-")
-            .appending(".pdf")
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-        if (try? data.write(to: url)) != nil {
-            pdfURL = url
-            showShare = true
+            .replacingOccurrences(of: "/", with: "-")   // Slash im Titel bricht sonst den Pfad
+        // Laufzeit-Prüfung deckt BEIDE Mac-Varianten ab: Mac Catalyst UND
+        // „Mac (Designed for iPad)" (iOS-App auf Apple Silicon). Ein reines
+        // #if targetEnvironment(macCatalyst) würde die zweite Variante verpassen.
+        let laeuftAmMac = ProcessInfo.processInfo.isiOSAppOnMac
+            || ProcessInfo.processInfo.isMacCatalystApp
+        if laeuftAmMac {
+            // Mac: echter „Speichern unter…"-Dialog — der iOS-Teilen-Sheet legt am Mac keine Datei ab.
+            pdfData = data
+            saveFilename = base
+            showSaveDialog = true
+        } else {
+            // iPhone/iPad: Teilen-Sheet (AirDrop, In Dateien sichern, …).
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(base + ".pdf")
+            if (try? data.write(to: url)) != nil {
+                pdfURL = url
+                showShare = true
+            }
         }
     }
 }

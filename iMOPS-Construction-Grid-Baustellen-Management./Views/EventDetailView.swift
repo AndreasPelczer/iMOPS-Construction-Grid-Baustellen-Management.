@@ -12,6 +12,43 @@ struct EventExtrasPayload: Codable {
     var pinnedProductIDs: [String] = []
     var pinnedLexikonCodes: [String] = []
     var houseProject: HouseProject? = nil
+    var importHerkunft: ImportHerkunft? = nil   // Herkunft der importierten LV-Daten (PDF/JSON)
+    var bauphasen: [IstBauphase]? = nil         // manuell geplante Bauphasen (Zeitplan-Reiter)
+}
+
+/// Manuell geplante Bauphase (Zeitplan der Ist-Übersicht). Eigener Typ, weil der Planer
+/// schon eine (wochenbasierte, nicht-Codable) `Bauphase` hat. In `EventExtrasPayload`
+/// optional → alte gespeicherte Blobs bleiben dekodierbar.
+struct IstBauphase: Codable, Identifiable, Equatable {
+    var id: String = UUID().uuidString
+    var name: String = ""
+    var gewerk: String? = nil
+    var start: Date = Date()
+    var ende: Date = Date()
+    var notiz: String? = nil
+}
+
+/// Herkunft der importierten LV-Daten (aus `ExtractMetadata` beim PDF-/JSON-Import).
+/// Optional in `EventExtrasPayload` → alte gespeicherte Blobs bleiben dekodierbar.
+struct ImportHerkunft: Codable, Equatable {
+    var projekt: String? = nil
+    var baustelle: String? = nil
+    var datei: String? = nil
+    var importiertAm: Date? = nil
+}
+
+extension EventExtrasPayload {
+    /// Liest den Extras-Blob eines Events (leerer Payload, wenn nichts/kaputt).
+    static func laden(aus event: Event) -> EventExtrasPayload {
+        guard let s = event.extras, let data = s.data(using: .utf8) else { return EventExtrasPayload() }
+        return (try? JSONDecoder().decode(EventExtrasPayload.self, from: data)) ?? EventExtrasPayload()
+    }
+    /// Schreibt den Payload zurück ins Event (der Aufrufer speichert den Core-Data-Context).
+    func speichern(in event: Event) {
+        if let data = try? JSONEncoder().encode(self) {
+            event.extras = String(data: data, encoding: .utf8)
+        }
+    }
 }
 
 struct EventChecklistItem: Codable, Identifiable, Equatable {
@@ -44,6 +81,13 @@ struct EventDetailView: View {
     @State private var selectedJobFilter: JobFilter = .all
     @State private var extras = EventExtrasPayload()
     @State private var cadFiles: [CADFileInfo] = []
+    @State private var planZumLoeschen: CADFileInfo? = nil   // Lösch-Bestätigung Pläne
+    // Einklappbare Karten-Gruppen — „Übersicht" ist beim Öffnen aufgeklappt, Rest zu.
+    @State private var gruppeUebersicht = true
+    @State private var gruppePlaene = false
+    @State private var gruppeLV = false
+    @State private var gruppeGewerke = false
+    @State private var gruppeMaengel = false
     @State private var pinnedMaterials: [CDLexikonEntry] = []
     @State private var newStepText: String = ""
     @State private var showingMaengelListe = false
@@ -66,6 +110,14 @@ struct EventDetailView: View {
     @State private var gelaendeError: String = ""
     @State private var gelaendeResult: GelaendeResult? = nil
     @State private var reportPDFURL: URL?
+
+    // Stufe 2: Unterlagen auswerten (/extract-doc)
+    @State private var showingUnterlagenPicker = false
+    @State private var isAuswerten = false
+    @State private var auswertResults: [ExtractDocResult] = []
+    @State private var auswertFehler: [String] = []
+    @State private var auswertFortschritt = ""
+    @State private var zeigeAuswertung = false
 
     // MARK: Jobs: gefiltert + sortiert
     private var filteredJobs: [Auftrag] {
@@ -122,34 +174,132 @@ struct EventDetailView: View {
         (event.maengel?.allObjects as? [Mangel] ?? []).filter { $0.istUeberfaellig }.count
     }
 
-    var body: some View {
-        ScrollView {
+    /// Einklappbare Karten-Gruppe: eine Titelzeile zum Auf-/Zuklappen; der Inhalt sind
+    /// die bestehenden Karten (unverändert, inkl. ihrer Sheets/States). So zeigt die
+    /// Baustelle nur wenige Gruppen statt aller Karten auf einmal.
+    private func kartenGruppe<Content: View>(
+        _ titel: String, systemImage: String, isExpanded: Binding<Bool>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        let inhalt = content()   // einmal vorab auswerten (kein Escaping-Capture)
+        return DisclosureGroup(isExpanded: isExpanded) {
             VStack(alignment: .leading, spacing: 18) {
-                headerCard
-                if housePlanningResult != nil {
-                    grundplanungCard
-                }
-                // 🚥 Klick auf die Ampel öffnet direkt die interaktive Kausalbaukette.
-                // (Mängelliste + Auftrag-anlegen sind über eigene Buttons erreichbar.)
-                Button {
-                    showingKausalKette = true
+                inhalt
+            }
+            .padding(.top, 12)
+        } label: {
+            Label(titel, systemImage: systemImage)
+                .font(.title3.bold())
+                .foregroundStyle(.primary)
+                .padding(.vertical, 6)
+        }
+        .tint(.orange)
+        .padding(.horizontal, 4)
+    }
+
+    /// Prominente Baustellen-Übersicht: „gemessen verdrängt geschätzt" — sind echte
+    /// LV-Daten da, führt die Karte in die Ist-Übersicht (Planer nur noch kleiner Link);
+    /// sonst bietet sie das Planen (Soll) an.
+    private var uebersichtKarte: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Baustellen-Übersicht", systemImage: "chart.bar.doc.horizontal")
+                .font(.headline)
+
+            if lvPositionenCount > 0 {
+                NavigationLink {
+                    BaustellenIstUebersichtView(event: event)
                 } label: {
-                    AmpelCard(event: event)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Ist-Übersicht").font(.subheadline.bold())
+                            Text("\(lvPositionenCount) Position\(lvPositionenCount == 1 ? "" : "en") · echte importierte Daten")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 10).padding(.horizontal, 12)
+                    .background(Color.orange.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .sheet(isPresented: $showingKausalKette) {
-                    KausalbauketteView(event: event)
-                        .environment(\.managedObjectContext, viewContext)
+
+                NavigationLink {
+                    HouseConfiguratorView(spezielesEvent: event)
+                } label: {
+                    Label("Soll/Planer-Schätzung ansehen", systemImage: "pencil.and.ruler")
+                        .font(.caption)
                 }
-                WetterKarteView(ort: event.location ?? "")
-                cadCard
-                materialCard
-                geländeCard
-                lvCard
-                kalkulationCard
-                checklistCard
-                maengelCard
-                jobsCard
+                .tint(.secondary)
+            } else {
+                NavigationLink {
+                    HouseConfiguratorView(spezielesEvent: event)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Noch keine LV-Daten").font(.subheadline.bold())
+                            Text("Soll planen oder ein LV importieren").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "pencil.and.ruler").foregroundStyle(.orange)
+                    }
+                    .padding(.vertical, 10).padding(.horizontal, 12)
+                    .background(Color(.tertiarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                uebersichtKarte
+
+                kartenGruppe("Übersicht & Wetter", systemImage: "building.2", isExpanded: $gruppeUebersicht) {
+                    headerCard
+                    if housePlanningResult != nil {
+                        grundplanungCard
+                    }
+                    // 🚥 Klick auf die Ampel öffnet direkt die interaktive Kausalbaukette.
+                    Button {
+                        showingKausalKette = true
+                    } label: {
+                        AmpelCard(event: event)
+                    }
+                    .buttonStyle(.plain)
+                    .sheet(isPresented: $showingKausalKette) {
+                        KausalbauketteView(event: event)
+                            .environment(\.managedObjectContext, viewContext)
+                    }
+                    WetterKarteView(ort: event.location ?? "")
+                }
+
+                kartenGruppe("Pläne & Unterlagen", systemImage: "doc.on.doc", isExpanded: $gruppePlaene) {
+                    cadCard
+                    unterlagenCard
+                    geländeCard
+                }
+
+                kartenGruppe("LV & Kalkulation", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
+                    lvCard
+                    kalkulationCard
+                    materialCard
+                }
+
+                kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
+                    jobsCard
+                    checklistCard
+                }
+
+                kartenGruppe("Mängel", systemImage: "exclamationmark.triangle", isExpanded: $gruppeMaengel) {
+                    maengelCard
+                }
+
                 Spacer(minLength: 8)
             }
             .padding()
@@ -206,18 +356,8 @@ struct EventDetailView: View {
                 }
                 .tint(.orange)
             }
-            // 🚀 NEU: Der dedizierte iMOPS Planer-Button innerhalb der Baustelle
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink {
-                    // Hier übergeben wir das aktuelle Event an den Konfigurator!
-                    // Dadurch springt die Weiche sofort auf Zustand B (Die 4 Reiter mitsamt Zeitstrahl)
-                    HouseConfiguratorView(spezielesEvent: event)
-                } label: {
-                    Label("Soll-Übersicht", systemImage: "pencil.and.rulers")
-                }
-                .tint(.orange)
-            }
-
+            // Soll-/Ist-Übersicht sind jetzt in der prominenten „Baustellen-Übersicht"-Karte
+            // oben im Screen (uebersichtKarte) — Toolbar bleibt schlank.
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Bearbeiten") { showingEditSheet = true }
             }
@@ -257,9 +397,7 @@ struct EventDetailView: View {
         .sheet(item: $lvPDFURL) { url in
             PDFPreviewView(url: url).ignoresSafeArea()
         }
-        .sheet(item: $lvCSVURL) { url in
-            LVShareSheet(url: url).ignoresSafeArea()
-        }
+        .teilenOderSpeichern(datei: $lvCSVURL)
         .sheet(isPresented: $showBautagesbericht) {
             BautagesberichtView(event: event)
                 .environment(\.managedObjectContext, viewContext)
@@ -308,8 +446,13 @@ struct EventDetailView: View {
                 )
             )
         }
-        .sheet(item: $reportPDFURL) { url in
-            LVShareSheet(url: url).ignoresSafeArea()
+        .teilenOderSpeichern(datei: $reportPDFURL)
+        .sheet(isPresented: $showingUnterlagenPicker) {
+            PDFDocumentPicker { urls in starteUnterlagenAuswertung(urls: urls) }
+                .ignoresSafeArea()
+        }
+        .sheet(isPresented: $zeigeAuswertung) {
+            UnterlageAuswertungView(ergebnisse: auswertResults, fehler: auswertFehler)
         }
     }
 
@@ -769,6 +912,19 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .confirmationDialog(
+            "Plan löschen?",
+            isPresented: Binding(
+                get: { planZumLoeschen != nil },
+                set: { if !$0 { planZumLoeschen = nil } }
+            ),
+            presenting: planZumLoeschen
+        ) { file in
+            Button("„\(file.fileName)“ löschen", role: .destructive) { loeschePlan(file) }
+            Button("Abbrechen", role: .cancel) { planZumLoeschen = nil }
+        } message: { file in
+            Text("„\(file.fileName)“ wird endgültig von diesem Gerät entfernt und aus der Baustelle gelöscht. Das lässt sich nicht rückgängig machen.")
+        }
     }
 
     private func isSKPFile(_ file: CADFileInfo) -> Bool { file.fileName.lowercased().hasSuffix(".skp") }
@@ -776,56 +932,158 @@ struct EventDetailView: View {
     @ViewBuilder
     private func cadFileRow(_ file: CADFileInfo) -> some View {
         if let url = file.fullURL {
-            Group {
-                if isSKPFile(file) {
-                    Button { showSketchUpWeb = true } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "safari.fill").font(.title3).foregroundStyle(.orange)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(file.fileName).font(.body)
-                                Text("Oeffnet in SketchUp Web (Safari)").font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Group {
+                    if isSKPFile(file) {
+                        Button { showSketchUpWeb = true } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "safari.fill").font(.title3).foregroundStyle(.orange)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(file.fileName).font(.body)
+                                    Text("Oeffnet in SketchUp Web (Safari)").font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square").font(.caption).foregroundStyle(.secondary)
                             }
-                            Spacer()
-                            Image(systemName: "arrow.up.right.square").font(.caption).foregroundStyle(.secondary)
+                            .padding(.vertical, 8).padding(.horizontal, 10)
+                            .background(.thinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
-                        .padding(.vertical, 8).padding(.horizontal, 10)
-                        .background(.thinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-                    .contextMenu {
-                        Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
-                        Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
-                        Button(role: .destructive) { cadFiles.removeAll { $0.id == file.id }; saveCADFiles() } label: { Label("Loeschen", systemImage: "trash") }
-                    }
-                } else {
-                    NavigationLink { CADViewerView(fileURL: url, fileName: file.fileName) } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "cube.fill").font(.title3).foregroundStyle(.tint)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(file.fileName).font(.body)
-                                Text(file.importDate.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        NavigationLink { CADViewerView(fileURL: url, fileName: file.fileName) } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "cube.fill").font(.title3).foregroundStyle(.tint)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(file.fileName).font(.body)
+                                    Text(file.importDate.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
                             }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                            .padding(.vertical, 8).padding(.horizontal, 10)
+                            .background(.thinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
-                        .padding(.vertical, 8).padding(.horizontal, 10)
-                        .background(.thinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
-                    .contextMenu {
-                        Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
-                        Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
-                        Button(role: .destructive) { cadFiles.removeAll { $0.id == file.id }; saveCADFiles() } label: { Label("Loeschen", systemImage: "trash") }
+                }
+                .contextMenu {
+                    Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
+                    Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
+                    Button(role: .destructive) { planZumLoeschen = file } label: { Label("Loeschen", systemImage: "trash") }
+                }
+
+                // Sichtbarer Loesch-Button: der Swipe greift in einem VStack nicht,
+                // deshalb ein eigener Papierkorb pro Zeile. Bestaetigung folgt (siehe cadCard).
+                Button { planZumLoeschen = file } label: {
+                    Image(systemName: "trash")
+                        .font(.body)
+                        .foregroundStyle(.red)
+                        .padding(8)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Plan \(file.fileName) löschen")
+            }
+        }
+    }
+
+    /// Löscht einen importierten Plan endgültig: Datei von der Platte entfernen,
+    /// aus der Liste nehmen, speichern. (Vorher Bestätigung via planZumLoeschen.)
+    private func loeschePlan(_ file: CADFileInfo) {
+        if let url = file.fullURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        cadFiles.removeAll { $0.id == file.id }
+        saveCADFiles()
+        planZumLoeschen = nil
+    }
+
+    // MARK: - UNTERLAGEN-AUSWERTUNG CARD (Stufe 2 — /extract-doc)
+    private var unterlagenCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Unterlagen auswerten").font(.headline)
+                Spacer()
+                Button { showingUnterlagenPicker = true } label: {
+                    Label("Auswerten", systemImage: "doc.text.magnifyingglass").font(.subheadline)
+                }
+                .disabled(isAuswerten)
+            }
+
+            if isAuswerten {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text(auswertFortschritt.isEmpty ? "Wird ausgewertet…" : auswertFortschritt)
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(.top, 2)
+            } else if auswertResults.isEmpty && auswertFehler.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "doc.text.magnifyingglass").font(.title2).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Bodengutachten, Wohnflaeche, B-Plan, Erschliessung").font(.subheadline)
+                        Text("Text-PDF waehlen — Mops zieht die Fakten heraus (Entwurf, pruefen).")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
+                }
+                .padding(.top, 4)
+            } else {
+                Button { zeigeAuswertung = true } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "checkmark.circle.fill").font(.title3).foregroundStyle(.green)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(auswertResults.count) Dokument(e) ausgewertet").font(.subheadline)
+                            if !auswertFehler.isEmpty {
+                                Text("\(auswertFehler.count) uebersprungen").font(.caption).foregroundStyle(.orange)
+                            }
+                            Text("Ergebnis ansehen").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8).padding(.horizontal, 10)
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// Wertet die gewählten Text-PDFs nacheinander über die Box aus (`/extract-doc`).
+    /// Sequenziell, weil die Box CPU/LLM-seriell arbeitet. Zeichnungen ohne Textebene
+    /// liefern 422 → landen als „übersprungen" in der Fehlerliste, brechen nicht ab.
+    private func starteUnterlagenAuswertung(urls: [URL]) {
+        showingUnterlagenPicker = false
+        guard !urls.isEmpty else { return }
+        isAuswerten = true
+        auswertResults = []
+        auswertFehler = []
+        auswertFortschritt = ""
+        let client = MopsClient()
+        Task {
+            var results: [ExtractDocResult] = []
+            var fehler: [String] = []
+            for (i, url) in urls.enumerated() {
+                await MainActor.run { auswertFortschritt = "Dokument \(i + 1) von \(urls.count) …" }
+                do {
+                    let data = try Data(contentsOf: url)
+                    let res = try await client.extractDoc(pdf: data, filename: url.lastPathComponent)
+                    results.append(res)
+                } catch {
+                    let msg = (error as? MopsClientError)?.errorDescription ?? error.localizedDescription
+                    fehler.append("\(url.lastPathComponent): \(msg)")
                 }
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button(role: .destructive) {
-                    cadFiles.removeAll { $0.id == file.id }
-                    saveCADFiles()
-                } label: {
-                    Label("Löschen", systemImage: "trash")
-                }
+            await MainActor.run {
+                auswertResults = results
+                auswertFehler = fehler
+                isAuswerten = false
+                auswertFortschritt = ""
+                if !results.isEmpty || !fehler.isEmpty { zeigeAuswertung = true }
             }
         }
     }

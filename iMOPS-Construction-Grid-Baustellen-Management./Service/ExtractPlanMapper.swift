@@ -12,6 +12,15 @@ import Foundation
 
 enum ExtractPlanMapper {
 
+    /// Effektive DIN-276-Kostengruppe: die gelieferte KG, sonst heuristisch aus der
+    /// Bezeichnung (`KGZuordnungsService`, Keyword→KG), sonst Sammel-„300".
+    /// Greift NUR, wenn keine KG geliefert wird — echte KGs (Mops/Statik) bleiben unberührt.
+    /// Ohne diesen Schritt landen extern per Vision/JSON erzeugte LVs (kg=null) alle in „300".
+    static func effektiveKG(kg: String?, bezeichnung: String) -> String {
+        if let kg, !kg.trimmingCharacters(in: .whitespaces).isEmpty { return kg }
+        return KGZuordnungsService.shared.ordneZu(materialName: bezeichnung) ?? "300"
+    }
+
     /// Erzeugt LVPosition-Objekte aus dem Extraktions-Ergebnis.
     /// - Parameters:
     ///   - result: dekodierte Antwort von /extract-plan
@@ -35,7 +44,7 @@ enum ExtractPlanMapper {
             pos.bezeichnung = p.bezeichnung
             pos.menge = p.menge ?? 0               // "manuell"-Positionen: menge=null
             pos.einheit = p.einheit
-            pos.kostenGruppeNummer = p.kg          // DIN 276
+            pos.kostenGruppeNummer = effektiveKG(kg: p.kg, bezeichnung: p.bezeichnung)  // DIN 276 (kg==nil → heuristisch)
             pos.mengenQuelleRaw = p.quelle ?? "manuell"   // gemessen/geschätzt (Welle-9-Fundament)
             pos.event = event
             if let zeile = bestellByPos[p.posNr] {
@@ -63,7 +72,7 @@ enum ExtractPlanMapper {
                 menge: p.menge ?? 0,
                 einheit: p.einheit ?? "",
                 confidence: p.quelle == "schaetzung" ? 0.6 : 0.95,
-                kostenGruppe: p.kg,
+                kostenGruppe: effektiveKG(kg: p.kg, bezeichnung: p.bezeichnung),
                 artikelNummer: zeile?.matnr,
                 lieferant: zeile?.lieferant
             )

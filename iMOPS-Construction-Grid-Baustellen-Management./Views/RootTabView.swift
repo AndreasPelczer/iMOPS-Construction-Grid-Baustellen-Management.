@@ -37,7 +37,7 @@ struct RootTabView: View {
             // Irgendwo in deiner RootTabView.swift innerhalb der TabView:
             HouseConfiguratorView()
                 .tabItem {
-                    Label("iMOPS Planer", systemImage: "pencil.and.rulers")
+                    Label("iMOPS Planer", systemImage: "pencil.and.ruler")
                 }
                 .tag("planer") // Optional, falls du Tags nutzt
 
@@ -70,15 +70,20 @@ struct RootTabView: View {
             }
             .tag("bauwissen")
 
-            // TAB 7: BuildIQ KI-Scanner (nur iOS, kein macCatalyst)
+            // TAB 7: BuildIQ KI-Scanner (nur iOS-Gerät).
+            // #if schließt Mac Catalyst compile-seitig aus; der Laufzeit-Check blendet ihn
+            // zusätzlich am „Mac (Designed for iPad)" aus (dort ist macCatalyst FALSE, sonst
+            // erschiene der Kamera-Scanner-Tab am Mac, der dort nicht sinnvoll läuft).
             #if !targetEnvironment(macCatalyst)
-            NavigationStack {
-                BuildIQLandingView()
+            if !ProcessInfo.processInfo.isiOSAppOnMac {
+                NavigationStack {
+                    BuildIQLandingView()
+                }
+                .tabItem {
+                    Label("BuildIQ", systemImage: "brain.head.profile")
+                }
+                .tag("buildiq")
             }
-            .tabItem {
-                Label("BuildIQ", systemImage: "brain.head.profile")
-            }
-            .tag("buildiq")
             #endif
 
             // TAB 8: Settings
