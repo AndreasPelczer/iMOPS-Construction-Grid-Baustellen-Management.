@@ -21,6 +21,7 @@ struct LVImportView: View {
     // NEU: Hier merken wir uns die Metadaten der geladenen Datei für CoreData
     @State private var geladenerDateiName: String? = nil
     @State private var geladenerDateiPfad: String? = nil
+    @State private var importMetadata: ExtractMetadata? = nil   // projekt/baustelle/datei aus dem Import
 
     private enum ImportQuelle { case lokal, mops }
 
@@ -283,6 +284,9 @@ struct LVImportView: View {
                     let result = try await MopsClient().extractPlan(
                         pdf: data, filename: url.lastPathComponent,
                         projekt: event.eventNumber, baustelle: event.title)
+                    if result.metadata.projekt != nil || result.metadata.baustelle != nil || result.metadata.datei != nil {
+                        importMetadata = result.metadata
+                    }
                     var parsed = ExtractPlanMapper.toParsed(result)
                     for i in parsed.indices where parsed[i].quellDateiName == nil {
                         parsed[i].quellDateiName = url.lastPathComponent
@@ -319,6 +323,9 @@ struct LVImportView: View {
                 do {
                     let data = try Data(contentsOf: url)
                     let result = try JSONDecoder().decode(ExtractPlanResult.self, from: data)
+                    if result.metadata.projekt != nil || result.metadata.baustelle != nil || result.metadata.datei != nil {
+                        importMetadata = result.metadata
+                    }
                     var parsed = ExtractPlanMapper.toParsed(result)
                     for i in parsed.indices where parsed[i].quellDateiName == nil {
                         parsed[i].quellDateiName = url.lastPathComponent
@@ -360,6 +367,17 @@ struct LVImportView: View {
             if let dateiPfad = parsed.quellDateiURL?.absoluteString ?? geladenerDateiPfad {
                 pos.setValue(dateiPfad, forKey: "dokuPath")
             }
+        }
+        // Herkunft der importierten Daten (aus PDF/JSON) am Event festhalten — für den
+        // Kopf der künftigen Ist-Baustellen-Übersicht. Alte extras (Checkliste/houseProject)
+        // bleiben erhalten (laden → nur importHerkunft setzen → speichern).
+        if let md = importMetadata,
+           md.projekt != nil || md.baustelle != nil || md.datei != nil {
+            var extras = EventExtrasPayload.laden(aus: event)
+            extras.importHerkunft = ImportHerkunft(
+                projekt: md.projekt, baustelle: md.baustelle,
+                datei: md.datei, importiertAm: Date())
+            extras.speichern(in: event)
         }
         try? viewContext.save()
         dismiss()

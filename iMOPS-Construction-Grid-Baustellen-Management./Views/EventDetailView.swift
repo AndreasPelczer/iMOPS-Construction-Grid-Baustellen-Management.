@@ -12,6 +12,30 @@ struct EventExtrasPayload: Codable {
     var pinnedProductIDs: [String] = []
     var pinnedLexikonCodes: [String] = []
     var houseProject: HouseProject? = nil
+    var importHerkunft: ImportHerkunft? = nil   // Herkunft der importierten LV-Daten (PDF/JSON)
+}
+
+/// Herkunft der importierten LV-Daten (aus `ExtractMetadata` beim PDF-/JSON-Import).
+/// Optional in `EventExtrasPayload` → alte gespeicherte Blobs bleiben dekodierbar.
+struct ImportHerkunft: Codable, Equatable {
+    var projekt: String? = nil
+    var baustelle: String? = nil
+    var datei: String? = nil
+    var importiertAm: Date? = nil
+}
+
+extension EventExtrasPayload {
+    /// Liest den Extras-Blob eines Events (leerer Payload, wenn nichts/kaputt).
+    static func laden(aus event: Event) -> EventExtrasPayload {
+        guard let s = event.extras, let data = s.data(using: .utf8) else { return EventExtrasPayload() }
+        return (try? JSONDecoder().decode(EventExtrasPayload.self, from: data)) ?? EventExtrasPayload()
+    }
+    /// Schreibt den Payload zurück ins Event (der Aufrufer speichert den Core-Data-Context).
+    func speichern(in event: Event) {
+        if let data = try? JSONEncoder().encode(self) {
+            event.extras = String(data: data, encoding: .utf8)
+        }
+    }
 }
 
 struct EventChecklistItem: Codable, Identifiable, Equatable {
