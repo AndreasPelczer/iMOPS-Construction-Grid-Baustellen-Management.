@@ -30,19 +30,16 @@ struct CADViewerView: View {
     @State private var loadError: String?
     @State private var showSketchUpWeb = false
 
+    private var istPDF: Bool { fileName.lowercased().hasSuffix(".pdf") }
+
     var body: some View {
-                // NEU: Wenn es ein PDF ist, nutze unser internes PDFKit
-                if fileName.lowercased().hasSuffix(".pdf") {
-                    PDFKitView(url: fileURL)
-                        .ignoresSafeArea()
-                        .navigationTitle(fileName)
-                        .navigationBarTitleDisplayMode(.inline)
-                } else {
-                    // HIER STEHT DEIN BISHERIGER CODE FÜR USDZ/OBJ (SceneKit)
-                    // Den lassen wir genau so, wie er ist!
-                }
         Group {
-            if let error = loadError {
+            if istPDF {
+                // PDF: NUR PDFKit. Vorher lief zusätzlich die SceneKit-View mit, die
+                // versucht hat, das PDF als 3D-Modell zu laden — Crash-Kandidat (v.a. am Mac).
+                PDFKitView(url: fileURL)
+                    .ignoresSafeArea()
+            } else if let error = loadError {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.largeTitle)
