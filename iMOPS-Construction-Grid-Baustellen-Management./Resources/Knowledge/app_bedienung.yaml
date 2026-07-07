@@ -303,6 +303,30 @@
   quelle_kurz: "iMOPS App-Bedienung (Phase 5)"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Plaene_Hinzufuegen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Plaene hinzufuegen"
+    - "PDF importieren"
+    - "mehrere Plaene auf einmal"
+    - "Ordner mit Plaenen"
+    - "Plan Datei auswaehlen"
+  antwort: |
+    Plaene/Dateien zu einer Baustelle hinzufuegen (Karte "Plaene & CAD"):
+    1. Baustelle oeffnen, Abschnitt "Plaene & CAD" aufklappen.
+    2. Auf Hinzufuegen tippen - der Datei-Picker oeffnet sich.
+    3. MEHRERE Dateien auf einmal moeglich: am Mac mit Cmd+A oder
+       Cmd-Klick alle markieren, am iPad mehrere antippen, dann
+       "Oeffnen". Alle gewaehlten PDFs/Plaene landen in der Karte.
+    4. Unterstuetzt: PDF, Bilder, Excel/Word, sowie CAD/3D
+       (USDZ, OBJ, DAE, DXF, DWG, IFC, SKP ...).
+
+    Tipp: Raphi kann einen Ordner mit allen Plaenen anlegen; im Picker
+    in den Ordner navigieren und alle auf einmal auswaehlen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_BuildIQ_Scanner"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
