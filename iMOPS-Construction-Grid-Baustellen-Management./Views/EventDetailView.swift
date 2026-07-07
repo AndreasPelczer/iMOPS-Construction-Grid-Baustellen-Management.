@@ -44,6 +44,13 @@ struct EventDetailView: View {
     @State private var selectedJobFilter: JobFilter = .all
     @State private var extras = EventExtrasPayload()
     @State private var cadFiles: [CADFileInfo] = []
+    @State private var planZumLoeschen: CADFileInfo? = nil   // Lösch-Bestätigung Pläne
+    // Einklappbare Karten-Gruppen — „Übersicht" ist beim Öffnen aufgeklappt, Rest zu.
+    @State private var gruppeUebersicht = true
+    @State private var gruppePlaene = false
+    @State private var gruppeLV = false
+    @State private var gruppeGewerke = false
+    @State private var gruppeMaengel = false
     @State private var pinnedMaterials: [CDLexikonEntry] = []
     @State private var newStepText: String = ""
     @State private var showingMaengelListe = false
@@ -130,35 +137,72 @@ struct EventDetailView: View {
         (event.maengel?.allObjects as? [Mangel] ?? []).filter { $0.istUeberfaellig }.count
     }
 
+    /// Einklappbare Karten-Gruppe: eine Titelzeile zum Auf-/Zuklappen; der Inhalt sind
+    /// die bestehenden Karten (unverändert, inkl. ihrer Sheets/States). So zeigt die
+    /// Baustelle nur wenige Gruppen statt aller Karten auf einmal.
+    private func kartenGruppe<Content: View>(
+        _ titel: String, systemImage: String, isExpanded: Binding<Bool>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        let inhalt = content()   // einmal vorab auswerten (kein Escaping-Capture)
+        return DisclosureGroup(isExpanded: isExpanded) {
+            VStack(alignment: .leading, spacing: 18) {
+                inhalt
+            }
+            .padding(.top, 12)
+        } label: {
+            Label(titel, systemImage: systemImage)
+                .font(.title3.bold())
+                .foregroundStyle(.primary)
+                .padding(.vertical, 6)
+        }
+        .tint(.orange)
+        .padding(.horizontal, 4)
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                headerCard
-                if housePlanningResult != nil {
-                    grundplanungCard
+            VStack(alignment: .leading, spacing: 14) {
+                kartenGruppe("Übersicht & Wetter", systemImage: "building.2", isExpanded: $gruppeUebersicht) {
+                    headerCard
+                    if housePlanningResult != nil {
+                        grundplanungCard
+                    }
+                    // 🚥 Klick auf die Ampel öffnet direkt die interaktive Kausalbaukette.
+                    Button {
+                        showingKausalKette = true
+                    } label: {
+                        AmpelCard(event: event)
+                    }
+                    .buttonStyle(.plain)
+                    .sheet(isPresented: $showingKausalKette) {
+                        KausalbauketteView(event: event)
+                            .environment(\.managedObjectContext, viewContext)
+                    }
+                    WetterKarteView(ort: event.location ?? "")
                 }
-                // 🚥 Klick auf die Ampel öffnet direkt die interaktive Kausalbaukette.
-                // (Mängelliste + Auftrag-anlegen sind über eigene Buttons erreichbar.)
-                Button {
-                    showingKausalKette = true
-                } label: {
-                    AmpelCard(event: event)
+
+                kartenGruppe("Pläne & Unterlagen", systemImage: "doc.on.doc", isExpanded: $gruppePlaene) {
+                    cadCard
+                    unterlagenCard
+                    geländeCard
                 }
-                .buttonStyle(.plain)
-                .sheet(isPresented: $showingKausalKette) {
-                    KausalbauketteView(event: event)
-                        .environment(\.managedObjectContext, viewContext)
+
+                kartenGruppe("LV & Kalkulation", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
+                    lvCard
+                    kalkulationCard
+                    materialCard
                 }
-                WetterKarteView(ort: event.location ?? "")
-                cadCard
-                unterlagenCard
-                materialCard
-                geländeCard
-                lvCard
-                kalkulationCard
-                checklistCard
-                maengelCard
-                jobsCard
+
+                kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
+                    jobsCard
+                    checklistCard
+                }
+
+                kartenGruppe("Mängel", systemImage: "exclamationmark.triangle", isExpanded: $gruppeMaengel) {
+                    maengelCard
+                }
+
                 Spacer(minLength: 8)
             }
             .padding()
@@ -785,6 +829,19 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .confirmationDialog(
+            "Plan löschen?",
+            isPresented: Binding(
+                get: { planZumLoeschen != nil },
+                set: { if !$0 { planZumLoeschen = nil } }
+            ),
+            presenting: planZumLoeschen
+        ) { file in
+            Button("„\(file.fileName)“ löschen", role: .destructive) { loeschePlan(file) }
+            Button("Abbrechen", role: .cancel) { planZumLoeschen = nil }
+        } message: { file in
+            Text("„\(file.fileName)“ wird endgültig von diesem Gerät entfernt und aus der Baustelle gelöscht. Das lässt sich nicht rückgängig machen.")
+        }
     }
 
     private func isSKPFile(_ file: CADFileInfo) -> Bool { file.fileName.lowercased().hasSuffix(".skp") }
@@ -792,58 +849,70 @@ struct EventDetailView: View {
     @ViewBuilder
     private func cadFileRow(_ file: CADFileInfo) -> some View {
         if let url = file.fullURL {
-            Group {
-                if isSKPFile(file) {
-                    Button { showSketchUpWeb = true } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "safari.fill").font(.title3).foregroundStyle(.orange)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(file.fileName).font(.body)
-                                Text("Oeffnet in SketchUp Web (Safari)").font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Group {
+                    if isSKPFile(file) {
+                        Button { showSketchUpWeb = true } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "safari.fill").font(.title3).foregroundStyle(.orange)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(file.fileName).font(.body)
+                                    Text("Oeffnet in SketchUp Web (Safari)").font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square").font(.caption).foregroundStyle(.secondary)
                             }
-                            Spacer()
-                            Image(systemName: "arrow.up.right.square").font(.caption).foregroundStyle(.secondary)
+                            .padding(.vertical, 8).padding(.horizontal, 10)
+                            .background(.thinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
-                        .padding(.vertical, 8).padding(.horizontal, 10)
-                        .background(.thinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-                    .contextMenu {
-                        Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
-                        Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
-                        Button(role: .destructive) { cadFiles.removeAll { $0.id == file.id }; saveCADFiles() } label: { Label("Loeschen", systemImage: "trash") }
-                    }
-                } else {
-                    NavigationLink { CADViewerView(fileURL: url, fileName: file.fileName) } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "cube.fill").font(.title3).foregroundStyle(.tint)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(file.fileName).font(.body)
-                                Text(file.importDate.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        NavigationLink { CADViewerView(fileURL: url, fileName: file.fileName) } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "cube.fill").font(.title3).foregroundStyle(.tint)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(file.fileName).font(.body)
+                                    Text(file.importDate.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
                             }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                            .padding(.vertical, 8).padding(.horizontal, 10)
+                            .background(.thinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
-                        .padding(.vertical, 8).padding(.horizontal, 10)
-                        .background(.thinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-                    .contextMenu {
-                        Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
-                        Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
-                        Button(role: .destructive) { cadFiles.removeAll { $0.id == file.id }; saveCADFiles() } label: { Label("Loeschen", systemImage: "trash") }
                     }
                 }
-            }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button(role: .destructive) {
-                    cadFiles.removeAll { $0.id == file.id }
-                    saveCADFiles()
-                } label: {
-                    Label("Löschen", systemImage: "trash")
+                .contextMenu {
+                    Button { showSketchUpWeb = true } label: { Label("In SketchUp Web oeffnen", systemImage: "safari") }
+                    Button { ExternalAppLauncher.shared.openInExternalApp(fileURL: url) } label: { Label("Teilen / Andere App", systemImage: "square.and.arrow.up") }
+                    Button(role: .destructive) { planZumLoeschen = file } label: { Label("Loeschen", systemImage: "trash") }
                 }
+
+                // Sichtbarer Loesch-Button: der Swipe greift in einem VStack nicht,
+                // deshalb ein eigener Papierkorb pro Zeile. Bestaetigung folgt (siehe cadCard).
+                Button { planZumLoeschen = file } label: {
+                    Image(systemName: "trash")
+                        .font(.body)
+                        .foregroundStyle(.red)
+                        .padding(8)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Plan \(file.fileName) löschen")
             }
         }
+    }
+
+    /// Löscht einen importierten Plan endgültig: Datei von der Platte entfernen,
+    /// aus der Liste nehmen, speichern. (Vorher Bestätigung via planZumLoeschen.)
+    private func loeschePlan(_ file: CADFileInfo) {
+        if let url = file.fullURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        cadFiles.removeAll { $0.id == file.id }
+        saveCADFiles()
+        planZumLoeschen = nil
     }
 
     // MARK: - UNTERLAGEN-AUSWERTUNG CARD (Stufe 2 — /extract-doc)
