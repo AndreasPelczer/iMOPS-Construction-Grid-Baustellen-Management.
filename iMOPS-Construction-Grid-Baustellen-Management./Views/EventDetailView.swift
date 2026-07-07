@@ -491,7 +491,17 @@ struct EventDetailView: View {
                     Text("Rechne Cut/Fill...").font(.subheadline).foregroundStyle(.secondary)
                 }
             } else if !gelaendeError.isEmpty {
-                Text(gelaendeError).font(.caption).foregroundColor(.red)
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text(gelaendeError)
+                        .font(.callout)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
             } else if let r = gelaendeResult {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 12) {
@@ -762,7 +772,14 @@ struct EventDetailView: View {
                     gelaendeResult = try JSONDecoder().decode(GelaendeResult.self, from: data)
                     gelaendeError = ""
                 } catch {
-                    gelaendeError = "Server sagt:\n\(rawResponse)"
+                    // Fehlerantwort ist {"detail":"..."} — nur den Klartext-Satz zeigen,
+                    // nicht das rohe JSON.
+                    if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let detail = obj["detail"] as? String {
+                        gelaendeError = detail
+                    } else {
+                        gelaendeError = rawResponse
+                    }
                 }
             }
         }.resume()
