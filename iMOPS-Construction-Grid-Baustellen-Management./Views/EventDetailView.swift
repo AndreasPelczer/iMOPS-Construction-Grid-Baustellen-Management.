@@ -266,7 +266,7 @@ struct EventDetailView: View {
                     // Dadurch springt die Weiche sofort auf Zustand B (Die 4 Reiter mitsamt Zeitstrahl)
                     HouseConfiguratorView(spezielesEvent: event)
                 } label: {
-                    Label("Soll-Übersicht", systemImage: "pencil.and.rulers")
+                    Label("Soll-Übersicht", systemImage: "pencil.and.ruler")
                 }
                 .tint(.orange)
             }
