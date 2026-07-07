@@ -37,7 +37,7 @@ struct RootTabView: View {
             // Irgendwo in deiner RootTabView.swift innerhalb der TabView:
             HouseConfiguratorView()
                 .tabItem {
-                    Label("iMOPS Planer", systemImage: "pencil.and.rulers")
+                    Label("iMOPS Planer", systemImage: "pencil.and.ruler")
                 }
                 .tag("planer") // Optional, falls du Tags nutzt
 
