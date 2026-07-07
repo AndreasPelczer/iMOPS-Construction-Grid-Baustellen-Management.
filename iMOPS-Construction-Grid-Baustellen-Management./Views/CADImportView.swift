@@ -40,7 +40,7 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
         types.append(.item)
 
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: types)
-        picker.allowsMultipleSelection = false
+        picker.allowsMultipleSelection = true   // Mehrere Pläne/PDFs in einem Rutsch auswählen
         picker.delegate = context.coordinator
         return picker
     }
@@ -79,8 +79,14 @@ struct CADDocumentPicker: UIViewControllerRepresentable {
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            guard let sourceURL = urls.first else { return }
+            // Mehrfachauswahl: jede gewählte Datei einzeln verarbeiten.
+            for url in urls {
+                verarbeiteDatei(url)
+            }
+        }
 
+        /// Verarbeitet EINE gewählte Datei (kopieren + je nach Format weiterreichen).
+        private func verarbeiteDatei(_ sourceURL: URL) {
             // Security-Scoped Resource Zugriff
             guard sourceURL.startAccessingSecurityScopedResource() else { return }
             defer { sourceURL.stopAccessingSecurityScopedResource() }
