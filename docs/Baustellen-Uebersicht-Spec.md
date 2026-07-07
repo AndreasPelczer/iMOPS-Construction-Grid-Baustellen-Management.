@@ -159,3 +159,61 @@ Zeitplan-Konzept zu warten.
 
 **Noch von Andreas zu entscheiden:** Weg B final? · Zeitplan-MVP so? · Metadaten-Persistenz
 (§3.3) als eigener erster Schritt (klein, unabhängig)?
+
+---
+
+## 9) Nachtrag (Claude, 7.7.2026): Gruppierungs-Achsen & das `kg`-null-Loch
+
+Aus der LV-Import-Arbeit (Aura-125-Fixture) kam ein Befund, der Weg B direkt betrifft:
+
+**Das `kg`-null-Loch (würde beim Testen beißen):**
+Die extern per Vision erzeugten T&C-LVs (und generell die manuell/Vision-Route) haben
+**`kg = null`**. Der Weg durch den Code: `ExtractPlanMapper.toParsed` reicht `kostenGruppe: p.kg`
+durch (`ExtractPlanMapper.swift:66`, hier `nil`) → `LVImportView.importSelected()` setzt
+`pos.kostenGruppeNummer = parsed.kostenGruppe ?? "300"` (`LVImportView.swift:357`). Folge:
+**alle 241 Aura-125-Positionen landen in KG 300.** Ein Massen/Material-Reiter, der nur nach
+DIN-276-KG gruppiert, zeigt dann *einen* Riesen-Topf „KG 300 · 241 Positionen" → nutzlos.
+
+**Empfehlung: zwei Gruppierungs-Achsen für zwei Reiter (beide aus vorhandenen Daten):**
+- **Kosten-Reiter → DIN-276-KG** (macht `KostenübersichtView` schon; für Kosten die richtige Achse).
+- **Massen/Material-Reiter → posNr-Titel-Präfix** (die ersten 2 Stellen der `posNr`: `00`, `01`,
+  `03`, `07` …). Das ist exakt die **LV-Titel-/Gewerk-Gliederung** und steckt **gratis in jeder
+  posNr** — kein `gewerk`-Feld, kein KG, provider-unabhängig. Rettet den MVP auch bei `kg=null`.
+
+**Kleiner ehrlicher Haken dabei:** der Titel-*Klartext* („Erdarbeiten", „Betonarbeiten") steht
+NICHT auf `LVPosition` — nur die `posNr` und die Positions-`bezeichnung`. Also gruppiert man
+zunächst **numerisch** (`posNr[:2]`). Optionen fürs Label:
+- MVP: Gruppen-Header = die zwei Ziffern + evtl. die `bezeichnung` der ersten Position als Hinweis.
+- Später/sauber: den **Titel-Text beim Import mitspeichern** (die Extraktion kennt ihn, die
+  aktuelle `aura125-lv.json` hat ihn aber weggelassen → müsste ins JSON-Schema + Import).
+- **Kür:** `KGZuordnungsService` beim Import laufen lassen, um echte DIN-276-KG aus der
+  `bezeichnung` zu setzen — dann wird auch der Kosten-Reiter für Importe brauchbar. Nicht MVP-kritisch.
+
+**Fazit:** Weg B bleibt richtig; nur die Massen/Material-Achse ist **posNr-Titel-Präfix**, nicht
+KG. Sonst kippt der MVP an genau den Daten, die er zeigen soll.
+
+---
+
+## 9.1 Verifikation & Ergänzung (Claude, gegen den Code geprüft 7.7.2026)
+
+§9 gegen den laufenden Code bestätigt — alle Behauptungen **CONFIRMED**:
+- `LVImportView.swift:357`: `pos.kostenGruppeNummer = parsed.kostenGruppe ?? "300"` ✔
+- `ExtractPlanMapper.swift:66`: `kostenGruppe: p.kg` (bei Vision/JSON = `nil`) ✔
+- `aura125-lv.json`: alle 241 Positionen `kg=null` → landen in **KG 300** ✔
+- `Service/KGZuordnungsService.swift` existiert wirklich (Keyword→DIN-276-KG-Mapper,
+  z. B. „aushub"→311, „fundament"→322, „fenster"→334), wird schon von `MaterialImportService`
+  genutzt → die „Kür" ist real machbar ✔
+
+**Ergänzung 1 — der Befund trifft auch den Kosten-Reiter.** `KostenübersichtView` gruppiert nach
+`kostenGruppeNummer`; bei importierten LVs (kg=null→300) zeigt also **auch der Kosten-Reiter**
+alles unter „KG 300". → Die **KG-Zuordnung beim Import (`KGZuordnungsService`) ist damit kein
+bloßes „Kür"-Detail, sondern das, was BEIDE Reiter für Vision/JSON-Importe (= genau der
+T&C-Fall) erst brauchbar macht** — und sie verbessert das LV selbst (echte KGs statt Sammel-300).
+Empfehlung: als **frühen Schritt** einplanen, nicht ans Ende. (Ort: beim Import, analog zur
+Metadaten-Persistenz — wenn `kg==nil`, `KGZuordnungsService` auf die `bezeichnung` laufen lassen.)
+
+**Ergänzung 2 — Impl-Hinweis.** posNr-Titel-Präfix robust über
+`posNr.split(separator: ".").first` bilden (nicht literal `posNr[:2]`) — falls eine posNr mal
+nicht null-gepolstert ist (`1.2.3`).
+
+**Unverändert:** Weg B bleibt richtig; Massen/Material-Achse = posNr-Titel-Präfix.
