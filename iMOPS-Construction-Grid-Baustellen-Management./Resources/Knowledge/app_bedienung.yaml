@@ -108,6 +108,31 @@
   quelle_kurz: "iMOPS App-Bedienung (Welle 4)"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_LV_JSON_Import"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "LV aus JSON"
+    - "JSON importieren"
+    - "LV aus JSON-Datei"
+    - "Town and Country importieren"
+    - "Vision-LV importieren"
+    - "Wie importiere ich eine LV-JSON"
+  antwort: |
+    Ein extern erzeugtes LV als JSON-Datei importieren (Format ExtractPlanResult):
+    1. In einer Baustelle "LV aus PDF importieren" oeffnen
+    2. Button "LV aus JSON-Datei" tippen (gruen)
+    3. Eine oder mehrere .json-Dateien waehlen
+    4. Positionen pruefen/abwaehlen wie beim PDF-Import
+    5. "Importieren" -> Positionen sind im LV der Baustelle
+
+    Wofuer: Manche LV-PDFs (z.B. Town & Country, Export "ComponentOne C1Pdf") haben
+    einen kaputten Text-Layer und werden extern per Vision zu JSON gemacht. Dieser
+    Weg laedt so eine fertige JSON-Datei direkt in die Pruefliste — ohne den Mops zu
+    rufen. Die Datei muss das ExtractPlanResult-Format haben (mindestens lv_positionen).
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Mangel_erfassen"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
