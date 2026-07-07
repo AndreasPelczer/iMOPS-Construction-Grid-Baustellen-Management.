@@ -16,7 +16,7 @@ struct BaustellenIstUebersichtView: View {
     @State private var reiter: Reiter = .kosten
 
     enum Reiter: String, CaseIterable, Identifiable {
-        case kosten = "Kosten", massen = "Massen", material = "Material"
+        case kosten = "Kosten", massen = "Massen", material = "Material", zeitplan = "Zeitplan"
         var id: String { rawValue }
     }
 
@@ -98,6 +98,7 @@ struct BaustellenIstUebersichtView: View {
                     case .kosten:   kostenReiter
                     case .massen:   massenReiter
                     case .material: materialReiter
+                    case .zeitplan: zeitplanReiter
                     }
                 }
                 .listStyle(.insetGrouped)
@@ -228,6 +229,44 @@ struct BaustellenIstUebersichtView: View {
                     }
                 }
             } header: { Text("Positionen mit Material (Artikel-Nr./Lieferant)") }
+        }
+    }
+
+    // MARK: - Reiter Zeitplan
+
+    @ViewBuilder private var zeitplanReiter: some View {
+        Section {
+            EventTimelineBar(event: event).padding(.vertical, 4)
+            if let s = event.eventStartTime {
+                LabeledContent("Start", value: s.formatted(date: .abbreviated, time: .omitted))
+            }
+            if let e = event.eventEndTime {
+                LabeledContent("Ende", value: e.formatted(date: .abbreviated, time: .omitted))
+            }
+            if event.eventStartTime == nil && event.eventEndTime == nil {
+                Text("Bauzeitraum noch nicht gesetzt — über Bearbeiten pflegen.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        } header: { Text("Bauzeitraum") }
+
+        Section {
+            ForEach(titelGruppen) { g in
+                let gesamt = g.positionen.count
+                let gemessen = g.positionen.filter { !$0.istGeschaetzt }.count
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(gruppenTitel(g)).font(.subheadline).lineLimit(1)
+                        Spacer()
+                        Text("\(gemessen)/\(gesamt) gemessen")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                    ProgressView(value: Double(gemessen), total: Double(max(gesamt, 1))).tint(.orange)
+                }
+            }
+        } header: { Text("Gewerke-Fortschritt (gemessen vs. geschätzt)") }
+        footer: {
+            Text("Gemessen = belastbare Menge (Aufmaß), geschätzt = Planwert. Detaillierte Termin-Planung pro Phase folgt später.")
+                .font(.caption)
         }
     }
 
