@@ -1,5 +1,20 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
+
+/// PDF-Dokument für den `.fileExporter` (Mac-„Speichern"-Dialog). Der iOS-Teilen-Sheet
+/// legt am Mac keine Datei ab — dort braucht es einen echten Save-Panel.
+struct PDFFileDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.pdf] }
+    var data: Data
+    init(data: Data) { self.data = data }
+    init(configuration: ReadConfiguration) throws {
+        data = configuration.file.regularFileContents ?? Data()
+    }
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
+    }
+}
 
 struct LVShareSheet: UIViewControllerRepresentable {
     let url: URL
