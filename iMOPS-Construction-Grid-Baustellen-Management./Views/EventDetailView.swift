@@ -295,6 +295,16 @@ struct EventDetailView: View {
                 .tint(.orange)
             }
 
+            // Ist-Übersicht: echte importierte LV-Daten (Weg B) — parallel zur Soll-Übersicht.
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink {
+                    BaustellenIstUebersichtView(event: event)
+                } label: {
+                    Label("Ist-Übersicht", systemImage: "chart.bar.doc.horizontal")
+                }
+                .tint(.orange)
+            }
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Bearbeiten") { showingEditSheet = true }
             }

@@ -615,3 +615,30 @@
     Braucht Verbindung zum Mops-Server (wie die Plan-Auswertung).
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Ist_Uebersicht"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Ist-Übersicht"
+    - "Baustellen-Übersicht"
+    - "Ist-Kosten"
+    - "echte LV-Daten anzeigen"
+    - "Übersicht aus importierten Daten"
+    - "Wo sehe ich die echten Kosten der Baustelle"
+  antwort: |
+    Die Ist-Übersicht zeigt die Baustelle aus den ECHTEN importierten LV-Daten
+    (nicht die Planer-Schaetzung):
+    1. Baustelle oeffnen -> oben rechts "Ist-Übersicht" (Balken-Symbol).
+    2. Kopf: Projekt/Baustelle/Quelldatei aus dem Import + Positionsanzahl, Netto, Brutto.
+    3. Reiter:
+       - Kosten: nach DIN-276-Kostengruppe (Netto/MwSt/Brutto).
+       - Massen: nach LV-Titel (fuehrende Positionsnummer), Menge + Einheit je Position.
+       - Material: Positionen mit Artikel-Nr./Lieferant (bei Statik-/Bestell-Import gefuellt).
+
+    Unterschied zur "Soll-Übersicht": die Soll-Übersicht ist die Planer-Schaetzung
+    (Angebot), die Ist-Übersicht sind die tatsaechlich importierten Daten. Geschaetzte
+    Mengen sind mit "geschaetzt" markiert (gemessen verdraengt geschaetzt). Der
+    Zeitplan-Reiter folgt spaeter.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
