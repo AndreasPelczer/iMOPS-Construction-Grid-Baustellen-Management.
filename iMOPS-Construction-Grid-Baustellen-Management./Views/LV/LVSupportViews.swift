@@ -5,10 +5,24 @@ struct LVShareSheet: UIViewControllerRepresentable {
     let url: URL
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        let vc = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        ankern(vc)
+        return vc
     }
 
-    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {
+        ankern(vc)
+    }
+
+    /// iPad / Mac Catalyst: UIActivityViewController wird als Popover präsentiert und braucht
+    /// einen Anker (sourceView/sourceRect), sonst erscheint der Teilen-/Speichern-Dialog GAR
+    /// NICHT — auf iPhone (modal) wird der Anker ignoriert. (Gleiches Muster wie ExternalAppLauncher.)
+    private func ankern(_ vc: UIActivityViewController) {
+        guard let pop = vc.popoverPresentationController else { return }
+        pop.sourceView = vc.view
+        pop.sourceRect = CGRect(x: vc.view.bounds.midX, y: vc.view.bounds.midY, width: 0, height: 0)
+        pop.permittedArrowDirections = []
+    }
 }
 
 struct LVHelpView: View {
