@@ -13,6 +13,19 @@ struct EventExtrasPayload: Codable {
     var pinnedLexikonCodes: [String] = []
     var houseProject: HouseProject? = nil
     var importHerkunft: ImportHerkunft? = nil   // Herkunft der importierten LV-Daten (PDF/JSON)
+    var bauphasen: [IstBauphase]? = nil         // manuell geplante Bauphasen (Zeitplan-Reiter)
+}
+
+/// Manuell geplante Bauphase (Zeitplan der Ist-Übersicht). Eigener Typ, weil der Planer
+/// schon eine (wochenbasierte, nicht-Codable) `Bauphase` hat. In `EventExtrasPayload`
+/// optional → alte gespeicherte Blobs bleiben dekodierbar.
+struct IstBauphase: Codable, Identifiable, Equatable {
+    var id: String = UUID().uuidString
+    var name: String = ""
+    var gewerk: String? = nil
+    var start: Date = Date()
+    var ende: Date = Date()
+    var notiz: String? = nil
 }
 
 /// Herkunft der importierten LV-Daten (aus `ExtractMetadata` beim PDF-/JSON-Import).

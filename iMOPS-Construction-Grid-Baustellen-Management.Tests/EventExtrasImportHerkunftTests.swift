@@ -23,6 +23,19 @@ struct EventExtrasImportHerkunftTests {
         #expect(payload.importHerkunft == nil)   // fehlender Schlüssel → nil, kein Fehler
     }
 
+    @Test func bauphasenRoundTrip() throws {
+        var p = EventExtrasPayload()
+        p.bauphasen = [
+            IstBauphase(name: "Rohbau", gewerk: "331", start: .init(timeIntervalSince1970: 0), ende: .init(timeIntervalSince1970: 86_400), notiz: nil),
+            IstBauphase(name: "Dach", start: .init(timeIntervalSince1970: 90_000), ende: .init(timeIntervalSince1970: 180_000))
+        ]
+        let data = try JSONEncoder().encode(p)
+        let zurueck = try JSONDecoder().decode(EventExtrasPayload.self, from: data)
+        #expect(zurueck.bauphasen?.count == 2)
+        #expect(zurueck.bauphasen?.first?.name == "Rohbau")
+        #expect(zurueck.bauphasen?.first?.gewerk == "331")
+    }
+
     @Test func importHerkunftRoundTrip() throws {
         var p = EventExtrasPayload()
         p.importHerkunft = ImportHerkunft(

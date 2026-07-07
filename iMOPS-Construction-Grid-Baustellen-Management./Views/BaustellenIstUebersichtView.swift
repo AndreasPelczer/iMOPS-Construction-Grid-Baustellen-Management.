@@ -12,8 +12,12 @@ import CoreData
 /// - Material→ Positionen mit Artikel-Nr./Lieferant (bei Statik-/Bestell-Import gefüllt)
 struct BaustellenIstUebersichtView: View {
     let event: Event
+    @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var store = AngebotsStore.shared
     @State private var reiter: Reiter = .kosten
+    @State private var bauphasen: [IstBauphase] = []
+    @State private var phaseImEditor: IstBauphase?
+    @State private var editorIstNeu = false
 
     enum Reiter: String, CaseIterable, Identifiable {
         case kosten = "Kosten", massen = "Massen", material = "Material", zeitplan = "Zeitplan"
@@ -106,6 +110,17 @@ struct BaustellenIstUebersichtView: View {
         }
         .navigationTitle("Ist-Übersicht")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            bauphasen = (EventExtrasPayload.laden(aus: event).bauphasen ?? [])
+                .sorted { $0.start < $1.start }
+        }
+        .sheet(item: $phaseImEditor) { p in
+            BauphaseEditorView(
+                phase: p, istNeu: editorIstNeu,
+                onSave: uebernehmen,
+                onDelete: editorIstNeu ? nil : { loeschen(p) }
+            )
+        }
     }
 
     // MARK: - Kopf
@@ -250,24 +265,80 @@ struct BaustellenIstUebersichtView: View {
         } header: { Text("Bauzeitraum") }
 
         Section {
-            ForEach(titelGruppen) { g in
-                let gesamt = g.positionen.count
-                let gemessen = g.positionen.filter { !$0.istGeschaetzt }.count
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(gruppenTitel(g)).font(.subheadline).lineLimit(1)
-                        Spacer()
-                        Text("\(gemessen)/\(gesamt) gemessen")
-                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                    }
-                    ProgressView(value: Double(gemessen), total: Double(max(gesamt, 1))).tint(.orange)
-                }
+            Button {
+                editorIstNeu = true
+                phaseImEditor = neueBauphase()
+            } label: {
+                Label("Bauphase anlegen", systemImage: "plus.circle.fill")
             }
-        } header: { Text("Gewerke-Fortschritt (gemessen vs. geschätzt)") }
+            if bauphasen.isEmpty {
+                Text("Noch keine Bauphasen geplant. Lege Phasen mit Start/Ende an — sie erscheinen hier als Terminplan.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                ForEach(bauphasen) { p in
+                    Button {
+                        editorIstNeu = false
+                        phaseImEditor = p
+                    } label: { bauphaseZeile(p) }
+                    .buttonStyle(.plain)
+                }
+                .onDelete { idx in idx.map { bauphasen[$0] }.forEach(loeschen) }
+            }
+        } header: { Text("Bauphasen (Terminplan)") }
         footer: {
-            Text("Gemessen = belastbare Menge (Aufmaß), geschätzt = Planwert. Detaillierte Termin-Planung pro Phase folgt später.")
+            Text("Manuell geplante Phasen. Der Balken zeigt den Zeit-Fortschritt der Phase (Stand heute).")
                 .font(.caption)
         }
+    }
+
+    private func bauphaseZeile(_ p: IstBauphase) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(p.name).font(.subheadline)
+                if let g = p.gewerk, !g.isEmpty {
+                    Text(g).font(.caption2)
+                        .padding(.horizontal, 5).padding(.vertical, 1)
+                        .background(Color(.tertiarySystemBackground)).clipShape(Capsule())
+                }
+                Spacer()
+                Text("\(p.start.formatted(date: .abbreviated, time: .omitted)) – \(p.ende.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            ProgressView(value: phaseFortschritt(p)).tint(.orange)
+        }
+    }
+
+    // MARK: - Bauphasen-Logik
+
+    private func neueBauphase() -> IstBauphase {
+        let start = event.eventStartTime ?? Date()
+        return IstBauphase(name: "", start: start, ende: start)
+    }
+    private func phaseFortschritt(_ p: IstBauphase) -> Double {
+        let jetzt = Date()
+        if jetzt <= p.start { return 0 }
+        if jetzt >= p.ende { return 1 }
+        let gesamt = p.ende.timeIntervalSince(p.start)
+        return gesamt > 0 ? jetzt.timeIntervalSince(p.start) / gesamt : 1
+    }
+    private func uebernehmen(_ p: IstBauphase) {
+        if let i = bauphasen.firstIndex(where: { $0.id == p.id }) {
+            bauphasen[i] = p
+        } else {
+            bauphasen.append(p)
+        }
+        speicherePhasen()
+    }
+    private func loeschen(_ p: IstBauphase) {
+        bauphasen.removeAll { $0.id == p.id }
+        speicherePhasen()
+    }
+    private func speicherePhasen() {
+        bauphasen.sort { $0.start < $1.start }
+        var extras = EventExtrasPayload.laden(aus: event)
+        extras.bauphasen = bauphasen
+        extras.speichern(in: event)
+        try? viewContext.save()
     }
 
     // MARK: - Formatierung
