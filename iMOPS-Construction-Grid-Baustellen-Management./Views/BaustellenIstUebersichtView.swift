@@ -275,18 +275,29 @@ struct BaustellenIstUebersichtView: View {
                 Text("Noch keine Bauphasen geplant. Lege Phasen mit Start/Ende an — sie erscheinen hier als Terminplan.")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
+                if let span = zeitSpanne {
+                    HStack {
+                        Text(span.start.formatted(date: .abbreviated, time: .omitted))
+                        Spacer()
+                        Text(span.ende.formatted(date: .abbreviated, time: .omitted))
+                    }
+                    .font(.caption2).foregroundStyle(.secondary)
+                }
                 ForEach(bauphasen) { p in
                     Button {
                         editorIstNeu = false
                         phaseImEditor = p
-                    } label: { bauphaseZeile(p) }
+                    } label: {
+                        if let span = zeitSpanne { ganttZeile(p, span: span) }
+                        else { bauphaseZeile(p) }
+                    }
                     .buttonStyle(.plain)
                 }
                 .onDelete { idx in idx.map { bauphasen[$0] }.forEach(loeschen) }
             }
         } header: { Text("Bauphasen (Terminplan)") }
         footer: {
-            Text("Manuell geplante Phasen. Der Balken zeigt den Zeit-Fortschritt der Phase (Stand heute).")
+            Text("Balken je Phase über der Bauzeit; Farbe = Status (grün erledigt, orange laufend, hell geplant), rote Linie = heute. Antippen = bearbeiten, Wischen = löschen.")
                 .font(.caption)
         }
     }
@@ -305,6 +316,53 @@ struct BaustellenIstUebersichtView: View {
                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             }
             ProgressView(value: phaseFortschritt(p)).tint(.orange)
+        }
+    }
+
+    /// Zeitfenster für den Mini-Gantt: Vereinigung aus Bauzeitraum und allen Phasen.
+    private var zeitSpanne: (start: Date, ende: Date)? {
+        var starts = bauphasen.map { $0.start }
+        var enden = bauphasen.map { $0.ende }
+        if let s = event.eventStartTime { starts.append(s) }
+        if let e = event.eventEndTime { enden.append(e) }
+        guard let minS = starts.min(), let maxE = enden.max(), maxE > minS else { return nil }
+        return (minS, maxE)
+    }
+
+    /// Eine Phase als Gantt-Balken über dem gemeinsamen Zeitfenster (Farbe = Status,
+    /// rote Linie = heute). Antippen (auf der Zeile) bearbeitet die Phase.
+    private func ganttZeile(_ p: IstBauphase, span: (start: Date, ende: Date)) -> some View {
+        let total = span.ende.timeIntervalSince(span.start)
+        let offset = max(0, p.start.timeIntervalSince(span.start)) / total
+        let dauer  = max(0, p.ende.timeIntervalSince(p.start)) / total
+        let heute  = min(max(Date().timeIntervalSince(span.start) / total, 0), 1)
+        let farbe: Color = p.ende < Date() ? .green
+                         : (p.start <= Date() ? .orange : Color.orange.opacity(0.45))
+        return VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                Text(p.name).font(.subheadline)
+                if let g = p.gewerk, !g.isEmpty {
+                    Text(g).font(.caption2)
+                        .padding(.horizontal, 5).padding(.vertical, 1)
+                        .background(Color(.tertiarySystemBackground)).clipShape(Capsule())
+                }
+                Spacer()
+                Text("\(p.start.formatted(.dateTime.day().month())) – \(p.ende.formatted(.dateTime.day().month()))")
+                    .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            GeometryReader { geo in
+                let w = geo.size.width
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4).fill(Color(.systemGray5)).frame(height: 12)
+                    RoundedRectangle(cornerRadius: 4).fill(farbe)
+                        .frame(width: max(4, w * dauer), height: 12)
+                        .offset(x: w * offset)
+                    Rectangle().fill(Color.red.opacity(0.75))
+                        .frame(width: 1.5, height: 16)
+                        .offset(x: w * heute - 0.75)
+                }
+            }
+            .frame(height: 16)
         }
     }
 
