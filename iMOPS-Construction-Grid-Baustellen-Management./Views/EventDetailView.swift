@@ -14,6 +14,16 @@ struct EventExtrasPayload: Codable {
     var houseProject: HouseProject? = nil
     var importHerkunft: ImportHerkunft? = nil   // Herkunft der importierten LV-Daten (PDF/JSON)
     var bauphasen: [IstBauphase]? = nil         // manuell geplante Bauphasen (Zeitplan-Reiter)
+    var auswertungen: [GespeicherteAuswertung]? = nil   // gespeicherte /extract-doc-Ergebnisse
+}
+
+/// Eine gespeicherte Dokument-Auswertung (`/extract-doc`), abgelegt in `EventExtrasPayload`.
+/// Optional dort → alte Blobs bleiben dekodierbar. Dedup-Schlüssel = `quelle` (Dateiname),
+/// damit dasselbe erneut ausgewertete PDF den alten Eintrag ersetzt statt zu duplizieren.
+struct GespeicherteAuswertung: Codable, Identifiable {
+    var ergebnis: ExtractDocResult
+    var gespeichertAm: Date
+    var id: String { ergebnis.quelle }
 }
 
 /// Manuell geplante Bauphase (Zeitplan der Ist-Übersicht). Eigener Typ, weil der Planer
@@ -48,6 +58,17 @@ extension EventExtrasPayload {
         if let data = try? JSONEncoder().encode(self) {
             event.extras = String(data: data, encoding: .utf8)
         }
+    }
+
+    /// Fügt neue `/extract-doc`-Ergebnisse in `auswertungen` ein — Dedup/Update über `quelle`:
+    /// dasselbe PDF erneut ausgewertet ersetzt den alten Eintrag (kein Duplikat). Sortiert nach quelle.
+    mutating func mergeAuswertungen(_ neue: [ExtractDocResult], am: Date) {
+        var liste = auswertungen ?? []
+        for r in neue {
+            liste.removeAll { $0.id == r.quelle }
+            liste.append(GespeicherteAuswertung(ergebnis: r, gespeichertAm: am))
+        }
+        auswertungen = liste.sorted { $0.ergebnis.quelle < $1.ergebnis.quelle }
     }
 }
 
@@ -118,6 +139,7 @@ struct EventDetailView: View {
     @State private var auswertFehler: [String] = []
     @State private var auswertFortschritt = ""
     @State private var zeigeAuswertung = false
+    @State private var zeigeGespeicherteAuswertung = false   // gespeicherte Auswertungen wieder aufrufen
 
     // MARK: Jobs: gefiltert + sortiert
     private var filteredJobs: [Auftrag] {
@@ -452,8 +474,20 @@ struct EventDetailView: View {
                 .ignoresSafeArea()
         }
         .sheet(isPresented: $zeigeAuswertung) {
-            UnterlageAuswertungView(ergebnisse: auswertResults, fehler: auswertFehler)
+            UnterlageAuswertungView(ergebnisse: auswertResults, fehler: auswertFehler,
+                                    onSpeichern: { gewaehlt in speichereAuswertungen(gewaehlt) })
         }
+        .sheet(isPresented: $zeigeGespeicherteAuswertung) {
+            UnterlageAuswertungView(ergebnisse: (extras.auswertungen ?? []).map(\.ergebnis),
+                                    fehler: [], onSpeichern: nil)   // reine Ansicht, kein Mops
+        }
+    }
+
+    /// Merget frisch ausgewertete Dokumente (Human-in-the-Loop-Auswahl) in die extras und speichert.
+    private func speichereAuswertungen(_ gewaehlt: [ExtractDocResult]) {
+        guard !gewaehlt.isEmpty else { return }
+        extras.mergeAuswertungen(gewaehlt, am: Date())
+        saveExtras(extras)
     }
 
     // MARK: - GELÄNDE CARD (Welle 7)
@@ -1061,6 +1095,23 @@ struct EventDetailView: View {
                     .padding(.vertical, 8).padding(.horizontal, 10)
                     .background(.thinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+
+            // Schon gespeicherte Auswertungen wieder aufrufen (ohne Mops)
+            if let gespeicherte = extras.auswertungen, !gespeicherte.isEmpty {
+                Divider()
+                Button { zeigeGespeicherteAuswertung = true } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "tray.full").font(.title3).foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Ausgewertete Unterlagen (\(gespeicherte.count))").font(.subheadline)
+                            Text("Gespeicherte Fakten ansehen — ohne neue Auswertung").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 .buttonStyle(.plain)
             }

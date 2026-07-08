@@ -137,6 +137,14 @@ struct BaustellenIstUebersichtView: View {
                     Label(d, systemImage: "doc").font(.caption).foregroundStyle(.secondary)
                 }
             }
+            // Bonus: Kern-Fakten aus den gespeicherten Unterlagen-Auswertungen
+            if !unterlagenFakten.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(unterlagenFakten, id: \.self) { faktChip($0) }
+                    }
+                }
+            }
             HStack(spacing: 18) {
                 kpi("\(positionen.count)", "Positionen")
                 kpi(euro(gesamtNetto), "Netto")
@@ -161,6 +169,50 @@ struct BaustellenIstUebersichtView: View {
         .padding(.horizontal, 8).padding(.vertical, 4)
         .background(Color(.tertiarySystemBackground))
         .clipShape(Capsule())
+    }
+
+    private func faktChip(_ text: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "doc.text.magnifyingglass").font(.caption2)
+            Text(text).font(.caption).bold()
+        }
+        .padding(.horizontal, 8).padding(.vertical, 4)
+        .background(Color.orange.opacity(0.12))
+        .foregroundStyle(.orange)
+        .clipShape(Capsule())
+    }
+
+    /// 2–4 Kern-Fakten aus den gespeicherten `/extract-doc`-Auswertungen (Bonus im Kopf).
+    /// Fehlt Doctype/Feld → Fakt weglassen (nie „—" zeigen). Feldnamen = Backend-Schema
+    /// (`api/services/doc_extract.py`): bodenklassen[] · wohnflaeche_gesamt_m2 · zone/grz · medien[].
+    private var unterlagenFakten: [String] {
+        let auswertungen = EventExtrasPayload.laden(aus: event).auswertungen ?? []
+        var fakten: [String] = []
+        for a in auswertungen {
+            let f = a.ergebnis.felder
+            switch a.ergebnis.doctypeErkannt {
+            case "bodengutachten":
+                if let bkl = f["bodenklassen"]?.erstesArrayElement?.skalarText, bkl != "—" {
+                    fakten.append("Bodenklasse: \(bkl)")
+                }
+            case "wohnflaeche":
+                if let wf = f["wohnflaeche_gesamt_m2"]?.skalarText, wf != "—" {
+                    fakten.append("Wohnfläche: \(wf) m²")
+                }
+            case "bebauungsplan":
+                var teile: [String] = []
+                if let z = f["zone"]?.skalarText, z != "—" { teile.append("Zone \(z)") }
+                if let g = f["grz"]?.skalarText, g != "—" { teile.append("GRZ \(g)") }
+                if !teile.isEmpty { fakten.append(teile.joined(separator: " · ")) }
+            case "erschliessung":
+                if let n = f["medien"]?.arrayAnzahl, n > 0 {
+                    fakten.append("Erschließung: \(n) Medien")
+                }
+            default:
+                break
+            }
+        }
+        return Array(fakten.prefix(4))
     }
 
     private var leerHinweis: some View {
