@@ -18,6 +18,14 @@ struct LVTiefenkalkulationView: View {
     @State private var showGeraetePicker = false
     @State private var showMopsSheet = false
     @State private var mopsAntwort: String?
+    @State private var loeschZiel: LoeschZiel?   // sichtbares Löschen (auch am Mac, wo Swipe nicht geht)
+
+    /// Was gelöscht werden soll (mit Klartext für die Sicherheitsabfrage).
+    private struct LoeschZiel: Identifiable {
+        let id = UUID()
+        let objekt: NSManagedObject
+        let beschreibung: String
+    }
 
     init(position: LVPosition) {
         self.position = position
@@ -42,6 +50,19 @@ struct LVTiefenkalkulationView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Kalkulation")
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog("Zeile löschen?",
+                            isPresented: Binding(get: { loeschZiel != nil },
+                                                 set: { if !$0 { loeschZiel = nil } }),
+                            presenting: loeschZiel) { ziel in
+            Button("Löschen", role: .destructive) {
+                viewContext.delete(ziel.objekt)
+                try? viewContext.save()
+                loeschZiel = nil
+            }
+            Button("Abbrechen", role: .cancel) { loeschZiel = nil }
+        } message: { ziel in
+            Text("\(ziel.beschreibung) aus der Kalkulation entfernen? Der Positionspreis wird neu berechnet.")
+        }
         
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -129,6 +150,7 @@ struct LVTiefenkalkulationView: View {
                         Text(pm.kostenProEinheit.formatted(.currency(code: "EUR")))
                             .font(.subheadline.monospacedDigit())
                             .bold()
+                        loeschButton { loeschZiel = LoeschZiel(objekt: pm, beschreibung: "Material: \(pm.materialName ?? "–")") }
                     }
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) { loescheMaterial(pm) } label: {
@@ -175,6 +197,7 @@ struct LVTiefenkalkulationView: View {
                         Text(pl.kostenProEinheit.formatted(.currency(code: "EUR")))
                             .font(.subheadline.monospacedDigit())
                             .bold()
+                        loeschButton { loeschZiel = LoeschZiel(objekt: pl, beschreibung: "Lohn: \(pl.qualifikation ?? "–")") }
                     }
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) { loescheLohn(pl) } label: {
@@ -221,6 +244,7 @@ struct LVTiefenkalkulationView: View {
                         Text(pg.kostenProEinheit.formatted(.currency(code: "EUR")))
                             .font(.subheadline.monospacedDigit())
                             .bold()
+                        loeschButton { loeschZiel = LoeschZiel(objekt: pg, beschreibung: "Gerät: \(pg.geraetName ?? "–")") }
                     }
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) { loescheGeraet(pg) } label: {
@@ -405,6 +429,16 @@ struct LVTiefenkalkulationView: View {
         position.wagnisGewinnProzent = wgProzent
         position.bgkProzent = bgkProzent
         try? viewContext.save()
+    }
+
+    /// Sichtbarer Papierkorb-Button pro Zeile (funktioniert am Mac, wo Swipe nicht greift).
+    /// `.borderless` → der Tap trifft den Button, nicht die ganze Zeile.
+    private func loeschButton(_ action: @escaping () -> Void) -> some View {
+        Button(role: .destructive, action: action) {
+            Image(systemName: "trash").font(.subheadline)
+        }
+        .buttonStyle(.borderless)
+        .tint(.red)
     }
 
     private func loescheMaterial(_ pm: PositionMaterial) {

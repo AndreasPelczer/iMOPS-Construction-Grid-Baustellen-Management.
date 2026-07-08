@@ -582,6 +582,40 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Aufwand_Eingabe"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Lohnanteil hinzufuegen"
+    - "Material hinzufuegen Kalkulation"
+    - "Geraet hinzufuegen"
+    - "Stunden je Einheit"
+    - "Aufwand eingeben"
+    - "warum so viele Stunden"
+    - "Positions-Gesamt Vorschau"
+    - "gesamt eingeben statt je Einheit"
+    - "Umschalter je Einheit gesamt"
+  antwort: |
+    Beim Kalkulieren einer Position (Tiefenkalkulation → Lohn/Material/Geraete
+    hinzufuegen) gibt es einen Umschalter "je Einheit / gesamt":
+    - "je Einheit" (Standard): der Aufwand JE EINHEIT, z.B. 0,5 h je m3 (Lohn/Geraete)
+      bzw. 25 kg je m3 (Material). Das ist die Rechenbasis der Engine (x Menge).
+    - "gesamt": der GESAMTWERT fuer die ganze Position, z.B. "6 h" oder "130 kg".
+      Die App teilt selbst durch die Positions-Menge — man braucht keinen Taschenrechner.
+    Gespeichert wird immer der Wert je Einheit; die Engine bleibt gleich. (Der "gesamt"-
+    Modus braucht eine gesetzte Positions-Menge, sonst ist er deaktiviert.)
+
+    Die Vorschau zeigt immer DREI Zeilen, egal welcher Modus:
+    1. Kosten je Einheit
+    2. Menge gesamt (Stunden bzw. Materialmenge fuer die ganze Position)
+    3. GESAMT fuer die Positions-Menge (Euro)
+
+    So faellt ein Fehler sofort auf: Traegt man im "je Einheit"-Modus bei 120 m3
+    versehentlich 4 statt 0,05 ein, zeigt die Vorschau "Menge gesamt 480 h" — kann nicht
+    stimmen. Merksatz: Im Zweifel "gesamt" waehlen und den bekannten Gesamtwert eintippen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Globale_Suche"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

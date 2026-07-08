@@ -21,6 +21,7 @@ struct MaterialHinzufuegenView: View {
     @State private var verschnittProzent = "5"
     @State private var einheit = "Stk"
     @State private var manuellMode = false
+    @State private var eingabeGesamt = false   // false = Menge je Einheit, true = Gesamt-Materialmenge
 
     private let einheiten = ["Stk", "m²", "m³", "lfm", "kg", "t", "l"]
 
@@ -111,15 +112,11 @@ struct MaterialHinzufuegenView: View {
                 }
             }
 
-            HStack {
-                Text("Menge/\(position.einheit ?? "Einheit")")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                TextField("0,00", text: $mengeProEinheit)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 100)
-            }
+            AufwandEingabeFeld(titel: "Menge",
+                               einheit: position.einheit ?? "Einheit",
+                               menge: position.menge,
+                               text: $mengeProEinheit,
+                               gesamt: $eingabeGesamt)
 
             HStack {
                 Text("Einzelpreis")
@@ -143,25 +140,34 @@ struct MaterialHinzufuegenView: View {
                     .foregroundStyle(.secondary)
             }
 
-            // Vorschau
+            // Vorschau: Kosten je Einheit UND Positions-Gesamt (macht × Menge sichtbar)
             let vorschau = berechneVorschau()
             if vorschau > 0 {
-                HStack {
-                    Text("Kosten/\(position.einheit ?? "Einheit")")
-                        .font(.subheadline.bold())
-                    Spacer()
-                    Text(vorschau.formatted(.currency(code: "EUR")))
-                        .font(.subheadline.bold().monospacedDigit())
-                        .foregroundStyle(.orange)
-                }
+                let mJe = AufwandEingabeFeld.jeEinheit(text: mengeProEinheit, gesamt: eingabeGesamt, menge: position.menge)
+                let gesamtMenge = (mJe * position.menge).formatted(.number.precision(.fractionLength(0...2)))
+                AufwandVorschau(proEinheit: vorschau,
+                                menge: position.menge,
+                                einheit: position.einheit ?? "Einheit",
+                                mengenGesamt: "\(gesamtMenge) \(einheit)",   // Material-Einheit (kg/Stk …)
+                                farbe: .orange)
             }
         } header: {
             Text("Details")
         } footer: {
-            if let mat = selectedMaterial, mat.verbrauchProM2 > 0 {
-                Text("Richtwert: \(mat.verbrauchProM2.formatted(.number.precision(.fractionLength(0...1)))) \(mat.einheit ?? "") pro m²")
+            VStack(alignment: .leading, spacing: 4) {
+                Text(eingabeGesamt
+                     ? "Gesamt-Materialmenge für die ganze Position (\(mengeText) \(position.einheit ?? "Einheit")) — die App rechnet auf „je Einheit\u{201C} um und speichert das."
+                     : "Menge für **eine** \(position.einheit ?? "Einheit") — nicht für die ganze Position. Die Vorschau multipliziert mit der Menge (\(mengeText) \(position.einheit ?? "Einheit")).")
+                if let mat = selectedMaterial, mat.verbrauchProM2 > 0 {
+                    Text("Richtwert: \(mat.verbrauchProM2.formatted(.number.precision(.fractionLength(0...1)))) \(mat.einheit ?? "") pro m²")
+                }
             }
         }
+    }
+
+    /// Positions-Menge lesbar (für den Hinweistext).
+    private var mengeText: String {
+        position.menge.formatted(.number.precision(.fractionLength(0...2)))
     }
 
     // MARK: - Actions
@@ -169,6 +175,7 @@ struct MaterialHinzufuegenView: View {
     private func selectFromStamm(_ mat: KalkMaterial) {
         selectedMaterial = mat
         manuellMode = false
+        eingabeGesamt = false   // Richtwert ist je Einheit → Modus zurücksetzen, sonst falsch interpretiert
         materialName = mat.name ?? ""
         einheit = mat.einheit ?? "Stk"
         einzelpreis = String(format: "%.2f", mat.preisProEinheit).replacingOccurrences(of: ".", with: ",")
@@ -183,7 +190,7 @@ struct MaterialHinzufuegenView: View {
         pm.id = UUID()
         pm.materialName = materialName
         pm.einheit = manuellMode ? einheit : (selectedMaterial?.einheit ?? einheit)
-        pm.mengeProEinheit = Double(mengeProEinheit.replacingOccurrences(of: ",", with: ".")) ?? 0
+        pm.mengeProEinheit = AufwandEingabeFeld.jeEinheit(text: mengeProEinheit, gesamt: eingabeGesamt, menge: position.menge)
         pm.einzelpreis = Double(einzelpreis.replacingOccurrences(of: ",", with: ".")) ?? 0
         pm.verschnittProzent = (Double(verschnittProzent) ?? 5) / 100.0
         pm.position = position
@@ -192,7 +199,7 @@ struct MaterialHinzufuegenView: View {
     }
 
     private func berechneVorschau() -> Double {
-        let menge = Double(mengeProEinheit.replacingOccurrences(of: ",", with: ".")) ?? 0
+        let menge = AufwandEingabeFeld.jeEinheit(text: mengeProEinheit, gesamt: eingabeGesamt, menge: position.menge)
         let preis = Double(einzelpreis.replacingOccurrences(of: ",", with: ".")) ?? 0
         let verschnitt = (Double(verschnittProzent) ?? 0) / 100.0
         return menge * preis * (1 + verschnitt)

@@ -2,6 +2,106 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
+/// Vorschau für die Aufwands-Eingaben (Lohn/Material/Geräte): zeigt die Kosten JE Einheit
+/// UND — entscheidend — den Positions-Gesamtbetrag, damit die `× Menge`-Multiplikation schon
+/// bei der Eingabe sichtbar wird. Plausi-Prüfung: „480 h?! — falsch" fällt sofort auf.
+struct AufwandVorschau: View {
+    let proEinheit: Double      // Kosten je Positions-Einheit (aus berechneVorschau())
+    let menge: Double           // position.menge
+    let einheit: String         // position.einheit ?? "Einheit"
+    let mengenGesamt: String?   // optional: "60 h" / "84,0 kg" — der Mengen-Gesamtwert
+    let farbe: Color            // .green (Lohn) / .orange (Material) / .purple (Geräte)
+
+    private func zeile(_ label: String, _ wert: String, bold: Bool) -> some View {
+        HStack {
+            Text(label)
+                .font(bold ? .subheadline.bold() : .caption)
+                .foregroundStyle(bold ? .primary : .secondary)
+            Spacer()
+            Text(wert)
+                .font((bold ? Font.subheadline.bold() : .caption).monospacedDigit())
+                .foregroundStyle(bold ? farbe : .secondary)
+        }
+    }
+
+    private var mengeText: String {
+        menge.formatted(.number.precision(.fractionLength(0...2)))
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            zeile("Kosten je \(einheit)", proEinheit.formatted(.currency(code: "EUR")), bold: false)
+            if let mg = mengenGesamt { zeile("Menge gesamt", mg, bold: false) }
+            Divider()
+            zeile("Gesamt für \(mengeText) \(einheit)",
+                  (proEinheit * menge).formatted(.currency(code: "EUR")), bold: true)
+        }
+    }
+}
+
+/// Eingabefeld für Aufwandswerte (Stunden bzw. Menge) mit Umschalter „je Einheit / gesamt".
+/// Der Aufwandswert je Einheit (z. B. 0,05 h/m³) ist die Rechenbasis, aber im Kopf kennt man
+/// oft nur den Gesamtwert („6 h für die Position"). Darum wahlweise beide Richtungen —
+/// **gespeichert/verrechnet wird IMMER der Wert je Einheit** (die App rechnet um).
+struct AufwandEingabeFeld: View {
+    let titel: String          // "Stunden" oder "Menge"
+    let einheit: String        // position.einheit ?? "Einheit"
+    let menge: Double          // position.menge
+    @Binding var text: String  // Rohtext des Feldes (Bedeutung hängt vom Modus ab)
+    @Binding var gesamt: Bool  // false = je Einheit, true = gesamt
+
+    private var mengeUnbrauchbar: Bool { gesamt && menge <= 0 }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Picker("", selection: $gesamt) {
+                Text("je \(einheit)").tag(false)
+                Text("gesamt").tag(true)
+            }
+            .pickerStyle(.segmented)
+
+            HStack {
+                Text(gesamt ? "\(titel) gesamt" : "\(titel) je \(einheit)")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                TextField("0,00", text: $text)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 100)
+                    .disabled(mengeUnbrauchbar)
+            }
+
+            if mengeUnbrauchbar {
+                Text("Erst die Menge der Position setzen, dann geht der Gesamt-Modus.")
+                    .font(.caption).foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .onChange(of: gesamt) { _, nunGesamt in
+            // Feldwert beim Moduswechsel passend umrechnen (leeres Feld bleibt leer).
+            guard !text.isEmpty, menge > 0 else { return }
+            let roh = AufwandEingabeFeld.parse(text)
+            let umgerechnet = nunGesamt ? roh * menge : roh / menge
+            text = AufwandEingabeFeld.format(umgerechnet)
+        }
+    }
+
+    static func parse(_ s: String) -> Double {
+        Double(s.replacingOccurrences(of: ",", with: ".")) ?? 0
+    }
+    /// Ohne Tausender-Trennung (sonst bricht das spätere Parsen im deutschen Format),
+    /// bis 6 Nachkommastellen (kleine Aufwandswerte wie 0,033).
+    static func format(_ v: Double) -> String {
+        v.formatted(.number.precision(.fractionLength(0...6)).grouping(.never))
+    }
+    /// Der Wert JE EINHEIT (zum Speichern/Rechnen) — egal in welchem Modus eingegeben.
+    static func jeEinheit(text: String, gesamt: Bool, menge: Double) -> Double {
+        let roh = parse(text)
+        if gesamt { return menge > 0 ? roh / menge : 0 }
+        return roh
+    }
+}
+
 /// PDF-Dokument für den `.fileExporter` (Mac-„Speichern"-Dialog). Der iOS-Teilen-Sheet
 /// legt am Mac keine Datei ab — dort braucht es einen echten Save-Panel.
 struct PDFFileDocument: FileDocument {
