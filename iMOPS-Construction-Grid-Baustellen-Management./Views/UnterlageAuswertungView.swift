@@ -14,13 +14,32 @@ private struct FeldZeile: Identifiable {
 // MARK: - Review-Screen für /extract-doc
 
 /// Zeigt die Stufe-2-Extraktion mehrerer Unterlagen als prüfbaren Entwurf.
-/// Bewusst **read-only**: die Fakten sind doctype-spezifisch und haben (noch)
-/// kein Ziel-Entity zum Einbuchen — der Wert liegt im schnellen, geprüften Blick.
+///
+/// Zwei Modi:
+/// - **Speichern** (`onSpeichern != nil`): frische Auswertung — pro Dokument ein Häkchen
+///   (initial alle an), Toolbar-Button „Speichern" legt die gewählten Fakten am Event ab.
+/// - **Nur ansehen** (`onSpeichern == nil`): schon gespeicherte Fakten wieder aufrufen —
+///   ohne Häkchen, ohne Mops-Aufruf.
 struct UnterlageAuswertungView: View {
     let ergebnisse: [ExtractDocResult]
     let fehler: [String]
+    /// Gesetzt → Speichern-Modus (Häkchen + „Speichern"-Button). nil → reine Ansicht.
+    let onSpeichern: (([ExtractDocResult]) -> Void)?
 
+    @State private var selektiert: Set<String>
     @Environment(\.dismiss) private var dismiss
+
+    init(ergebnisse: [ExtractDocResult],
+         fehler: [String],
+         onSpeichern: (([ExtractDocResult]) -> Void)? = nil) {
+        self.ergebnisse = ergebnisse
+        self.fehler = fehler
+        self.onSpeichern = onSpeichern
+        // Speichern-Modus: initial alle Dokumente ausgewählt.
+        _selektiert = State(initialValue: Set(ergebnisse.map(\.quelle)))
+    }
+
+    private var speichernModus: Bool { onSpeichern != nil }
 
     var body: some View {
         NavigationStack {
@@ -39,8 +58,23 @@ struct UnterlageAuswertungView: View {
             .navigationTitle("Unterlagen-Auswertung")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fertig") { dismiss() }.tint(.orange)
+                if speichernModus {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Fertig") { dismiss() }   // schließen ohne Speichern
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Speichern") {
+                            let gewaehlt = ergebnisse.filter { selektiert.contains($0.quelle) }
+                            onSpeichern?(gewaehlt)
+                            dismiss()
+                        }
+                        .tint(.orange)
+                        .disabled(selektiert.isEmpty)
+                    }
+                } else {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Fertig") { dismiss() }.tint(.orange)
+                    }
                 }
             }
         }
@@ -63,8 +97,20 @@ struct UnterlageAuswertungView: View {
 
     private func dokumentSection(_ res: ExtractDocResult) -> some View {
         Section {
-            // Kopf: Doctype + Konfidenz + Modell
+            // Kopf: Doctype + Konfidenz + Modell (im Speichern-Modus mit Häkchen)
             HStack(spacing: 10) {
+                if speichernModus {
+                    Button {
+                        if selektiert.contains(res.quelle) { selektiert.remove(res.quelle) }
+                        else { selektiert.insert(res.quelle) }
+                    } label: {
+                        Image(systemName: selektiert.contains(res.quelle) ? "checkmark.circle.fill" : "circle")
+                            .font(.title3)
+                            .foregroundStyle(selektiert.contains(res.quelle) ? .orange : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(selektiert.contains(res.quelle) ? "Ausgewählt" : "Nicht ausgewählt")
+                }
                 Image(systemName: res.doctypeSymbol)
                     .font(.title3).foregroundStyle(.orange)
                 VStack(alignment: .leading, spacing: 2) {

@@ -52,6 +52,25 @@ indirect enum JSONValue: Codable, Equatable {
 }
 
 extension JSONValue {
+    /// Bequemer Zugriff auf ein Objekt-Feld: `felder["zone"]?.skalarText`.
+    /// Kein Objekt / Schlüssel fehlt → nil (nie ein Fehler).
+    subscript(_ key: String) -> JSONValue? {
+        if case .object(let dict) = self { return dict[key] }
+        return nil
+    }
+
+    /// Erstes Element, wenn dies ein nicht-leeres Array ist — sonst nil.
+    var erstesArrayElement: JSONValue? {
+        if case .array(let arr) = self { return arr.first }
+        return nil
+    }
+
+    /// Anzahl der Elemente, wenn dies ein Array ist — sonst nil.
+    var arrayAnzahl: Int? {
+        if case .array(let arr) = self { return arr.count }
+        return nil
+    }
+
     /// Menschenlesbare Kurzform eines Skalars (für die Wert-Spalte einer Zeile).
     /// Container (Objekt/Array) liefern `nil` — die werden aufgeklappt statt gezeigt.
     var skalarText: String? {

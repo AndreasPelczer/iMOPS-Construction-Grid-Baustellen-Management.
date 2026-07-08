@@ -621,6 +621,9 @@
     - "Erschliessung auslesen"
     - "PDF Fakten herausziehen"
     - "Wo werte ich Unterlagen aus"
+    - "Auswertung speichern"
+    - "Ausgewertete Unterlagen ansehen"
+    - "gespeicherte Auswertung wieder aufrufen"
   antwort: |
     In einer Baustelle gibt es die Karte "Unterlagen auswerten" (zwischen
     "Plaene & CAD" und "Material").
@@ -632,11 +635,18 @@
        - Bebauungsplan (GRZ/GFZ, Hoehen, Dach, Erdarbeiten)
        - Erschliessung (Medien/Dimensionen, Warnungen z.B. 20-kV-Leitung)
     4. Das Ergebnis oeffnet sich als Liste zum Pruefen ("Ergebnis ansehen").
+    5. SPEICHERN: In der Ergebnis-Liste ist jedes Dokument mit einem Haekchen
+       vorausgewaehlt. Nicht Gewuenschte abwaehlen, dann oben rechts "Speichern".
+       "Fertig" schliesst OHNE zu speichern.
+    6. WIEDER AUFRUFEN: Gespeicherte Auswertungen erscheinen in derselben Karte
+       unter "Ausgewertete Unterlagen (N)" — antippen zeigt die Fakten wieder an,
+       OHNE dass der Mops erneut rechnen muss (offline, sofort). Dasselbe PDF
+       erneut ausgewertet ersetzt den alten Eintrag (kein Duplikat).
 
     WICHTIG: Das ist ein KI-Entwurf aus der PDF-Textebene, kein Gutachten und
     kein Vermesser-Ergebnis — vor Verwendung pruefen. Reine Zeichnungen ohne
     Textebene werden uebersprungen (die gehoeren zur Vision-Auswertung).
-    Braucht Verbindung zum Mops-Server (wie die Plan-Auswertung).
+    Das Auswerten braucht Verbindung zum Mops-Server; das Wieder-Aufrufen nicht.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
@@ -658,6 +668,9 @@
        Ist-Übersicht (der Planer/Soll ist nur noch ein kleiner Link darunter); ist die
        Baustelle leer, bietet sie stattdessen das Planen (Soll) an.
     2. Kopf: Projekt/Baustelle/Quelldatei aus dem Import + Positionsanzahl, Netto, Brutto.
+       Sind Unterlagen ausgewertet UND gespeichert (Karte "Unterlagen auswerten"), zeigt
+       der Kopf zusaetzlich Kern-Fakten als Chips: Bodenklasse, Wohnflaeche, Zone/GRZ,
+       Anzahl Erschliessungs-Medien.
     3. Reiter:
        - Kosten: nach DIN-276-Kostengruppe (Netto/MwSt/Brutto).
        - Massen: nach LV-Titel (fuehrende Positionsnummer), Menge + Einheit je Position.
