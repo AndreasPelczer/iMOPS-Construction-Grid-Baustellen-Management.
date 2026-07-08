@@ -690,6 +690,29 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_BPlan_Vorgaben"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Vorgaben aus dem Bebauungsplan"
+    - "Bebauungsplan Vorgaben"
+    - "GRZ GFZ anzeigen"
+    - "was sagt der B-Plan"
+    - "Bauvorgaben Baustelle"
+  antwort: |
+    Wenn ein Bebauungsplan ueber "Unterlagen auswerten" ausgewertet UND gespeichert
+    wurde, erscheint in der Baustelle (Karte "Plaene & Unterlagen") die Karte
+    "Vorgaben aus dem Bebauungsplan". Sie zeigt die ausgelesenen Vorgaben als Liste:
+    Zone, GRZ/GFZ, max. Wand-/Firsthoehe, max. Abgrabung/Auffuellung/Stuetzwand,
+    Dachform + Neigung, Stellplatz-Pflicht, Pflanzgebot.
+
+    Das sind REINE ZITATE aus dem Dokument (KI-Auslesung, im Zweifel am Plan pruefen) -
+    es findet noch KEIN Abgleich mit den Projektwerten statt (kommt spaeter als Ampel).
+    Fehlt eine Vorgabe im Plan, wird sie weggelassen. Ist kein B-Plan ausgewertet,
+    erscheint die Karte gar nicht.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Ist_Uebersicht"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
