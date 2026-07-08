@@ -713,6 +713,37 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Gelaendebruecke"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Geländebrücke"
+    - "Aushub berechnen"
+    - "wie viel Erde muss weg"
+    - "Cut Fill"
+    - "Abtrag Auftrag"
+    - "Aushubtiefe"
+    - "DXF auswerten"
+  antwort: |
+    Die Karte "Geländebrücke" (in "Plaene & Unterlagen") schaetzt aus einem
+    Vermessungs-DXF den Erdaushub:
+    1. "DXF auswerten" tippen, das Bestands-DXF (Höhenpunkte/-linien) waehlen.
+    2. Optional OK-Bodenplatte fest vorgeben; leer = Auto (Massenausgleich).
+    3. Ergebnis: Abtrag/Auftrag (m³), Schotter (t), LKW-Fuhren, und die
+       "Max. Aushubtiefe" (hoechster Gelaendepunkt minus OK-Bodenplatte).
+    4. Ist ein Bebauungsplan mit "Abgrabung max." ausgewertet, zeigt eine
+       gruene/rote Ampel, ob die Aushubtiefe im erlaubten Rahmen bleibt.
+    5. "Ins LV uebernehmen" schreibt die Mengen als Positionen (geschaetzt);
+       "PDF-Report" erzeugt einen Aushub-Bericht.
+
+    WICHTIG: Das DXF braucht ein eingezeichnetes geplantes Haus (Layer
+    "Geplante Hauslage" o. ä.) - sonst meldet es "kein geplantes Haus" und
+    kann den Aushub nicht rechnen (die Hauslage kommt sonst aus dem Lageplan;
+    das manuelle Platzieren ist ein geplanter naechster Schritt). Es ist eine
+    Planungs-Schaetzung, ersetzt NICHT Vermesser oder Bodengutachten.
+  quelle_kurz: "iMOPS App-Bedienung (Welle 7)"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Ist_Uebersicht"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
