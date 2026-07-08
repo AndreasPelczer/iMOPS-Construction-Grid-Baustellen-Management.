@@ -305,6 +305,7 @@ struct EventDetailView: View {
                 kartenGruppe("Pläne & Unterlagen", systemImage: "doc.on.doc", isExpanded: $gruppePlaene) {
                     cadCard
                     unterlagenCard
+                    BPlanVorgabenCard(event: event)   // Vorgaben aus ausgewertetem B-Plan (nur wenn vorhanden)
                     geländeCard
                 }
 
