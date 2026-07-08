@@ -125,6 +125,24 @@ struct UnterlageAuswertungView: View {
                 Spacer()
             }
 
+            // Kurz-Zusammenfassung: die wichtigsten Fakten auf einen Blick (vor dem Detail)
+            let kern = zusammenfassung(res)
+            if !kern.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(kern, id: \.self) { fakt in
+                        HStack(alignment: .top, spacing: 6) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.caption2).foregroundStyle(.green)
+                            Text(fakt).font(.subheadline)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+            }
+
             // Felder generisch ausgeklappt
             ForEach(zeilen(fuer: res.felder, label: nil, ebene: 0)) { zeile in
                 feldRow(zeile)
@@ -132,6 +150,36 @@ struct UnterlageAuswertungView: View {
         } header: {
             Text(res.quelle)
         }
+    }
+
+    /// Die 2–4 wichtigsten Fakten eines Dokuments (für die Kurz-Zusammenfassung oben).
+    /// Feldnamen = Backend-Schema (`api/services/doc_extract.py`). Fehlt ein Feld → weglassen.
+    private func zusammenfassung(_ res: ExtractDocResult) -> [String] {
+        let f = res.felder
+        var fakten: [String] = []
+        func hat(_ s: String?) -> String? { (s == nil || s == "—") ? nil : s }
+
+        switch res.doctypeErkannt {
+        case "bodengutachten":
+            if let bkl = hat(f["bodenklassen"]?.erstesArrayElement?.skalarText) { fakten.append("Bodenklasse \(bkl)") }
+            if let ft  = hat(f["frosttiefe_m"]?.skalarText) { fakten.append("Frosttiefe \(ft) m") }
+            if let gw  = hat(f["grundwasser"]?["angetroffen"]?.skalarText) { fakten.append("Grundwasser: \(gw)") }
+            if let ab  = hat(f["abdichtung_lastfall"]?.skalarText) { fakten.append("Abdichtung \(ab)") }
+        case "wohnflaeche":
+            if let wf = hat(f["wohnflaeche_gesamt_m2"]?.skalarText) { fakten.append("Wohnfläche \(wf) m²") }
+            if let nf = hat(f["nutzflaeche_m2"]?.skalarText) { fakten.append("Nutzfläche \(nf) m²") }
+            if let br = hat(f["bri_m3"]?.skalarText) { fakten.append("BRI \(br) m³") }
+        case "bebauungsplan":
+            if let z = hat(f["zone"]?.skalarText) { fakten.append("Zone \(z)") }
+            if let g = hat(f["grz"]?.skalarText) { fakten.append("GRZ \(g)") }
+            if let gf = hat(f["gfz"]?.skalarText) { fakten.append("GFZ \(gf)") }
+        case "erschliessung":
+            if let n = f["medien"]?.arrayAnzahl, n > 0 { fakten.append("\(n) Medien erschlossen") }
+            if let warn = hat(f["besonderheiten"]?.erstesArrayElement?.skalarText) { fakten.append("⚠︎ \(warn)") }
+        default:
+            break
+        }
+        return Array(fakten.prefix(4))
     }
 
     private var fehlerSection: some View {

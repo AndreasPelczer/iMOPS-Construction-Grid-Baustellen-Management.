@@ -672,6 +672,9 @@
        - Bebauungsplan (GRZ/GFZ, Hoehen, Dach, Erdarbeiten)
        - Erschliessung (Medien/Dimensionen, Warnungen z.B. 20-kV-Leitung)
     4. Das Ergebnis oeffnet sich als Liste zum Pruefen ("Ergebnis ansehen").
+       Je Dokument steht ganz oben eine Kurz-Zusammenfassung mit den wichtigsten
+       Fakten (z.B. Bodenklasse + Frosttiefe + Grundwasser, oder Zone + GRZ),
+       darunter alle Felder im Detail.
     5. SPEICHERN: In der Ergebnis-Liste ist jedes Dokument mit einem Haekchen
        vorausgewaehlt. Nicht Gewuenschte abwaehlen, dann oben rechts "Speichern".
        "Fertig" schliesst OHNE zu speichern.
