@@ -571,7 +571,37 @@ struct EventDetailView: View {
                         geländeStat(label: "LKW-Fuhren", wert: Double(r.sens_lkw), einheit: "", farbe: .orange) // KORRIGIERT: Übergibt gerundeten LKW-Wert als Double
                     }
                     Divider().opacity(0.4)
-                    
+
+                    // Max. Aushubtiefe + Abgleich gegen die B-Plan-Vorgabe (aus dem ausgewerteten PDF)
+                    let aushubtiefe = max(0, r.gelaende_max - r.okbp)
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.down.to.line.compact").foregroundStyle(.orange)
+                        Text("Max. Aushubtiefe").font(.subheadline)
+                        Spacer()
+                        Text("\(String(format: "%.2f", aushubtiefe)) m")
+                            .font(.subheadline.bold().monospacedDigit())
+                    }
+                    if let maxAbg = bplanMaxAbgrabung {
+                        let imRahmen = aushubtiefe <= maxAbg + 0.001
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: imRahmen ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                                .foregroundStyle(imRahmen ? .green : .red)
+                            Text(imRahmen
+                                 ? "Im Rahmen des Bebauungsplans (Abgrabung max. \(String(format: "%.2f", maxAbg)) m)"
+                                 : "Über der B-Plan-Grenze: \(String(format: "%.2f", aushubtiefe)) m > erlaubt \(String(format: "%.2f", maxAbg)) m")
+                                .font(.caption)
+                                .foregroundStyle(imRahmen ? .green : .red)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background((imRahmen ? Color.green : Color.red).opacity(0.10),
+                                    in: RoundedRectangle(cornerRadius: 8))
+                    }
+
+                    Divider().opacity(0.4)
+
                     Button {
                         insertGelaendeIntoLV(result: r)
                     } label: {
@@ -639,6 +669,17 @@ struct EventDetailView: View {
     }
     
     // MARK: - LV Insert (Welle 7)
+    /// Max. erlaubte Abgrabung (in m) aus dem ausgewerteten Bebauungsplan-PDF — falls vorhanden.
+    /// Quelle: gespeicherte Dokument-Auswertung (doctype „bebauungsplan", erdarbeiten.abgrabung_max_m).
+    private var bplanMaxAbgrabung: Double? {
+        guard let res = (EventExtrasPayload.laden(aus: event).auswertungen ?? [])
+            .map(\.ergebnis).last(where: { $0.doctypeErkannt == "bebauungsplan" }) else { return nil }
+        let jv = res.felder["erdarbeiten"]?["abgrabung_max_m"]
+        if case .number(let d)? = jv { return d }
+        if let s = jv?.skalarText, s != "—", let d = Double(s.replacingOccurrences(of: ",", with: ".")) { return d }
+        return nil
+    }
+
     private func insertGelaendeIntoLV(result: GelaendeResult) {
         let context = viewContext
         
