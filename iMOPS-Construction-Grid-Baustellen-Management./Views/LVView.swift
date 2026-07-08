@@ -158,7 +158,7 @@ struct LVView: View {
     }
 
     private var gesamtSumme: Double {
-        Array(positionen).filter { !LVPositionHelper.isAlternative($0) }.reduce(0.0) { sum, pos in
+        ohneDuplikate(Array(positionen).filter { !LVPositionHelper.isAlternative($0) }).reduce(0.0) { sum, pos in
             let preis: Double
             if pos.hatKalkulation {
                 preis = LVKalkulator.kalkuliere(position: pos).einheitspreisVK
@@ -168,6 +168,119 @@ struct LVView: View {
                 preis = pos.value(forKey: "einkaufspreis") as? Double ?? 0
             }
             return sum + (pos.menge * preis)
+        }
+    }
+
+    // MARK: - Bewehrungs-Duplikate gruppieren (Plan + Liste liefern dieselbe Menge)
+
+    private enum LVCluster: Identifiable {
+        case einzel(LVPosition)
+        case duplikat(key: String, positionen: [LVPosition])
+        var id: String {
+            switch self {
+            case .einzel(let p): return p.objectID.uriRepresentation().absoluteString
+            case .duplikat(let key, _): return "dup:" + key
+            }
+        }
+    }
+
+    private func istBewehrung(_ p: LVPosition) -> Bool { (p.einheit ?? "").lowercased() == "kg" }
+
+    /// „Gleiche Position": Bezeichnung + Menge (nur Bewehrung/kg wird gruppiert).
+    private func dedupKey(_ p: LVPosition) -> String {
+        let bez = (p.bezeichnung ?? "").trimmingCharacters(in: .whitespaces).lowercased()
+        return "\(bez)|\((p.menge * 100).rounded())"
+    }
+
+    /// Gruppiert gleiche Bewehrungs-Positionen zu einem Cluster; alles andere bleibt einzeln.
+    private func clustere(_ items: [LVPosition]) -> [LVCluster] {
+        var result: [LVCluster] = []
+        var verwendet = Set<NSManagedObjectID>()
+        for pos in items {
+            if verwendet.contains(pos.objectID) { continue }
+            if istBewehrung(pos) {
+                let k = dedupKey(pos)
+                let gleiche = items.filter { istBewehrung($0) && dedupKey($0) == k }
+                if gleiche.count > 1 {
+                    gleiche.forEach { verwendet.insert($0.objectID) }
+                    result.append(.duplikat(key: k, positionen: gleiche))
+                    continue
+                }
+            }
+            verwendet.insert(pos.objectID)
+            result.append(.einzel(pos))
+        }
+        return result
+    }
+
+    /// Fürs Summieren: doppelt importierte Bewehrung (gleiche Menge aus Plan/Liste) zählt EINMAL.
+    private func ohneDuplikate(_ liste: [LVPosition]) -> [LVPosition] {
+        var gesehen = Set<String>()
+        var out: [LVPosition] = []
+        for pos in liste {
+            if istBewehrung(pos) {
+                let k = dedupKey(pos)
+                if gesehen.contains(k) { continue }
+                gesehen.insert(k)
+            }
+            out.append(pos)
+        }
+        return out
+    }
+
+    private func mengeText(_ p: LVPosition?) -> String {
+        (p?.menge ?? 0).formatted(.number.precision(.fractionLength(0...2)))
+    }
+
+    @ViewBuilder
+    private func clusterView(_ cluster: LVCluster) -> some View {
+        switch cluster {
+        case .einzel(let pos):
+            positionRow(pos)
+        case .duplikat(_, let posns):
+            DisclosureGroup {
+                ForEach(posns, id: \.objectID) { positionRow($0) }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "doc.on.doc.fill").font(.footnote).foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(posns.first?.bezeichnung ?? "—").font(.subheadline.weight(.semibold))
+                        Text("\(posns.count) Quellen (Plan + Liste) · zählt einmal")
+                            .font(.caption2).foregroundStyle(.orange)
+                    }
+                    Spacer()
+                    Text("\(mengeText(posns.first)) \(posns.first?.einheit ?? "")")
+                        .font(.subheadline.weight(.semibold).monospacedDigit())
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func positionRow(_ pos: LVPosition) -> some View {
+        LVPositionRow(position: pos) { targetURL in
+            sourcePDFURL = targetURL
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { actionPosition = pos }
+        .contextMenu {
+            Button { editPosition = pos } label: { Label("Bearbeiten", systemImage: "pencil") }
+            Button { kalkPosition = pos } label: { Label("Kalkulation", systemImage: "function") }
+            Button { duplicateAsAlternative(pos) } label: { Label("Alternative", systemImage: "doc.on.doc") }
+            Button { fortschrittPosition = pos } label: { Label("Fortschritt", systemImage: "chart.bar") }
+            Button { aufmassPosition = pos } label: { Label("Aufmaß", systemImage: "ruler") }
+            Divider()
+            Button(role: .destructive) { positionToDelete = pos } label: { Label("Löschen", systemImage: "trash") }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button { positionToDelete = pos } label: { Label("Löschen", systemImage: "trash") }.tint(.red)
+        }
+        .swipeActions(edge: .leading) {
+            Button { editPosition = pos } label: { Label("Bearbeiten", systemImage: "pencil") }.tint(.orange)
+            Button { kalkPosition = pos } label: { Label("Kalkulation", systemImage: "function") }.tint(.indigo)
+            Button { duplicateAsAlternative(pos) } label: { Label("Alternative", systemImage: "doc.on.doc") }.tint(.blue)
+            Button { fortschrittPosition = pos } label: { Label("Fortschritt", systemImage: "chart.bar") }.tint(.green)
+            Button { aufmassPosition = pos } label: { Label("Aufmaß", systemImage: "ruler") }.tint(.teal)
         }
     }
 
@@ -211,61 +324,8 @@ struct LVView: View {
 
                 ForEach(grouped) { gruppe in
                     Section {
-                        ForEach(gruppe.items, id: \.objectID) { pos in
-                            LVPositionRow(position: pos) { targetURL in
-                                sourcePDFURL = targetURL
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture { actionPosition = pos }
-                            .contextMenu {
-                                Button { editPosition = pos } label: {
-                                    Label("Bearbeiten", systemImage: "pencil")
-                                }
-                                Button { kalkPosition = pos } label: {
-                                    Label("Kalkulation", systemImage: "function")
-                                }
-                                Button { duplicateAsAlternative(pos) } label: {
-                                    Label("Alternative", systemImage: "doc.on.doc")
-                                }
-                                Button { fortschrittPosition = pos } label: {
-                                    Label("Fortschritt", systemImage: "chart.bar")
-                                }
-                                Button { aufmassPosition = pos } label: {
-                                    Label("Aufmaß", systemImage: "ruler")
-                                }
-                                Divider()
-                                Button(role: .destructive) { positionToDelete = pos } label: {
-                                    Label("Löschen", systemImage: "trash")
-                                }
-                            }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button { positionToDelete = pos } label: {
-                                    Label("Löschen", systemImage: "trash")
-                                }
-                                .tint(.red)
-                            }
-                            .swipeActions(edge: .leading) {
-                                Button { editPosition = pos } label: {
-                                    Label("Bearbeiten", systemImage: "pencil")
-                                }
-                                .tint(.orange)
-                                Button { kalkPosition = pos } label: {
-                                    Label("Kalkulation", systemImage: "function")
-                                }
-                                .tint(.indigo)
-                                Button { duplicateAsAlternative(pos) } label: {
-                                    Label("Alternative", systemImage: "doc.on.doc")
-                                }
-                                .tint(.blue)
-                                Button { fortschrittPosition = pos } label: {
-                                    Label("Fortschritt", systemImage: "chart.bar")
-                                }
-                                .tint(.green)
-                                Button { aufmassPosition = pos } label: {
-                                    Label("Aufmaß", systemImage: "ruler")
-                                }
-                                .tint(.teal)
-                            }
+                        ForEach(clustere(gruppe.items)) { cluster in
+                            clusterView(cluster)
                         }
                     } header: {
                         sectionHeader(gruppe)

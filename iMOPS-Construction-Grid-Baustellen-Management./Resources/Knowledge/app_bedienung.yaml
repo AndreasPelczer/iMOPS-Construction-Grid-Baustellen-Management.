@@ -105,6 +105,12 @@
     zu einem LV zusammengefuehrt werden. Ueber "PDF hinzufuegen" (in der Pruefliste)
     lassen sich weitere PDFs anhaengen, ohne die bereits erkannten Positionen zu
     verlieren. Jede Position merkt sich ihre Quelldatei.
+
+    Doppelte Bewehrung (Plan + Liste liefern dieselbe kg-Menge, z.B. Ringbalken aus
+    Ringbalken.pdf UND Ringbalken-Liste.pdf) wird im LV automatisch zu EINER
+    aufklappbaren Zeile zusammengefasst ("N Quellen · zählt einmal"). Darunter
+    stehen die einzelnen Quell-Positionen; die Angebotssumme zählt die Menge nur
+    einmal. Nichts wird geloescht - nur gruppiert dargestellt.
   quelle_kurz: "iMOPS App-Bedienung (Welle 4)"
   license_note: "Eigene Bedienungshilfe"
 
