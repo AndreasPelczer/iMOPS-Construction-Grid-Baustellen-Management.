@@ -661,8 +661,11 @@
   antwort: |
     In einer Baustelle gibt es die Karte "Unterlagen auswerten" (zwischen
     "Plaene & CAD" und "Material").
-    1. Button "Auswerten" tippen
-    2. Ein oder mehrere Text-PDFs waehlen (Mehrfachauswahl erlaubt)
+    1. Button "Auswerten" tippen -> die Sammel-Ansicht "Unterlagen sammeln" oeffnet sich.
+    2. "Weitere Dateien hinzufuegen" tippen und PDFs waehlen. Der Datei-Dialog zeigt
+       immer nur EINEN Ordner - fuer Dateien aus mehreren Ordnern den Schritt einfach
+       wiederholen, die Auswahl sammelt sich in der Liste (einzelne mit dem Papierkorb
+       wieder entfernen). Dann oben "Auswerten (N)" tippen.
     3. Der Mops liest die Textebene und zieht die LV-relevanten Fakten heraus:
        - Bodengutachten (Bodenklassen, Frosttiefe, Grundwasser, Abdichtung)
        - Wohnflaechen-/Rauminhaltsberechnung (m2 je Raum, BRI)
