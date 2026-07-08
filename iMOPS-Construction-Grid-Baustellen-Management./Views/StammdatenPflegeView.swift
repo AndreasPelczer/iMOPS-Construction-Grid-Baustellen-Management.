@@ -107,6 +107,7 @@ private struct LohnsatzListe: View {
         .safeAreaInset(edge: .bottom) { neuButton("Neuer Lohnsatz") { sheetTarget = nil; zeigeSheet = true } }
         .sheet(isPresented: $zeigeSheet) {
             LohnsatzEditSheet(lohnsatz: sheetTarget).environment(\.managedObjectContext, ctx)
+                .presentationSizing(.page)
         }
         .confirmationDialog("Lohnsatz löschen?",
                             isPresented: Binding(get: { loeschKandidat != nil },
@@ -230,6 +231,7 @@ private struct MaterialListe: View {
         .safeAreaInset(edge: .bottom) { neuButton("Neues Material") { sheetTarget = nil; zeigeSheet = true } }
         .sheet(isPresented: $zeigeSheet) {
             MaterialEditSheet(material: sheetTarget).environment(\.managedObjectContext, ctx)
+                .presentationSizing(.page)
         }
         .confirmationDialog("Material löschen?",
                             isPresented: Binding(get: { loeschKandidat != nil },
@@ -379,6 +381,7 @@ private struct GeraetListe: View {
         .safeAreaInset(edge: .bottom) { neuButton("Neues Gerät") { sheetTarget = nil; zeigeSheet = true } }
         .sheet(isPresented: $zeigeSheet) {
             GeraetEditSheet(geraet: sheetTarget).environment(\.managedObjectContext, ctx)
+                .presentationSizing(.page)
         }
         .confirmationDialog("Gerät löschen?",
                             isPresented: Binding(get: { loeschKandidat != nil },

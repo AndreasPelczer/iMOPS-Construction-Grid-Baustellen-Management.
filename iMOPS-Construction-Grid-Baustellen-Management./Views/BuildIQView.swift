@@ -122,10 +122,12 @@ struct BuildIQView: View {
                     dismiss()
                 }
                 .environment(\.managedObjectContext, ctx)
+                .presentationSizing(.page)
             }
         }
         .sheet(isPresented: $showHelp) {
             BuildIQHelpView()
+                .presentationSizing(.page)
         }
     }
 
@@ -335,6 +337,7 @@ struct BuildIQBuchungView: View {
                     onGebucht()
                 }
                 .environment(\.managedObjectContext, ctx)
+                .presentationSizing(.page)
             }
         }
     }
@@ -568,6 +571,7 @@ struct BuildIQLandingView: View {
         }
         .sheet(isPresented: $showHelp) {
             BuildIQHelpView()
+                .presentationSizing(.page)
         }
     }
 

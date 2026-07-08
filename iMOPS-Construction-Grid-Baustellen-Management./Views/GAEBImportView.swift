@@ -403,6 +403,7 @@ struct GAEBEventPickerSheet: View {
                 if let event = selectedEvent {
                     GAEBImportView(event: event, initialURL: gaebURL)
                         .environment(\.managedObjectContext, viewContext)
+                        .presentationSizing(.page)
                 }
             }
         }

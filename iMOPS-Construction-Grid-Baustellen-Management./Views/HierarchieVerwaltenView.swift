@@ -86,6 +86,7 @@ struct HierarchieVerwaltenView: View {
                 NameEingabeSheet(titel: eingabe.titel, start: eingabe.startName) { name in
                     anwenden(eingabe, name: name)
                 }
+                .presentationSizing(.page)
             }
             .confirmationDialog("Löschen?",
                                 isPresented: Binding(get: { loeschZiel != nil },

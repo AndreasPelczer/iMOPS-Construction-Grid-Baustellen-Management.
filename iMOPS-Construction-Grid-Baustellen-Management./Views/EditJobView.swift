@@ -104,6 +104,7 @@ struct EditJobView: View {
             }
             .sheet(isPresented: $showHelp) {
                 EditJobHelpView()
+                    .presentationSizing(.page)
             }
         }
     }

@@ -70,6 +70,7 @@ struct WetterKarteView: View {
         .sheet(isPresented: $zeigeDetails) {
             if let w = wetter {
                 WetterDetailSheet(wetter: w, warnungen: warnungen)
+                    .presentationSizing(.page)
             }
         }
     }
@@ -265,6 +266,7 @@ struct WetterDetailSheet: View {
             }
             .sheet(isPresented: $showHelp) {
                 WetterHelpView()
+                    .presentationSizing(.page)
             }
         }
     }

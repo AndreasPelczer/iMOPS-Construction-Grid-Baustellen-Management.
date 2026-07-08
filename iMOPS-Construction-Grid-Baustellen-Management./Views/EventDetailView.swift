@@ -297,6 +297,7 @@ struct EventDetailView: View {
                     .sheet(isPresented: $showingKausalKette) {
                         KausalbauketteView(event: event)
                             .environment(\.managedObjectContext, viewContext)
+                            .presentationSizing(.page)
                     }
                     WetterKarteView(ort: event.location ?? "")
                 }
@@ -389,15 +390,18 @@ struct EventDetailView: View {
             cadFiles = loadCADFiles()
             pinnedMaterials = fetchPinnedMaterials()
         }
-        .sheet(isPresented: $showHelp) { EventDetailHelpView() }
+        .sheet(isPresented: $showHelp) { EventDetailHelpView().presentationSizing(.page) }
         .sheet(isPresented: $showingEditSheet, onDismiss: { refreshID = UUID() }) {
             EditEventView(event: event)
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $showingAddJobSheet, onDismiss: { refreshID = UUID() }) {
             AddJobView(event: event, viewContext: viewContext)
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $zeigeLVAbriss) {
             LVAbrissSheet(event: event, baustellenName: event.title ?? "Unbenannt")
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $showingCADPicker) {
             CADDocumentPicker(
@@ -418,18 +422,22 @@ struct EventDetailView: View {
         }
         .sheet(item: $lvPDFURL) { url in
             PDFPreviewView(url: url).ignoresSafeArea()
+                .presentationSizing(.page)
         }
         .teilenOderSpeichern(datei: $lvCSVURL)
         .sheet(isPresented: $showBautagesbericht) {
             BautagesberichtView(event: event)
                 .environment(\.managedObjectContext, viewContext)
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $showingMaengelListe) {
             MangelListeView(event: event).environment(\.managedObjectContext, viewContext)
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $showMangelErfassen) {
             MangelErfassenView(event: event)
                 .environment(\.managedObjectContext, viewContext)
+                .presentationSizing(.page)
         }
         .overlay {
             if isConverting {
@@ -467,6 +475,7 @@ struct EventDetailView: View {
                     }
                 )
             )
+            .presentationSizing(.page)
         }
         .teilenOderSpeichern(datei: $reportPDFURL)
         .sheet(isPresented: $showingUnterlagenPicker) {
@@ -476,10 +485,12 @@ struct EventDetailView: View {
         .sheet(isPresented: $zeigeAuswertung) {
             UnterlageAuswertungView(ergebnisse: auswertResults, fehler: auswertFehler,
                                     onSpeichern: { gewaehlt in speichereAuswertungen(gewaehlt) })
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $zeigeGespeicherteAuswertung) {
             UnterlageAuswertungView(ergebnisse: (extras.auswertungen ?? []).map(\.ergebnis),
                                     fehler: [], onSpeichern: nil)   // reine Ansicht, kein Mops
+                .presentationSizing(.page)
         }
     }
 

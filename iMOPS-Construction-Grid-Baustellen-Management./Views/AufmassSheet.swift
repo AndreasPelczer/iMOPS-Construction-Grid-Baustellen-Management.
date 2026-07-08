@@ -59,10 +59,12 @@ struct AufmassSheet: View {
             .sheet(isPresented: $zeigeNeuesAufmass) {
                 NeuesAufmassSheet(position: position)
                     .environment(\.managedObjectContext, viewContext)
+                    .presentationSizing(.page)
             }
             // NEU: Das Sheet für die Hilfe
             .sheet(isPresented: $showHelp) {
                 AufmassHelpView()
+                    .presentationSizing(.page)
             }
         }
     }

@@ -126,6 +126,7 @@ struct MangelErfassenView: View {
             }
             .sheet(isPresented: $showHelp) {
                 MangelHelpView()
+                    .presentationSizing(.page)
             }
             .onChange(of: fotoItem) { _, item in
                 Task {
