@@ -145,6 +145,8 @@ struct EventDetailView: View {
     @State private var isCalculatingGelaende = false
     @State private var gelaendeError: String = ""
     @State private var gelaendeResult: GelaendeResult? = nil
+    @State private var gelaendeDXFData: Data? = nil        // zuletzt geladenes DXF (für Hauslage-Platzierung)
+    @State private var zeigeHauslagePlatzieren = false
     @State private var reportPDFURL: URL?
     // Welle 5c: Wände aus Plan lesen
     @State private var showingWandLeser = false
@@ -530,6 +532,11 @@ struct EventDetailView: View {
                                     })
                 .presentationSizing(.page)
         }
+        .sheet(isPresented: $zeigeHauslagePlatzieren) {
+            if let d = gelaendeDXFData {
+                HauslagePlatzierenView(dxfData: d)
+            }
+        }
     }
 
     /// Merget frisch ausgewertete Dokumente (Human-in-the-Loop-Auswahl) in die extras und speichert.
@@ -643,6 +650,18 @@ struct EventDetailView: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+
+                // Fehlt das Haus im DXF? → Hauslage manuell platzieren (Schritt 2b)
+                if gelaendeError.localizedCaseInsensitiveContains("Haus"), gelaendeDXFData != nil {
+                    Button { zeigeHauslagePlatzieren = true } label: {
+                        Label("Hauslage platzieren", systemImage: "house.badge.plus")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity).padding(.vertical, 8)
+                            .background(Color.orange.opacity(0.15))
+                            .foregroundStyle(Color.orange)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
             } else if let r = gelaendeResult {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 12) {
@@ -895,6 +914,7 @@ struct EventDetailView: View {
             
             do {
                 let dxfData = try Data(contentsOf: url)
+                gelaendeDXFData = dxfData   // für die Hauslage-Platzierung behalten
                 uploadDXF(dxfData: dxfData, filename: url.lastPathComponent)
             } catch {
                 gelaendeError = "Fehler beim Lesen: \(error.localizedDescription)"
