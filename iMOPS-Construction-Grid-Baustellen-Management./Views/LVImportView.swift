@@ -414,9 +414,13 @@ struct PDFDocumentPicker: UIViewControllerRepresentable {
             for url in urls {
                 let secured = url.startAccessingSecurityScopedResource()
                 defer { if secured { url.stopAccessingSecurityScopedResource() } }
-                let tmp = fm.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
-                try? fm.removeItem(at: tmp)
+                // Jede Kopie in einen EIGENEN Unterordner → Dateiname bleibt sauber (für die
+                // Anzeige/„quelle") UND gleichnamige Dateien aus verschiedenen Ordnern
+                // überschreiben sich nicht (wichtig fürs Sammeln über mehrere Picks).
+                let ordner = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+                let tmp = ordner.appendingPathComponent(url.lastPathComponent)
                 do {
+                    try fm.createDirectory(at: ordner, withIntermediateDirectories: true)
                     try fm.copyItem(at: url, to: tmp)
                     localCopies.append(tmp)
                 } catch {
@@ -459,9 +463,13 @@ struct JSONDocumentPicker: UIViewControllerRepresentable {
             for url in urls {
                 let secured = url.startAccessingSecurityScopedResource()
                 defer { if secured { url.stopAccessingSecurityScopedResource() } }
-                let tmp = fm.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
-                try? fm.removeItem(at: tmp)
+                // Jede Kopie in einen EIGENEN Unterordner → Dateiname bleibt sauber (für die
+                // Anzeige/„quelle") UND gleichnamige Dateien aus verschiedenen Ordnern
+                // überschreiben sich nicht (wichtig fürs Sammeln über mehrere Picks).
+                let ordner = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+                let tmp = ordner.appendingPathComponent(url.lastPathComponent)
                 do {
+                    try fm.createDirectory(at: ordner, withIntermediateDirectories: true)
                     try fm.copyItem(at: url, to: tmp)
                     localCopies.append(tmp)
                 } catch {

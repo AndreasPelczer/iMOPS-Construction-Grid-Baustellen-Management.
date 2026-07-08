@@ -470,8 +470,8 @@ struct EventDetailView: View {
         }
         .teilenOderSpeichern(datei: $reportPDFURL)
         .sheet(isPresented: $showingUnterlagenPicker) {
-            PDFDocumentPicker { urls in starteUnterlagenAuswertung(urls: urls) }
-                .ignoresSafeArea()
+            // Sammel-Ansicht: PDFs aus mehreren Ordnern zusammentragen, dann auswerten.
+            UnterlagenSammelSheet { urls in starteUnterlagenAuswertung(urls: urls) }
         }
         .sheet(isPresented: $zeigeAuswertung) {
             UnterlageAuswertungView(ergebnisse: auswertResults, fehler: auswertFehler,
