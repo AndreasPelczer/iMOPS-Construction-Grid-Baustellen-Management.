@@ -112,7 +112,7 @@ struct MaterialHinzufuegenView: View {
             }
 
             HStack {
-                Text("Menge/\(position.einheit ?? "Einheit")")
+                Text("Menge je \(position.einheit ?? "Einheit")")
                     .foregroundStyle(.secondary)
                 Spacer()
                 TextField("0,00", text: $mengeProEinheit)
@@ -143,25 +143,33 @@ struct MaterialHinzufuegenView: View {
                     .foregroundStyle(.secondary)
             }
 
-            // Vorschau
+            // Vorschau: Kosten je Einheit UND Positions-Gesamt (macht × Menge sichtbar)
             let vorschau = berechneVorschau()
             if vorschau > 0 {
-                HStack {
-                    Text("Kosten/\(position.einheit ?? "Einheit")")
-                        .font(.subheadline.bold())
-                    Spacer()
-                    Text(vorschau.formatted(.currency(code: "EUR")))
-                        .font(.subheadline.bold().monospacedDigit())
-                        .foregroundStyle(.orange)
-                }
+                let mWert = Double(mengeProEinheit.replacingOccurrences(of: ",", with: ".")) ?? 0
+                let gesamtMenge = (mWert * position.menge).formatted(.number.precision(.fractionLength(0...2)))
+                AufwandVorschau(proEinheit: vorschau,
+                                menge: position.menge,
+                                einheit: position.einheit ?? "Einheit",
+                                mengenGesamt: "\(gesamtMenge) \(einheit)",   // Material-Einheit (kg/Stk …)
+                                farbe: .orange)
             }
         } header: {
             Text("Details")
         } footer: {
-            if let mat = selectedMaterial, mat.verbrauchProM2 > 0 {
-                Text("Richtwert: \(mat.verbrauchProM2.formatted(.number.precision(.fractionLength(0...1)))) \(mat.einheit ?? "") pro m²")
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Menge für **eine** \(position.einheit ?? "Einheit") — nicht für die ganze Position. "
+                     + "Die Gesamt-Vorschau multipliziert mit der Menge (\(mengeText) \(position.einheit ?? "Einheit")).")
+                if let mat = selectedMaterial, mat.verbrauchProM2 > 0 {
+                    Text("Richtwert: \(mat.verbrauchProM2.formatted(.number.precision(.fractionLength(0...1)))) \(mat.einheit ?? "") pro m²")
+                }
             }
         }
+    }
+
+    /// Positions-Menge lesbar (für den Hinweistext).
+    private var mengeText: String {
+        position.menge.formatted(.number.precision(.fractionLength(0...2)))
     }
 
     // MARK: - Actions

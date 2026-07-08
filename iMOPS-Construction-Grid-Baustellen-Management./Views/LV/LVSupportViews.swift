@@ -2,6 +2,43 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
+/// Vorschau für die Aufwands-Eingaben (Lohn/Material/Geräte): zeigt die Kosten JE Einheit
+/// UND — entscheidend — den Positions-Gesamtbetrag, damit die `× Menge`-Multiplikation schon
+/// bei der Eingabe sichtbar wird. Plausi-Prüfung: „480 h?! — falsch" fällt sofort auf.
+struct AufwandVorschau: View {
+    let proEinheit: Double      // Kosten je Positions-Einheit (aus berechneVorschau())
+    let menge: Double           // position.menge
+    let einheit: String         // position.einheit ?? "Einheit"
+    let mengenGesamt: String?   // optional: "60 h" / "84,0 kg" — der Mengen-Gesamtwert
+    let farbe: Color            // .green (Lohn) / .orange (Material) / .purple (Geräte)
+
+    private func zeile(_ label: String, _ wert: String, bold: Bool) -> some View {
+        HStack {
+            Text(label)
+                .font(bold ? .subheadline.bold() : .caption)
+                .foregroundStyle(bold ? .primary : .secondary)
+            Spacer()
+            Text(wert)
+                .font((bold ? Font.subheadline.bold() : .caption).monospacedDigit())
+                .foregroundStyle(bold ? farbe : .secondary)
+        }
+    }
+
+    private var mengeText: String {
+        menge.formatted(.number.precision(.fractionLength(0...2)))
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            zeile("Kosten je \(einheit)", proEinheit.formatted(.currency(code: "EUR")), bold: false)
+            if let mg = mengenGesamt { zeile("Menge gesamt", mg, bold: false) }
+            Divider()
+            zeile("Gesamt für \(mengeText) \(einheit)",
+                  (proEinheit * menge).formatted(.currency(code: "EUR")), bold: true)
+        }
+    }
+}
+
 /// PDF-Dokument für den `.fileExporter` (Mac-„Speichern"-Dialog). Der iOS-Teilen-Sheet
 /// legt am Mac keine Datei ab — dort braucht es einen echten Save-Panel.
 struct PDFFileDocument: FileDocument {

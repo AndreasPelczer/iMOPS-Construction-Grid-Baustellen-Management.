@@ -114,7 +114,7 @@ struct GeraetHinzufuegenView: View {
             }
 
             HStack {
-                Text("Stunden/\(position.einheit ?? "Einheit")")
+                Text("Stunden je \(position.einheit ?? "Einheit")")
                     .foregroundStyle(.secondary)
                 Spacer()
                 TextField("0,00", text: $stunden)
@@ -123,21 +123,28 @@ struct GeraetHinzufuegenView: View {
                     .frame(width: 100)
             }
 
-            // Vorschau
+            // Vorschau: Kosten je Einheit UND Positions-Gesamt (macht × Menge sichtbar)
             let vorschau = berechneVorschau()
             if vorschau > 0 {
-                HStack {
-                    Text("Kosten/\(position.einheit ?? "Einheit")")
-                        .font(.subheadline.bold())
-                    Spacer()
-                    Text(vorschau.formatted(.currency(code: "EUR")))
-                        .font(.subheadline.bold().monospacedDigit())
-                        .foregroundStyle(.purple)
-                }
+                let hWert = Double(stunden.replacingOccurrences(of: ",", with: ".")) ?? 0
+                let gesamtStunden = (hWert * position.menge).formatted(.number.precision(.fractionLength(0...2)))
+                AufwandVorschau(proEinheit: vorschau,
+                                menge: position.menge,
+                                einheit: position.einheit ?? "Einheit",
+                                mengenGesamt: "\(gesamtStunden) h",
+                                farbe: .purple)
             }
         } header: {
             Text("Einsatz")
+        } footer: {
+            Text("Wert für **eine** \(position.einheit ?? "Einheit") — nicht für die ganze Position. "
+                 + "Die Gesamt-Vorschau multipliziert mit der Menge (\(mengeText) \(position.einheit ?? "Einheit")).")
         }
+    }
+
+    /// Positions-Menge lesbar (für den Hinweistext).
+    private var mengeText: String {
+        position.menge.formatted(.number.precision(.fractionLength(0...2)))
     }
 
     // MARK: - Actions
