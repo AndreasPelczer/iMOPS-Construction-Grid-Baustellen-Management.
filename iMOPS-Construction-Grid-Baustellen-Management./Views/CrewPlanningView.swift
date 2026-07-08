@@ -58,6 +58,7 @@ struct CrewPlanningView: View {
         .sheet(isPresented: $showAddSheet) {
             AddEmployeeSheet()
                 .environment(\.managedObjectContext, ctx)
+                .presentationSizing(.page)
         }
     }
 

@@ -68,6 +68,7 @@ struct iMOPSApp: App {
                        onDismiss: { importedFileHandler.executePendingAction() }) {
                     FileInspectionSheet()
                         .environment(importedFileHandler)
+                        .presentationSizing(.page)
                 }
                 .sheet(isPresented: $importedFileHandler.showImportedSKPSheet) {
                     NavigationStack {
@@ -127,6 +128,7 @@ struct iMOPSApp: App {
                             }
                         }
                     }
+                    .presentationSizing(.page)
                 }
                 .sheet(isPresented: $importedFileHandler.showImportedCADViewer) {
                     NavigationStack {
@@ -141,10 +143,12 @@ struct iMOPSApp: App {
                                 }
                         }
                     }
+                    .presentationSizing(.page)
                 }
                 .sheet(item: $importedFileHandler.pendingGAEBURL) { url in
                     GAEBEventPickerSheet(gaebURL: url)
                         .environment(\.managedObjectContext, persistence.container.viewContext)
+                        .presentationSizing(.page)
                 }
         }
     }

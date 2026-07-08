@@ -120,6 +120,7 @@ struct BaustellenIstUebersichtView: View {
                 onSave: uebernehmen,
                 onDelete: editorIstNeu ? nil : { loeschen(p) }
             )
+            .presentationSizing(.page)
         }
     }
 

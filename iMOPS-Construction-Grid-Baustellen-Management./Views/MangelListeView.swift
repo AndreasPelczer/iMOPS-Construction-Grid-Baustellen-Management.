@@ -103,11 +103,13 @@ struct MangelListeView: View {
             .sheet(isPresented: $zeigeErfassen) {
                 MangelErfassenView(event: event)
                     .environment(\.managedObjectContext, ctx)
+                    .presentationSizing(.page)
             }
             .teilenOderSpeichern(datei: $pdfURL)
             .sheet(isPresented: $showFristen) {
                 FristenView()
                     .environment(\.managedObjectContext, ctx)
+                    .presentationSizing(.page)
             }
         }
     }

@@ -84,6 +84,7 @@ struct MaterialLexikonView: View {
         }
         .sheet(isPresented: $showingAddSheet) {
             AddMaterialView()
+                .presentationSizing(.page)
         }
     }
 

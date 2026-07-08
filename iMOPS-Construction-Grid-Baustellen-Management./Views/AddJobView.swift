@@ -160,6 +160,7 @@ struct AddJobView: View {
             }
             .sheet(isPresented: $showHelp) {
                 AddJobHelpView()
+                    .presentationSizing(.page)
             }
             .alert(
                 viewModel.lastViolation.map { $0.ruleId } ?? "Fehler",

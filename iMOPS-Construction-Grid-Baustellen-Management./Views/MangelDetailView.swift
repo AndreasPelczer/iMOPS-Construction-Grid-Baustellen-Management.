@@ -31,6 +31,7 @@ struct MangelDetailView: View {
         .sheet(isPresented: $bearbeiten) {
             MangelBearbeitenView(mangel: mangel)
                 .environment(\.managedObjectContext, ctx)
+                .presentationSizing(.page)
         }
     }
 

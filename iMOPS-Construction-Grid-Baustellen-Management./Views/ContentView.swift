@@ -73,13 +73,16 @@ struct ContentView: View {
                 }
                 .environment(\.managedObjectContext, viewContext)
             }
+            .presentationSizing(.page)
         }
         .sheet(isPresented: $showingAddEventSheet) {
             AddEventView()
                 .environment(\.managedObjectContext, viewContext)
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $showHelp) {
             BaustellenListeHelpView()
+                .presentationSizing(.page)
         }
         .onChange(of: selectedFilter) { _, newFilter in
             withAnimation { eventListVM.applyFilterAndSearch(filter: newFilter, query: searchText, sort: sortOrder) }
