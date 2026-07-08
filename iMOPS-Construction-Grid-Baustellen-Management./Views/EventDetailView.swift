@@ -481,6 +481,7 @@ struct EventDetailView: View {
         .sheet(isPresented: $showingUnterlagenPicker) {
             // Sammel-Ansicht: PDFs aus mehreren Ordnern zusammentragen, dann auswerten.
             UnterlagenSammelSheet { urls in starteUnterlagenAuswertung(urls: urls) }
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $zeigeAuswertung) {
             UnterlageAuswertungView(ergebnisse: auswertResults, fehler: auswertFehler,
