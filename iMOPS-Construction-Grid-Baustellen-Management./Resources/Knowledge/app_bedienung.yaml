@@ -593,21 +593,26 @@
     - "Aufwand eingeben"
     - "warum so viele Stunden"
     - "Positions-Gesamt Vorschau"
+    - "gesamt eingeben statt je Einheit"
+    - "Umschalter je Einheit gesamt"
   antwort: |
     Beim Kalkulieren einer Position (Tiefenkalkulation → Lohn/Material/Geraete
-    hinzufuegen) wird der Aufwand IMMER JE EINHEIT eingegeben:
-    - Lohn/Geraete: Stunden je Einheit (z.B. 0,5 h je m3), NICHT die Gesamt-Stunden.
-    - Material: Menge je Einheit (z.B. 25 kg je m3).
+    hinzufuegen) gibt es einen Umschalter "je Einheit / gesamt":
+    - "je Einheit" (Standard): der Aufwand JE EINHEIT, z.B. 0,5 h je m3 (Lohn/Geraete)
+      bzw. 25 kg je m3 (Material). Das ist die Rechenbasis der Engine (x Menge).
+    - "gesamt": der GESAMTWERT fuer die ganze Position, z.B. "6 h" oder "130 kg".
+      Die App teilt selbst durch die Positions-Menge — man braucht keinen Taschenrechner.
+    Gespeichert wird immer der Wert je Einheit; die Engine bleibt gleich. (Der "gesamt"-
+    Modus braucht eine gesetzte Positions-Menge, sonst ist er deaktiviert.)
 
-    Die Engine multipliziert diesen Wert mit der Positions-Menge. Damit man sich nicht
-    vertut, zeigt die Vorschau seit dieser Version DREI Zeilen:
+    Die Vorschau zeigt immer DREI Zeilen, egal welcher Modus:
     1. Kosten je Einheit
     2. Menge gesamt (Stunden bzw. Materialmenge fuer die ganze Position)
     3. GESAMT fuer die Positions-Menge (Euro)
 
-    So faellt ein Fehler sofort auf: Traegt man z.B. bei 120 m3 versehentlich 4 h je m3
-    statt 0,05 ein, zeigt die Vorschau "Menge gesamt 480 h" — das kann nicht stimmen.
-    Merksatz: Der eingegebene Wert gilt fuer EINE Einheit, nicht fuer die ganze Position.
+    So faellt ein Fehler sofort auf: Traegt man im "je Einheit"-Modus bei 120 m3
+    versehentlich 4 statt 0,05 ein, zeigt die Vorschau "Menge gesamt 480 h" — kann nicht
+    stimmen. Merksatz: Im Zweifel "gesamt" waehlen und den bekannten Gesamtwert eintippen.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 

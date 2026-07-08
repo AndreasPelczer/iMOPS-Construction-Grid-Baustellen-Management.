@@ -19,6 +19,7 @@ struct GeraetHinzufuegenView: View {
     @State private var stunden = ""
     @State private var kostenProStunde = ""
     @State private var manuellMode = false
+    @State private var eingabeGesamt = false   // false = Stunden je Einheit, true = Gesamt-Stunden
 
     private var isValid: Bool {
         !geraetName.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -113,21 +114,17 @@ struct GeraetHinzufuegenView: View {
                 }
             }
 
-            HStack {
-                Text("Stunden je \(position.einheit ?? "Einheit")")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                TextField("0,00", text: $stunden)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 100)
-            }
+            AufwandEingabeFeld(titel: "Stunden",
+                               einheit: position.einheit ?? "Einheit",
+                               menge: position.menge,
+                               text: $stunden,
+                               gesamt: $eingabeGesamt)
 
             // Vorschau: Kosten je Einheit UND Positions-Gesamt (macht × Menge sichtbar)
             let vorschau = berechneVorschau()
             if vorschau > 0 {
-                let hWert = Double(stunden.replacingOccurrences(of: ",", with: ".")) ?? 0
-                let gesamtStunden = (hWert * position.menge).formatted(.number.precision(.fractionLength(0...2)))
+                let hJe = AufwandEingabeFeld.jeEinheit(text: stunden, gesamt: eingabeGesamt, menge: position.menge)
+                let gesamtStunden = (hJe * position.menge).formatted(.number.precision(.fractionLength(0...2)))
                 AufwandVorschau(proEinheit: vorschau,
                                 menge: position.menge,
                                 einheit: position.einheit ?? "Einheit",
@@ -137,8 +134,9 @@ struct GeraetHinzufuegenView: View {
         } header: {
             Text("Einsatz")
         } footer: {
-            Text("Wert für **eine** \(position.einheit ?? "Einheit") — nicht für die ganze Position. "
-                 + "Die Gesamt-Vorschau multipliziert mit der Menge (\(mengeText) \(position.einheit ?? "Einheit")).")
+            Text(eingabeGesamt
+                 ? "Gesamt-Stunden für die ganze Position (\(mengeText) \(position.einheit ?? "Einheit")) — die App rechnet auf „je Einheit\u{201C} um und speichert das."
+                 : "Wert für **eine** \(position.einheit ?? "Einheit") — nicht für die ganze Position. Die Vorschau multipliziert mit der Menge (\(mengeText) \(position.einheit ?? "Einheit")).")
         }
     }
 
@@ -160,7 +158,7 @@ struct GeraetHinzufuegenView: View {
         let pg = PositionGeraet(context: viewContext)
         pg.id = UUID()
         pg.geraetName = geraetName
-        pg.stunden = Double(stunden.replacingOccurrences(of: ",", with: ".")) ?? 0
+        pg.stunden = AufwandEingabeFeld.jeEinheit(text: stunden, gesamt: eingabeGesamt, menge: position.menge)
         pg.kostenProStunde = Double(kostenProStunde.replacingOccurrences(of: ",", with: ".")) ?? 0
         pg.position = position
         try? viewContext.save()
@@ -168,7 +166,7 @@ struct GeraetHinzufuegenView: View {
     }
 
     private func berechneVorschau() -> Double {
-        let h = Double(stunden.replacingOccurrences(of: ",", with: ".")) ?? 0
+        let h = AufwandEingabeFeld.jeEinheit(text: stunden, gesamt: eingabeGesamt, menge: position.menge)
         let kph = Double(kostenProStunde.replacingOccurrences(of: ",", with: ".")) ?? 0
         return h * kph
     }
