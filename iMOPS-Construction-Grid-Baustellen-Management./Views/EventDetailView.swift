@@ -149,6 +149,9 @@ struct EventDetailView: View {
 
     // Stufe 2: Unterlagen auswerten (/extract-doc)
     @State private var showingUnterlagenPicker = false
+    @State private var showingTuerPicker = false           // „Alle Unterlagen reinwerfen"
+    @State private var tuerDaten: TuerDaten? = nil
+    private struct TuerDaten: Identifiable { let id = UUID(); let urls: [URL] }
     @State private var isAuswerten = false
     @State private var auswertResults: [ExtractDocResult] = []
     @State private var auswertFehler: [String] = []
@@ -497,6 +500,14 @@ struct EventDetailView: View {
         .sheet(isPresented: $showingUnterlagenPicker) {
             // Sammel-Ansicht: PDFs aus mehreren Ordnern zusammentragen, dann auswerten.
             UnterlagenSammelSheet { urls in starteUnterlagenAuswertung(urls: urls) }
+                .presentationSizing(.page)
+        }
+        .sheet(isPresented: $showingTuerPicker) {
+            UnterlagenSammelSheet { urls in starteTuer(urls: urls) }
+                .presentationSizing(.page)
+        }
+        .sheet(item: $tuerDaten) { d in
+            TuerSortierView(event: event, urls: d.urls)
                 .presentationSizing(.page)
         }
         .sheet(isPresented: $zeigeAuswertung) {
@@ -1141,6 +1152,23 @@ struct EventDetailView: View {
                 .disabled(isAuswerten)
             }
 
+            // Die eine Tür: alles auf einmal reinwerfen, Mops sortiert & liest.
+            Button { showingTuerPicker = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "tray.and.arrow.down.fill").font(.title3).foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Alle Unterlagen reinwerfen").font(.subheadline.weight(.semibold))
+                        Text("Mops sortiert & liest — du nickst nur die Sortierung ab").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding(12)
+                .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+            .disabled(isAuswerten)
+
             if isAuswerten {
                 HStack(spacing: 10) {
                     ProgressView()
@@ -1204,6 +1232,16 @@ struct EventDetailView: View {
     /// Wertet die gewählten Text-PDFs nacheinander über die Box aus (`/extract-doc`).
     /// Sequenziell, weil die Box CPU/LLM-seriell arbeitet. Zeichnungen ohne Textebene
     /// liefern 422 → landen als „übersprungen" in der Fehlerliste, brechen nicht ab.
+    /// „Alle Unterlagen reinwerfen": nach dem Sammeln das Sortier-Sheet öffnen
+    /// (kleiner Versatz, damit der Sammel-Sheet erst sauber schließt).
+    private func starteTuer(urls: [URL]) {
+        showingTuerPicker = false
+        guard !urls.isEmpty else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            tuerDaten = TuerDaten(urls: urls)
+        }
+    }
+
     private func starteUnterlagenAuswertung(urls: [URL]) {
         showingUnterlagenPicker = false
         guard !urls.isEmpty else { return }
