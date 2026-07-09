@@ -49,6 +49,8 @@ struct ExtractLVPosition: Codable {
     let einheit: String?
     let menge: Double?
     let quelle: String?       // "statik_tabelle" | "b-plan" | "schaetzung" | …
+    let seite: Int?           // 1-basierte Seite im Quell-PDF (Weg B), nil wenn unbekannt
+    let teilgewichte: [Double]?  // Einzelgewichte der Teil-Tabellen (Schritt 4: Summe aufgliedern), nur ab 2
 }
 
 // Eine Mauerwerks-Bestellzeile inkl. Mat-Nr aus dem abZ-Resolver.

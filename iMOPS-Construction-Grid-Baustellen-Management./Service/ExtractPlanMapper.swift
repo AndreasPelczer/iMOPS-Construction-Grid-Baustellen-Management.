@@ -46,12 +46,36 @@ enum ExtractPlanMapper {
             pos.einheit = p.einheit
             pos.kostenGruppeNummer = effektiveKG(kg: p.kg, bezeichnung: p.bezeichnung)  // DIN 276 (kg==nil → heuristisch)
             pos.mengenQuelleRaw = p.quelle ?? "manuell"   // gemessen/geschätzt (Welle-9-Fundament)
+            pos.seite = p.seite.map(NSNumber.init(value:))   // Weg B: Seite im Quell-PDF (nil bleibt nil)
             pos.event = event
             if let zeile = bestellByPos[p.posNr] {
                 pos.artikelNummer = zeile.matnr     // Xella-Mat-Nr (abZ-Resolver)
                 pos.lieferant = zeile.lieferant
             }
+            legeTeilgewichteAn(unter: pos, teilgewichte: p.teilgewichte, in: context)  // Schritt 4
             return pos
+        }
+    }
+
+    /// Schritt 4: Legt für die Einzelgewichte einer Plan-Summe je einen Unterpunkt (Beleg)
+    /// unter die Position — so wird sichtbar, WOHER die Summe kommt. Nur ab 2 Teilen; die
+    /// Unterpunkte zählen dank Deckel-Regel (`zaehlbarePositionen`) nicht doppelt.
+    static func legeTeilgewichteAn(unter deckel: LVPosition, teilgewichte: [Double]?,
+                                   in context: NSManagedObjectContext) {
+        guard let teile = teilgewichte, teile.count >= 2 else { return }
+        for (i, g) in teile.enumerated() {
+            let kind = LVPosition(context: context)
+            kind.bezeichnung = "Teilgewicht \(i + 1)"
+            kind.menge = g
+            kind.einheit = "kg"
+            kind.kostenGruppeNummer = deckel.kostenGruppeNummer
+            kind.mengenQuelleRaw = deckel.mengenQuelleRaw
+            kind.seite = deckel.seite
+            kind.event = deckel.event
+            // Datei-Bezug erben, damit auch die Belege ins Quell-PDF springen können.
+            if let dn = deckel.value(forKey: "dokuName") { kind.setValue(dn, forKey: "dokuName") }
+            if let dp = deckel.value(forKey: "dokuPath") { kind.setValue(dp, forKey: "dokuPath") }
+            kind.deckel = deckel        // wird Unterpunkt → automatischer Deckel
         }
     }
 
@@ -74,7 +98,10 @@ enum ExtractPlanMapper {
                 confidence: p.quelle == "schaetzung" ? 0.6 : 0.95,
                 kostenGruppe: effektiveKG(kg: p.kg, bezeichnung: p.bezeichnung),
                 artikelNummer: zeile?.matnr,
-                lieferant: zeile?.lieferant
+                lieferant: zeile?.lieferant,
+                seite: p.seite,          // Weg B: Seite im Quell-PDF
+                quelle: p.quelle,        // rohe Herkunft für mengenQuelleRaw
+                teilgewichte: p.teilgewichte  // Schritt 4: Summe aufgliedern
             )
         }
     }

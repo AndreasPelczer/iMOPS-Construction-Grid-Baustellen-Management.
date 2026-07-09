@@ -70,6 +70,21 @@ extension EventExtrasPayload {
         }
         auswertungen = liste.sorted { $0.ergebnis.quelle < $1.ergebnis.quelle }
     }
+
+    /// Entfernt eine gespeicherte Auswertung (falsche geladen) über `quelle`.
+    mutating func removeAuswertung(quelle: String) {
+        auswertungen?.removeAll { $0.id == quelle }
+    }
+
+    /// Korrigiert den erkannten Doctype einer Auswertung (Mensch räumt Fehl-Erkennung auf).
+    mutating func setDoctype(quelle: String, doctype: String) {
+        guard var liste = auswertungen,
+              let idx = liste.firstIndex(where: { $0.id == quelle }) else { return }
+        let alt = liste[idx]
+        liste[idx] = GespeicherteAuswertung(ergebnis: alt.ergebnis.mitDoctype(doctype),
+                                            gespeichertAm: alt.gespeichertAm)
+        auswertungen = liste
+    }
 }
 
 struct EventChecklistItem: Codable, Identifiable, Equatable {
@@ -134,6 +149,9 @@ struct EventDetailView: View {
 
     // Stufe 2: Unterlagen auswerten (/extract-doc)
     @State private var showingUnterlagenPicker = false
+    @State private var showingTuerPicker = false           // „Alle Unterlagen reinwerfen"
+    @State private var tuerDaten: TuerDaten? = nil
+    private struct TuerDaten: Identifiable { let id = UUID(); let urls: [URL] }
     @State private var isAuswerten = false
     @State private var auswertResults: [ExtractDocResult] = []
     @State private var auswertFehler: [String] = []
@@ -484,6 +502,14 @@ struct EventDetailView: View {
             UnterlagenSammelSheet { urls in starteUnterlagenAuswertung(urls: urls) }
                 .presentationSizing(.page)
         }
+        .sheet(isPresented: $showingTuerPicker) {
+            UnterlagenSammelSheet { urls in starteTuer(urls: urls) }
+                .presentationSizing(.page)
+        }
+        .sheet(item: $tuerDaten) { d in
+            TuerSortierView(event: event, urls: d.urls)
+                .presentationSizing(.page)
+        }
         .sheet(isPresented: $zeigeAuswertung) {
             UnterlageAuswertungView(ergebnisse: auswertResults, fehler: auswertFehler,
                                     onSpeichern: { gewaehlt in speichereAuswertungen(gewaehlt) })
@@ -491,7 +517,12 @@ struct EventDetailView: View {
         }
         .sheet(isPresented: $zeigeGespeicherteAuswertung) {
             UnterlageAuswertungView(ergebnisse: (extras.auswertungen ?? []).map(\.ergebnis),
-                                    fehler: [], onSpeichern: nil)   // reine Ansicht, kein Mops
+                                    fehler: [], onSpeichern: nil,   // reine Ansicht, kein Mops
+                                    onLoeschen: { loescheAuswertung($0) },
+                                    onTypAendern: { res, typ in
+                                        extras.setDoctype(quelle: res.quelle, doctype: typ)
+                                        saveExtras(extras)
+                                    })
                 .presentationSizing(.page)
         }
     }
@@ -500,6 +531,12 @@ struct EventDetailView: View {
     private func speichereAuswertungen(_ gewaehlt: [ExtractDocResult]) {
         guard !gewaehlt.isEmpty else { return }
         extras.mergeAuswertungen(gewaehlt, am: Date())
+        saveExtras(extras)
+    }
+
+    /// Entfernt eine gespeicherte /extract-doc-Auswertung (falsche geladen) und speichert.
+    private func loescheAuswertung(_ res: ExtractDocResult) {
+        extras.removeAuswertung(quelle: res.quelle)
         saveExtras(extras)
     }
 
@@ -1115,6 +1152,23 @@ struct EventDetailView: View {
                 .disabled(isAuswerten)
             }
 
+            // Die eine Tür: alles auf einmal reinwerfen, Mops sortiert & liest.
+            Button { showingTuerPicker = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "tray.and.arrow.down.fill").font(.title3).foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Alle Unterlagen reinwerfen").font(.subheadline.weight(.semibold))
+                        Text("Mops sortiert & liest — du nickst nur die Sortierung ab").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding(12)
+                .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+            .disabled(isAuswerten)
+
             if isAuswerten {
                 HStack(spacing: 10) {
                     ProgressView()
@@ -1178,6 +1232,16 @@ struct EventDetailView: View {
     /// Wertet die gewählten Text-PDFs nacheinander über die Box aus (`/extract-doc`).
     /// Sequenziell, weil die Box CPU/LLM-seriell arbeitet. Zeichnungen ohne Textebene
     /// liefern 422 → landen als „übersprungen" in der Fehlerliste, brechen nicht ab.
+    /// „Alle Unterlagen reinwerfen": nach dem Sammeln das Sortier-Sheet öffnen
+    /// (kleiner Versatz, damit der Sammel-Sheet erst sauber schließt).
+    private func starteTuer(urls: [URL]) {
+        showingTuerPicker = false
+        guard !urls.isEmpty else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            tuerDaten = TuerDaten(urls: urls)
+        }
+    }
+
     private func starteUnterlagenAuswertung(urls: [URL]) {
         showingUnterlagenPicker = false
         guard !urls.isEmpty else { return }

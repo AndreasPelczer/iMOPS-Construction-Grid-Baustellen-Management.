@@ -20,6 +20,11 @@ struct ParsedLVPosition: Identifiable {
     // NEU: Die Quell-Metadaten für den Reader
     var quellDateiName: String? = nil
     var quellDateiURL: URL? = nil
+    // Weg B: Seite im Quell-PDF + rohe Herkunft (statik/b-plan/schaetzung/manuell).
+    var seite: Int? = nil
+    var quelle: String? = nil
+    // Schritt 4: Einzelgewichte, aus denen sich die Summe zusammensetzt (nur ab 2 Teilen).
+    var teilgewichte: [Double]? = nil
 }
 
 // MARK: - Importer

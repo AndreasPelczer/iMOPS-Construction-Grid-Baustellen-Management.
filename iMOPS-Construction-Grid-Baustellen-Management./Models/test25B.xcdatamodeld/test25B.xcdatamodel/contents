@@ -115,6 +115,8 @@
         <attribute name="artikelNummer" optional="YES" attributeType="String"/>
         <attribute name="bezeichnung" optional="YES" attributeType="String"/>
         <attribute name="bgkProzent" optional="YES" attributeType="Double" defaultValueString="0.12" usesScalarValueType="YES"/>
+        <attribute name="deckelNotiz" optional="YES" attributeType="String"/>
+        <attribute name="seite" optional="YES" attributeType="Integer 32" usesScalarValueType="NO"/>
         <attribute name="dokuName" optional="YES" attributeType="String"/>
         <attribute name="dokuPath" optional="YES" attributeType="String"/>
         <attribute name="einheit" optional="YES" attributeType="String"/>
@@ -132,6 +134,8 @@
         <relationship name="kalkGeraete" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionGeraet" inverseName="position" inverseEntity="PositionGeraet"/>
         <relationship name="kalkLohn" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionLohn" inverseName="position" inverseEntity="PositionLohn"/>
         <relationship name="kalkMaterialien" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionMaterial" inverseName="position" inverseEntity="PositionMaterial"/>
+        <relationship name="deckel" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="unterPositionen" inverseEntity="LVPosition"/>
+        <relationship name="unterPositionen" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="deckel" inverseEntity="LVPosition"/>
     </entity>
     <entity name="Mangel" representedClassName="Mangel" syncable="YES">
         <attribute name="beschreibung" optional="YES" attributeType="String"/>

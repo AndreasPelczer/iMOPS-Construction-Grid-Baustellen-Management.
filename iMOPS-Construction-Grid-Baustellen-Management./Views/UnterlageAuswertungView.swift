@@ -25,28 +25,56 @@ struct UnterlageAuswertungView: View {
     let fehler: [String]
     /// Gesetzt → Speichern-Modus (Häkchen + „Speichern"-Button). nil → reine Ansicht.
     let onSpeichern: (([ExtractDocResult]) -> Void)?
+    /// Gesetzt → gespeicherte Auswertung kann gelöscht werden (falsche geladen).
+    let onLoeschen: ((ExtractDocResult) -> Void)?
+    /// Gesetzt → Doctype korrigierbar (Mensch räumt Fehl-Erkennung auf).
+    let onTypAendern: ((ExtractDocResult, String) -> Void)?
 
     @State private var selektiert: Set<String>
+    @State private var angezeigte: [ExtractDocResult]
+    @State private var loeschKandidat: ExtractDocResult?
     @Environment(\.dismiss) private var dismiss
 
     init(ergebnisse: [ExtractDocResult],
          fehler: [String],
-         onSpeichern: (([ExtractDocResult]) -> Void)? = nil) {
+         onSpeichern: (([ExtractDocResult]) -> Void)? = nil,
+         onLoeschen: ((ExtractDocResult) -> Void)? = nil,
+         onTypAendern: ((ExtractDocResult, String) -> Void)? = nil) {
         self.ergebnisse = ergebnisse
         self.fehler = fehler
         self.onSpeichern = onSpeichern
+        self.onLoeschen = onLoeschen
+        self.onTypAendern = onTypAendern
         // Speichern-Modus: initial alle Dokumente ausgewählt.
         _selektiert = State(initialValue: Set(ergebnisse.map(\.quelle)))
+        _angezeigte = State(initialValue: ergebnisse)
     }
 
     private var speichernModus: Bool { onSpeichern != nil }
+    private var loeschbar: Bool { onLoeschen != nil }
+    private var typKorrigierbar: Bool { onTypAendern != nil }
+
+    /// Setzt den Doctype lokal (sofort sichtbar) UND persistent (Callback).
+    private func aendereTyp(_ res: ExtractDocResult, zu neu: String) {
+        if let i = angezeigte.firstIndex(where: { $0.quelle == res.quelle }) {
+            angezeigte[i] = angezeigte[i].mitDoctype(neu)
+        }
+        onTypAendern?(res, neu)
+    }
+
+    /// Entfernt die Auswertung aus der Ansicht UND persistent (Callback). Leert → schließen.
+    private func loesche(_ res: ExtractDocResult) {
+        angezeigte.removeAll { $0.quelle == res.quelle }
+        onLoeschen?(res)
+        if angezeigte.isEmpty { dismiss() }
+    }
 
     var body: some View {
         NavigationStack {
             List {
                 hinweisSection
 
-                ForEach(Array(ergebnisse.enumerated()), id: \.offset) { _, res in
+                ForEach(angezeigte, id: \.quelle) { res in
                     dokumentSection(res)
                 }
 
@@ -76,6 +104,15 @@ struct UnterlageAuswertungView: View {
                         Button("Fertig") { dismiss() }.tint(.orange)
                     }
                 }
+            }
+            .alert("Auswertung löschen?",
+                   isPresented: Binding(get: { loeschKandidat != nil },
+                                        set: { if !$0 { loeschKandidat = nil } }),
+                   presenting: loeschKandidat) { res in
+                Button("Löschen", role: .destructive) { loesche(res); loeschKandidat = nil }
+                Button("Abbrechen", role: .cancel) { loeschKandidat = nil }
+            } message: { res in
+                Text("Die gespeicherten Fakten aus \(res.quelle) werden von der Baustelle entfernt. Das PDF bleibt. Rückgängig nur durch erneutes Auswerten.")
             }
         }
     }
@@ -114,7 +151,30 @@ struct UnterlageAuswertungView: View {
                 Image(systemName: res.doctypeSymbol)
                     .font(.title3).foregroundStyle(.orange)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(res.doctypeLabel).font(.subheadline.bold())
+                    if typKorrigierbar {
+                        Menu {
+                            ForEach(ExtractDocResult.doctypeOptionen, id: \.id) { opt in
+                                Button {
+                                    aendereTyp(res, zu: opt.id)
+                                } label: {
+                                    if opt.id == res.doctypeErkannt {
+                                        Label(opt.label, systemImage: "checkmark")
+                                    } else {
+                                        Text(opt.label)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 3) {
+                                Text(res.doctypeLabel).font(.subheadline.bold())
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption2).foregroundStyle(.orange)
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                    } else {
+                        Text(res.doctypeLabel).font(.subheadline.bold())
+                    }
                     HStack(spacing: 6) {
                         konfidenzChip(res.confidence)
                         Text(res.model)
@@ -123,6 +183,29 @@ struct UnterlageAuswertungView: View {
                     }
                 }
                 Spacer()
+                if loeschbar {
+                    Button(role: .destructive) { loeschKandidat = res } label: {
+                        Image(systemName: "trash")
+                            .font(.title3)
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("Auswertung löschen")
+                }
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                if loeschbar {
+                    Button(role: .destructive) { loeschKandidat = res } label: {
+                        Label("Löschen", systemImage: "trash")
+                    }
+                }
+            }
+            .contextMenu {
+                if loeschbar {
+                    Button(role: .destructive) { loeschKandidat = res } label: {
+                        Label("Auswertung löschen", systemImage: "trash")
+                    }
+                }
             }
 
             // Kurz-Zusammenfassung: die wichtigsten Fakten auf einen Blick (vor dem Detail)

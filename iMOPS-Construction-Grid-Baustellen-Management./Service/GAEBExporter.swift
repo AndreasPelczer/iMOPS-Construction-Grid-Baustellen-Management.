@@ -22,7 +22,7 @@ struct GAEBExporter {
         format: GAEBExportFormat,
         store: AngebotsStore = .shared
     ) -> Data {
-        let xml = buildXML(event: event, positionen: positionen, format: format, store: store)
+        let xml = buildXML(event: event, positionen: positionen.zaehlbarePositionen(), format: format, store: store)
         return xml.data(using: .utf8) ?? Data()
     }
 

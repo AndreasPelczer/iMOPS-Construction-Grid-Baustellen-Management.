@@ -75,7 +75,7 @@ enum LVKalkulator {
 
     /// Kalkuliert mehrere Positionen und summiert den Gesamtpreis.
     static func gesamtKalkulation(positionen: [LVPosition]) -> Double {
-        positionen.reduce(0.0) { sum, pos in
+        positionen.zaehlbarePositionen().reduce(0.0) { sum, pos in
             sum + kalkuliere(position: pos).gesamtpreis
         }
     }
@@ -95,5 +95,52 @@ enum LVKalkulator {
         if angebotsEP > 0 { return angebotsEP }
         if position.hatKalkulation { return kalkuliere(position: position).einheitspreisVK }
         return 0
+    }
+}
+
+// MARK: - Bewehrungs-Dedup (EINE Wahrheit für Bildschirm UND Export)
+
+/// Regel für „doppelt importierte Bewehrung zählt einmal": Plan + Liste (oder ein
+/// versehentlicher Doppel-Import) liefern dieselbe kg-Menge → nur EINE Position darf
+/// in Summen/Exporte einfließen. Bewusst eng gehalten — nur Einheit „kg", gleiche
+/// Bezeichnung + gleiche Menge. Alles andere bleibt unangetastet.
+/// Vorher lebte diese Regel nur in `LVView` (Bildschirm); GAEB/PDF/Kostenübersicht
+/// rechneten flach und zählten das Duplikat doppelt. Jetzt nutzen alle dieselbe Regel.
+enum LVDedup {
+    static func istBewehrung(_ p: LVPosition) -> Bool {
+        (p.einheit ?? "").lowercased() == "kg"
+    }
+
+    /// „Gleiche Position": Bezeichnung (getrimmt/kleingeschrieben) + Menge (2 Nachkommastellen).
+    static func dedupKey(_ p: LVPosition) -> String {
+        let bez = (p.bezeichnung ?? "").trimmingCharacters(in: .whitespaces).lowercased()
+        return "\(bez)|\((p.menge * 100).rounded())"
+    }
+}
+
+extension Sequence where Element == LVPosition {
+    /// Fürs Summieren/Exportieren: doppelt importierte Bewehrung (gleiche Menge aus
+    /// Plan/Liste) zählt EINMAL. Reihenfolge bleibt erhalten, erstes Vorkommen gewinnt.
+    /// Nicht-Bewehrung (Einheit ≠ „kg") bleibt vollständig erhalten.
+    func ohneBewehrungsDuplikate() -> [LVPosition] {
+        var gesehen = Set<String>()
+        var out: [LVPosition] = []
+        for pos in self {
+            if LVDedup.istBewehrung(pos) {
+                let k = LVDedup.dedupKey(pos)
+                if gesehen.contains(k) { continue }
+                gesehen.insert(k)
+            }
+            out.append(pos)
+        }
+        return out
+    }
+
+    /// Die Positionen, die WIRKLICH in Summen/Exporte zählen — eine Wahrheit für alle:
+    /// 1. Unterpunkte (Belege unter einem Deckel) fallen raus; nur der Deckel zählt (Typ B,
+    ///    REB-23.003-Hilfswert — die Teile stecken IM Deckel, nicht neben ihm).
+    /// 2. danach zählt doppelt importierte Bewehrung (Typ A) einmal.
+    func zaehlbarePositionen() -> [LVPosition] {
+        filter { !$0.istUnterpunkt }.ohneBewehrungsDuplikate()
     }
 }

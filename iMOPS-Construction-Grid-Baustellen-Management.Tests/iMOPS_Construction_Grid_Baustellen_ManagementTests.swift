@@ -57,6 +57,90 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
         #expect(data.prefix(4) == Data("%PDF".utf8))
     }
 
+    // MARK: - Bewehrungs-Dedup (Export zählt Plan+Liste nur einmal)
+
+    /// Referenzfall Schunder-Ringbalken: Plan und Export-Liste liefern dieselbe
+    /// Bewehrungsmenge (gleiche Bezeichnung + gleiche kg). Fürs Summieren/Exportieren
+    /// darf das nur EINMAL zählen. Vorher rechnete GAEB/PDF flach → 900,28 kg statt 450,14.
+    @Test @MainActor func bewehrungsDuplikatZaehltEinmal() {
+        let event = Event(context: ctx)
+        event.title = "Dedup-Test"
+
+        func kgPos(_ bez: String, _ menge: Double) -> LVPosition {
+            let p = LVPosition(context: ctx)
+            p.bezeichnung = bez
+            p.menge = menge
+            p.einheit = "kg"
+            p.kostenGruppeNummer = "320"
+            p.event = event
+            return p
+        }
+
+        let plan   = kgPos("Bewehrung Ringbalken", 450.14)
+        let liste  = kgPos("Bewehrung Ringbalken", 450.14)   // dieselbe Liste, zweite Quelle
+        let normal = LVPosition(context: ctx)
+        normal.bezeichnung = "Streifenfundament"
+        normal.menge = 33
+        normal.einheit = "m"
+        normal.event = event
+
+        let dedup = [plan, liste, normal].ohneBewehrungsDuplikate()
+        #expect(dedup.count == 2)                              // ein Ringbalken fällt raus, Streifenfundament bleibt
+        let kgSumme = dedup.filter { $0.einheit == "kg" }.reduce(0.0) { $0 + $1.menge }
+        #expect(kgSumme == 450.14)                             // NICHT 900,28
+    }
+
+    /// Gegenprobe (Lehre vom 9.7.2026 am Schwarz-Projekt): Zwei ECHT verschiedene Sätze
+    /// — Stützenanschluss obere vs. untere Lage, je zufällig 11,19 kg — haben unterschiedliche
+    /// Bezeichnung und dürfen NICHT verschmolzen werden. Beide bleiben erhalten.
+    @Test @MainActor func verschiedeneBauteileTrotzGleicherMengeBleibenGetrennt() {
+        let event = Event(context: ctx)
+        func kgPos(_ bez: String) -> LVPosition {
+            let p = LVPosition(context: ctx)
+            p.bezeichnung = bez
+            p.menge = 11.19
+            p.einheit = "kg"
+            p.event = event
+            return p
+        }
+        let oben  = kgPos("Bewehrung Bodenplatte obere Lage")
+        let unten = kgPos("Bewehrung Bodenplatte untere Lage")
+
+        let dedup = [oben, unten].ohneBewehrungsDuplikate()
+        #expect(dedup.count == 2)                              // verschiedene Bezeichnung → beide zählen
+    }
+
+    // MARK: - Typ B: Deckel + Unterpunkte (nur der Deckel zählt)
+
+    /// „Ein PDF = ein gedeckelter Eintrag": Der Plan-Deckel (Bodenplatte 758,69 kg) bündelt
+    /// seine Bestandteile (Matten 741,91 + Stabstahl 16,78) als Unterpunkte. In Summen/Exporten
+    /// zählt NUR der Deckel — die Unterpunkte sind Beleg (REB-Hilfswert), sonst 3-fach gezählt.
+    @Test @MainActor func deckelZaehltUnterpunkteNicht() {
+        let event = Event(context: ctx)
+
+        func kgPos(_ bez: String, _ menge: Double) -> LVPosition {
+            let p = LVPosition(context: ctx)
+            p.bezeichnung = bez; p.menge = menge; p.einheit = "kg"; p.event = event
+            return p
+        }
+
+        let deckel = kgPos("Bodenplatte obere Lage", 758.69)
+        let matten = kgPos("Bodenplatte obere Lage – Matten", 741.91)
+        let stab   = kgPos("Bodenplatte obere Lage – Stabstahl", 16.78)
+        matten.deckel = deckel        // hängt als Beleg unter dem Deckel
+        stab.deckel = deckel
+
+        let zaehlbar = [deckel, matten, stab].zaehlbarePositionen()
+        #expect(zaehlbar.count == 1)                           // nur der Deckel
+        #expect(zaehlbar.first === deckel)
+        let kgSumme = zaehlbar.reduce(0.0) { $0 + $1.menge }
+        #expect(kgSumme == 758.69)                             // NICHT 758,69 + 741,91 + 16,78
+        // Gegenprobe: die Beleg-Flags stimmen
+        #expect(deckel.istDeckel)
+        #expect(matten.istUnterpunkt)
+        #expect(!deckel.istUnterpunkt)
+    }
+
     /// Der LV-CSV-Export liefert nicht-leeren Text mit Header + Positions-Bezeichnung.
     @Test @MainActor func lvCSVExportEnthaeltPosition() {
         let (event, positionen) = makeEventMitPosition()

@@ -36,13 +36,22 @@ private struct LVSectionGroup: Identifiable {
     let items: [LVPosition]
 }
 
+/// Sprung ins Quell-PDF mit Suchbegriffen (Weg A): URL + was gesucht/markiert wird.
+private struct PDFSprung: Identifiable {
+    let id = UUID()
+    let url: URL
+    let suchbegriffe: [String]
+    let seite: Int?
+    let titel: String
+}
+
 struct LVView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(ImportedFileHandler.self) private var importedFileHandler
     @ObservedObject var event: Event
 
     @FetchRequest private var positionen: FetchedResults<LVPosition>
-    @State private var sourcePDFURL: URL? = nil
+    @State private var pdfSprung: PDFSprung?
     @State private var showingAdd = false
     @State private var editPosition: LVPosition?
     @State private var actionPosition: LVPosition?
@@ -53,6 +62,8 @@ struct LVView: View {
     @State private var showBestellliste = false
     @State private var showAngebotsVergleich = false
     @State private var showKostenübersicht = false
+    @State private var showAbdeckung = false
+    @State private var showUebernahme = false
     @State private var showGeschossKosten = false
     @State private var showHierarchieVerwalten = false
     @State private var showFreigabeStatus = false
@@ -64,6 +75,12 @@ struct LVView: View {
     @State private var showHelp = false
     @State private var exportURL: URL?
     @State private var gruppierung: LVGruppierung = .kostenGruppe
+
+    // Typ B — manuelles Zusammenführen zu einem Deckel
+    @State private var auswahlModus = false
+    @State private var ausgewaehlt: Set<NSManagedObjectID> = []
+    @State private var deckelDialog = false
+    @State private var speicherFehler: String?
 
     @State private var showMissingPricesAlert = false
     @State private var missingPricesCount = 0
@@ -158,7 +175,7 @@ struct LVView: View {
     }
 
     private var gesamtSumme: Double {
-        Array(positionen).filter { !LVPositionHelper.isAlternative($0) }.reduce(0.0) { sum, pos in
+        ohneDuplikate(Array(positionen).filter { !LVPositionHelper.isAlternative($0) }).reduce(0.0) { sum, pos in
             let preis: Double
             if pos.hatKalkulation {
                 preis = LVKalkulator.kalkuliere(position: pos).einheitspreisVK
@@ -168,6 +185,272 @@ struct LVView: View {
                 preis = pos.value(forKey: "einkaufspreis") as? Double ?? 0
             }
             return sum + (pos.menge * preis)
+        }
+    }
+
+    // MARK: - Bewehrungs-Duplikate gruppieren (Plan + Liste liefern dieselbe Menge)
+
+    private enum LVCluster: Identifiable {
+        case einzel(LVPosition)
+        case duplikat(key: String, positionen: [LVPosition])
+        var id: String {
+            switch self {
+            case .einzel(let p): return p.objectID.uriRepresentation().absoluteString
+            case .duplikat(let key, _): return "dup:" + key
+            }
+        }
+    }
+
+    private func istBewehrung(_ p: LVPosition) -> Bool { LVDedup.istBewehrung(p) }
+
+    /// „Gleiche Position": Bezeichnung + Menge (nur Bewehrung/kg wird gruppiert).
+    /// Delegiert an die gemeinsame Regel (`LVDedup`), damit Bildschirm und Export identisch zählen.
+    private func dedupKey(_ p: LVPosition) -> String { LVDedup.dedupKey(p) }
+
+    /// Gruppiert gleiche Bewehrungs-Positionen zu einem Cluster; alles andere bleibt einzeln.
+    private func clustere(_ items: [LVPosition]) -> [LVCluster] {
+        var result: [LVCluster] = []
+        var verwendet = Set<NSManagedObjectID>()
+        for pos in items {
+            if verwendet.contains(pos.objectID) { continue }
+            if istBewehrung(pos) {
+                let k = dedupKey(pos)
+                let gleiche = items.filter { istBewehrung($0) && dedupKey($0) == k }
+                if gleiche.count > 1 {
+                    gleiche.forEach { verwendet.insert($0.objectID) }
+                    result.append(.duplikat(key: k, positionen: gleiche))
+                    continue
+                }
+            }
+            verwendet.insert(pos.objectID)
+            result.append(.einzel(pos))
+        }
+        return result
+    }
+
+    /// Fürs Summieren: nur zählbare Positionen — Unterpunkte (Belege unter einem Deckel)
+    /// zählen nicht mit, doppelt importierte Bewehrung zählt einmal. Gemeinsame Regel
+    /// (`zaehlbarePositionen`), die auch GAEB/PDF/Kostenübersicht verwenden.
+    private func ohneDuplikate(_ liste: [LVPosition]) -> [LVPosition] {
+        liste.zaehlbarePositionen()
+    }
+
+    private func mengeText(_ p: LVPosition?) -> String {
+        (p?.menge ?? 0).formatted(.number.precision(.fractionLength(0...2)))
+    }
+
+    /// Suchbegriffe, mit denen die Position im Quell-PDF gefunden wird (Weg A):
+    /// die Menge in deutscher UND englischer Schreibweise (z.B. „21,45" und „21.45").
+    /// Der Wert stammt aus dem PDF, steht dort also i.d.R. wörtlich — außer bei
+    /// errechneten Deckel-Summen, die im PDF nicht als einzelne Zahl auftauchen.
+    private static func suchbegriffe(fuer pos: LVPosition) -> [String] {
+        let nf = NumberFormatter()
+        nf.minimumFractionDigits = 0
+        nf.maximumFractionDigits = 2
+        nf.usesGroupingSeparator = false
+        var begriffe: [String] = []
+        nf.decimalSeparator = ","
+        if let komma = nf.string(from: NSNumber(value: pos.menge)) { begriffe.append(komma) }
+        nf.decimalSeparator = "."
+        if let punkt = nf.string(from: NSNumber(value: pos.menge)) { begriffe.append(punkt) }
+        var gesehen = Set<String>()
+        return begriffe.filter { gesehen.insert($0).inserted }
+    }
+
+    // MARK: - Typ B: Deckel-Zeile, Auswahl, Zusammenführen
+
+    private var ausgewaehltePositionen: [LVPosition] {
+        positionen.filter { ausgewaehlt.contains($0.objectID) }
+    }
+
+    /// Quell-PDF-URL einer Position (dokuPath, sonst Fallback CADFiles/<dokuName>).
+    private func quellURL(fuer pos: LVPosition) -> URL? {
+        if let path = pos.value(forKey: "dokuPath") as? String, let u = URL(string: path) { return u }
+        if let name = pos.value(forKey: "dokuName") as? String, !name.isEmpty {
+            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            return docs.appendingPathComponent("CADFiles").appendingPathComponent(name)
+        }
+        return nil
+    }
+
+    /// Öffnet das Quell-PDF an der Stelle der Position (auch für Deckel & Unterpunkte).
+    private func oeffnePDF(fuer pos: LVPosition) {
+        guard let url = quellURL(fuer: pos) else { return }
+        pdfSprung = PDFSprung(url: url,
+                              suchbegriffe: Self.suchbegriffe(fuer: pos),
+                              seite: pos.seiteImPDF,
+                              titel: pos.bezeichnung ?? "Quell-PDF")
+    }
+
+    /// Lupen-Knopf „im PDF ansehen", nur wenn die Position eine Quelle hat.
+    @ViewBuilder
+    private func pdfKnopf(fuer pos: LVPosition) -> some View {
+        if quellURL(fuer: pos) != nil {
+            Button { oeffnePDF(fuer: pos) } label: {
+                Image(systemName: "doc.text.magnifyingglass").foregroundStyle(.orange)
+            }
+            .buttonStyle(.borderless)
+        }
+    }
+
+    /// Ein Deckel mit seinen Belegen: aufklappbar, Belege grau + „zählt nicht".
+    @ViewBuilder
+    private func deckelRow(_ pos: LVPosition) -> some View {
+        DisclosureGroup {
+            ForEach(pos.unterPositionenArray, id: \.objectID) { kind in
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.turn.down.right")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    Text(kind.bezeichnung ?? "—").font(.caption)
+                    Spacer()
+                    Text("\(mengeText(kind)) \(kind.einheit ?? "")")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    Text("zählt nicht").font(.caption2).foregroundStyle(.tertiary)
+                    pdfKnopf(fuer: kind)
+                }
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "square.stack.3d.up.fill").font(.footnote).foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(pos.bezeichnung ?? "—").font(.subheadline.weight(.semibold))
+                    Text("Deckel · \(pos.unterPositionenArray.count) Belege · zählt einmal")
+                        .font(.caption2).foregroundStyle(.orange)
+                }
+                Spacer()
+                Text("\(mengeText(pos)) \(pos.einheit ?? "")")
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+                pdfKnopf(fuer: pos)
+            }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button { aufloesen(pos) } label: {
+                Label("Auflösen", systemImage: "square.stack.3d.up.slash")
+            }.tint(.gray)
+        }
+        // Auch als Kontextmenü — am Mac (Designed for iPad) gibt es keinen Swipe,
+        // Rechtsklick/Zwei-Finger erreicht das Auflösen trotzdem.
+        .contextMenu {
+            Button(role: .destructive) {
+                aufloesen(pos)
+            } label: {
+                Label("Gruppierung auflösen", systemImage: "square.stack.3d.up.slash")
+            }
+        }
+    }
+
+    /// Zeile im Auswahl-Modus: Häkchen + Bezeichnung + Menge.
+    @ViewBuilder
+    private func selectableRow(_ pos: LVPosition) -> some View {
+        let selektiert = ausgewaehlt.contains(pos.objectID)
+        HStack(spacing: 12) {
+            Image(systemName: selektiert ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(selektiert ? .orange : .secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(pos.bezeichnung ?? "—").font(.subheadline)
+                if pos.istDeckel {
+                    Text("Deckel · \(pos.unterPositionenArray.count) Belege")
+                        .font(.caption2).foregroundStyle(.orange)
+                }
+            }
+            Spacer()
+            Text("\(mengeText(pos)) \(pos.einheit ?? "")")
+                .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if selektiert { ausgewaehlt.remove(pos.objectID) } else { ausgewaehlt.insert(pos.objectID) }
+        }
+    }
+
+    /// Macht `deckel` zum Deckel, hängt die übrigen Ausgewählten als Belege darunter.
+    /// Hält es EINE Ebene flach: eigene Belege eines künftigen Belegs wandern mit hoch.
+    private func zusammenfuehren(deckel: LVPosition, kinder: [LVPosition]) {
+        deckel.deckel = nil
+        for k in kinder where k.objectID != deckel.objectID {
+            for enkel in k.unterPositionenArray { enkel.deckel = deckel }
+            k.deckel = deckel
+        }
+        speichere("Zusammenführen")
+        auswahlModus = false
+        ausgewaehlt.removeAll()
+    }
+
+    /// Löst einen Deckel auf: alle Belege werden wieder eigenständig.
+    private func aufloesen(_ deckel: LVPosition) {
+        for k in deckel.unterPositionenArray { k.deckel = nil }
+        deckel.deckelNotiz = nil
+        speichere("Auflösen")
+    }
+
+    /// Speichert und macht Fehler SICHTBAR (statt `try?`, das sie verschluckt hat).
+    /// Bei Erfolg landet die Deckel-Gruppierung dauerhaft in Core Data.
+    private func speichere(_ kontext: String) {
+        guard viewContext.hasChanges else { return }
+        do {
+            try viewContext.save()
+        } catch {
+            speicherFehler = "\(kontext): \(error.localizedDescription)"
+            print("‼️ LV-Speichern fehlgeschlagen [\(kontext)]: \(error)")
+        }
+    }
+
+    @ViewBuilder
+    private func clusterView(_ cluster: LVCluster) -> some View {
+        switch cluster {
+        case .einzel(let pos):
+            if pos.istDeckel {
+                deckelRow(pos)
+            } else {
+                positionRow(pos)
+            }
+        case .duplikat(_, let posns):
+            DisclosureGroup {
+                ForEach(posns, id: \.objectID) { positionRow($0) }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "doc.on.doc.fill").font(.footnote).foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(posns.first?.bezeichnung ?? "—").font(.subheadline.weight(.semibold))
+                        Text("\(posns.count) Quellen (Plan + Liste) · zählt einmal")
+                            .font(.caption2).foregroundStyle(.orange)
+                    }
+                    Spacer()
+                    Text("\(mengeText(posns.first)) \(posns.first?.einheit ?? "")")
+                        .font(.subheadline.weight(.semibold).monospacedDigit())
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func positionRow(_ pos: LVPosition) -> some View {
+        LVPositionRow(position: pos) { targetURL in
+            pdfSprung = PDFSprung(url: targetURL,
+                                  suchbegriffe: Self.suchbegriffe(fuer: pos),
+                                  seite: pos.seiteImPDF,
+                                  titel: pos.bezeichnung ?? "Quell-PDF")
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { actionPosition = pos }
+        .contextMenu {
+            Button { editPosition = pos } label: { Label("Bearbeiten", systemImage: "pencil") }
+            Button { kalkPosition = pos } label: { Label("Kalkulation", systemImage: "function") }
+            Button { duplicateAsAlternative(pos) } label: { Label("Alternative", systemImage: "doc.on.doc") }
+            Button { fortschrittPosition = pos } label: { Label("Fortschritt", systemImage: "chart.bar") }
+            Button { aufmassPosition = pos } label: { Label("Aufmaß", systemImage: "ruler") }
+            Divider()
+            Button(role: .destructive) { positionToDelete = pos } label: { Label("Löschen", systemImage: "trash") }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button { positionToDelete = pos } label: { Label("Löschen", systemImage: "trash") }.tint(.red)
+        }
+        .swipeActions(edge: .leading) {
+            Button { editPosition = pos } label: { Label("Bearbeiten", systemImage: "pencil") }.tint(.orange)
+            Button { kalkPosition = pos } label: { Label("Kalkulation", systemImage: "function") }.tint(.indigo)
+            Button { duplicateAsAlternative(pos) } label: { Label("Alternative", systemImage: "doc.on.doc") }.tint(.blue)
+            Button { fortschrittPosition = pos } label: { Label("Fortschritt", systemImage: "chart.bar") }.tint(.green)
+            Button { aufmassPosition = pos } label: { Label("Aufmaß", systemImage: "ruler") }.tint(.teal)
         }
     }
 
@@ -210,65 +493,20 @@ struct LVView: View {
                 }
 
                 ForEach(grouped) { gruppe in
-                    Section {
-                        ForEach(gruppe.items, id: \.objectID) { pos in
-                            LVPositionRow(position: pos) { targetURL in
-                                sourcePDFURL = targetURL
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture { actionPosition = pos }
-                            .contextMenu {
-                                Button { editPosition = pos } label: {
-                                    Label("Bearbeiten", systemImage: "pencil")
-                                }
-                                Button { kalkPosition = pos } label: {
-                                    Label("Kalkulation", systemImage: "function")
-                                }
-                                Button { duplicateAsAlternative(pos) } label: {
-                                    Label("Alternative", systemImage: "doc.on.doc")
-                                }
-                                Button { fortschrittPosition = pos } label: {
-                                    Label("Fortschritt", systemImage: "chart.bar")
-                                }
-                                Button { aufmassPosition = pos } label: {
-                                    Label("Aufmaß", systemImage: "ruler")
-                                }
-                                Divider()
-                                Button(role: .destructive) { positionToDelete = pos } label: {
-                                    Label("Löschen", systemImage: "trash")
+                    // Unterpunkte (Belege) erscheinen NICHT flach — sie hängen unter ihrem Deckel.
+                    let topLevel = gruppe.items.filter { !$0.istUnterpunkt }
+                    if !topLevel.isEmpty {
+                        Section {
+                            if auswahlModus {
+                                ForEach(topLevel, id: \.objectID) { selectableRow($0) }
+                            } else {
+                                ForEach(clustere(topLevel)) { cluster in
+                                    clusterView(cluster)
                                 }
                             }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button { positionToDelete = pos } label: {
-                                    Label("Löschen", systemImage: "trash")
-                                }
-                                .tint(.red)
-                            }
-                            .swipeActions(edge: .leading) {
-                                Button { editPosition = pos } label: {
-                                    Label("Bearbeiten", systemImage: "pencil")
-                                }
-                                .tint(.orange)
-                                Button { kalkPosition = pos } label: {
-                                    Label("Kalkulation", systemImage: "function")
-                                }
-                                .tint(.indigo)
-                                Button { duplicateAsAlternative(pos) } label: {
-                                    Label("Alternative", systemImage: "doc.on.doc")
-                                }
-                                .tint(.blue)
-                                Button { fortschrittPosition = pos } label: {
-                                    Label("Fortschritt", systemImage: "chart.bar")
-                                }
-                                .tint(.green)
-                                Button { aufmassPosition = pos } label: {
-                                    Label("Aufmaß", systemImage: "ruler")
-                                }
-                                .tint(.teal)
-                            }
+                        } header: {
+                            sectionHeader(gruppe)
                         }
-                    } header: {
-                        sectionHeader(gruppe)
                     }
                 }
             }
@@ -288,6 +526,46 @@ struct LVView: View {
                 .background(.regularMaterial)
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            if auswahlModus {
+                HStack {
+                    Text("\(ausgewaehlt.count) ausgewählt")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Spacer()
+                    Button {
+                        deckelDialog = true
+                    } label: {
+                        Label("Zusammenführen", systemImage: "square.stack.3d.up")
+                            .font(.headline)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    .disabled(ausgewaehlt.count < 2)
+                }
+                .padding()
+                .background(.regularMaterial)
+            }
+        }
+        .confirmationDialog("Welche Position ist der Deckel?",
+                            isPresented: $deckelDialog, titleVisibility: .visible) {
+            // Größte Menge zuerst = Vorschlag; Deckel ist der, den du tippst.
+            ForEach(ausgewaehltePositionen.sorted { $0.menge > $1.menge }, id: \.objectID) { pos in
+                Button("\(pos.bezeichnung ?? "—") · \(mengeText(pos)) \(pos.einheit ?? "")") {
+                    zusammenfuehren(deckel: pos, kinder: ausgewaehltePositionen)
+                }
+            }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Der Deckel zählt in der Summe. Die anderen hängen als Beleg darunter und zählen nicht mehr doppelt.")
+        }
+        .alert("Speichern fehlgeschlagen", isPresented: Binding(
+            get: { speicherFehler != nil },
+            set: { if !$0 { speicherFehler = nil } }
+        )) {
+            Button("OK", role: .cancel) { speicherFehler = nil }
+        } message: {
+            Text(speicherFehler ?? "")
+        }
         .gaebDropTarget { url in
             droppedGAEBURL = url
             showGAEBImport = true
@@ -302,6 +580,13 @@ struct LVView: View {
             if ergebnis.geaendert { try? viewContext.save() }
         }
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(auswahlModus ? "Fertig" : "Auswählen") {
+                    auswahlModus.toggle()
+                    if !auswahlModus { ausgewaehlt.removeAll() }
+                }
+                .disabled(positionen.isEmpty)
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showHelp = true } label: {
                     Image(systemName: "questionmark.circle")
@@ -329,6 +614,15 @@ struct LVView: View {
 
                     Button { showKostenübersicht = true } label: {
                         Label("Kostenzusammenfassung", systemImage: "chart.pie")
+                    }
+
+                    Button { showAbdeckung = true } label: {
+                        Label("Was ist abgedeckt?", systemImage: "checklist")
+                    }
+                    .disabled(positionen.isEmpty)
+
+                    Button { showUebernahme = true } label: {
+                        Label("Aus Unterlagen übernehmen", systemImage: "tray.and.arrow.down")
                     }
 
                     Button { showGeschossKosten = true } label: {
@@ -426,6 +720,12 @@ struct LVView: View {
         .fullScreenCover(isPresented: $showAngebotsVergleich) {
             AngebotsVergleichView(event: event, positionen: Array(positionen))
         }
+        .sheet(isPresented: $showAbdeckung) {
+            LVAbdeckungView(positionen: Array(positionen))
+        }
+        .sheet(isPresented: $showUebernahme) {
+            AuswertungUebernahmeView(event: event)
+        }
         .fullScreenCover(isPresented: $showKostenübersicht) {
             KostenübersichtView(event: event, positionen: Array(positionen))
         }
@@ -464,11 +764,11 @@ struct LVView: View {
         .fullScreenCover(isPresented: $showHelp) {
             LVHelpView()
         }
-        .fullScreenCover(item: Binding(
-            get: { sourcePDFURL.map { IdentifiableURL(url: $0) } },
-            set: { sourcePDFURL = $0?.url }
-        )) { identifiableURL in
-            PDFPreviewView(url: identifiableURL.url)
+        .fullScreenCover(item: $pdfSprung) { sprung in
+            PDFTrefferView(url: sprung.url,
+                           suchbegriffe: sprung.suchbegriffe,
+                           seite: sprung.seite,
+                           titel: sprung.titel)
         }
         .confirmationDialog(
             actionPosition?.bezeichnung ?? "LV-Position",
@@ -717,6 +1017,154 @@ struct LVView: View {
         case "600": return "Ausstattung"
         case "700": return "Baunebenkosten"
         default: return "Sonstige"
+        }
+    }
+}
+
+// MARK: - „Was ist abgedeckt?" — ehrliche Erfassungs-Übersicht
+
+/// Zeigt, was aus welchen Dokumenten gelesen wurde, mit ehrlichen Prüf-Hinweisen
+/// (ohne Quelle / ohne Seitenverweis) und der klaren Grenze: nur Importiertes ist bekannt.
+struct LVAbdeckungView: View {
+    let positionen: [LVPosition]
+    @Environment(\.dismiss) private var dismiss
+
+    private var aktive: [LVPosition] {
+        positionen.filter { !LVPositionHelper.isAlternative($0) }
+    }
+
+    private func doku(_ p: LVPosition) -> String? {
+        guard let n = p.value(forKey: "dokuName") as? String, !n.isEmpty else { return nil }
+        return n
+    }
+
+    private struct DocGruppe: Identifiable {
+        let id: String
+        var name: String { id }
+        let positionen: [LVPosition]
+    }
+
+    private var docGruppen: [DocGruppe] {
+        let mit = aktive.compactMap { p in doku(p).map { ($0, p) } }
+        let dict = Dictionary(grouping: mit, by: { $0.0 })
+        return dict.keys.sorted().map { name in
+            DocGruppe(id: name, positionen: dict[name]!.map { $0.1 })
+        }
+    }
+
+    private var ohneQuelle: [LVPosition] { aktive.filter { doku($0) == nil } }
+    private var ohneSeiteMitDoku: [LVPosition] { aktive.filter { doku($0) != nil && $0.seiteImPDF == nil } }
+
+    private func anzahl(_ q: MengenQuelle) -> Int { aktive.filter { $0.mengenQuelle == q }.count }
+
+    private func quelleLabel(_ q: MengenQuelle) -> String {
+        switch q {
+        case .statik:     return "aus Statik-Tabelle (belastbar)"
+        case .bplan:      return "Planwert (B-Plan)"
+        case .schaetzung: return "geschätzt"
+        case .manuell:    return "von Hand eingetragen"
+        }
+    }
+    private func quelleFarbe(_ q: MengenQuelle) -> Color {
+        switch q {
+        case .statik:             return .green
+        case .bplan, .schaetzung: return .orange
+        case .manuell:            return .secondary
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Überblick") {
+                    HStack {
+                        Text("Positionen gesamt")
+                        Spacer()
+                        Text("\(aktive.count)").monospacedDigit().foregroundStyle(.secondary)
+                    }
+                    ForEach([MengenQuelle.statik, .bplan, .schaetzung, .manuell], id: \.self) { q in
+                        let n = anzahl(q)
+                        if n > 0 {
+                            HStack(spacing: 8) {
+                                Circle().fill(quelleFarbe(q)).frame(width: 9, height: 9)
+                                Text(quelleLabel(q)).font(.subheadline)
+                                Spacer()
+                                Text("\(n)").monospacedDigit().foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
+                if !ohneQuelle.isEmpty || !ohneSeiteMitDoku.isEmpty {
+                    Section("Prüf-Hinweise") {
+                        if !ohneQuelle.isEmpty {
+                            hinweis("exclamationmark.triangle.fill", .orange,
+                                    "\(ohneQuelle.count) ohne Quell-Dokument",
+                                    "Herkunft unklar – nicht im Plan nachprüfbar.")
+                        }
+                        if !ohneSeiteMitDoku.isEmpty {
+                            hinweis("doc.text.magnifyingglass", .secondary,
+                                    "\(ohneSeiteMitDoku.count) ohne Seitenverweis",
+                                    "Springt nicht direkt ins PDF (alte Importe oder Summen). Neu importieren hilft.")
+                        }
+                    }
+                }
+
+                Section("Nach Quell-Dokument") {
+                    ForEach(docGruppen) { g in
+                        DisclosureGroup {
+                            ForEach(g.positionen, id: \.objectID) { p in
+                                HStack(spacing: 8) {
+                                    Circle().fill(quelleFarbe(p.mengenQuelle)).frame(width: 7, height: 7)
+                                    Text(p.bezeichnung ?? "—").font(.caption)
+                                    Spacer()
+                                    if let s = p.seiteImPDF {
+                                        Text("S. \(s)").font(.caption2).foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "doc.text").foregroundStyle(.orange)
+                                Text(g.name).lineLimit(1).truncationMode(.middle)
+                                Spacer()
+                                Text("\(g.positionen.count)").monospacedDigit().foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    if !ohneQuelle.isEmpty {
+                        HStack {
+                            Image(systemName: "questionmark.folder").foregroundStyle(.orange)
+                            Text("Ohne Quelle").foregroundStyle(.orange)
+                            Spacer()
+                            Text("\(ohneQuelle.count)").monospacedDigit().foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Section {
+                    Text("Diese Übersicht zeigt nur, was aus importierten Dokumenten gelesen wurde. Pläne, die nicht reingegeben wurden, kann die App nicht kennen – die Vollständigkeit gegen die echten Unterlagen bleibt dein Blick.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Was ist abgedeckt?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func hinweis(_ icon: String, _ color: Color, _ titel: String, _ sub: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon).foregroundStyle(color)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(titel).font(.subheadline.weight(.medium))
+                Text(sub).font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 }

@@ -111,4 +111,70 @@ struct ExtractPlanMapperTests {
         #expect(ExtractPlanMapper.toParsed(r).first?.menge == 0)        // nil → 0
         #expect(ExtractPlanMapper.mapPositions(r, into: ctx).first?.menge == 0)
     }
+
+    @MainActor
+    @Test func seiteAusExtraktionLandetAufPosition() throws {
+        // Weg B: die Box liefert "seite" pro Bewehrungs-Position; fehlt sie, bleibt sie nil.
+        let json = """
+        {"metadata": {}, "waende": [], "bewehrung": [],
+         "lv_positionen": [
+           {"posNr": "3.50.B1", "kg": "350", "bezeichnung": "Bewehrung Ringbalken", "einheit": "kg", "menge": 201.72, "quelle": "b-plan", "seite": 7},
+           {"posNr": "3.20.1", "kg": "320", "bezeichnung": "Streifenfundament", "einheit": "m", "menge": 33, "quelle": "manuell"}
+         ],
+         "bestellliste": [], "etiketten": {"hart": [], "geschaetzt": []}}
+        """
+        let r = try JSONDecoder().decode(ExtractPlanResult.self, from: Data(json.utf8))
+        #expect(r.lvPositionen.first?.seite == 7)
+        #expect(r.lvPositionen.last?.seite == nil)
+
+        let positionen = ExtractPlanMapper.mapPositions(r, into: ctx)
+        let ringbalken = try #require(positionen.first { $0.posNr == "3.50.B1" })
+        let streifen = try #require(positionen.first { $0.posNr == "3.20.1" })
+        #expect(ringbalken.seiteImPDF == 7)      // Seite kommt an
+        #expect(streifen.seiteImPDF == nil)      // ohne seite → nil (Weg-A-Rückfall)
+    }
+
+    @MainActor
+    @Test func toParsedTraegtSeiteUndQuelle() throws {
+        // Der Import-Screen geht über toParsed — dort MUSS seite/quelle ankommen,
+        // sonst landet die Seite nie am importierten LV (die Lücke von Weg B).
+        let json = """
+        {"metadata": {}, "waende": [], "bewehrung": [],
+         "lv_positionen": [
+           {"posNr": "3.50.B1", "kg": "350", "bezeichnung": "Bewehrung Ringbalken", "einheit": "kg", "menge": 201.72, "quelle": "b-plan", "seite": 3}
+         ],
+         "bestellliste": [], "etiketten": {"hart": [], "geschaetzt": []}}
+        """
+        let r = try JSONDecoder().decode(ExtractPlanResult.self, from: Data(json.utf8))
+        let parsed = try #require(ExtractPlanMapper.toParsed(r).first)
+        #expect(parsed.seite == 3)          // Seite reicht bis zur ParsedLVPosition
+        #expect(parsed.quelle == "b-plan")  // Herkunft für mengenQuelleRaw
+        #expect(parsed.teilgewichte == nil) // keine Teile im JSON → nil
+    }
+
+    @MainActor
+    @Test func teilgewichteWerdenAutomatischUnterpunkte() throws {
+        // Schritt 4 (echter BoPla-untere-Fall): Summe 370,40 mit drei Teilgewichten
+        // → Deckel + drei Belege; die Summe zählt EINMAL, die Belege zeigen die Herkunft.
+        let json = """
+        {"metadata": {}, "waende": [], "bewehrung": [],
+         "lv_positionen": [
+           {"posNr": "3.20.B1", "kg": "320", "bezeichnung": "Bewehrung Bodenplatte untere Lage", "einheit": "kg", "menge": 370.40, "quelle": "b-plan", "seite": 1, "teilgewichte": [331.28, 27.93, 11.19]}
+         ],
+         "bestellliste": [], "etiketten": {"hart": [], "geschaetzt": []}}
+        """
+        let r = try JSONDecoder().decode(ExtractPlanResult.self, from: Data(json.utf8))
+        let positionen = ExtractPlanMapper.mapPositions(r, into: ctx)
+        let deckel = try #require(positionen.first { $0.posNr == "3.20.B1" })
+
+        #expect(deckel.istDeckel)                        // hat Unterpunkte
+        #expect(deckel.unterPositionenArray.count == 3)  // drei Teilgewichte
+
+        let alle = ([deckel] + deckel.unterPositionenArray)
+        #expect(alle.zaehlbarePositionen().count == 1)   // nur der Deckel zählt
+        #expect(alle.zaehlbarePositionen().first === deckel)
+
+        let summeDerTeile = deckel.unterPositionenArray.reduce(0.0) { $0 + $1.menge }
+        #expect(abs(summeDerTeile - 370.40) < 0.01)      // Teile ergeben die Summe
+    }
 }
