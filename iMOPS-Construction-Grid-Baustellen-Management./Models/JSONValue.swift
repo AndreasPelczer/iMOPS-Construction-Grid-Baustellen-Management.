@@ -91,4 +91,19 @@ extension JSONValue {
             return nil
         }
     }
+
+    /// Numerischer Wert, falls ablesbar (Zahl direkt oder Zahl-String, „,"→"."). Sonst nil.
+    var zahl: Double? {
+        switch self {
+        case .number(let n): return n
+        case .string(let s): return Double(s.replacingOccurrences(of: ",", with: "."))
+        default: return nil
+        }
+    }
+
+    /// Alle Elemente, falls Array. Sonst leer.
+    var alleArrayElemente: [JSONValue] {
+        if case .array(let arr) = self { return arr }
+        return []
+    }
 }

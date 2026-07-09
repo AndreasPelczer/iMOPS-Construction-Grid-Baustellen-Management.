@@ -63,6 +63,7 @@ struct LVView: View {
     @State private var showAngebotsVergleich = false
     @State private var showKostenübersicht = false
     @State private var showAbdeckung = false
+    @State private var showUebernahme = false
     @State private var showGeschossKosten = false
     @State private var showHierarchieVerwalten = false
     @State private var showFreigabeStatus = false
@@ -620,6 +621,10 @@ struct LVView: View {
                     }
                     .disabled(positionen.isEmpty)
 
+                    Button { showUebernahme = true } label: {
+                        Label("Aus Unterlagen übernehmen", systemImage: "tray.and.arrow.down")
+                    }
+
                     Button { showGeschossKosten = true } label: {
                         Label("Kosten nach Ebene (Geschoss)", systemImage: "building.2")
                     }
@@ -717,6 +722,9 @@ struct LVView: View {
         }
         .sheet(isPresented: $showAbdeckung) {
             LVAbdeckungView(positionen: Array(positionen))
+        }
+        .sheet(isPresented: $showUebernahme) {
+            AuswertungUebernahmeView(event: event)
         }
         .fullScreenCover(isPresented: $showKostenübersicht) {
             KostenübersichtView(event: event, positionen: Array(positionen))
