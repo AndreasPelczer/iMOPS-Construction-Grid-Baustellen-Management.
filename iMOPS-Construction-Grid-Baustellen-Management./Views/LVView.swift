@@ -36,13 +36,21 @@ private struct LVSectionGroup: Identifiable {
     let items: [LVPosition]
 }
 
+/// Sprung ins Quell-PDF mit Suchbegriffen (Weg A): URL + was gesucht/markiert wird.
+private struct PDFSprung: Identifiable {
+    let id = UUID()
+    let url: URL
+    let suchbegriffe: [String]
+    let titel: String
+}
+
 struct LVView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(ImportedFileHandler.self) private var importedFileHandler
     @ObservedObject var event: Event
 
     @FetchRequest private var positionen: FetchedResults<LVPosition>
-    @State private var sourcePDFURL: URL? = nil
+    @State private var pdfSprung: PDFSprung?
     @State private var showingAdd = false
     @State private var editPosition: LVPosition?
     @State private var actionPosition: LVPosition?
@@ -228,6 +236,24 @@ struct LVView: View {
         (p?.menge ?? 0).formatted(.number.precision(.fractionLength(0...2)))
     }
 
+    /// Suchbegriffe, mit denen die Position im Quell-PDF gefunden wird (Weg A):
+    /// die Menge in deutscher UND englischer Schreibweise (z.B. „21,45" und „21.45").
+    /// Der Wert stammt aus dem PDF, steht dort also i.d.R. wörtlich — außer bei
+    /// errechneten Deckel-Summen, die im PDF nicht als einzelne Zahl auftauchen.
+    private static func suchbegriffe(fuer pos: LVPosition) -> [String] {
+        let nf = NumberFormatter()
+        nf.minimumFractionDigits = 0
+        nf.maximumFractionDigits = 2
+        nf.usesGroupingSeparator = false
+        var begriffe: [String] = []
+        nf.decimalSeparator = ","
+        if let komma = nf.string(from: NSNumber(value: pos.menge)) { begriffe.append(komma) }
+        nf.decimalSeparator = "."
+        if let punkt = nf.string(from: NSNumber(value: pos.menge)) { begriffe.append(punkt) }
+        var gesehen = Set<String>()
+        return begriffe.filter { gesehen.insert($0).inserted }
+    }
+
     // MARK: - Typ B: Deckel-Zeile, Auswahl, Zusammenführen
 
     private var ausgewaehltePositionen: [LVPosition] {
@@ -365,7 +391,9 @@ struct LVView: View {
     @ViewBuilder
     private func positionRow(_ pos: LVPosition) -> some View {
         LVPositionRow(position: pos) { targetURL in
-            sourcePDFURL = targetURL
+            pdfSprung = PDFSprung(url: targetURL,
+                                  suchbegriffe: Self.suchbegriffe(fuer: pos),
+                                  titel: pos.bezeichnung ?? "Quell-PDF")
         }
         .contentShape(Rectangle())
         .onTapGesture { actionPosition = pos }
@@ -685,11 +713,10 @@ struct LVView: View {
         .fullScreenCover(isPresented: $showHelp) {
             LVHelpView()
         }
-        .fullScreenCover(item: Binding(
-            get: { sourcePDFURL.map { IdentifiableURL(url: $0) } },
-            set: { sourcePDFURL = $0?.url }
-        )) { identifiableURL in
-            PDFPreviewView(url: identifiableURL.url)
+        .fullScreenCover(item: $pdfSprung) { sprung in
+            PDFTrefferView(url: sprung.url,
+                           suchbegriffe: sprung.suchbegriffe,
+                           titel: sprung.titel)
         }
         .confirmationDialog(
             actionPosition?.bezeichnung ?? "LV-Position",
