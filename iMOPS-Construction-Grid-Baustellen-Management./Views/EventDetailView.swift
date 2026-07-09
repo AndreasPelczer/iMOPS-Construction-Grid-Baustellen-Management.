@@ -70,6 +70,11 @@ extension EventExtrasPayload {
         }
         auswertungen = liste.sorted { $0.ergebnis.quelle < $1.ergebnis.quelle }
     }
+
+    /// Entfernt eine gespeicherte Auswertung (falsche geladen) über `quelle`.
+    mutating func removeAuswertung(quelle: String) {
+        auswertungen?.removeAll { $0.id == quelle }
+    }
 }
 
 struct EventChecklistItem: Codable, Identifiable, Equatable {
@@ -491,7 +496,8 @@ struct EventDetailView: View {
         }
         .sheet(isPresented: $zeigeGespeicherteAuswertung) {
             UnterlageAuswertungView(ergebnisse: (extras.auswertungen ?? []).map(\.ergebnis),
-                                    fehler: [], onSpeichern: nil)   // reine Ansicht, kein Mops
+                                    fehler: [], onSpeichern: nil,   // reine Ansicht, kein Mops
+                                    onLoeschen: { loescheAuswertung($0) })
                 .presentationSizing(.page)
         }
     }
@@ -500,6 +506,12 @@ struct EventDetailView: View {
     private func speichereAuswertungen(_ gewaehlt: [ExtractDocResult]) {
         guard !gewaehlt.isEmpty else { return }
         extras.mergeAuswertungen(gewaehlt, am: Date())
+        saveExtras(extras)
+    }
+
+    /// Entfernt eine gespeicherte /extract-doc-Auswertung (falsche geladen) und speichert.
+    private func loescheAuswertung(_ res: ExtractDocResult) {
+        extras.removeAuswertung(quelle: res.quelle)
         saveExtras(extras)
     }
 

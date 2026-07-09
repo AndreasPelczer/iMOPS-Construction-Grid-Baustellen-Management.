@@ -25,28 +25,43 @@ struct UnterlageAuswertungView: View {
     let fehler: [String]
     /// Gesetzt → Speichern-Modus (Häkchen + „Speichern"-Button). nil → reine Ansicht.
     let onSpeichern: (([ExtractDocResult]) -> Void)?
+    /// Gesetzt → gespeicherte Auswertung kann gelöscht werden (falsche geladen).
+    let onLoeschen: ((ExtractDocResult) -> Void)?
 
     @State private var selektiert: Set<String>
+    @State private var angezeigte: [ExtractDocResult]
+    @State private var loeschKandidat: ExtractDocResult?
     @Environment(\.dismiss) private var dismiss
 
     init(ergebnisse: [ExtractDocResult],
          fehler: [String],
-         onSpeichern: (([ExtractDocResult]) -> Void)? = nil) {
+         onSpeichern: (([ExtractDocResult]) -> Void)? = nil,
+         onLoeschen: ((ExtractDocResult) -> Void)? = nil) {
         self.ergebnisse = ergebnisse
         self.fehler = fehler
         self.onSpeichern = onSpeichern
+        self.onLoeschen = onLoeschen
         // Speichern-Modus: initial alle Dokumente ausgewählt.
         _selektiert = State(initialValue: Set(ergebnisse.map(\.quelle)))
+        _angezeigte = State(initialValue: ergebnisse)
     }
 
     private var speichernModus: Bool { onSpeichern != nil }
+    private var loeschbar: Bool { onLoeschen != nil }
+
+    /// Entfernt die Auswertung aus der Ansicht UND persistent (Callback). Leert → schließen.
+    private func loesche(_ res: ExtractDocResult) {
+        angezeigte.removeAll { $0.quelle == res.quelle }
+        onLoeschen?(res)
+        if angezeigte.isEmpty { dismiss() }
+    }
 
     var body: some View {
         NavigationStack {
             List {
                 hinweisSection
 
-                ForEach(Array(ergebnisse.enumerated()), id: \.offset) { _, res in
+                ForEach(angezeigte, id: \.quelle) { res in
                     dokumentSection(res)
                 }
 
@@ -76,6 +91,19 @@ struct UnterlageAuswertungView: View {
                         Button("Fertig") { dismiss() }.tint(.orange)
                     }
                 }
+            }
+            .confirmationDialog(
+                loeschKandidat.map { "„\($0.doctypeLabel)" + ($0.quelle.isEmpty ? "" : " · \($0.quelle)") + "“ löschen?" } ?? "Auswertung löschen?",
+                isPresented: Binding(get: { loeschKandidat != nil },
+                                     set: { if !$0 { loeschKandidat = nil } }),
+                titleVisibility: .visible
+            ) {
+                if let res = loeschKandidat {
+                    Button("Löschen", role: .destructive) { loesche(res); loeschKandidat = nil }
+                }
+                Button("Abbrechen", role: .cancel) { loeschKandidat = nil }
+            } message: {
+                Text("Die gespeicherten Fakten dieses Dokuments werden von der Baustelle entfernt. Das PDF selbst bleibt. Rückgängig nur durch erneutes Auswerten.")
             }
         }
     }
@@ -123,6 +151,20 @@ struct UnterlageAuswertungView: View {
                     }
                 }
                 Spacer()
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                if loeschbar {
+                    Button(role: .destructive) { loeschKandidat = res } label: {
+                        Label("Löschen", systemImage: "trash")
+                    }
+                }
+            }
+            .contextMenu {
+                if loeschbar {
+                    Button(role: .destructive) { loeschKandidat = res } label: {
+                        Label("Auswertung löschen", systemImage: "trash")
+                    }
+                }
             }
 
             // Kurz-Zusammenfassung: die wichtigsten Fakten auf einen Blick (vor dem Detail)

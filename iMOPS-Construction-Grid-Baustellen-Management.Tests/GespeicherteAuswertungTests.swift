@@ -58,4 +58,21 @@ struct GespeicherteAuswertungTests {
         let p = try JSONDecoder().decode(EventExtrasPayload.self, from: Data(alt.utf8))
         #expect(p.auswertungen == nil)   // fehlender Schlüssel → nil, kein Fehler
     }
+
+    @Test func loeschenEntferntNurDenRichtigen() throws {
+        // Falsche Auswertung geladen → gezielt löschen, Rest bleibt, überlebt Neustart.
+        var p = EventExtrasPayload()
+        p.mergeAuswertungen([mk("a.pdf"), mk("b.pdf"), mk("c.pdf")], am: Date(timeIntervalSince1970: 1))
+
+        p.removeAuswertung(quelle: "b.pdf")
+        #expect((p.auswertungen ?? []).map(\.ergebnis.quelle) == ["a.pdf", "c.pdf"])
+
+        // überlebt Round-Trip (persistent gelöscht)
+        let back = try JSONDecoder().decode(EventExtrasPayload.self, from: JSONEncoder().encode(p))
+        #expect((back.auswertungen ?? []).map(\.ergebnis.quelle) == ["a.pdf", "c.pdf"])
+
+        // unbekannte quelle löscht nichts (kein Crash)
+        p.removeAuswertung(quelle: "gibtsnicht.pdf")
+        #expect(p.auswertungen?.count == 2)
+    }
 }
