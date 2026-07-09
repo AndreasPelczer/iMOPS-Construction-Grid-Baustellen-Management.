@@ -57,6 +57,59 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
         #expect(data.prefix(4) == Data("%PDF".utf8))
     }
 
+    // MARK: - Bewehrungs-Dedup (Export zählt Plan+Liste nur einmal)
+
+    /// Referenzfall Schunder-Ringbalken: Plan und Export-Liste liefern dieselbe
+    /// Bewehrungsmenge (gleiche Bezeichnung + gleiche kg). Fürs Summieren/Exportieren
+    /// darf das nur EINMAL zählen. Vorher rechnete GAEB/PDF flach → 900,28 kg statt 450,14.
+    @Test @MainActor func bewehrungsDuplikatZaehltEinmal() {
+        let event = Event(context: ctx)
+        event.title = "Dedup-Test"
+
+        func kgPos(_ bez: String, _ menge: Double) -> LVPosition {
+            let p = LVPosition(context: ctx)
+            p.bezeichnung = bez
+            p.menge = menge
+            p.einheit = "kg"
+            p.kostenGruppeNummer = "320"
+            p.event = event
+            return p
+        }
+
+        let plan   = kgPos("Bewehrung Ringbalken", 450.14)
+        let liste  = kgPos("Bewehrung Ringbalken", 450.14)   // dieselbe Liste, zweite Quelle
+        let normal = LVPosition(context: ctx)
+        normal.bezeichnung = "Streifenfundament"
+        normal.menge = 33
+        normal.einheit = "m"
+        normal.event = event
+
+        let dedup = [plan, liste, normal].ohneBewehrungsDuplikate()
+        #expect(dedup.count == 2)                              // ein Ringbalken fällt raus, Streifenfundament bleibt
+        let kgSumme = dedup.filter { $0.einheit == "kg" }.reduce(0.0) { $0 + $1.menge }
+        #expect(kgSumme == 450.14)                             // NICHT 900,28
+    }
+
+    /// Gegenprobe (Lehre vom 9.7.2026 am Schwarz-Projekt): Zwei ECHT verschiedene Sätze
+    /// — Stützenanschluss obere vs. untere Lage, je zufällig 11,19 kg — haben unterschiedliche
+    /// Bezeichnung und dürfen NICHT verschmolzen werden. Beide bleiben erhalten.
+    @Test @MainActor func verschiedeneBauteileTrotzGleicherMengeBleibenGetrennt() {
+        let event = Event(context: ctx)
+        func kgPos(_ bez: String) -> LVPosition {
+            let p = LVPosition(context: ctx)
+            p.bezeichnung = bez
+            p.menge = 11.19
+            p.einheit = "kg"
+            p.event = event
+            return p
+        }
+        let oben  = kgPos("Bewehrung Bodenplatte obere Lage")
+        let unten = kgPos("Bewehrung Bodenplatte untere Lage")
+
+        let dedup = [oben, unten].ohneBewehrungsDuplikate()
+        #expect(dedup.count == 2)                              // verschiedene Bezeichnung → beide zählen
+    }
+
     /// Der LV-CSV-Export liefert nicht-leeren Text mit Header + Positions-Bezeichnung.
     @Test @MainActor func lvCSVExportEnthaeltPosition() {
         let (event, positionen) = makeEventMitPosition()

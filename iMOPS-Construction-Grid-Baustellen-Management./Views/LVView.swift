@@ -184,13 +184,11 @@ struct LVView: View {
         }
     }
 
-    private func istBewehrung(_ p: LVPosition) -> Bool { (p.einheit ?? "").lowercased() == "kg" }
+    private func istBewehrung(_ p: LVPosition) -> Bool { LVDedup.istBewehrung(p) }
 
     /// „Gleiche Position": Bezeichnung + Menge (nur Bewehrung/kg wird gruppiert).
-    private func dedupKey(_ p: LVPosition) -> String {
-        let bez = (p.bezeichnung ?? "").trimmingCharacters(in: .whitespaces).lowercased()
-        return "\(bez)|\((p.menge * 100).rounded())"
-    }
+    /// Delegiert an die gemeinsame Regel (`LVDedup`), damit Bildschirm und Export identisch zählen.
+    private func dedupKey(_ p: LVPosition) -> String { LVDedup.dedupKey(p) }
 
     /// Gruppiert gleiche Bewehrungs-Positionen zu einem Cluster; alles andere bleibt einzeln.
     private func clustere(_ items: [LVPosition]) -> [LVCluster] {
@@ -214,18 +212,9 @@ struct LVView: View {
     }
 
     /// Fürs Summieren: doppelt importierte Bewehrung (gleiche Menge aus Plan/Liste) zählt EINMAL.
+    /// Nutzt jetzt die gemeinsame Regel (`LVDedup`), die auch GAEB/PDF/Kostenübersicht verwenden.
     private func ohneDuplikate(_ liste: [LVPosition]) -> [LVPosition] {
-        var gesehen = Set<String>()
-        var out: [LVPosition] = []
-        for pos in liste {
-            if istBewehrung(pos) {
-                let k = dedupKey(pos)
-                if gesehen.contains(k) { continue }
-                gesehen.insert(k)
-            }
-            out.append(pos)
-        }
-        return out
+        liste.ohneBewehrungsDuplikate()
     }
 
     private func mengeText(_ p: LVPosition?) -> String {

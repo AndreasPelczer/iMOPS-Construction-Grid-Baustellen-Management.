@@ -4,7 +4,7 @@ import Combine
 struct LVPDFExporter {
 
     static func generate(event: Event, positionen: [LVPosition]) -> Data {
-        Generator(event: event, positionen: positionen).generate()
+        Generator(event: event, positionen: positionen.ohneBewehrungsDuplikate()).generate()
     }
 
     // MARK: - Generator
