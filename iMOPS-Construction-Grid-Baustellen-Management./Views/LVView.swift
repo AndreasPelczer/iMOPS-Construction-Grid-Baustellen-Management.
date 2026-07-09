@@ -266,6 +266,15 @@ struct LVView: View {
                 Label("Auflösen", systemImage: "square.stack.3d.up.slash")
             }.tint(.gray)
         }
+        // Auch als Kontextmenü — am Mac (Designed for iPad) gibt es keinen Swipe,
+        // Rechtsklick/Zwei-Finger erreicht das Auflösen trotzdem.
+        .contextMenu {
+            Button(role: .destructive) {
+                aufloesen(pos)
+            } label: {
+                Label("Gruppierung auflösen", systemImage: "square.stack.3d.up.slash")
+            }
+        }
     }
 
     /// Zeile im Auswahl-Modus: Häkchen + Bezeichnung + Menge.
