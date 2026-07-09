@@ -31,6 +31,13 @@ extension LVPosition {
     // Aufmasse (Welle 5.1 — echte Messungen gegen die Soll-Menge)
     @NSManaged var aufmasse: NSSet?
 
+    // MARK: - Deckel / Unterpunkte (Typ B — „ein PDF = ein gedeckelter LV-Eintrag")
+    // Selbst-Beziehung: ein Deckel bündelt seine Bestandteile als Unterpunkte.
+    // REB-23.003-Logik: nur der Deckel zählt in Summen, Unterpunkte sind Beleg (Hilfswert).
+    @NSManaged var deckel: LVPosition?            // der Deckel, unter dem diese Position hängt (nil = eigenständig)
+    @NSManaged var unterPositionen: NSSet?        // die Belege unter diesem Deckel
+    @NSManaged var deckelNotiz: String?           // „warum zusammengeführt" (Prüfstempel)
+
     // MARK: - Mengen-Quelle (gemessen/geschätzt — Welle-9-Fundament)
     // Mirror des KalkMaterial-Musters: roher String in Core Data, getypter Enum-Zugriff.
     var mengenQuelle: MengenQuelle {
@@ -57,6 +64,21 @@ extension LVPosition {
     var geraeteArray: [PositionGeraet] {
         (kalkGeraete as? Set<PositionGeraet>)?.sorted { ($0.geraetName ?? "") < ($1.geraetName ?? "") } ?? []
     }
+
+    // MARK: - Deckel / Unterpunkte
+
+    /// Die Unterpunkte dieses Deckels, stabil sortiert (Bezeichnung, dann posNr).
+    var unterPositionenArray: [LVPosition] {
+        (unterPositionen as? Set<LVPosition>)?.sorted {
+            ($0.bezeichnung ?? "", $0.posNr ?? "") < ($1.bezeichnung ?? "", $1.posNr ?? "")
+        } ?? []
+    }
+
+    /// Position hängt als Beleg unter einem Deckel → zählt NICHT in Summen.
+    var istUnterpunkt: Bool { deckel != nil }
+
+    /// Position ist ein Deckel (hat mind. einen Unterpunkt).
+    var istDeckel: Bool { (unterPositionen?.count ?? 0) > 0 }
 
     // Ob fuer diese Position eine Tiefenkalkulation existiert
     var hatKalkulation: Bool {

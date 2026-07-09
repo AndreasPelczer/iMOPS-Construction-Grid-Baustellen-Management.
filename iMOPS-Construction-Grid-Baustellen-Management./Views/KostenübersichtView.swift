@@ -18,7 +18,7 @@ struct KostenübersichtView: View {
     }
 
     private var kgKosten: [KGKosten] {
-        let base = positionen.filter { !LVPositionHelper.isAlternative($0) }.ohneBewehrungsDuplikate()
+        let base = positionen.filter { !LVPositionHelper.isAlternative($0) }.zaehlbarePositionen()
         let grouped = Dictionary(grouping: base, by: { $0.kostenGruppeNummer ?? "—" })
         return grouped.keys.sorted().map { kg in
             let items = grouped[kg] ?? []

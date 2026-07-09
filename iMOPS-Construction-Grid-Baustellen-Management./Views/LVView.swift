@@ -65,6 +65,11 @@ struct LVView: View {
     @State private var exportURL: URL?
     @State private var gruppierung: LVGruppierung = .kostenGruppe
 
+    // Typ B — manuelles Zusammenführen zu einem Deckel
+    @State private var auswahlModus = false
+    @State private var ausgewaehlt: Set<NSManagedObjectID> = []
+    @State private var deckelDialog = false
+
     @State private var showMissingPricesAlert = false
     @State private var missingPricesCount = 0
     @State private var pendingExportFormat: GAEBExportFormat?
@@ -211,21 +216,111 @@ struct LVView: View {
         return result
     }
 
-    /// Fürs Summieren: doppelt importierte Bewehrung (gleiche Menge aus Plan/Liste) zählt EINMAL.
-    /// Nutzt jetzt die gemeinsame Regel (`LVDedup`), die auch GAEB/PDF/Kostenübersicht verwenden.
+    /// Fürs Summieren: nur zählbare Positionen — Unterpunkte (Belege unter einem Deckel)
+    /// zählen nicht mit, doppelt importierte Bewehrung zählt einmal. Gemeinsame Regel
+    /// (`zaehlbarePositionen`), die auch GAEB/PDF/Kostenübersicht verwenden.
     private func ohneDuplikate(_ liste: [LVPosition]) -> [LVPosition] {
-        liste.ohneBewehrungsDuplikate()
+        liste.zaehlbarePositionen()
     }
 
     private func mengeText(_ p: LVPosition?) -> String {
         (p?.menge ?? 0).formatted(.number.precision(.fractionLength(0...2)))
     }
 
+    // MARK: - Typ B: Deckel-Zeile, Auswahl, Zusammenführen
+
+    private var ausgewaehltePositionen: [LVPosition] {
+        positionen.filter { ausgewaehlt.contains($0.objectID) }
+    }
+
+    /// Ein Deckel mit seinen Belegen: aufklappbar, Belege grau + „zählt nicht".
+    @ViewBuilder
+    private func deckelRow(_ pos: LVPosition) -> some View {
+        DisclosureGroup {
+            ForEach(pos.unterPositionenArray, id: \.objectID) { kind in
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.turn.down.right")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    Text(kind.bezeichnung ?? "—").font(.caption)
+                    Spacer()
+                    Text("\(mengeText(kind)) \(kind.einheit ?? "")")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    Text("zählt nicht").font(.caption2).foregroundStyle(.tertiary)
+                }
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "square.stack.3d.up.fill").font(.footnote).foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(pos.bezeichnung ?? "—").font(.subheadline.weight(.semibold))
+                    Text("Deckel · \(pos.unterPositionenArray.count) Belege · zählt einmal")
+                        .font(.caption2).foregroundStyle(.orange)
+                }
+                Spacer()
+                Text("\(mengeText(pos)) \(pos.einheit ?? "")")
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+            }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button { aufloesen(pos) } label: {
+                Label("Auflösen", systemImage: "square.stack.3d.up.slash")
+            }.tint(.gray)
+        }
+    }
+
+    /// Zeile im Auswahl-Modus: Häkchen + Bezeichnung + Menge.
+    @ViewBuilder
+    private func selectableRow(_ pos: LVPosition) -> some View {
+        let selektiert = ausgewaehlt.contains(pos.objectID)
+        HStack(spacing: 12) {
+            Image(systemName: selektiert ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(selektiert ? .orange : .secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(pos.bezeichnung ?? "—").font(.subheadline)
+                if pos.istDeckel {
+                    Text("Deckel · \(pos.unterPositionenArray.count) Belege")
+                        .font(.caption2).foregroundStyle(.orange)
+                }
+            }
+            Spacer()
+            Text("\(mengeText(pos)) \(pos.einheit ?? "")")
+                .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if selektiert { ausgewaehlt.remove(pos.objectID) } else { ausgewaehlt.insert(pos.objectID) }
+        }
+    }
+
+    /// Macht `deckel` zum Deckel, hängt die übrigen Ausgewählten als Belege darunter.
+    /// Hält es EINE Ebene flach: eigene Belege eines künftigen Belegs wandern mit hoch.
+    private func zusammenfuehren(deckel: LVPosition, kinder: [LVPosition]) {
+        deckel.deckel = nil
+        for k in kinder where k.objectID != deckel.objectID {
+            for enkel in k.unterPositionenArray { enkel.deckel = deckel }
+            k.deckel = deckel
+        }
+        try? viewContext.save()
+        auswahlModus = false
+        ausgewaehlt.removeAll()
+    }
+
+    /// Löst einen Deckel auf: alle Belege werden wieder eigenständig.
+    private func aufloesen(_ deckel: LVPosition) {
+        for k in deckel.unterPositionenArray { k.deckel = nil }
+        deckel.deckelNotiz = nil
+        try? viewContext.save()
+    }
+
     @ViewBuilder
     private func clusterView(_ cluster: LVCluster) -> some View {
         switch cluster {
         case .einzel(let pos):
-            positionRow(pos)
+            if pos.istDeckel {
+                deckelRow(pos)
+            } else {
+                positionRow(pos)
+            }
         case .duplikat(_, let posns):
             DisclosureGroup {
                 ForEach(posns, id: \.objectID) { positionRow($0) }
@@ -312,12 +407,20 @@ struct LVView: View {
                 }
 
                 ForEach(grouped) { gruppe in
-                    Section {
-                        ForEach(clustere(gruppe.items)) { cluster in
-                            clusterView(cluster)
+                    // Unterpunkte (Belege) erscheinen NICHT flach — sie hängen unter ihrem Deckel.
+                    let topLevel = gruppe.items.filter { !$0.istUnterpunkt }
+                    if !topLevel.isEmpty {
+                        Section {
+                            if auswahlModus {
+                                ForEach(topLevel, id: \.objectID) { selectableRow($0) }
+                            } else {
+                                ForEach(clustere(topLevel)) { cluster in
+                                    clusterView(cluster)
+                                }
+                            }
+                        } header: {
+                            sectionHeader(gruppe)
                         }
-                    } header: {
-                        sectionHeader(gruppe)
                     }
                 }
             }
@@ -337,6 +440,38 @@ struct LVView: View {
                 .background(.regularMaterial)
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            if auswahlModus {
+                HStack {
+                    Text("\(ausgewaehlt.count) ausgewählt")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Spacer()
+                    Button {
+                        deckelDialog = true
+                    } label: {
+                        Label("Zusammenführen", systemImage: "square.stack.3d.up")
+                            .font(.headline)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    .disabled(ausgewaehlt.count < 2)
+                }
+                .padding()
+                .background(.regularMaterial)
+            }
+        }
+        .confirmationDialog("Welche Position ist der Deckel?",
+                            isPresented: $deckelDialog, titleVisibility: .visible) {
+            // Größte Menge zuerst = Vorschlag; Deckel ist der, den du tippst.
+            ForEach(ausgewaehltePositionen.sorted { $0.menge > $1.menge }, id: \.objectID) { pos in
+                Button("\(pos.bezeichnung ?? "—") · \(mengeText(pos)) \(pos.einheit ?? "")") {
+                    zusammenfuehren(deckel: pos, kinder: ausgewaehltePositionen)
+                }
+            }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Der Deckel zählt in der Summe. Die anderen hängen als Beleg darunter und zählen nicht mehr doppelt.")
+        }
         .gaebDropTarget { url in
             droppedGAEBURL = url
             showGAEBImport = true
@@ -351,6 +486,13 @@ struct LVView: View {
             if ergebnis.geaendert { try? viewContext.save() }
         }
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(auswahlModus ? "Fertig" : "Auswählen") {
+                    auswahlModus.toggle()
+                    if !auswahlModus { ausgewaehlt.removeAll() }
+                }
+                .disabled(positionen.isEmpty)
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showHelp = true } label: {
                     Image(systemName: "questionmark.circle")

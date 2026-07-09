@@ -75,7 +75,7 @@ enum LVKalkulator {
 
     /// Kalkuliert mehrere Positionen und summiert den Gesamtpreis.
     static func gesamtKalkulation(positionen: [LVPosition]) -> Double {
-        positionen.ohneBewehrungsDuplikate().reduce(0.0) { sum, pos in
+        positionen.zaehlbarePositionen().reduce(0.0) { sum, pos in
             sum + kalkuliere(position: pos).gesamtpreis
         }
     }
@@ -134,5 +134,13 @@ extension Sequence where Element == LVPosition {
             out.append(pos)
         }
         return out
+    }
+
+    /// Die Positionen, die WIRKLICH in Summen/Exporte zählen — eine Wahrheit für alle:
+    /// 1. Unterpunkte (Belege unter einem Deckel) fallen raus; nur der Deckel zählt (Typ B,
+    ///    REB-23.003-Hilfswert — die Teile stecken IM Deckel, nicht neben ihm).
+    /// 2. danach zählt doppelt importierte Bewehrung (Typ A) einmal.
+    func zaehlbarePositionen() -> [LVPosition] {
+        filter { !$0.istUnterpunkt }.ohneBewehrungsDuplikate()
     }
 }

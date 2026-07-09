@@ -110,6 +110,37 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
         #expect(dedup.count == 2)                              // verschiedene Bezeichnung → beide zählen
     }
 
+    // MARK: - Typ B: Deckel + Unterpunkte (nur der Deckel zählt)
+
+    /// „Ein PDF = ein gedeckelter Eintrag": Der Plan-Deckel (Bodenplatte 758,69 kg) bündelt
+    /// seine Bestandteile (Matten 741,91 + Stabstahl 16,78) als Unterpunkte. In Summen/Exporten
+    /// zählt NUR der Deckel — die Unterpunkte sind Beleg (REB-Hilfswert), sonst 3-fach gezählt.
+    @Test @MainActor func deckelZaehltUnterpunkteNicht() {
+        let event = Event(context: ctx)
+
+        func kgPos(_ bez: String, _ menge: Double) -> LVPosition {
+            let p = LVPosition(context: ctx)
+            p.bezeichnung = bez; p.menge = menge; p.einheit = "kg"; p.event = event
+            return p
+        }
+
+        let deckel = kgPos("Bodenplatte obere Lage", 758.69)
+        let matten = kgPos("Bodenplatte obere Lage – Matten", 741.91)
+        let stab   = kgPos("Bodenplatte obere Lage – Stabstahl", 16.78)
+        matten.deckel = deckel        // hängt als Beleg unter dem Deckel
+        stab.deckel = deckel
+
+        let zaehlbar = [deckel, matten, stab].zaehlbarePositionen()
+        #expect(zaehlbar.count == 1)                           // nur der Deckel
+        #expect(zaehlbar.first === deckel)
+        let kgSumme = zaehlbar.reduce(0.0) { $0 + $1.menge }
+        #expect(kgSumme == 758.69)                             // NICHT 758,69 + 741,91 + 16,78
+        // Gegenprobe: die Beleg-Flags stimmen
+        #expect(deckel.istDeckel)
+        #expect(matten.istUnterpunkt)
+        #expect(!deckel.istUnterpunkt)
+    }
+
     /// Der LV-CSV-Export liefert nicht-leeren Text mit Header + Positions-Bezeichnung.
     @Test @MainActor func lvCSVExportEnthaeltPosition() {
         let (event, positionen) = makeEventMitPosition()
