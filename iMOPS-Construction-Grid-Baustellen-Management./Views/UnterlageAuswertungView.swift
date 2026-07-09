@@ -27,6 +27,8 @@ struct UnterlageAuswertungView: View {
     let onSpeichern: (([ExtractDocResult]) -> Void)?
     /// Gesetzt → gespeicherte Auswertung kann gelöscht werden (falsche geladen).
     let onLoeschen: ((ExtractDocResult) -> Void)?
+    /// Gesetzt → Doctype korrigierbar (Mensch räumt Fehl-Erkennung auf).
+    let onTypAendern: ((ExtractDocResult, String) -> Void)?
 
     @State private var selektiert: Set<String>
     @State private var angezeigte: [ExtractDocResult]
@@ -36,11 +38,13 @@ struct UnterlageAuswertungView: View {
     init(ergebnisse: [ExtractDocResult],
          fehler: [String],
          onSpeichern: (([ExtractDocResult]) -> Void)? = nil,
-         onLoeschen: ((ExtractDocResult) -> Void)? = nil) {
+         onLoeschen: ((ExtractDocResult) -> Void)? = nil,
+         onTypAendern: ((ExtractDocResult, String) -> Void)? = nil) {
         self.ergebnisse = ergebnisse
         self.fehler = fehler
         self.onSpeichern = onSpeichern
         self.onLoeschen = onLoeschen
+        self.onTypAendern = onTypAendern
         // Speichern-Modus: initial alle Dokumente ausgewählt.
         _selektiert = State(initialValue: Set(ergebnisse.map(\.quelle)))
         _angezeigte = State(initialValue: ergebnisse)
@@ -48,6 +52,15 @@ struct UnterlageAuswertungView: View {
 
     private var speichernModus: Bool { onSpeichern != nil }
     private var loeschbar: Bool { onLoeschen != nil }
+    private var typKorrigierbar: Bool { onTypAendern != nil }
+
+    /// Setzt den Doctype lokal (sofort sichtbar) UND persistent (Callback).
+    private func aendereTyp(_ res: ExtractDocResult, zu neu: String) {
+        if let i = angezeigte.firstIndex(where: { $0.quelle == res.quelle }) {
+            angezeigte[i] = angezeigte[i].mitDoctype(neu)
+        }
+        onTypAendern?(res, neu)
+    }
 
     /// Entfernt die Auswertung aus der Ansicht UND persistent (Callback). Leert → schließen.
     private func loesche(_ res: ExtractDocResult) {
@@ -138,7 +151,30 @@ struct UnterlageAuswertungView: View {
                 Image(systemName: res.doctypeSymbol)
                     .font(.title3).foregroundStyle(.orange)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(res.doctypeLabel).font(.subheadline.bold())
+                    if typKorrigierbar {
+                        Menu {
+                            ForEach(ExtractDocResult.doctypeOptionen, id: \.id) { opt in
+                                Button {
+                                    aendereTyp(res, zu: opt.id)
+                                } label: {
+                                    if opt.id == res.doctypeErkannt {
+                                        Label(opt.label, systemImage: "checkmark")
+                                    } else {
+                                        Text(opt.label)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 3) {
+                                Text(res.doctypeLabel).font(.subheadline.bold())
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption2).foregroundStyle(.orange)
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                    } else {
+                        Text(res.doctypeLabel).font(.subheadline.bold())
+                    }
                     HStack(spacing: 6) {
                         konfidenzChip(res.confidence)
                         Text(res.model)

@@ -75,6 +75,16 @@ extension EventExtrasPayload {
     mutating func removeAuswertung(quelle: String) {
         auswertungen?.removeAll { $0.id == quelle }
     }
+
+    /// Korrigiert den erkannten Doctype einer Auswertung (Mensch räumt Fehl-Erkennung auf).
+    mutating func setDoctype(quelle: String, doctype: String) {
+        guard var liste = auswertungen,
+              let idx = liste.firstIndex(where: { $0.id == quelle }) else { return }
+        let alt = liste[idx]
+        liste[idx] = GespeicherteAuswertung(ergebnis: alt.ergebnis.mitDoctype(doctype),
+                                            gespeichertAm: alt.gespeichertAm)
+        auswertungen = liste
+    }
 }
 
 struct EventChecklistItem: Codable, Identifiable, Equatable {
@@ -497,7 +507,11 @@ struct EventDetailView: View {
         .sheet(isPresented: $zeigeGespeicherteAuswertung) {
             UnterlageAuswertungView(ergebnisse: (extras.auswertungen ?? []).map(\.ergebnis),
                                     fehler: [], onSpeichern: nil,   // reine Ansicht, kein Mops
-                                    onLoeschen: { loescheAuswertung($0) })
+                                    onLoeschen: { loescheAuswertung($0) },
+                                    onTypAendern: { res, typ in
+                                        extras.setDoctype(quelle: res.quelle, doctype: typ)
+                                        saveExtras(extras)
+                                    })
                 .presentationSizing(.page)
         }
     }

@@ -44,6 +44,22 @@ extension ExtractDocResult {
         }
     }
 
+    /// Kopie mit korrigiertem Doctype (Mensch räumt eine Fehl-Erkennung auf).
+    /// Nur das Etikett ändert sich — die ausgelesenen Felder bleiben unverändert.
+    func mitDoctype(_ neu: String) -> ExtractDocResult {
+        ExtractDocResult(status: status, quelle: quelle, doctypeErkannt: neu,
+                         confidence: confidence, felder: felder, model: model, meldung: meldung)
+    }
+
+    /// Die korrigierbaren Doctypes (id, Label) für die „Typ ändern"-Auswahl.
+    static let doctypeOptionen: [(id: String, label: String)] = [
+        ("bodengutachten", "Bodengutachten"),
+        ("wohnflaeche",    "Wohnfläche / Rauminhalt"),
+        ("bebauungsplan",  "Bebauungsplan"),
+        ("erschliessung",  "Erschließung"),
+        ("auto",           "Allgemeines Dokument"),
+    ]
+
     /// SF-Symbol passend zum Doctype.
     var doctypeSymbol: String {
         switch doctypeErkannt {

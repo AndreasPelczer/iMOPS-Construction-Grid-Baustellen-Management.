@@ -75,4 +75,21 @@ struct GespeicherteAuswertungTests {
         p.removeAuswertung(quelle: "gibtsnicht.pdf")
         #expect(p.auswertungen?.count == 2)
     }
+
+    @Test func setDoctypeKorrigiertNurEtikett() throws {
+        // Fehl-Erkennung aufräumen: Typ ändern, Felder bleiben, überlebt Neustart.
+        var p = EventExtrasPayload()
+        p.mergeAuswertungen([mk("a.pdf")], am: Date(timeIntervalSince1970: 1))   // mk → "wohnflaeche"
+        p.setDoctype(quelle: "a.pdf", doctype: "auto")
+
+        let e = try #require(p.auswertungen?.first)
+        #expect(e.ergebnis.doctypeErkannt == "auto")   // Etikett korrigiert
+        #expect(e.ergebnis.felder == .object(["wohnflaeche_gesamt_m2": .number(112.8)]))  // Felder unverändert
+
+        let back = try JSONDecoder().decode(EventExtrasPayload.self, from: JSONEncoder().encode(p))
+        #expect(back.auswertungen?.first?.ergebnis.doctypeErkannt == "auto")   // persistent
+
+        p.setDoctype(quelle: "gibtsnicht.pdf", doctype: "bebauungsplan")        // unbekannt → no-op
+        #expect(p.auswertungen?.first?.ergebnis.doctypeErkannt == "auto")
+    }
 }
