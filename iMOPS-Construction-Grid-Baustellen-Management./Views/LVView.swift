@@ -69,6 +69,7 @@ struct LVView: View {
     @State private var auswahlModus = false
     @State private var ausgewaehlt: Set<NSManagedObjectID> = []
     @State private var deckelDialog = false
+    @State private var speicherFehler: String?
 
     @State private var showMissingPricesAlert = false
     @State private var missingPricesCount = 0
@@ -309,7 +310,7 @@ struct LVView: View {
             for enkel in k.unterPositionenArray { enkel.deckel = deckel }
             k.deckel = deckel
         }
-        try? viewContext.save()
+        speichere("Zusammenführen")
         auswahlModus = false
         ausgewaehlt.removeAll()
     }
@@ -318,7 +319,19 @@ struct LVView: View {
     private func aufloesen(_ deckel: LVPosition) {
         for k in deckel.unterPositionenArray { k.deckel = nil }
         deckel.deckelNotiz = nil
-        try? viewContext.save()
+        speichere("Auflösen")
+    }
+
+    /// Speichert und macht Fehler SICHTBAR (statt `try?`, das sie verschluckt hat).
+    /// Bei Erfolg landet die Deckel-Gruppierung dauerhaft in Core Data.
+    private func speichere(_ kontext: String) {
+        guard viewContext.hasChanges else { return }
+        do {
+            try viewContext.save()
+        } catch {
+            speicherFehler = "\(kontext): \(error.localizedDescription)"
+            print("‼️ LV-Speichern fehlgeschlagen [\(kontext)]: \(error)")
+        }
     }
 
     @ViewBuilder
@@ -480,6 +493,14 @@ struct LVView: View {
             Button("Abbrechen", role: .cancel) {}
         } message: {
             Text("Der Deckel zählt in der Summe. Die anderen hängen als Beleg darunter und zählen nicht mehr doppelt.")
+        }
+        .alert("Speichern fehlgeschlagen", isPresented: Binding(
+            get: { speicherFehler != nil },
+            set: { if !$0 { speicherFehler = nil } }
+        )) {
+            Button("OK", role: .cancel) { speicherFehler = nil }
+        } message: {
+            Text(speicherFehler ?? "")
         }
         .gaebDropTarget { url in
             droppedGAEBURL = url
