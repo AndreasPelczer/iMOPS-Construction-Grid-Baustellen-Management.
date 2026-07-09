@@ -62,6 +62,7 @@ struct LVView: View {
     @State private var showBestellliste = false
     @State private var showAngebotsVergleich = false
     @State private var showKostenübersicht = false
+    @State private var showAbdeckung = false
     @State private var showGeschossKosten = false
     @State private var showHierarchieVerwalten = false
     @State private var showFreigabeStatus = false
@@ -582,6 +583,11 @@ struct LVView: View {
                         Label("Kostenzusammenfassung", systemImage: "chart.pie")
                     }
 
+                    Button { showAbdeckung = true } label: {
+                        Label("Was ist abgedeckt?", systemImage: "checklist")
+                    }
+                    .disabled(positionen.isEmpty)
+
                     Button { showGeschossKosten = true } label: {
                         Label("Kosten nach Ebene (Geschoss)", systemImage: "building.2")
                     }
@@ -676,6 +682,9 @@ struct LVView: View {
         }
         .fullScreenCover(isPresented: $showAngebotsVergleich) {
             AngebotsVergleichView(event: event, positionen: Array(positionen))
+        }
+        .sheet(isPresented: $showAbdeckung) {
+            LVAbdeckungView(positionen: Array(positionen))
         }
         .fullScreenCover(isPresented: $showKostenübersicht) {
             KostenübersichtView(event: event, positionen: Array(positionen))
@@ -968,6 +977,154 @@ struct LVView: View {
         case "600": return "Ausstattung"
         case "700": return "Baunebenkosten"
         default: return "Sonstige"
+        }
+    }
+}
+
+// MARK: - „Was ist abgedeckt?" — ehrliche Erfassungs-Übersicht
+
+/// Zeigt, was aus welchen Dokumenten gelesen wurde, mit ehrlichen Prüf-Hinweisen
+/// (ohne Quelle / ohne Seitenverweis) und der klaren Grenze: nur Importiertes ist bekannt.
+struct LVAbdeckungView: View {
+    let positionen: [LVPosition]
+    @Environment(\.dismiss) private var dismiss
+
+    private var aktive: [LVPosition] {
+        positionen.filter { !LVPositionHelper.isAlternative($0) }
+    }
+
+    private func doku(_ p: LVPosition) -> String? {
+        guard let n = p.value(forKey: "dokuName") as? String, !n.isEmpty else { return nil }
+        return n
+    }
+
+    private struct DocGruppe: Identifiable {
+        let id: String
+        var name: String { id }
+        let positionen: [LVPosition]
+    }
+
+    private var docGruppen: [DocGruppe] {
+        let mit = aktive.compactMap { p in doku(p).map { ($0, p) } }
+        let dict = Dictionary(grouping: mit, by: { $0.0 })
+        return dict.keys.sorted().map { name in
+            DocGruppe(id: name, positionen: dict[name]!.map { $0.1 })
+        }
+    }
+
+    private var ohneQuelle: [LVPosition] { aktive.filter { doku($0) == nil } }
+    private var ohneSeiteMitDoku: [LVPosition] { aktive.filter { doku($0) != nil && $0.seiteImPDF == nil } }
+
+    private func anzahl(_ q: MengenQuelle) -> Int { aktive.filter { $0.mengenQuelle == q }.count }
+
+    private func quelleLabel(_ q: MengenQuelle) -> String {
+        switch q {
+        case .statik:     return "aus Statik-Tabelle (belastbar)"
+        case .bplan:      return "Planwert (B-Plan)"
+        case .schaetzung: return "geschätzt"
+        case .manuell:    return "von Hand eingetragen"
+        }
+    }
+    private func quelleFarbe(_ q: MengenQuelle) -> Color {
+        switch q {
+        case .statik:             return .green
+        case .bplan, .schaetzung: return .orange
+        case .manuell:            return .secondary
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Überblick") {
+                    HStack {
+                        Text("Positionen gesamt")
+                        Spacer()
+                        Text("\(aktive.count)").monospacedDigit().foregroundStyle(.secondary)
+                    }
+                    ForEach([MengenQuelle.statik, .bplan, .schaetzung, .manuell], id: \.self) { q in
+                        let n = anzahl(q)
+                        if n > 0 {
+                            HStack(spacing: 8) {
+                                Circle().fill(quelleFarbe(q)).frame(width: 9, height: 9)
+                                Text(quelleLabel(q)).font(.subheadline)
+                                Spacer()
+                                Text("\(n)").monospacedDigit().foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
+                if !ohneQuelle.isEmpty || !ohneSeiteMitDoku.isEmpty {
+                    Section("Prüf-Hinweise") {
+                        if !ohneQuelle.isEmpty {
+                            hinweis("exclamationmark.triangle.fill", .orange,
+                                    "\(ohneQuelle.count) ohne Quell-Dokument",
+                                    "Herkunft unklar – nicht im Plan nachprüfbar.")
+                        }
+                        if !ohneSeiteMitDoku.isEmpty {
+                            hinweis("doc.text.magnifyingglass", .secondary,
+                                    "\(ohneSeiteMitDoku.count) ohne Seitenverweis",
+                                    "Springt nicht direkt ins PDF (alte Importe oder Summen). Neu importieren hilft.")
+                        }
+                    }
+                }
+
+                Section("Nach Quell-Dokument") {
+                    ForEach(docGruppen) { g in
+                        DisclosureGroup {
+                            ForEach(g.positionen, id: \.objectID) { p in
+                                HStack(spacing: 8) {
+                                    Circle().fill(quelleFarbe(p.mengenQuelle)).frame(width: 7, height: 7)
+                                    Text(p.bezeichnung ?? "—").font(.caption)
+                                    Spacer()
+                                    if let s = p.seiteImPDF {
+                                        Text("S. \(s)").font(.caption2).foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "doc.text").foregroundStyle(.orange)
+                                Text(g.name).lineLimit(1).truncationMode(.middle)
+                                Spacer()
+                                Text("\(g.positionen.count)").monospacedDigit().foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    if !ohneQuelle.isEmpty {
+                        HStack {
+                            Image(systemName: "questionmark.folder").foregroundStyle(.orange)
+                            Text("Ohne Quelle").foregroundStyle(.orange)
+                            Spacer()
+                            Text("\(ohneQuelle.count)").monospacedDigit().foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Section {
+                    Text("Diese Übersicht zeigt nur, was aus importierten Dokumenten gelesen wurde. Pläne, die nicht reingegeben wurden, kann die App nicht kennen – die Vollständigkeit gegen die echten Unterlagen bleibt dein Blick.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Was ist abgedeckt?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func hinweis(_ icon: String, _ color: Color, _ titel: String, _ sub: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon).foregroundStyle(color)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(titel).font(.subheadline.weight(.medium))
+                Text(sub).font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 }
