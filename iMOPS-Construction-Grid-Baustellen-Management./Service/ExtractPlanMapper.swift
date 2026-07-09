@@ -52,7 +52,27 @@ enum ExtractPlanMapper {
                 pos.artikelNummer = zeile.matnr     // Xella-Mat-Nr (abZ-Resolver)
                 pos.lieferant = zeile.lieferant
             }
+            legeTeilgewichteAn(unter: pos, teilgewichte: p.teilgewichte, in: context)  // Schritt 4
             return pos
+        }
+    }
+
+    /// Schritt 4: Legt für die Einzelgewichte einer Plan-Summe je einen Unterpunkt (Beleg)
+    /// unter die Position — so wird sichtbar, WOHER die Summe kommt. Nur ab 2 Teilen; die
+    /// Unterpunkte zählen dank Deckel-Regel (`zaehlbarePositionen`) nicht doppelt.
+    static func legeTeilgewichteAn(unter deckel: LVPosition, teilgewichte: [Double]?,
+                                   in context: NSManagedObjectContext) {
+        guard let teile = teilgewichte, teile.count >= 2 else { return }
+        for (i, g) in teile.enumerated() {
+            let kind = LVPosition(context: context)
+            kind.bezeichnung = "Teilgewicht \(i + 1)"
+            kind.menge = g
+            kind.einheit = "kg"
+            kind.kostenGruppeNummer = deckel.kostenGruppeNummer
+            kind.mengenQuelleRaw = deckel.mengenQuelleRaw
+            kind.seite = deckel.seite
+            kind.event = deckel.event
+            kind.deckel = deckel        // wird Unterpunkt → automatischer Deckel
         }
     }
 
@@ -77,7 +97,8 @@ enum ExtractPlanMapper {
                 artikelNummer: zeile?.matnr,
                 lieferant: zeile?.lieferant,
                 seite: p.seite,          // Weg B: Seite im Quell-PDF
-                quelle: p.quelle         // rohe Herkunft für mengenQuelleRaw
+                quelle: p.quelle,        // rohe Herkunft für mengenQuelleRaw
+                teilgewichte: p.teilgewichte  // Schritt 4: Summe aufgliedern
             )
         }
     }

@@ -428,6 +428,8 @@ struct LVImportView: View {
             if let dateiPfad = parsed.quellDateiURL?.absoluteString ?? geladenerDateiPfad {
                 pos.setValue(dateiPfad, forKey: "dokuPath")
             }
+            // Schritt 4: Summe automatisch aufgliedern (Teilgewichte als Unterpunkte).
+            ExtractPlanMapper.legeTeilgewichteAn(unter: pos, teilgewichte: parsed.teilgewichte, in: viewContext)
         }
         // Herkunft der importierten Daten (aus PDF/JSON) am Event festhalten — für den
         // Kopf der künftigen Ist-Baustellen-Übersicht. Alte extras (Checkliste/houseProject)

@@ -149,5 +149,32 @@ struct ExtractPlanMapperTests {
         let parsed = try #require(ExtractPlanMapper.toParsed(r).first)
         #expect(parsed.seite == 3)          // Seite reicht bis zur ParsedLVPosition
         #expect(parsed.quelle == "b-plan")  // Herkunft für mengenQuelleRaw
+        #expect(parsed.teilgewichte == nil) // keine Teile im JSON → nil
+    }
+
+    @MainActor
+    @Test func teilgewichteWerdenAutomatischUnterpunkte() throws {
+        // Schritt 4 (echter BoPla-untere-Fall): Summe 370,40 mit drei Teilgewichten
+        // → Deckel + drei Belege; die Summe zählt EINMAL, die Belege zeigen die Herkunft.
+        let json = """
+        {"metadata": {}, "waende": [], "bewehrung": [],
+         "lv_positionen": [
+           {"posNr": "3.20.B1", "kg": "320", "bezeichnung": "Bewehrung Bodenplatte untere Lage", "einheit": "kg", "menge": 370.40, "quelle": "b-plan", "seite": 1, "teilgewichte": [331.28, 27.93, 11.19]}
+         ],
+         "bestellliste": [], "etiketten": {"hart": [], "geschaetzt": []}}
+        """
+        let r = try JSONDecoder().decode(ExtractPlanResult.self, from: Data(json.utf8))
+        let positionen = ExtractPlanMapper.mapPositions(r, into: ctx)
+        let deckel = try #require(positionen.first { $0.posNr == "3.20.B1" })
+
+        #expect(deckel.istDeckel)                        // hat Unterpunkte
+        #expect(deckel.unterPositionenArray.count == 3)  // drei Teilgewichte
+
+        let alle = ([deckel] + deckel.unterPositionenArray)
+        #expect(alle.zaehlbarePositionen().count == 1)   // nur der Deckel zählt
+        #expect(alle.zaehlbarePositionen().first === deckel)
+
+        let summeDerTeile = deckel.unterPositionenArray.reduce(0.0) { $0 + $1.menge }
+        #expect(abs(summeDerTeile - 370.40) < 0.01)      // Teile ergeben die Summe
     }
 }
