@@ -133,4 +133,21 @@ struct ExtractPlanMapperTests {
         #expect(ringbalken.seiteImPDF == 7)      // Seite kommt an
         #expect(streifen.seiteImPDF == nil)      // ohne seite → nil (Weg-A-Rückfall)
     }
+
+    @MainActor
+    @Test func toParsedTraegtSeiteUndQuelle() throws {
+        // Der Import-Screen geht über toParsed — dort MUSS seite/quelle ankommen,
+        // sonst landet die Seite nie am importierten LV (die Lücke von Weg B).
+        let json = """
+        {"metadata": {}, "waende": [], "bewehrung": [],
+         "lv_positionen": [
+           {"posNr": "3.50.B1", "kg": "350", "bezeichnung": "Bewehrung Ringbalken", "einheit": "kg", "menge": 201.72, "quelle": "b-plan", "seite": 3}
+         ],
+         "bestellliste": [], "etiketten": {"hart": [], "geschaetzt": []}}
+        """
+        let r = try JSONDecoder().decode(ExtractPlanResult.self, from: Data(json.utf8))
+        let parsed = try #require(ExtractPlanMapper.toParsed(r).first)
+        #expect(parsed.seite == 3)          // Seite reicht bis zur ParsedLVPosition
+        #expect(parsed.quelle == "b-plan")  // Herkunft für mengenQuelleRaw
+    }
 }

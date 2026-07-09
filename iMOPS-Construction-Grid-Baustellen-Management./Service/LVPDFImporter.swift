@@ -20,6 +20,9 @@ struct ParsedLVPosition: Identifiable {
     // NEU: Die Quell-Metadaten für den Reader
     var quellDateiName: String? = nil
     var quellDateiURL: URL? = nil
+    // Weg B: Seite im Quell-PDF + rohe Herkunft (statik/b-plan/schaetzung/manuell).
+    var seite: Int? = nil
+    var quelle: String? = nil
 }
 
 // MARK: - Importer

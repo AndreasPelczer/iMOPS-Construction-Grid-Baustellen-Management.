@@ -4,6 +4,15 @@ import UniformTypeIdentifiers
 
 // MARK: - LV Import View
 
+/// „Im PDF ansehen"-Sprung während des Imports (nutzt PDFTrefferView aus PDFPreviewView).
+private struct ImportPDFVorschau: Identifiable {
+    let id = UUID()
+    let url: URL
+    let suchbegriffe: [String]
+    let seite: Int?
+    let titel: String
+}
+
 struct LVImportView: View {
     let event: Event
     @Environment(\.managedObjectContext) private var viewContext
@@ -22,6 +31,7 @@ struct LVImportView: View {
     @State private var geladenerDateiName: String? = nil
     @State private var geladenerDateiPfad: String? = nil
     @State private var importMetadata: ExtractMetadata? = nil   // projekt/baustelle/datei aus dem Import
+    @State private var pdfVorschau: ImportPDFVorschau? = nil     // „im PDF ansehen"-Sheet
 
     private enum ImportQuelle { case lokal, mops }
 
@@ -45,7 +55,7 @@ struct LVImportView: View {
                 }
                 if !parsedPositions.isEmpty {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Importieren (\(selectedCount))") { importSelected() }
+                        Button("Aufnehmen (\(selectedCount))") { importSelected() }
                             .disabled(selectedCount == 0)
                             .tint(.orange)
                     }
@@ -58,6 +68,9 @@ struct LVImportView: View {
             .sheet(isPresented: $showJSONPicker) {
                 JSONDocumentPicker { urls in importJSONFiles(urls: urls) }
                     .ignoresSafeArea()
+            }
+            .fullScreenCover(item: $pdfVorschau) { v in
+                PDFTrefferView(url: v.url, suchbegriffe: v.suchbegriffe, seite: v.seite, titel: v.titel)
             }
             .alert("Nicht erkannt", isPresented: $showError) {
                 Button("OK") {}
@@ -187,14 +200,33 @@ struct LVImportView: View {
                 Text("KG wird auf 300 gesetzt und kann nach dem Import über Swipe-Bearbeiten geändert werden.")
             }
 
-            Section("Positionen prüfen") {
-                ForEach($parsedPositions) { $pos in
-                    positionRow($pos)
+            // Funde nach Quell-PDF gruppiert — man geht PDF für PDF durch.
+            ForEach(gruppenNachPDF, id: \.datei) { gruppe in
+                Section {
+                    ForEach(gruppe.indizes, id: \.self) { i in
+                        positionRow($parsedPositions[i])
+                    }
+                } header: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.text.magnifyingglass").foregroundStyle(.orange)
+                        Text(gruppe.datei).lineLimit(1).truncationMode(.middle)
+                        Spacer()
+                        Text("\(gruppe.indizes.count) Fund\(gruppe.indizes.count == 1 ? "" : "e")")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
-                .onDelete { idx in parsedPositions.remove(atOffsets: idx) }
             }
         }
         .listStyle(.insetGrouped)
+    }
+
+    /// Indizes der geparsten Positionen, gruppiert nach ihrem Quell-PDF (stabiler Name).
+    private var gruppenNachPDF: [(datei: String, indizes: [Int])] {
+        let paare = parsedPositions.indices.map {
+            (i: $0, name: parsedPositions[$0].quellDateiName ?? geladenerDateiName ?? "Ohne Quelle")
+        }
+        let dict = Dictionary(grouping: paare, by: { $0.name })
+        return dict.keys.sorted().map { name in (datei: name, indizes: dict[name]!.map { $0.i }) }
     }
 
     @ViewBuilder
@@ -226,7 +258,34 @@ struct LVImportView: View {
                         .foregroundStyle(conf > 0.8 ? .green : .secondary)
                 }
             }
+
+            Spacer(minLength: 4)
+
+            if let url = pos.wrappedValue.quellDateiURL {
+                Button {
+                    pdfVorschau = ImportPDFVorschau(
+                        url: url,
+                        suchbegriffe: suchbegriffe(fuer: pos.wrappedValue),
+                        seite: pos.wrappedValue.seite,
+                        titel: pos.wrappedValue.bezeichnung)
+                } label: {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.title3)
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.borderless)
+            }
         }
+    }
+
+    /// Suchbegriffe für den PDF-Sprung: Menge in deutscher UND englischer Schreibweise.
+    private func suchbegriffe(fuer pos: ParsedLVPosition) -> [String] {
+        let nf = NumberFormatter()
+        nf.minimumFractionDigits = 0; nf.maximumFractionDigits = 2; nf.usesGroupingSeparator = false
+        var out: [String] = []
+        nf.decimalSeparator = ","; if let s = nf.string(from: NSNumber(value: pos.menge)) { out.append(s) }
+        nf.decimalSeparator = "."; if let s = nf.string(from: NSNumber(value: pos.menge)) { out.append(s) }
+        var seen = Set<String>(); return out.filter { seen.insert($0).inserted }
     }
 
     // MARK: - Actions
@@ -358,6 +417,8 @@ struct LVImportView: View {
             pos.artikelNummer      = parsed.artikelNummer
             pos.lieferant          = parsed.lieferant
             pos.event              = event
+            pos.seite              = parsed.seite.map(NSNumber.init(value:))   // Weg B
+            pos.mengenQuelleRaw    = parsed.quelle ?? "manuell"                // gemessen/geschätzt
             
             // Herkunft PRO Position (Merge mehrerer PDFs) — mit Fallback auf die
             // zuletzt geladene Datei, falls eine Position keine eigene Quelle trägt.

@@ -75,7 +75,9 @@ enum ExtractPlanMapper {
                 confidence: p.quelle == "schaetzung" ? 0.6 : 0.95,
                 kostenGruppe: effektiveKG(kg: p.kg, bezeichnung: p.bezeichnung),
                 artikelNummer: zeile?.matnr,
-                lieferant: zeile?.lieferant
+                lieferant: zeile?.lieferant,
+                seite: p.seite,          // Weg B: Seite im Quell-PDF
+                quelle: p.quelle         // rohe Herkunft für mengenQuelleRaw
             )
         }
     }
