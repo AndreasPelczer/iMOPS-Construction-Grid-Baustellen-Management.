@@ -262,6 +262,36 @@ struct LVView: View {
         positionen.filter { ausgewaehlt.contains($0.objectID) }
     }
 
+    /// Quell-PDF-URL einer Position (dokuPath, sonst Fallback CADFiles/<dokuName>).
+    private func quellURL(fuer pos: LVPosition) -> URL? {
+        if let path = pos.value(forKey: "dokuPath") as? String, let u = URL(string: path) { return u }
+        if let name = pos.value(forKey: "dokuName") as? String, !name.isEmpty {
+            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            return docs.appendingPathComponent("CADFiles").appendingPathComponent(name)
+        }
+        return nil
+    }
+
+    /// Öffnet das Quell-PDF an der Stelle der Position (auch für Deckel & Unterpunkte).
+    private func oeffnePDF(fuer pos: LVPosition) {
+        guard let url = quellURL(fuer: pos) else { return }
+        pdfSprung = PDFSprung(url: url,
+                              suchbegriffe: Self.suchbegriffe(fuer: pos),
+                              seite: pos.seiteImPDF,
+                              titel: pos.bezeichnung ?? "Quell-PDF")
+    }
+
+    /// Lupen-Knopf „im PDF ansehen", nur wenn die Position eine Quelle hat.
+    @ViewBuilder
+    private func pdfKnopf(fuer pos: LVPosition) -> some View {
+        if quellURL(fuer: pos) != nil {
+            Button { oeffnePDF(fuer: pos) } label: {
+                Image(systemName: "doc.text.magnifyingglass").foregroundStyle(.orange)
+            }
+            .buttonStyle(.borderless)
+        }
+    }
+
     /// Ein Deckel mit seinen Belegen: aufklappbar, Belege grau + „zählt nicht".
     @ViewBuilder
     private func deckelRow(_ pos: LVPosition) -> some View {
@@ -275,6 +305,7 @@ struct LVView: View {
                     Text("\(mengeText(kind)) \(kind.einheit ?? "")")
                         .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                     Text("zählt nicht").font(.caption2).foregroundStyle(.tertiary)
+                    pdfKnopf(fuer: kind)
                 }
             }
         } label: {
@@ -288,6 +319,7 @@ struct LVView: View {
                 Spacer()
                 Text("\(mengeText(pos)) \(pos.einheit ?? "")")
                     .font(.subheadline.weight(.semibold).monospacedDigit())
+                pdfKnopf(fuer: pos)
             }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {

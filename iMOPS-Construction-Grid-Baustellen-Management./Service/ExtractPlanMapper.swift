@@ -72,6 +72,9 @@ enum ExtractPlanMapper {
             kind.mengenQuelleRaw = deckel.mengenQuelleRaw
             kind.seite = deckel.seite
             kind.event = deckel.event
+            // Datei-Bezug erben, damit auch die Belege ins Quell-PDF springen können.
+            if let dn = deckel.value(forKey: "dokuName") { kind.setValue(dn, forKey: "dokuName") }
+            if let dp = deckel.value(forKey: "dokuPath") { kind.setValue(dp, forKey: "dokuPath") }
             kind.deckel = deckel        // wird Unterpunkt → automatischer Deckel
         }
     }
