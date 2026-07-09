@@ -46,6 +46,7 @@ enum ExtractPlanMapper {
             pos.einheit = p.einheit
             pos.kostenGruppeNummer = effektiveKG(kg: p.kg, bezeichnung: p.bezeichnung)  // DIN 276 (kg==nil → heuristisch)
             pos.mengenQuelleRaw = p.quelle ?? "manuell"   // gemessen/geschätzt (Welle-9-Fundament)
+            pos.seite = p.seite.map(NSNumber.init(value:))   // Weg B: Seite im Quell-PDF (nil bleibt nil)
             pos.event = event
             if let zeile = bestellByPos[p.posNr] {
                 pos.artikelNummer = zeile.matnr     // Xella-Mat-Nr (abZ-Resolver)

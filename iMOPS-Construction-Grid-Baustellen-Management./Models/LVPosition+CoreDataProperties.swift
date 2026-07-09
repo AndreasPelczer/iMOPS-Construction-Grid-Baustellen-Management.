@@ -38,6 +38,11 @@ extension LVPosition {
     @NSManaged var unterPositionen: NSSet?        // die Belege unter diesem Deckel
     @NSManaged var deckelNotiz: String?           // „warum zusammengeführt" (Prüfstempel)
 
+    // Weg B — Herkunft: Seite im Quell-PDF (1-basiert), aus der Extraktion. nil = unbekannt.
+    @NSManaged var seite: NSNumber?
+    /// Seitenzahl (1-basiert) im Quell-PDF, falls bekannt.
+    var seiteImPDF: Int? { seite?.intValue }
+
     // MARK: - Mengen-Quelle (gemessen/geschätzt — Welle-9-Fundament)
     // Mirror des KalkMaterial-Musters: roher String in Core Data, getypter Enum-Zugriff.
     var mengenQuelle: MengenQuelle {

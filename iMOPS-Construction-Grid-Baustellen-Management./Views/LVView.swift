@@ -41,6 +41,7 @@ private struct PDFSprung: Identifiable {
     let id = UUID()
     let url: URL
     let suchbegriffe: [String]
+    let seite: Int?
     let titel: String
 }
 
@@ -393,6 +394,7 @@ struct LVView: View {
         LVPositionRow(position: pos) { targetURL in
             pdfSprung = PDFSprung(url: targetURL,
                                   suchbegriffe: Self.suchbegriffe(fuer: pos),
+                                  seite: pos.seiteImPDF,
                                   titel: pos.bezeichnung ?? "Quell-PDF")
         }
         .contentShape(Rectangle())
@@ -716,6 +718,7 @@ struct LVView: View {
         .fullScreenCover(item: $pdfSprung) { sprung in
             PDFTrefferView(url: sprung.url,
                            suchbegriffe: sprung.suchbegriffe,
+                           seite: sprung.seite,
                            titel: sprung.titel)
         }
         .confirmationDialog(
