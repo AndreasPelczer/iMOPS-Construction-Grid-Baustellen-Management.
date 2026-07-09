@@ -92,18 +92,14 @@ struct UnterlageAuswertungView: View {
                     }
                 }
             }
-            .confirmationDialog(
-                loeschKandidat.map { "„\($0.doctypeLabel)" + ($0.quelle.isEmpty ? "" : " · \($0.quelle)") + "“ löschen?" } ?? "Auswertung löschen?",
-                isPresented: Binding(get: { loeschKandidat != nil },
-                                     set: { if !$0 { loeschKandidat = nil } }),
-                titleVisibility: .visible
-            ) {
-                if let res = loeschKandidat {
-                    Button("Löschen", role: .destructive) { loesche(res); loeschKandidat = nil }
-                }
+            .alert("Auswertung löschen?",
+                   isPresented: Binding(get: { loeschKandidat != nil },
+                                        set: { if !$0 { loeschKandidat = nil } }),
+                   presenting: loeschKandidat) { res in
+                Button("Löschen", role: .destructive) { loesche(res); loeschKandidat = nil }
                 Button("Abbrechen", role: .cancel) { loeschKandidat = nil }
-            } message: {
-                Text("Die gespeicherten Fakten dieses Dokuments werden von der Baustelle entfernt. Das PDF selbst bleibt. Rückgängig nur durch erneutes Auswerten.")
+            } message: { res in
+                Text("Die gespeicherten Fakten aus \(res.quelle) werden von der Baustelle entfernt. Das PDF bleibt. Rückgängig nur durch erneutes Auswerten.")
             }
         }
     }
@@ -151,6 +147,15 @@ struct UnterlageAuswertungView: View {
                     }
                 }
                 Spacer()
+                if loeschbar {
+                    Button(role: .destructive) { loeschKandidat = res } label: {
+                        Image(systemName: "trash")
+                            .font(.title3)
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("Auswertung löschen")
+                }
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 if loeschbar {
