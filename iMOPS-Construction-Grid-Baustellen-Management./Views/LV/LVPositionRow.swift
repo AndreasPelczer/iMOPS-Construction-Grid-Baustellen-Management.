@@ -150,6 +150,15 @@ struct LVPositionRow: View {
                     Spacer()
                 }
                 .padding(.top, 2)
+            } else if let q = position.quellDatei, !q.isEmpty {
+                // Herkunft aus dem Plan (Wand-Leser): nur Text, keine Lupe (Plan-Ansicht folgt separat).
+                HStack(spacing: 4) {
+                    Image(systemName: "ruler")
+                    Text(q).lineLimit(1).truncationMode(.middle)
+                }
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .padding(.top, 2)
             }
 
             ZeilenFortschritt(
