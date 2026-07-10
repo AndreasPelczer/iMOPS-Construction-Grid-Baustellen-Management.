@@ -6,6 +6,7 @@
 //  überschreiben, Doppellinien-Verdacht wird offen angezeigt.
 
 import SwiftUI
+import CoreData
 import UniformTypeIdentifiers
 
 // MARK: - Server-Modelle (snake_case = passt 1:1 auf die JSON-Antwort)
@@ -34,7 +35,11 @@ private struct WandLeserResult: Codable {
 
 struct WandLeserView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.managedObjectContext) private var viewContext
+    @ObservedObject var event: Event
 
+    @State private var geschosshoehe = "2,75"
+    @State private var uebernahmeMeldung = ""
     @State private var showingPicker = false
     @State private var fileData: Data? = nil
     @State private var fileName: String = ""
@@ -69,6 +74,11 @@ struct WandLeserView: View {
                           allowedContentTypes: [UTType(filenameExtension: "dxf") ?? .data,
                                                 UTType(filenameExtension: "dwg") ?? .data],
                           allowsMultipleSelection: false) { res in handlePick(res) }
+            .alert("Leistungsverzeichnis", isPresented: Binding(
+                get: { !uebernahmeMeldung.isEmpty },
+                set: { if !$0 { uebernahmeMeldung = "" } })) {
+                Button("OK", role: .cancel) { }
+            } message: { Text(uebernahmeMeldung) }
         }
     }
 
@@ -145,6 +155,7 @@ struct WandLeserView: View {
                     Label("Schätzung", systemImage: "questionmark.circle")
                         .font(.caption).foregroundStyle(.orange)
                 }
+                uebernahmeBlock(m)
             } else {
                 // Einheit unbekannt → Rohwert + Umrechnung anbieten
                 if let roh = r.laenge_roh {
@@ -170,6 +181,59 @@ struct WandLeserView: View {
             ForEach(r.hinweise, id: \.self) { h in
                 Text("• " + h).font(.caption2).foregroundStyle(.secondary)
             }
+        }
+    }
+
+    // Übernehmen ins LV: Wandlänge × Geschosshöhe → Wandfläche als LV-Position (Schätzung).
+    private func uebernahmeBlock(_ laengeM: Double) -> some View {
+        let hoehe = Double(geschosshoehe.replacingOccurrences(of: ",", with: ".")) ?? 0
+        return VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            HStack(spacing: 6) {
+                Text("Geschosshöhe").font(.subheadline)
+                TextField("2,75", text: $geschosshoehe)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 60)
+                    .textFieldStyle(.roundedBorder)
+                Text("m").font(.subheadline).foregroundStyle(.secondary)
+            }
+            if hoehe > 0 {
+                Text("→ Wandfläche ≈ \(fmt(laengeM * hoehe)) m²")
+                    .font(.subheadline.weight(.semibold))
+                Text("Höhe steht nicht im Grundriss — bitte bestätigen (Standard 2,75 m).")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            Button {
+                uebernehmen(laengeM: laengeM)
+            } label: {
+                Label("Ins LV übernehmen", systemImage: "plus.square.on.square")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(hoehe <= 0)
+        }
+    }
+
+    private func uebernehmen(laengeM: Double) {
+        let hoehe = Double(geschosshoehe.replacingOccurrences(of: ",", with: ".")) ?? 0
+        guard hoehe > 0 else { uebernahmeMeldung = "Bitte eine gültige Geschosshöhe eingeben."; return }
+        let flaeche = laengeM * hoehe
+        let nextPos = (event.lvPositionen?.count ?? 0) + 1
+
+        let pos = LVPosition(context: viewContext)
+        pos.posNr = String(format: "05.%02d", nextPos)
+        pos.bezeichnung = "Wandfläche (aus Plan: \(fmt(laengeM)) m × \(geschosshoehe) m)"
+        pos.einheit = "m²"
+        pos.menge = flaeche
+        pos.mengenQuelle = .schaetzung          // aus Plan geschätzt → Welle-9-Ampel (andersfarbig)
+        pos.kostenGruppeNummer = "331"          // Tragende Außenwände (Startwert, im LV anpassbar)
+        pos.event = event
+
+        do {
+            try viewContext.save()
+            uebernahmeMeldung = "Ins LV übernommen: Wandfläche \(fmt(flaeche)) m² (Schätzung, aus Plan)."
+        } catch {
+            uebernahmeMeldung = "Fehler beim Speichern: \(error.localizedDescription)"
         }
     }
 

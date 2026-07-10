@@ -564,7 +564,8 @@ struct EventDetailView: View {
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showingWandLeser) {
-            WandLeserView()
+            WandLeserView(event: event)
+                .environment(\.managedObjectContext, viewContext)
         }
     }
 
