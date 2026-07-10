@@ -1,15 +1,15 @@
 //  WandLeserView.swift
-//  Welle 5c — Wände aus einem DXF/DWG-Plan lesen.
+//  Welle 5c — Wände/Öffnungen aus einem DXF/DWG-Plan lesen und ins LV übernehmen.
 //
-//  Ablauf: Plan wählen → Server gibt Layer-Liste → Nutzer tippt den Wand-Layer an
-//  → Server rechnet die Wandlänge in Meter. Ehrlich: unbekannte Einheit lässt sich
-//  überschreiben, Doppellinien-Verdacht wird offen angezeigt.
+//  Mehrfachauswahl: mehrere Layer ankreuzen (Wände, Türen, Fenster …), eine
+//  Geschosshöhe für die Wände, dann alle auf einmal ins LV. Jede LV-Position
+//  bekommt die Herkunft (Datei + Layer) in `quellDatei` — Gegenstück zum PDF-Beleg.
 
 import SwiftUI
 import CoreData
 import UniformTypeIdentifiers
 
-// MARK: - Server-Modelle (snake_case = passt 1:1 auf die JSON-Antwort)
+// MARK: - Server-Modell (snake_case = passt 1:1 auf die JSON-Antwort)
 
 private struct WandLayer: Codable, Identifiable {
     let name: String
@@ -18,23 +18,17 @@ private struct WandLayer: Codable, Identifiable {
     let laenge_m: Double?
     let stueck: Int?
     let stueck_methode: String?
+    let doppellinien_verdacht: Bool?
     var id: String { name }
+    var istOeffnung: Bool { stueck != nil }
+    var istWand: Bool { stueck == nil && laenge_m != nil }
 }
 
 private struct WandLeserResult: Codable {
     let einheit: String
     let einheit_bekannt: Bool
-    let einheit_quelle: String
     let layer_liste: [WandLayer]
     let hinweise: [String]
-    // nur gesetzt, wenn ein Layer gewählt wurde:
-    let layer_gewaehlt: String?
-    let laenge_roh: Double?
-    let doppellinien_verdacht: Bool?
-    let wandlaenge_m: Double?
-    let geschaetzt: Bool?
-    let stueck: Int?
-    let stueck_methode: String?
 }
 
 struct WandLeserView: View {
@@ -42,17 +36,17 @@ struct WandLeserView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @ObservedObject var event: Event
 
-    @State private var geschosshoehe = "2,75"
-    @State private var stueckAnzahl = ""
-    @State private var uebernahmeMeldung = ""
     @State private var showingPicker = false
-    @State private var fileData: Data? = nil
-    @State private var fileName: String = ""
-    @State private var result: WandLeserResult? = nil
-    @State private var chosenLayer: String? = nil
-    @State private var unitOverride: Double? = nil
+    @State private var fileData: Data?
+    @State private var fileName = ""
+    @State private var result: WandLeserResult?
     @State private var loading = false
-    @State private var error: String = ""
+    @State private var error = ""
+    @State private var selected: Set<String> = []
+    @State private var geschosshoehe = "2,75"
+    @State private var stueckText: [String: String] = [:]
+    @State private var unitOverride: Double?
+    @State private var uebernahmeMeldung = ""
 
     private let einheiten: [(String, Double)] = [("mm", 0.001), ("cm", 0.01), ("m", 1.0), ("Zoll", 0.0254)]
 
@@ -66,8 +60,13 @@ struct WandLeserView: View {
                     }
                     if !error.isEmpty { errorBox }
                     if let r = result {
-                        layerListe(r)
-                        if chosenLayer != nil { ergebnis(r) }
+                        if !r.einheit_bekannt && unitOverride == nil { einheitWahl }
+                        layerAuswahl(r)
+                        if brauchtHoehe(r) { hoeheFeld }
+                        if !selected.isEmpty { uebernahmeLeiste(r) }
+                        ForEach(r.hinweise, id: \.self) { h in
+                            Text("• " + h).font(.caption2).foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .padding()
@@ -91,11 +90,9 @@ struct WandLeserView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Liest die Wandlängen aus einem Architekten-Plan (DXF/DWG). Du wählst den Layer, auf dem die Wände liegen — der Mops rechnet die Länge in Meter.")
+            Text("Liest Wände, Türen und Fenster aus einem Architekten-Plan (DXF/DWG). Kreuze an, was du ins LV übernehmen willst.")
                 .font(.subheadline).foregroundStyle(.secondary)
-            Button {
-                showingPicker = true
-            } label: {
+            Button { showingPicker = true } label: {
                 Label(fileName.isEmpty ? "Plan wählen (DXF/DWG)" : "Anderen Plan wählen",
                       systemImage: "doc.viewfinder")
             }
@@ -115,201 +112,183 @@ struct WandLeserView: View {
         .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    private func layerListe(_ r: WandLeserResult) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Welcher Layer sind die Wände?").font(.headline)
-            ForEach(r.layer_liste) { lay in
-                Button {
-                    chosenLayer = lay.name
-                    analyse(layer: lay.name, einheitM: unitOverride)
-                } label: {
-                    layerRow(lay)
+    private var einheitWahl: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Einheit der Datei ist unbekannt — bitte wählen:").font(.footnote).foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                ForEach(einheiten, id: \.0) { (label, faktor) in
+                    Button(label) { unitOverride = faktor; ladeListe() }.buttonStyle(.bordered)
                 }
-                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func layerAuswahl(_ r: WandLeserResult) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Was übernehmen?").font(.headline)
+            ForEach(r.layer_liste) { lay in
+                layerRow(lay)
             }
         }
     }
 
     private func layerRow(_ lay: WandLayer) -> some View {
-        let gewaehlt = chosenLayer == lay.name
-        return HStack {
-            Image(systemName: gewaehlt ? "largecircle.fill.circle" : "circle")
-                .foregroundStyle(gewaehlt ? Color.accentColor : Color.secondary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(lay.name).font(.subheadline.weight(.medium))
-                Text(lay.stueck != nil ? "\(lay.objekte) Objekte · \(lay.stueck_methode ?? "")"
-                                       : "\(lay.objekte) Objekte")
-                    .font(.caption2).foregroundStyle(.secondary)
+        let an = selected.contains(lay.name)
+        return VStack(alignment: .leading, spacing: 6) {
+            Button { toggle(lay.name) } label: {
+                HStack {
+                    Image(systemName: an ? "checkmark.square.fill" : "square")
+                        .foregroundStyle(an ? Color.accentColor : Color.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(lay.name).font(.subheadline.weight(.medium))
+                        Text(untertitel(lay)).font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text(wertText(lay)).font(.subheadline.monospacedDigit())
+                        .foregroundStyle(lay.laenge_m != nil || lay.stueck != nil ? .primary : .secondary)
+                }
             }
-            Spacer()
-            if let stk = lay.stueck {
-                Text("~\(stk) Stk").font(.subheadline.monospacedDigit())
-            } else {
-                Text(lay.laenge_m != nil ? fmt(lay.laenge_m!) + " m" : fmt(lay.laenge_roh))
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(lay.laenge_m != nil ? Color.primary : Color.secondary)
+            .buttonStyle(.plain)
+            if an && lay.istOeffnung {
+                HStack(spacing: 6) {
+                    Text("Anzahl").font(.caption)
+                    TextField("\(lay.stueck ?? 0)", text: Binding(
+                        get: { stueckText[lay.name] ?? String(lay.stueck ?? 0) },
+                        set: { stueckText[lay.name] = $0 }))
+                        .keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                        .frame(width: 50).textFieldStyle(.roundedBorder)
+                    Text("Stk").font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(.leading, 28)
             }
         }
         .padding(10)
         .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    private func ergebnis(_ r: WandLeserResult) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Divider()
-            if let stk = r.stueck {
-                oeffnungsBlock(r, geschaetzteStueck: stk)
-            } else if let m = r.wandlaenge_m {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(fmt(m)).font(.system(size: 40, weight: .bold, design: .rounded)).monospacedDigit()
-                    Text("m Wand").font(.title3).foregroundStyle(.secondary)
-                }
-                if r.geschaetzt == true {
-                    Label("Schätzung", systemImage: "questionmark.circle")
-                        .font(.caption).foregroundStyle(.orange)
-                }
-                uebernahmeBlock(m)
-            } else {
-                // Einheit unbekannt → Rohwert + Umrechnung anbieten
-                if let roh = r.laenge_roh {
-                    Text("\(fmt(roh)) Zeichnungseinheiten").font(.title3.weight(.semibold))
-                }
-                Text("Einheit der Datei ist unbekannt — bitte wählen:").font(.footnote).foregroundStyle(.secondary)
-                HStack(spacing: 8) {
-                    ForEach(einheiten, id: \.0) { (label, faktor) in
-                        Button(label) {
-                            unitOverride = faktor
-                            if let l = chosenLayer { analyse(layer: l, einheitM: faktor) }
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                }
-            }
-
-            if r.doppellinien_verdacht == true {
-                Label("Wände scheinen als Doppellinien gezeichnet — Länge wurde halbiert.",
-                      systemImage: "square.split.2x1")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            ForEach(r.hinweise, id: \.self) { h in
-                Text("• " + h).font(.caption2).foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    // Übernehmen ins LV: Wandlänge × Geschosshöhe → Wandfläche als LV-Position (Schätzung).
-    private func uebernahmeBlock(_ laengeM: Double) -> some View {
-        let hoehe = Double(geschosshoehe.replacingOccurrences(of: ",", with: ".")) ?? 0
-        return VStack(alignment: .leading, spacing: 8) {
-            Divider()
+    private var hoeheFeld: some View {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
-                Text("Geschosshöhe").font(.subheadline)
+                Text("Geschosshöhe (für Wände)").font(.subheadline)
                 TextField("2,75", text: $geschosshoehe)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 60)
-                    .textFieldStyle(.roundedBorder)
+                    .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                    .frame(width: 60).textFieldStyle(.roundedBorder)
                 Text("m").font(.subheadline).foregroundStyle(.secondary)
             }
-            if hoehe > 0 {
-                Text("→ Wandfläche ≈ \(fmt(laengeM * hoehe)) m²")
-                    .font(.subheadline.weight(.semibold))
-                Text("Höhe steht nicht im Grundriss — bitte bestätigen (Standard 2,75 m).")
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-            Button {
-                uebernehmen(laengeM: laengeM)
-            } label: {
-                Label("Ins LV übernehmen", systemImage: "plus.square.on.square")
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(hoehe <= 0)
+            Text("Höhe steht nicht im Grundriss — bitte bestätigen (Standard 2,75 m).")
+                .font(.caption2).foregroundStyle(.secondary)
         }
     }
 
-    private func uebernehmen(laengeM: Double) {
-        let hoehe = Double(geschosshoehe.replacingOccurrences(of: ",", with: ".")) ?? 0
-        guard hoehe > 0 else { uebernahmeMeldung = "Bitte eine gültige Geschosshöhe eingeben."; return }
-        let flaeche = laengeM * hoehe
-        let nextPos = (event.lvPositionen?.count ?? 0) + 1
-
-        let pos = LVPosition(context: viewContext)
-        pos.posNr = String(format: "05.%02d", nextPos)
-        pos.bezeichnung = "Wandfläche (aus Plan: \(fmt(laengeM)) m × \(geschosshoehe) m)"
-        pos.einheit = "m²"
-        pos.menge = flaeche
-        pos.mengenQuelle = .schaetzung          // aus Plan geschätzt → Welle-9-Ampel (andersfarbig)
-        pos.kostenGruppeNummer = "331"          // Tragende Außenwände (Startwert, im LV anpassbar)
-        pos.event = event
-
-        do {
-            try viewContext.save()
-            uebernahmeMeldung = "Ins LV übernommen: Wandfläche \(fmt(flaeche)) m² (Schätzung, aus Plan)."
-        } catch {
-            uebernahmeMeldung = "Fehler beim Speichern: \(error.localizedDescription)"
+    private func uebernahmeLeiste(_ r: WandLeserResult) -> some View {
+        let hoehe = hoeheWert()
+        let teile = selected.sorted().compactMap { name -> String? in
+            guard let lay = r.layer_liste.first(where: { $0.name == name }) else { return nil }
+            if let stk = lay.stueck {
+                let n = Int(stueckText[name] ?? "") ?? stk
+                return "\(n)× \(bezeichnungFuer(name))"
+            } else if let m = lay.laenge_m {
+                return "\(fmt(m * hoehe)) m² \(bezeichnungFuer(name))"
+            }
+            return nil
         }
-    }
-
-    // Öffnungen (Türen/Fenster): geschätzte Stückzahl, editierbar → als Stück-Position ins LV.
-    private func oeffnungsBlock(_ r: WandLeserResult, geschaetzteStueck: Int) -> some View {
-        let layer = r.layer_gewaehlt ?? "Öffnungen"
-        let anzahl = Int(stueckAnzahl) ?? geschaetzteStueck
         return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(anzahl)").font(.system(size: 40, weight: .bold, design: .rounded)).monospacedDigit()
-                Text("Stück").font(.title3).foregroundStyle(.secondary)
-            }
-            if let meth = r.stueck_methode {
-                Text("gezählt über \(meth) — bitte prüfen")
-                    .font(.caption).foregroundStyle(.orange)
-            }
-            HStack(spacing: 6) {
-                Text("Anzahl").font(.subheadline)
-                TextField("\(geschaetzteStueck)", text: $stueckAnzahl)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 60)
-                    .textFieldStyle(.roundedBorder)
-                Text("Stk").font(.subheadline).foregroundStyle(.secondary)
+            Divider()
+            if !teile.isEmpty {
+                Text("Wird angelegt: " + teile.joined(separator: " · "))
+                    .font(.footnote).foregroundStyle(.secondary)
             }
             Button {
-                uebernehmenStueck(name: bezeichnungFuer(layer), anzahl: anzahl, kg: kgFuer(layer))
+                uebernehmenAlle(r)
             } label: {
-                Label("Als Stück ins LV übernehmen", systemImage: "plus.square.on.square")
+                Label("Ins LV übernehmen (\(selected.count))", systemImage: "plus.square.on.square")
             }
             .buttonStyle(.borderedProminent)
-            .disabled(anzahl <= 0)
+            .disabled(teile.isEmpty)
         }
+    }
+
+    // MARK: - Texte / Klassifizierung
+
+    private func toggle(_ name: String) {
+        if selected.contains(name) { selected.remove(name) } else { selected.insert(name) }
+    }
+
+    private func brauchtHoehe(_ r: WandLeserResult) -> Bool {
+        selected.contains { name in r.layer_liste.first(where: { $0.name == name })?.istWand == true }
+    }
+
+    private func hoeheWert() -> Double {
+        Double(geschosshoehe.replacingOccurrences(of: ",", with: ".")) ?? 0
+    }
+
+    private func untertitel(_ lay: WandLayer) -> String {
+        if lay.stueck != nil { return "\(lay.objekte) Objekte · \(lay.stueck_methode ?? "")" }
+        if lay.doppellinien_verdacht == true { return "\(lay.objekte) Objekte · Doppellinien halbiert" }
+        return "\(lay.objekte) Objekte"
+    }
+
+    private func wertText(_ lay: WandLayer) -> String {
+        if let stk = lay.stueck { return "~\(stk) Stk" }
+        if let m = lay.laenge_m { return fmt(m) + " m" }
+        return fmt(lay.laenge_roh)
     }
 
     private func bezeichnungFuer(_ layer: String) -> String {
         let u = layer.uppercased()
         if u.contains("TUER") || u.contains("TÜR") || u.contains("DOOR") { return "Türen" }
         if u.contains("FENSTER") || u.contains("WINDOW") { return "Fenster" }
+        if u.contains("WAND") || u.contains("WALL") { return "Wandfläche" }
+        if u.contains("DACH") || u.contains("ROOF") { return "Dachfläche" }
+        if u.contains("TREPPE") || u.contains("STAIR") { return "Treppe" }
         return layer
     }
 
     private func kgFuer(_ layer: String) -> String {
         let u = layer.uppercased()
-        if u.contains("FENSTER") || u.contains("WINDOW") { return "334" }   // Fenster/Außentüren
-        if u.contains("TUER") || u.contains("TÜR") || u.contains("DOOR") { return "344" }   // Innentüren
+        if u.contains("FENSTER") || u.contains("WINDOW") { return "334" }
+        if u.contains("TUER") || u.contains("TÜR") || u.contains("DOOR") { return "344" }
+        if u.contains("WAND") || u.contains("WALL") { return "331" }
         return "300"
     }
 
-    private func uebernehmenStueck(name: String, anzahl: Int, kg: String) {
-        guard anzahl > 0 else { uebernahmeMeldung = "Bitte eine gültige Anzahl eingeben."; return }
-        let nextPos = (event.lvPositionen?.count ?? 0) + 1
-        let pos = LVPosition(context: viewContext)
-        pos.posNr = String(format: "05.%02d", nextPos)
-        pos.bezeichnung = "\(name) (aus Plan)"
-        pos.einheit = "Stk"
-        pos.menge = Double(anzahl)
-        pos.mengenQuelle = .schaetzung
-        pos.kostenGruppeNummer = kg
-        pos.event = event
+    // MARK: - Übernehmen ins LV
+
+    private func uebernehmenAlle(_ r: WandLeserResult) {
+        let hoehe = hoeheWert()
+        var nextPos = (event.lvPositionen?.count ?? 0) + 1
+        var angelegt = 0
+
+        for name in selected.sorted() {
+            guard let lay = r.layer_liste.first(where: { $0.name == name }) else { continue }
+            let pos = LVPosition(context: viewContext)
+            pos.posNr = String(format: "05.%02d", nextPos)
+            pos.mengenQuelle = .schaetzung
+            pos.kostenGruppeNummer = kgFuer(name)
+            pos.event = event
+            pos.quellDatei = "\(fileName) · Layer \(name)"   // Herkunft = Datei + Layer
+
+            if let stk = lay.stueck {
+                let n = Int(stueckText[name] ?? "") ?? stk
+                pos.bezeichnung = "\(bezeichnungFuer(name)) (aus Plan)"
+                pos.einheit = "Stk"
+                pos.menge = Double(n)
+            } else if let m = lay.laenge_m {
+                pos.bezeichnung = "\(bezeichnungFuer(name)) (aus Plan: \(fmt(m)) m × \(geschosshoehe) m)"
+                pos.einheit = "m²"
+                pos.menge = m * hoehe
+            } else {
+                viewContext.delete(pos)
+                continue
+            }
+            nextPos += 1
+            angelegt += 1
+        }
+
         do {
             try viewContext.save()
-            uebernahmeMeldung = "Ins LV übernommen: \(anzahl)× \(name) (Schätzung, aus Plan)."
+            uebernahmeMeldung = "\(angelegt) Position(en) ins LV übernommen (Schätzung, aus \(fileName))."
+            selected.removeAll()
         } catch {
             uebernahmeMeldung = "Fehler beim Speichern: \(error.localizedDescription)"
         }
@@ -330,18 +309,16 @@ struct WandLeserView: View {
             do {
                 fileData = try Data(contentsOf: url)
                 fileName = url.lastPathComponent
-                chosenLayer = nil
-                unitOverride = nil
-                self.result = nil
-                error = ""
-                analyse(layer: nil, einheitM: nil)   // erst Layer-Liste holen
+                selected.removeAll(); stueckText.removeAll(); unitOverride = nil
+                self.result = nil; error = ""
+                ladeListe()
             } catch {
                 self.error = "Fehler beim Lesen: \(error.localizedDescription)"
             }
         }
     }
 
-    private func analyse(layer: String?, einheitM: Double?) {
+    private func ladeListe() {
         guard let data = fileData else { return }
         loading = true; error = ""
         guard let url = URL(string: MopsConfig.host + "/wandleser/analyse") else {
@@ -354,18 +331,16 @@ struct WandLeserView: View {
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         var body = Data()
-        func field(_ name: String, _ value: String) {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(value)\r\n".data(using: .utf8)!)
-        }
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"dxf_file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
         body.append(data)
         body.append("\r\n".data(using: .utf8)!)
-        if let layer = layer, !layer.isEmpty { field("layer", layer) }
-        if let e = einheitM { field("einheit_m", String(e)) }
+        if let e = unitOverride {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"einheit_m\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(e)\r\n".data(using: .utf8)!)
+        }
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
         URLSession.shared.uploadTask(with: request, from: body) { data, _, err in
@@ -374,9 +349,7 @@ struct WandLeserView: View {
                 if let err = err { error = "Netzwerkfehler: \(err.localizedDescription)"; return }
                 guard let data = data else { error = "Keine Antwort vom Server."; return }
                 do {
-                    let decoded = try JSONDecoder().decode(WandLeserResult.self, from: data)
-                    result = decoded
-                    if let s = decoded.stueck { stueckAnzahl = String(s) }  // Stückzahl vorbelegen (editierbar)
+                    result = try JSONDecoder().decode(WandLeserResult.self, from: data)
                     error = ""
                 } catch {
                     if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
