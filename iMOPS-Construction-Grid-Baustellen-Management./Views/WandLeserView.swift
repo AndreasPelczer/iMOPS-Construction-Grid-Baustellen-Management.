@@ -16,6 +16,8 @@ private struct WandLayer: Codable, Identifiable {
     let objekte: Int
     let laenge_roh: Double
     let laenge_m: Double?
+    let stueck: Int?
+    let stueck_methode: String?
     var id: String { name }
 }
 
@@ -31,6 +33,8 @@ private struct WandLeserResult: Codable {
     let doppellinien_verdacht: Bool?
     let wandlaenge_m: Double?
     let geschaetzt: Bool?
+    let stueck: Int?
+    let stueck_methode: String?
 }
 
 struct WandLeserView: View {
@@ -39,6 +43,7 @@ struct WandLeserView: View {
     @ObservedObject var event: Event
 
     @State private var geschosshoehe = "2,75"
+    @State private var stueckAnzahl = ""
     @State private var uebernahmeMeldung = ""
     @State private var showingPicker = false
     @State private var fileData: Data? = nil
@@ -132,12 +137,18 @@ struct WandLeserView: View {
                 .foregroundStyle(gewaehlt ? Color.accentColor : Color.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(lay.name).font(.subheadline.weight(.medium))
-                Text("\(lay.objekte) Objekte").font(.caption2).foregroundStyle(.secondary)
+                Text(lay.stueck != nil ? "\(lay.objekte) Objekte · \(lay.stueck_methode ?? "")"
+                                       : "\(lay.objekte) Objekte")
+                    .font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
-            Text(lay.laenge_m != nil ? fmt(lay.laenge_m!) + " m" : fmt(lay.laenge_roh))
-                .font(.subheadline.monospacedDigit())
-                .foregroundStyle(lay.laenge_m != nil ? Color.primary : Color.secondary)
+            if let stk = lay.stueck {
+                Text("~\(stk) Stk").font(.subheadline.monospacedDigit())
+            } else {
+                Text(lay.laenge_m != nil ? fmt(lay.laenge_m!) + " m" : fmt(lay.laenge_roh))
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(lay.laenge_m != nil ? Color.primary : Color.secondary)
+            }
         }
         .padding(10)
         .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
@@ -146,7 +157,9 @@ struct WandLeserView: View {
     private func ergebnis(_ r: WandLeserResult) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Divider()
-            if let m = r.wandlaenge_m {
+            if let stk = r.stueck {
+                oeffnungsBlock(r, geschaetzteStueck: stk)
+            } else if let m = r.wandlaenge_m {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(fmt(m)).font(.system(size: 40, weight: .bold, design: .rounded)).monospacedDigit()
                     Text("m Wand").font(.title3).foregroundStyle(.secondary)
@@ -237,6 +250,71 @@ struct WandLeserView: View {
         }
     }
 
+    // Öffnungen (Türen/Fenster): geschätzte Stückzahl, editierbar → als Stück-Position ins LV.
+    private func oeffnungsBlock(_ r: WandLeserResult, geschaetzteStueck: Int) -> some View {
+        let layer = r.layer_gewaehlt ?? "Öffnungen"
+        let anzahl = Int(stueckAnzahl) ?? geschaetzteStueck
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(anzahl)").font(.system(size: 40, weight: .bold, design: .rounded)).monospacedDigit()
+                Text("Stück").font(.title3).foregroundStyle(.secondary)
+            }
+            if let meth = r.stueck_methode {
+                Text("gezählt über \(meth) — bitte prüfen")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+            HStack(spacing: 6) {
+                Text("Anzahl").font(.subheadline)
+                TextField("\(geschaetzteStueck)", text: $stueckAnzahl)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 60)
+                    .textFieldStyle(.roundedBorder)
+                Text("Stk").font(.subheadline).foregroundStyle(.secondary)
+            }
+            Button {
+                uebernehmenStueck(name: bezeichnungFuer(layer), anzahl: anzahl, kg: kgFuer(layer))
+            } label: {
+                Label("Als Stück ins LV übernehmen", systemImage: "plus.square.on.square")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(anzahl <= 0)
+        }
+    }
+
+    private func bezeichnungFuer(_ layer: String) -> String {
+        let u = layer.uppercased()
+        if u.contains("TUER") || u.contains("TÜR") || u.contains("DOOR") { return "Türen" }
+        if u.contains("FENSTER") || u.contains("WINDOW") { return "Fenster" }
+        return layer
+    }
+
+    private func kgFuer(_ layer: String) -> String {
+        let u = layer.uppercased()
+        if u.contains("FENSTER") || u.contains("WINDOW") { return "334" }   // Fenster/Außentüren
+        if u.contains("TUER") || u.contains("TÜR") || u.contains("DOOR") { return "344" }   // Innentüren
+        return "300"
+    }
+
+    private func uebernehmenStueck(name: String, anzahl: Int, kg: String) {
+        guard anzahl > 0 else { uebernahmeMeldung = "Bitte eine gültige Anzahl eingeben."; return }
+        let nextPos = (event.lvPositionen?.count ?? 0) + 1
+        let pos = LVPosition(context: viewContext)
+        pos.posNr = String(format: "05.%02d", nextPos)
+        pos.bezeichnung = "\(name) (aus Plan)"
+        pos.einheit = "Stk"
+        pos.menge = Double(anzahl)
+        pos.mengenQuelle = .schaetzung
+        pos.kostenGruppeNummer = kg
+        pos.event = event
+        do {
+            try viewContext.save()
+            uebernahmeMeldung = "Ins LV übernommen: \(anzahl)× \(name) (Schätzung, aus Plan)."
+        } catch {
+            uebernahmeMeldung = "Fehler beim Speichern: \(error.localizedDescription)"
+        }
+    }
+
     // MARK: - Datei + Netzwerk
 
     private func handlePick(_ result: Result<[URL], Error>) {
@@ -296,7 +374,9 @@ struct WandLeserView: View {
                 if let err = err { error = "Netzwerkfehler: \(err.localizedDescription)"; return }
                 guard let data = data else { error = "Keine Antwort vom Server."; return }
                 do {
-                    result = try JSONDecoder().decode(WandLeserResult.self, from: data)
+                    let decoded = try JSONDecoder().decode(WandLeserResult.self, from: data)
+                    result = decoded
+                    if let s = decoded.stueck { stueckAnzahl = String(s) }  // Stückzahl vorbelegen (editierbar)
                     error = ""
                 } catch {
                     if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
