@@ -547,7 +547,7 @@ struct EventDetailView: View {
                 Text("Geländebrücke (Welle 7)").font(.headline)
                 Spacer()
                 Button { showingDXFPicker = true } label: {
-                    Label("DXF auswerten", systemImage: "square.and.arrow.down").font(.subheadline)
+                    Label("DXF/DWG auswerten", systemImage: "square.and.arrow.down").font(.subheadline)
                 }
                 .disabled(isCalculatingGelaende)
             }
@@ -670,7 +670,7 @@ struct EventDetailView: View {
                     Image(systemName: "map").font(.title2).foregroundStyle(.secondary)
                     VStack(alignment: .leading) {
                         Text("Keine Geländedaten").font(.subheadline)
-                        Text("Vermessungs-DXF hochladen für Cut/Fill-Schätzung").font(.caption).foregroundStyle(.secondary)
+                        Text("Vermessungs-DXF/DWG hochladen für Cut/Fill-Schätzung").font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -680,7 +680,8 @@ struct EventDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .fileImporter(
             isPresented: $showingDXFPicker,
-            allowedContentTypes: [UTType(filenameExtension: "dxf") ?? .data],
+            allowedContentTypes: [UTType(filenameExtension: "dxf") ?? .data,
+                                  UTType(filenameExtension: "dwg") ?? .data],
             allowsMultipleSelection: false
         ) { result in
             handleDXFPick(result: result)
@@ -837,7 +838,7 @@ struct EventDetailView: View {
             
             do {
                 let dxfData = try Data(contentsOf: url)
-                uploadDXF(dxfData: dxfData)
+                uploadDXF(dxfData: dxfData, filename: url.lastPathComponent)
             } catch {
                 gelaendeError = "Fehler beim Lesen: \(error.localizedDescription)"
             }
@@ -847,7 +848,7 @@ struct EventDetailView: View {
         }
     }
 
-    private func uploadDXF(dxfData: Data) {
+    private func uploadDXF(dxfData: Data, filename: String = "upload.dxf") {
         isCalculatingGelaende = true
         gelaendeError = ""
         gelaendeResult = nil
@@ -872,7 +873,7 @@ struct EventDetailView: View {
         
         var body = Data()
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"dxf_file\"; filename=\"upload.dxf\"\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"dxf_file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
         body.append(dxfData)
         body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
