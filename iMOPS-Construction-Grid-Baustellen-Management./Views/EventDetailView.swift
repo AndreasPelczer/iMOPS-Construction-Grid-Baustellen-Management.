@@ -146,6 +146,8 @@ struct EventDetailView: View {
     @State private var gelaendeError: String = ""
     @State private var gelaendeResult: GelaendeResult? = nil
     @State private var reportPDFURL: URL?
+    // Welle 5c: Wände aus Plan lesen
+    @State private var showingWandLeser = false
 
     // Stufe 2: Unterlagen auswerten (/extract-doc)
     @State private var showingUnterlagenPicker = false
@@ -325,6 +327,7 @@ struct EventDetailView: View {
                     unterlagenCard
                     BPlanVorgabenCard(event: event)   // Vorgaben aus ausgewertetem B-Plan (nur wenn vorhanden)
                     geländeCard
+                    wandLeserCard
                 }
 
                 kartenGruppe("LV & Kalkulation", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
@@ -538,6 +541,31 @@ struct EventDetailView: View {
     private func loescheAuswertung(_ res: ExtractDocResult) {
         extras.removeAuswertung(quelle: res.quelle)
         saveExtras(extras)
+    }
+
+    // MARK: - WAND-LESER CARD (Welle 5c)
+    private var wandLeserCard: some View {
+        Button {
+            showingWandLeser = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "ruler").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Wände aus Plan lesen").font(.headline).foregroundStyle(.primary)
+                    Text("Wandlängen aus einem DXF/DWG-Grundriss (Welle 5c)")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(uiColor: .secondarySystemGroupedBackground),
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingWandLeser) {
+            WandLeserView()
+        }
     }
 
     // MARK: - GELÄNDE CARD (Welle 7)
