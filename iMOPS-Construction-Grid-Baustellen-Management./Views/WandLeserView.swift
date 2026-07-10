@@ -186,9 +186,9 @@ struct WandLeserView: View {
             guard let lay = r.layer_liste.first(where: { $0.name == name }) else { return nil }
             if let stk = lay.stueck {
                 let n = Int(stueckText[name] ?? "") ?? stk
-                return "\(n)× \(bezeichnungFuer(name))"
+                return "\(n)× \(beschriftung(name))"
             } else if let m = lay.laenge_m {
-                return "\(fmt(m * hoehe)) m² \(bezeichnungFuer(name))"
+                return "\(fmt(m * hoehe)) m² \(beschriftung(name))"
             }
             return nil
         }
@@ -244,6 +244,24 @@ struct WandLeserView: View {
         return layer
     }
 
+    /// Geschoss aus Layer-Präfix (KG_/EG_/DG_/OG_/UG_) oder dem Dateinamen ableiten.
+    private func geschossKuerzel(_ layer: String) -> String? {
+        let s = (layer + " " + fileName).uppercased()
+        if s.contains("KG_") || s.contains("KELLER") { return "Keller" }
+        if s.contains("EG_") || s.contains("ERDGESCH") { return "Erdgeschoss" }
+        if s.contains("DG_") || s.contains("DACH") { return "Dachgeschoss" }
+        if s.contains("OG_") || s.contains("OBERGESCH") { return "Obergeschoss" }
+        if s.contains("UG_") || s.contains("UNTERGESCH") { return "Untergeschoss" }
+        return nil
+    }
+
+    /// Bezeichnung inkl. Geschoss, z. B. „Türen – Keller".
+    private func beschriftung(_ layer: String) -> String {
+        let base = bezeichnungFuer(layer)
+        if let g = geschossKuerzel(layer) { return "\(base) – \(g)" }
+        return base
+    }
+
     private func kgFuer(_ layer: String) -> String {
         let u = layer.uppercased()
         if u.contains("FENSTER") || u.contains("WINDOW") { return "334" }
@@ -270,11 +288,11 @@ struct WandLeserView: View {
 
             if let stk = lay.stueck {
                 let n = Int(stueckText[name] ?? "") ?? stk
-                pos.bezeichnung = "\(bezeichnungFuer(name)) (aus Plan)"
+                pos.bezeichnung = "\(beschriftung(name)) (aus Plan)"
                 pos.einheit = "Stk"
                 pos.menge = Double(n)
             } else if let m = lay.laenge_m {
-                pos.bezeichnung = "\(bezeichnungFuer(name)) (aus Plan: \(fmt(m)) m × \(geschosshoehe) m)"
+                pos.bezeichnung = "\(beschriftung(name)) (aus Plan: \(fmt(m)) m × \(geschosshoehe) m)"
                 pos.einheit = "m²"
                 pos.menge = m * hoehe
             } else {
