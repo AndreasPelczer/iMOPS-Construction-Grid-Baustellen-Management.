@@ -622,6 +622,30 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Materialliste_Excel"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Mengen aus Excel"
+    - "Materialliste einlesen"
+    - "SketchUp Mengen"
+    - "Excel ins LV"
+    - "xlsx hochladen"
+    - "Mengenauszug Excel"
+  antwort: |
+    In der Baustelle (Event-Detail) gibt es die Karte "Mengen aus Excel lesen".
+    Damit liest die App einen SketchUp-Mengenauszug (.xlsx) ein: Datei waehlen ->
+    die App schickt sie an den Mops-Server (/materialliste) -> zurueck kommen
+    Positionen je Kategorie (Aussenwand/Innenwand/Putz/Boden/Beton/Ringbalken/Sturz)
+    mit Menge (m3 / m2 / Stueck). Ankreuzen, was ins LV soll, dann "Ins LV uebernehmen".
+    Die Positionen kommen als Schaetzung ins LV (mengenQuelle = schaetzung), mit
+    Herkunft (Datei + Position) in quellDatei. Volumen und Masse sind Fakt aus SketchUp,
+    die Einordnung in Kategorien ist abgeleitet — darum als Schaetzung markiert.
+    Gegenstueck zu "Waende aus Plan lesen" (DXF): dort rechnet die App die Mengen aus
+    der Geometrie, hier hat SketchUp sie schon fertig im Excel.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Globale_Suche"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

@@ -262,6 +262,21 @@ struct WandLeserView: View {
         return base
     }
 
+    /// Geschoss-Objekt zum Namen finden oder anlegen (damit das LV nach Ebene gruppiert/summiert).
+    private func geschossObjekt(_ name: String) -> Geschoss {
+        if let vorhanden = HierarchieHelfer.alleGeschosse(for: event).first(where: { $0.name == name }) {
+            return vorhanden
+        }
+        let gebaeude = HierarchieHelfer.alleGebaeude(for: event).first
+            ?? HierarchieHelfer.neuesGebaeude(name: "Hauptgebäude", for: event, in: viewContext)
+        let g = HierarchieHelfer.neuesGeschoss(name: name, in: gebaeude, context: viewContext)
+        // Bau-Reihenfolge von unten nach oben, damit die Ebenen-Übersicht richtig sortiert.
+        let ordnung: [String: Int16] = ["Untergeschoss": 0, "Keller": 1, "Erdgeschoss": 2,
+                                        "Obergeschoss": 3, "Dachgeschoss": 4]
+        if let r = ordnung[name] { g.reihenfolge = r }
+        return g
+    }
+
     private func kgFuer(_ layer: String) -> String {
         let u = layer.uppercased()
         if u.contains("FENSTER") || u.contains("WINDOW") { return "334" }
@@ -285,6 +300,9 @@ struct WandLeserView: View {
             pos.kostenGruppeNummer = kgFuer(name)
             pos.event = event
             pos.quellDatei = "\(fileName) · Layer \(name)"   // Herkunft = Datei + Layer
+            if let g = geschossKuerzel(name) {               // an Geschoss hängen → Rollup „nach Ebene"
+                pos.geschoss = geschossObjekt(g)
+            }
 
             if let stk = lay.stueck {
                 let n = Int(stueckText[name] ?? "") ?? stk

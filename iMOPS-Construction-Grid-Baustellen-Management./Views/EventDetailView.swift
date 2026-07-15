@@ -148,6 +148,7 @@ struct EventDetailView: View {
     @State private var reportPDFURL: URL?
     // Welle 5c: Wände aus Plan lesen
     @State private var showingWandLeser = false
+    @State private var showingMaterialliste = false
 
     // Stufe 2: Unterlagen auswerten (/extract-doc)
     @State private var showingUnterlagenPicker = false
@@ -328,6 +329,7 @@ struct EventDetailView: View {
                     BPlanVorgabenCard(event: event)   // Vorgaben aus ausgewertetem B-Plan (nur wenn vorhanden)
                     geländeCard
                     wandLeserCard
+                    materiallisteCard
                 }
 
                 kartenGruppe("LV & Kalkulation", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
@@ -565,6 +567,32 @@ struct EventDetailView: View {
         .buttonStyle(.plain)
         .sheet(isPresented: $showingWandLeser) {
             WandLeserView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - MATERIALLISTE CARD (Excel-Mengen)
+    private var materiallisteCard: some View {
+        Button {
+            showingMaterialliste = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "tablecells").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Mengen aus Excel lesen").font(.headline).foregroundStyle(.primary)
+                    Text("SketchUp-Materialliste (.xlsx) → Mengen je Kategorie")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(uiColor: .secondarySystemGroupedBackground),
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingMaterialliste) {
+            MateriallisteView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
     }
