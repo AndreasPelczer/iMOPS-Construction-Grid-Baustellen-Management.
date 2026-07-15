@@ -95,8 +95,9 @@ struct MateriallisteView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } } }
             .fileImporter(isPresented: $showingPicker,
-                          allowedContentTypes: [UTType.spreadsheet,
-                                                UTType(filenameExtension: "xlsx") ?? .data],
+                          allowedContentTypes: [UTType.spreadsheet, UTType.commaSeparatedText,
+                                                UTType(filenameExtension: "xlsx") ?? .data,
+                                                UTType(filenameExtension: "csv") ?? .data],
                           allowsMultipleSelection: false) { res in handlePick(res) }
             .alert("Leistungsverzeichnis", isPresented: Binding(
                 get: { !uebernahmeMeldung.isEmpty },
@@ -113,7 +114,7 @@ struct MateriallisteView: View {
             Text("Liest einen SketchUp-Mengenauszug (.xlsx). Jede Kategorie wird ein LV-Eintrag (Deckel), die Einzel-Bauteile hängen aufklappbar darunter. Häkchen raus, was nicht ins LV soll.")
                 .font(.subheadline).foregroundStyle(.secondary)
             Button { showingPicker = true } label: {
-                Label(fileName.isEmpty ? "Excel wählen (.xlsx)" : "Andere Excel wählen",
+                Label(fileName.isEmpty ? "Datei wählen (.xlsx / .csv)" : "Andere Datei wählen",
                       systemImage: "tablecells")
             }
             .buttonStyle(.borderedProminent)
