@@ -15,6 +15,23 @@
 3. EventDetailView/LVView zerlegen
 4. Kernel-Spike-Entscheidung vorbereiten
 
+## Delta 28.07.2026 — LV-Gruppen bearbeitbar + Bestellliste-Import (→ main)
+
+- **Frage 2 (PR #106, in `main`):** LV-Gruppen sind jetzt **bearbeit-/kalkulierbar.** In
+  `Views/LVView.swift` bekommen **Deckel** (Swipe/Kontextmenü: Bearbeiten/Kalkulation/Fortschritt/
+  Aufmaß, „Auflösen" bleibt) und **Belege** (Tap + Kontextmenü) die vorhandenen `editPosition`/
+  `kalkPosition`-Einstiege (→ `AddLVPositionView`/`LVTiefenkalkulationView`). Reine UI-Verdrahtung.
+  Hilfe: `App_LV_Gruppen_Bearbeiten` in `app_bedienung.yaml`.
+- **Frage 1 (PR #107, in `main`):** `/materialliste` (mops-api) erkennt jetzt zusätzlich die
+  **gruppierte Bestellliste-Übersicht** (.xlsx) und liefert **je Gruppe eine Deckel-Sektion**.
+  iOS-Fix: `kategorieLabel` zeigt unbekannte Kategorien (= Gruppentitel) direkt statt „Nicht
+  zugeordnet". → Import = Gruppen im LV, per Frage 2 kalkulierbar.
+- **Backend:** mops-api `main` (Parser `bestellliste.py` + Auto-Erkennung). Box auf `main` redeployed.
+- Build grün (iOS 26.2 Sim, iPhone 17 Pro Max).
+- **Offen (v1-Kanten):** Bestellliste-Deckel-Reihenfolge (unbekannte Kategorien sortieren gleich →
+  Gruppen nicht in Nummern-Reihenfolge); Backend: eine Gruppe im Real-Export gesplittet, Raumvolumen-
+  Gruppen ohne Positionen fallen raus.
+
 ## Delta 15.07.2026 — Excel-Mengen (Materialliste) ins LV
 
 - **Neu:** `Views/MateriallisteView.swift` — liest einen SketchUp-Mengenauszug (.xlsx) über die
