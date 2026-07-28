@@ -284,7 +284,9 @@ struct MateriallisteView: View {
         case "putz_aussen": return "Außenputz"
         case "putz_innen", "putz": return "Innenputz"
         case "bodenflaeche": return "Bodenflächen"
-        default: return "Nicht zugeordnet"
+        // Bestellliste-Sektionen tragen den Gruppentitel als Kategorie (z.B.
+        // „1 Abdichtung …") — den direkt zeigen statt „Nicht zugeordnet".
+        default: return k.isEmpty ? "Nicht zugeordnet" : k
         }
     }
 
