@@ -643,6 +643,11 @@
     die Einordnung in Kategorien ist abgeleitet — darum als Schaetzung markiert.
     Gegenstueck zu "Waende aus Plan lesen" (DXF): dort rechnet die App die Mengen aus
     der Geometrie, hier hat SketchUp sie schon fertig im Excel.
+
+    Auch eine gruppierte "Bestellliste Übersicht" (.xlsx, Steine/Stahl/Schotter …) wird
+    automatisch erkannt: jede Gruppe (1.00/2.00/…) kommt als eigene Sektion ins LV,
+    darunter die Einzelpositionen als Belege. Das Layout muss nicht eingestellt werden —
+    der Server unterscheidet SketchUp-Auszug und Bestellliste selbst.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
