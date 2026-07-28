@@ -646,6 +646,30 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_LV_Gruppen_Bearbeiten"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Gruppe im LV bearbeiten"
+    - "Deckel kalkulieren"
+    - "gruppierte Position bearbeiten"
+    - "Position in Gruppe kalkulieren"
+    - "Beleg bearbeiten"
+    - "Materialliste-Position kalkulieren"
+  antwort: |
+    Aus Excel/DXF uebernommene Mengen liegen im LV als Gruppe: ein "Deckel"
+    (die zaehlende Position mit der Gesamtmenge) und darunter die einzelnen
+    Belege ("zaehlt nicht"). Beide sind bearbeit- und kalkulierbar:
+    - Deckel: nach links wischen -> "Bearbeiten" / "Kalkulation"; oder lange
+      druecken (Rechtsklick am Mac) fuer Bearbeiten/Kalkulation/Fortschritt/Aufmass.
+      Der Deckel ist die zaehlende Position -> hier gehoert die Kalkulation hin.
+    - Einzelner Beleg: antippen oeffnet den Dialog (Bearbeiten/Kalkulation ...),
+      oder lange druecken.
+    Tippen auf den Deckel klappt weiterhin die Gruppe auf/zu; "Aufloesen" (Wisch
+    nach rechts) macht die Gruppe wieder zu Einzelpositionen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Globale_Suche"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

@@ -308,6 +308,13 @@ struct LVView: View {
                     Text("zählt nicht").font(.caption2).foregroundStyle(.tertiary)
                     pdfKnopf(fuer: kind)
                 }
+                // Auch die einzelnen Belege sind bearbeit-/kalkulierbar (Tippen öffnet den Dialog).
+                .contentShape(Rectangle())
+                .onTapGesture { actionPosition = kind }
+                .contextMenu {
+                    Button { editPosition = kind } label: { Label("Bearbeiten", systemImage: "pencil") }
+                    Button { kalkPosition = kind } label: { Label("Kalkulation", systemImage: "function") }
+                }
             }
         } label: {
             HStack(spacing: 10) {
@@ -328,9 +335,20 @@ struct LVView: View {
                 Label("Auflösen", systemImage: "square.stack.3d.up.slash")
             }.tint(.gray)
         }
+        // Der Deckel ist die zählende Position — hier wird bearbeitet & kalkuliert.
+        // (Tippen bleibt fürs Auf-/Zuklappen der Gruppe.)
+        .swipeActions(edge: .leading) {
+            Button { editPosition = pos } label: { Label("Bearbeiten", systemImage: "pencil") }.tint(.orange)
+            Button { kalkPosition = pos } label: { Label("Kalkulation", systemImage: "function") }.tint(.indigo)
+        }
         // Auch als Kontextmenü — am Mac (Designed for iPad) gibt es keinen Swipe,
-        // Rechtsklick/Zwei-Finger erreicht das Auflösen trotzdem.
+        // Rechtsklick/Zwei-Finger erreicht alles trotzdem.
         .contextMenu {
+            Button { editPosition = pos } label: { Label("Bearbeiten", systemImage: "pencil") }
+            Button { kalkPosition = pos } label: { Label("Kalkulation", systemImage: "function") }
+            Button { fortschrittPosition = pos } label: { Label("Fortschritt", systemImage: "chart.bar") }
+            Button { aufmassPosition = pos } label: { Label("Aufmaß", systemImage: "ruler") }
+            Divider()
             Button(role: .destructive) {
                 aufloesen(pos)
             } label: {
