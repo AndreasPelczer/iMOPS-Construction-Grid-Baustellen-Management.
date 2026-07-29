@@ -17,11 +17,12 @@ struct KGZuordnungsService {
         (["fundament", "bodenplatte", "streifenfundament", "sauberkeitsschicht", "magerbeton"], "322"),
         (["tiefgründung", "pfahlgründung", "pfahl", "bohrpfahl"], "323"),
 
-        // KG 324 – Unterböden
+        // KG 324 – Gründungsbeläge (Schüttung/Unterboden im Bodenaufbau über der Gründung)
         (["unterboden", "schüttung", "kiesschüttung"], "324"),
 
-        // KG 326 – Abdichtung
-        (["abdichtung", "bitumenbahn", "folie", "dampfsperre", "dichtschlämme", "perimeterdämmung"], "326"),
+        // KG 325 – Abdichtungen und Bekleidungen
+        // (war 326: das hieß in der alten Fassung „Bauwerksabdichtungen", heute „Dränagen")
+        (["abdichtung", "bitumenbahn", "folie", "dampfsperre", "dichtschlämme", "perimeterdämmung"], "325"),
 
         // KG 331 – Tragende Außenwände
         (["ytong", "poroton", "kalksandstein", "klinker", "außenwand", "aussenwand",
@@ -63,14 +64,16 @@ struct KGZuordnungsService {
         (["decke", "stahlbetondecke", "hohlkörperdecke", "filigrandecke",
           "holzbalkendecke", "brettstapeldecke"], "351"),
 
-        // KG 352 – Deckenbeläge
+        // KG 353 – Deckenbeläge (Fußbodenaufbau)
+        // (war 352: das hieß in der alten Fassung „Deckenbeläge", heute „Deckenöffnungen")
         (["estrich", "calciumsulfatestrich", "zementestrich", "heizestrich",
           "fußboden", "bodenbelag", "parkett", "laminat", "vinyl", "fliesen boden",
-          "bodenfliesen", "teppich", "korkboden"], "352"),
+          "bodenfliesen", "teppich", "korkboden"], "353"),
 
-        // KG 353 – Deckenbekleidungen
+        // KG 354 – Deckenbekleidungen (von unten: Unterdecke, Deckenputz)
+        // (war 353: das heißt heute „Deckenbeläge" — also der Fußboden darüber)
         (["abgehängte decke", "abgehaengte decke", "unterdecke", "akustikdecke",
-          "deckenpaneel", "deckenputz"], "353"),
+          "deckenpaneel", "deckenputz"], "354"),
 
         // KG 361 – Dachkonstruktion
         (["dachstuhl", "sparren", "pfette", "dachbalken", "kehlbalken",
@@ -131,27 +134,36 @@ struct KGZuordnungsService {
         // KG 461 – Aufzug
         (["aufzug", "lift", "fahrstuhl", "aufzugsschacht", "hebeanlage"], "461"),
 
-        // KG 531 – Wege und Plätze
+        // KG 531 – Wege
+        // (die alte Fassung nannte 531 „Wege und Plätze"; heute sind Plätze/Höfe/
+        //  Terrassen eigenständig auf 533 — Terrassen daher unten abgetrennt)
         (["pflaster", "pflasterstein", "gehweg", "gehwegplatten", "betonpflaster",
-          "natursteinpflaster", "terrassenplatten", "terrassenpflaster"], "531"),
+          "natursteinpflaster"], "531"),
 
         // KG 532 – Straßen
         (["asphalt", "teerdecke", "fahrbahnbelag", "zufahrtsstraße", "schotter"], "532"),
 
-        // KG 533 – Stellplätze
-        (["parkplatz", "stellplatz", "carport", "garage", "tiefgarage"], "533"),
+        // KG 533 – Plätze, Höfe, Terrassen
+        // Längster Treffer gewinnt: „terrassenpflaster" schlägt „pflaster" → 533, nicht 531.
+        (["terrassenplatten", "terrassenpflaster", "hoffläche", "platzfläche"], "533"),
+
+        // KG 534 – Stellplätze
+        // (war 533: das hieß in der alten Fassung „Stellplätze", heute „Plätze, Höfe, Terrassen")
+        (["parkplatz", "stellplatz", "carport", "garage", "tiefgarage"], "534"),
 
         // KG 541 – Einfriedungen
         (["zaun", "tor", "einfriedung", "maschendraht", "staketenzaun", "sichtschutzzaun"], "541"),
 
-        // KG 542 – Schutzkonstruktionen
+        // KG 543 – Wandkonstruktionen (Stützmauern). Der Kommentar sagte vorher 542,
+        // der Wert war schon immer 543 — nur die Beschriftung war falsch.
         (["stützmauer", "gabione", "böschungssicherung", "hang"], "543"),
 
-        // KG 573 – Pflanzflächen
+        // KG 573 – Pflanzungen
         (["bepflanzung", "baum", "strauch", "hecke", "beet", "pflanzen"], "573"),
 
-        // KG 574 – Rasen
-        (["rasen", "rollrasen", "ansaat", "rasenansaat"], "574"),
+        // KG 572 – Rasen- und Wiesenflächen
+        // (war 574: das hieß „Rasen- und Saatflächen", heute „Vegetationstechnische Arbeiten")
+        (["rasen", "rollrasen", "ansaat", "rasenansaat"], "572"),
     ]
 
     // MARK: - Zuordnung
