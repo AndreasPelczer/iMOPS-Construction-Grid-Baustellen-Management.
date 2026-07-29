@@ -115,8 +115,13 @@ struct KGZuordnungsService {
         // KG 433 – Klimaanlage
         (["klima", "klimaanlage", "split-klimaanlage", "kühlung", "vrf"], "433"),
 
-        // KG 441 – Elektrounterverteilung
-        (["hauptverteiler", "zähler", "hak", "zählerkasten", "netzanschluss"], "441"),
+        // KG 443 – Niederspannungsanlagen (Hausanschluss, Zählerplatz, Hauptverteilung)
+        // War 441 „Hoch- und Mittelspannungsanlagen" — das ist Trafostation/Mittelspannung,
+        // nicht der Hausanschluss. Kein Editions-Thema: 441 heißt in beiden DIN-276-Fassungen
+        // gleich, nur der Kommentar behauptete „Elektrounterverteilung".
+        // „zähler" trifft auch „wasserzähler" — dort gewinnt der längere Treffer (→ 412),
+        // die Regel bleibt also unberührt.
+        (["hauptverteiler", "zähler", "hak", "zählerkasten", "netzanschluss"], "443"),
 
         // KG 444 – Elektroinstallation
         (["elektro", "elektroinstallation", "kabel", "leitung", "nyl",
