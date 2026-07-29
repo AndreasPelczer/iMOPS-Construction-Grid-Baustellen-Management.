@@ -17,7 +17,7 @@
 
 ## Delta 29.07.2026 — DIN 276: zwei Kataloge aus zwei Fassungen zusammengeführt
 
-**Branch `fix/din276-kg-532`, drei Commits, NICHT gepusht, kein PR.**
+**Branch `fix/din276-kg-532`, vier Commits, NICHT gepusht, kein PR.**
 (Diese Übergabe liegt auf einem eigenen Branch `docs/handoff-29-07` — zwei getrennte PRs,
 wie beim Delta 28.07. Beim Mergen Code zuerst, sonst steht in `main` eine Übergabe ohne den Code.)
 
@@ -59,16 +59,23 @@ keine Datei ist einzeln in `project.pbxproj` gelistet, alles im Quellordner wird
 **Ab jetzt: Patch-Backups nach `_backups/` im Repo-Root** (außerhalb der synchronisierten Gruppen).
 Gegenprobe: `ls <DerivedData>/…/….app | rg backup` muss leer sein.
 
-### Offen aus dieser Session
+### Erledigt & offen aus dieser Session
 
-- ~~Altbug 441~~ **erledigt (`b677cc6`):** „hauptverteiler / zähler / hak / zählerkasten /
+Die ersten beiden Punkte standen zwischenzeitlich als „offen" hier und sind inzwischen gefixt —
+sie bleiben als Spur stehen, damit nachvollziehbar ist, warum die Zuordnung sich geändert hat.
+
+- ~~Altbug 441~~ **erledigt (`b677cc6`):** „hauptverteiler / zähler / zählerkasten /
   netzanschluss" lagen auf **441 „Hoch- und Mittelspannungsanlagen"** (= Trafostation), jetzt auf
   **443 „Niederspannungsanlagen"**. War keine Editionsdrift — 441 heißt in beiden Fassungen gleich,
   nur der Code-Kommentar behauptete „Elektrounterverteilung". `zähler` trifft als Teilstring auch
   `wasserzähler`; dort gewinnt weiterhin der längere Treffer (→ 412).
-- **Beobachtung, nicht gefixt:** das Keyword `hak` ist nur 3 Zeichen und matcht als Teilstring in
-  jedem Wort mit „hak" (z. B. „Dachhaken"). Da fast jedes andere Keyword länger ist, gewinnt es nur,
-  wenn sonst nichts trifft — dann aber falsch. Kandidat, falls die Zuordnung mal auffällig wird.
+- ~~Keyword `hak`~~ **erledigt (`e80138a`):** die Abkürzung war nur 3 Zeichen lang und matchte als
+  Teilstring in jedem Wort mit „hak" („Dachhaken", „Schrankhaken") — sie gewann also genau dann,
+  wenn sonst nichts traf, und dann falsch. Ersetzt durch das ausgeschriebene
+  **`hausanschlusskasten`**. Bewusst **nicht** das kürzere `hausanschluss`: bei „Gas-Hausanschluss"
+  schlüge das den Treffer `gasanschluss` (→ 413 Gasanlagen) und zöge Gas auf Elektro.
+  **Wenn in Materialnamen „HAK" als Abkürzung vorkommt, greift die Regel jetzt nicht mehr** —
+  dann `hak` als Keyword bewusst wieder aufnehmen und die Nebenwirkung in Kauf nehmen.
 - **Entscheidung Andreas #1 — Positionsnummer nach KG.** Zettel-Vorbild: `541.001 … 541.008`
   (KG + hauseigene laufende Nummer, jede Position mit Einheitspreis/Zeit-/Material-/Maschinenansatz,
   Rollup zur KG). Heute vergibt mops PosNr als laufende Nummer **je Importquelle** (`06.01`,
