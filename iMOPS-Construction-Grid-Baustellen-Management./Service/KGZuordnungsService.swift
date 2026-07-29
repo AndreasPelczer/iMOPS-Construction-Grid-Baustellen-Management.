@@ -121,7 +121,12 @@ struct KGZuordnungsService {
         // gleich, nur der Kommentar behauptete „Elektrounterverteilung".
         // „zähler" trifft auch „wasserzähler" — dort gewinnt der längere Treffer (→ 412),
         // die Regel bleibt also unberührt.
-        (["hauptverteiler", "zähler", "hak", "zählerkasten", "netzanschluss"], "443"),
+        // „hak" (3 Zeichen) wurde entfernt: matchte als Teilstring in jedem Wort mit „hak“
+        // („Dachhaken", „Schrankhaken") und gewann immer dann, wenn sonst nichts traf — also
+        // genau im unsichersten Fall. Ersatz ist das ausgeschriebene „hausanschlusskasten".
+        // Bewusst NICHT das kürzere „hausanschluss": das schlüge sonst bei „Gas-Hausanschluss"
+        // das kürzere „gasanschluss" (→ 413) und zöge Gas fälschlich auf Elektro.
+        (["hauptverteiler", "zähler", "hausanschlusskasten", "zählerkasten", "netzanschluss"], "443"),
 
         // KG 444 – Elektroinstallation
         (["elektro", "elektroinstallation", "kabel", "leitung", "nyl",
