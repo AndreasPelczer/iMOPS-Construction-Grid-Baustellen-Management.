@@ -17,7 +17,9 @@
 
 ## Delta 29.07.2026 — DIN 276: zwei Kataloge aus zwei Fassungen zusammengeführt
 
-**Branch `fix/din276-kg-532`, zwei Commits, NICHT gepusht, kein PR.**
+**Branch `fix/din276-kg-532`, drei Commits, NICHT gepusht, kein PR.**
+(Diese Übergabe liegt auf einem eigenen Branch `docs/handoff-29-07` — zwei getrennte PRs,
+wie beim Delta 28.07. Beim Mergen Code zuerst, sonst steht in `main` eine Übergabe ohne den Code.)
 
 - **Gefunden:** es gab **zwei** KG-Kataloge aus **zwei DIN-276-Ausgaben**. 37 Nummern trugen
   unterschiedliche Bezeichnungen, ~20 davon mit echter Bedeutungsverschiebung — dieselbe Nummer
@@ -59,9 +61,14 @@ Gegenprobe: `ls <DerivedData>/…/….app | rg backup` muss leer sein.
 
 ### Offen aus dieser Session
 
-- **Altbug, bewusst liegen gelassen:** „zählerkasten / hak / netzanschluss" → **441**
-  „Hoch- und Mittelspannungsanlagen" (Hausanschluss ist Niederspannung → 443). 441 ist in beiden
-  Fassungen gleich, also keine Editionsdrift — nicht angefasst, um den Umbau nicht ausufern zu lassen.
+- ~~Altbug 441~~ **erledigt (`b677cc6`):** „hauptverteiler / zähler / hak / zählerkasten /
+  netzanschluss" lagen auf **441 „Hoch- und Mittelspannungsanlagen"** (= Trafostation), jetzt auf
+  **443 „Niederspannungsanlagen"**. War keine Editionsdrift — 441 heißt in beiden Fassungen gleich,
+  nur der Code-Kommentar behauptete „Elektrounterverteilung". `zähler` trifft als Teilstring auch
+  `wasserzähler`; dort gewinnt weiterhin der längere Treffer (→ 412).
+- **Beobachtung, nicht gefixt:** das Keyword `hak` ist nur 3 Zeichen und matcht als Teilstring in
+  jedem Wort mit „hak" (z. B. „Dachhaken"). Da fast jedes andere Keyword länger ist, gewinnt es nur,
+  wenn sonst nichts trifft — dann aber falsch. Kandidat, falls die Zuordnung mal auffällig wird.
 - **Entscheidung Andreas #1 — Positionsnummer nach KG.** Zettel-Vorbild: `541.001 … 541.008`
   (KG + hauseigene laufende Nummer, jede Position mit Einheitspreis/Zeit-/Material-/Maschinenansatz,
   Rollup zur KG). Heute vergibt mops PosNr als laufende Nummer **je Importquelle** (`06.01`,
