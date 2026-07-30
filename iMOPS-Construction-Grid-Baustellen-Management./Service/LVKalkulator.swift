@@ -125,16 +125,18 @@ enum LVKalkulator {
     /// auseinandergelaufen (siehe die vier nachgebauten Preis-Logiken vom 30.07.).
     static func zuschlaege(fuer position: LVPosition,
                            material: Double, lohn: Double, geraete: Double) -> Zuschlaege {
+        // Immer die WIRKSAMEN Saetze — Firmenwert, ausser die Position weicht
+        // ausdruecklich ab (zuschlagEigen). Nie die rohen Felder lesen.
         var z = Zuschlaege()
-        if position.zuschlagJeKostenart {
+        if position.rechnetJeKostenart {
             // Lohn traegt ueblicherweise den Loewenanteil, Material und Geraet wenig.
-            z.lohn     = lohn     * position.zuschlagLohnProzent
-            z.material = material * position.zuschlagMaterialProzent
-            z.geraet   = geraete  * position.zuschlagGeraetProzent
+            z.lohn     = lohn     * position.satzLohn
+            z.material = material * position.satzMaterial
+            z.geraet   = geraete  * position.satzGeraet
         } else {
             let ek = material + lohn + geraete
-            z.wg  = ek * position.wagnisGewinnProzent
-            z.bgk = ek * position.bgkProzent
+            z.wg  = ek * position.satzWagnisGewinn
+            z.bgk = ek * position.satzBGK
         }
         return z
     }

@@ -29,6 +29,11 @@ extension LVPosition {
     // Die drei Sätze starten bei 0,20 — genau die Summe der bisherigen Vorgaben
     // (0,12 BGK + 0,08 W&G). Der Schalter allein ändert also KEINE Zahl; erst wer
     // an einem Regler dreht, verändert den Preis.
+    // `zuschlagEigen == false` (Vorgabe): die Position rechnet mit den FIRMENWERTEN
+    // (FirmenSettings). Ein Satz wird dann an einer Stelle gepflegt statt in jeder
+    // Position. Erst wer bewusst abweicht, setzt das Flag — dann gelten die vier
+    // Felder unten.
+    @NSManaged var zuschlagEigen: Bool
     @NSManaged var zuschlagJeKostenart: Bool
     @NSManaged var zuschlagLohnProzent: Double
     @NSManaged var zuschlagMaterialProzent: Double
@@ -133,6 +138,37 @@ extension LVPosition {
 
     /// Position ist ein Baustein unter einem Element (A-Element).
     var istElementBaustein: Bool { deckel?.istElement == true }
+
+    // MARK: - Wirksame Zuschlagssätze (Firmenwert oder eigener)
+    //
+    // Immer diese sechs benutzen, nie die rohen Felder — sonst rechnet der eine
+    // Aufrufer mit dem Firmenwert und der nächste mit dem gespeicherten. Genau so
+    // sind heute schon zwei Kataloge und fünf KG-Namen auseinandergelaufen.
+
+    /// Rechnet diese Position mit getrennten Sätzen je Kostenart?
+    var rechnetJeKostenart: Bool {
+        zuschlagEigen ? zuschlagJeKostenart : FirmenSettings.zuschlagJeKostenart
+    }
+
+    var satzLohn: Double     { zuschlagEigen ? zuschlagLohnProzent     : FirmenSettings.zuschlagLohn }
+    var satzMaterial: Double { zuschlagEigen ? zuschlagMaterialProzent : FirmenSettings.zuschlagMaterial }
+    var satzGeraet: Double   { zuschlagEigen ? zuschlagGeraetProzent   : FirmenSettings.zuschlagGeraet }
+    var satzBGK: Double      { zuschlagEigen ? bgkProzent              : FirmenSettings.bgk }
+    var satzWagnisGewinn: Double {
+        zuschlagEigen ? wagnisGewinnProzent : FirmenSettings.wagnisGewinn
+    }
+
+    /// Übernimmt die aktuellen Firmenwerte in die eigenen Felder — damit beim
+    /// Umschalten auf „abweichen" nicht plötzlich andere Zahlen dastehen als eben
+    /// noch angezeigt.
+    func uebernehmeFirmenwerte() {
+        zuschlagJeKostenart = FirmenSettings.zuschlagJeKostenart
+        zuschlagLohnProzent = FirmenSettings.zuschlagLohn
+        zuschlagMaterialProzent = FirmenSettings.zuschlagMaterial
+        zuschlagGeraetProzent = FirmenSettings.zuschlagGeraet
+        bgkProzent = FirmenSettings.bgk
+        wagnisGewinnProzent = FirmenSettings.wagnisGewinn
+    }
 
     /// Menge, mit der diese Position tatsächlich rechnet.
     ///

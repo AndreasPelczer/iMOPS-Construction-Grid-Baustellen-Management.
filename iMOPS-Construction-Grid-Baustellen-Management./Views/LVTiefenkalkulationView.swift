@@ -27,6 +27,7 @@ struct LVTiefenkalkulationView: View {
         let beschreibung: String
     }
 
+    @State private var eigen: Bool
     @State private var jeKostenart: Bool
     @State private var zLohn: Double
     @State private var zMaterial: Double
@@ -34,12 +35,16 @@ struct LVTiefenkalkulationView: View {
 
     init(position: LVPosition) {
         self.position = position
-        _wgProzent = State(initialValue: position.wagnisGewinnProzent)
-        _bgkProzent = State(initialValue: position.bgkProzent)
-        _jeKostenart = State(initialValue: position.zuschlagJeKostenart)
-        _zLohn = State(initialValue: position.zuschlagLohnProzent)
-        _zMaterial = State(initialValue: position.zuschlagMaterialProzent)
-        _zGeraet = State(initialValue: position.zuschlagGeraetProzent)
+        // Immer die WIRKSAMEN Saetze anzeigen — also Firmenwert, solange die Position
+        // nicht ausdruecklich abweicht. Sonst stuende im Regler etwas anderes als das,
+        // womit gerechnet wird.
+        _eigen = State(initialValue: position.zuschlagEigen)
+        _wgProzent = State(initialValue: position.satzWagnisGewinn)
+        _bgkProzent = State(initialValue: position.satzBGK)
+        _jeKostenart = State(initialValue: position.rechnetJeKostenart)
+        _zLohn = State(initialValue: position.satzLohn)
+        _zMaterial = State(initialValue: position.satzMaterial)
+        _zGeraet = State(initialValue: position.satzGeraet)
     }
 
     private var kalkulation: Kalkulation {
@@ -303,10 +308,32 @@ struct LVTiefenkalkulationView: View {
 
     private var zuschlagSection: some View {
         Section {
+            Toggle(isOn: $eigen) {
+                Label("Von den Firmenwerten abweichen", systemImage: "building.2")
+            }
+            .tint(.orange)
+            .onChange(of: eigen) { _, neu in
+                position.zuschlagEigen = neu
+                if neu {
+                    // Beim Umschalten die Firmenwerte uebernehmen — sonst springt der
+                    // Preis, obwohl der Nutzer nur "abweichen" angetippt hat.
+                    position.uebernehmeFirmenwerte()
+                } else {
+                    // Zurueck zur Firma: die Regler wieder auf deren Stand ziehen.
+                    jeKostenart = FirmenSettings.zuschlagJeKostenart
+                    zLohn = FirmenSettings.zuschlagLohn
+                    zMaterial = FirmenSettings.zuschlagMaterial
+                    zGeraet = FirmenSettings.zuschlagGeraet
+                    wgProzent = FirmenSettings.wagnisGewinn
+                    bgkProzent = FirmenSettings.bgk
+                }
+            }
+
             Toggle(isOn: $jeKostenart) {
                 Label("Je Kostenart aufschlagen", systemImage: "square.split.1x2")
             }
             .tint(.orange)
+            .disabled(!eigen)
             .onChange(of: jeKostenart) { _, neu in position.zuschlagJeKostenart = neu }
 
             if jeKostenart {
@@ -330,15 +357,23 @@ struct LVTiefenkalkulationView: View {
         } header: {
             Label("Zuschläge", systemImage: "percent")
         } footer: {
-            if jeKostenart {
-                Text("""
-                Ein Bauunternehmen schlägt nicht auf alles gleich auf: der Lohn trägt \
-                den Löwenanteil von Gemeinkosten und Gewinn, Material und Gerät kaum \
-                etwas. Üblich sind Größenordnungen wie Lohn ×2,75, Material ×1,15, \
-                Gerät ×1,10. W&G und BGK werden in diesem Modus nicht gerechnet.
-                """)
-            } else {
-                Text("W&G und BGK werden auf den EK aufgeschlagen, um den VK zu berechnen. Für getrennte Sätze je Kostenart den Schalter oben umlegen — die Vorgabe 20 % je Kostenart ergibt exakt denselben Preis wie 8 % + 12 % auf alles.")
+            VStack(alignment: .leading, spacing: 6) {
+                if eigen {
+                    Text("Diese Position weicht ab. Änderungen hier gelten NUR für sie — die Firmenwerte bleiben unberührt.")
+                        .foregroundStyle(.orange)
+                } else {
+                    Text("Es gelten die Firmenwerte (Einstellungen → Kalkulation). Ein Satz wird dort einmal gepflegt und wirkt in jeder Position, die nicht abweicht. Zum Ändern nur für diese Position den Schalter oben umlegen.")
+                }
+                if jeKostenart {
+                    Text("""
+                    Ein Bauunternehmen schlägt nicht auf alles gleich auf: der Lohn trägt \
+                    den Löwenanteil von Gemeinkosten und Gewinn, Material und Gerät kaum \
+                    etwas. Üblich sind Größenordnungen wie Lohn ×2,75, Material ×1,15, \
+                    Gerät ×1,10. W&G und BGK werden in diesem Modus nicht gerechnet.
+                    """)
+                } else {
+                    Text("W&G und BGK werden auf den EK aufgeschlagen, um den VK zu berechnen. Die Vorgabe 20 % je Kostenart ergibt exakt denselben Preis wie 8 % + 12 % auf alles.")
+                }
             }
         }
     }
@@ -353,16 +388,18 @@ struct LVTiefenkalkulationView: View {
                                 speichern: @escaping (Double) -> Void) -> some View {
         HStack {
             Text(titel)
+                .foregroundStyle(eigen ? .primary : .secondary)
             Spacer()
             Text("\(Int(wert.wrappedValue * 100)) %")
                 .font(.body.monospacedDigit())
-                .foregroundStyle(farbe)
+                .foregroundStyle(eigen ? farbe : .secondary)
             Text("(×\((1 + wert.wrappedValue).formatted(.number.precision(.fractionLength(2)))))")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
         }
         Slider(value: wert, in: 0...bis, step: 0.05)
             .tint(farbe)
+            .disabled(!eigen)   // Firmenwert: sichtbar, aber nicht hier verstellbar
             .onChange(of: wert.wrappedValue) { _, neu in speichern(neu) }
     }
 
@@ -523,12 +560,18 @@ struct LVTiefenkalkulationView: View {
     // MARK: - Actions
 
     private func speichern() {
-        position.wagnisGewinnProzent = wgProzent
-        position.bgkProzent = bgkProzent
-        position.zuschlagJeKostenart = jeKostenart
-        position.zuschlagLohnProzent = zLohn
-        position.zuschlagMaterialProzent = zMaterial
-        position.zuschlagGeraetProzent = zGeraet
+        position.zuschlagEigen = eigen
+        // Nur schreiben, wenn die Position bewusst abweicht. Sonst wuerden die
+        // angezeigten Firmenwerte als eigene Werte festgeschrieben — und eine spaetere
+        // Aenderung an den Firmenwerten wuerde diese Position stillschweigend uebergehen.
+        if eigen {
+            position.wagnisGewinnProzent = wgProzent
+            position.bgkProzent = bgkProzent
+            position.zuschlagJeKostenart = jeKostenart
+            position.zuschlagLohnProzent = zLohn
+            position.zuschlagMaterialProzent = zMaterial
+            position.zuschlagGeraetProzent = zGeraet
+        }
         try? viewContext.save()
     }
 

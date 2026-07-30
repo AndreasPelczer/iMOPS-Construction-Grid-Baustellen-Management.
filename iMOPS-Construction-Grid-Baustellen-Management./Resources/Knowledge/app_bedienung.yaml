@@ -902,7 +902,17 @@
     - "Mannstunden"
     - "wie viele Stunden steckt im Angebot"
   antwort: |
-    In der Tiefenkalkulation gibt es den Schalter "Je Kostenart aufschlagen".
+    WO DIE SAETZE STEHEN: unter Einstellungen -> "Kalkulation — Zuschlaege". Dort
+    einmal gepflegt, gelten sie fuer JEDE Position, die nicht ausdruecklich abweicht.
+    Wer eine einzelne Position anders rechnen will, schaltet in der Tiefenkalkulation
+    "Von den Firmenwerten abweichen" ein — dann werden die Regler dort bedienbar und
+    gelten nur fuer diese eine Position. Solange der Schalter aus ist, zeigen die
+    Regler die Firmenwerte grau an, damit sichtbar ist, womit gerechnet wird.
+
+    Beim Umschalten auf "abweichen" werden die aktuellen Firmenwerte uebernommen —
+    der Preis springt also nicht, nur weil man "abweichen" antippt.
+
+    Ausserdem gibt es den Schalter "Je Kostenart aufschlagen".
 
     AUS (Vorgabe): ein Satz Wagnis & Gewinn und ein Satz BGK, beide auf die
     Selbstkosten. So war es immer.

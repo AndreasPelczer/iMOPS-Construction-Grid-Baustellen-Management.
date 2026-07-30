@@ -31,6 +31,10 @@ struct ElementKalkulationTests {
         el.bezeichnung = "Pflasterfläche"
         el.menge = 100
         el.einheit = "m²"
+        // Eigene Sätze statt Firmenwerte — sonst haengen die Tests an UserDefaults,
+        // die zwischen Laeufen stehen bleiben koennen. Der Firmenwert-Weg wird
+        // separat geprueft (firmenwerteGeltenOhneEigeneSaetze).
+        el.zuschlagEigen = true
         el.bgkProzent = 0.12
         el.wagnisGewinnProzent = 0.08
         el.deckelTyp = .element
@@ -50,6 +54,7 @@ struct ElementKalkulationTests {
         b.mengeJeDeckelEinheit = jeElementEinheit
         // Bausteine tragen eigene Zuschlagsätze — die müssen ignoriert werden,
         // sonst wird doppelt aufgeschlagen. Bewusst ungleich null gesetzt.
+        b.zuschlagEigen = true
         b.bgkProzent = 0.12
         b.wagnisGewinnProzent = 0.08
         b.deckel = element
@@ -191,6 +196,7 @@ struct ElementKalkulationTests {
         deckel.bezeichnung = "Außenwand 24 cm"
         deckel.menge = 80
         deckel.einheit = "m²"
+        deckel.zuschlagEigen = true
         deckel.bgkProzent = 0.12
         deckel.wagnisGewinnProzent = 0.08
         addMaterial(deckel, preis: 30)
@@ -220,6 +226,7 @@ struct ElementKalkulationTests {
         pos.posNr = "3.30.1"
         pos.menge = 10
         pos.einheit = "m²"
+        pos.zuschlagEigen = true
         pos.bgkProzent = 0.12
         pos.wagnisGewinnProzent = 0.08
         addMaterial(pos, preis: 100)
@@ -240,6 +247,7 @@ struct ElementKalkulationTests {
         wand.posNr = "331.001"
         wand.menge = 80
         wand.einheit = "m²"
+        wand.zuschlagEigen = true
         wand.bgkProzent = 0.12
         wand.wagnisGewinnProzent = 0.08
         addMaterial(wand, preis: 30)
@@ -309,6 +317,58 @@ struct ElementKalkulationTests {
         let k = LVKalkulator.kalkuliere(position: verlegen)
         #expect(abs(k.zuschlagLohn - 0) < 0.001)
         #expect(abs(k.einheitspreisVK - 27.50) < 0.001)   // reine Selbstkosten
+    }
+
+    // MARK: - Firmenwerte
+
+    /// Der eigentliche Zweck: ein Satz wird EINMAL gepflegt und wirkt überall.
+    /// Die Position trägt eigene Felder, die aber ignoriert werden, solange sie
+    /// nicht ausdrücklich abweicht.
+    @Test @MainActor
+    func firmenwerteGeltenOhneEigeneSaetze() throws {
+        let keys = [FirmenSettings.Keys.zuschlagJeKostenart,
+                    FirmenSettings.Keys.zuschlagLohn,
+                    FirmenSettings.Keys.zuschlagMaterial,
+                    FirmenSettings.Keys.zuschlagGeraet]
+        defer { keys.forEach { UserDefaults.standard.removeObject(forKey: $0) } }
+
+        UserDefaults.standard.set(true, forKey: FirmenSettings.Keys.zuschlagJeKostenart)
+        UserDefaults.standard.set(1.75, forKey: FirmenSettings.Keys.zuschlagLohn)
+        UserDefaults.standard.set(0.15, forKey: FirmenSettings.Keys.zuschlagMaterial)
+        UserDefaults.standard.set(0.10, forKey: FirmenSettings.Keys.zuschlagGeraet)
+
+        let el = makeVollesRezept()
+        el.zuschlagEigen = false          // folgt der Firma
+        // Absichtlich unsinnige eigene Werte — sie duerfen NICHT durchschlagen.
+        el.zuschlagLohnProzent = 99
+        el.zuschlagMaterialProzent = 99
+
+        let k = LVKalkulator.kalkuliereElement(el)
+        #expect(abs(k.einheitspreisVK - 127.25) < 0.001)
+    }
+
+    @Test @MainActor
+    func eigeneSaetzeSchlagenFirmenwerte() throws {
+        let key = FirmenSettings.Keys.zuschlagLohn
+        defer { UserDefaults.standard.removeObject(forKey: key) }
+        UserDefaults.standard.set(1.75, forKey: key)
+
+        let el = makeVollesRezept()       // makeElement() setzt zuschlagEigen = true
+        // Firma sagt 175 % auf Lohn — die Position rechnet weiter klassisch 12+8 %.
+        #expect(abs(LVKalkulator.kalkuliereElement(el).einheitspreisVK - 87.00) < 0.001)
+    }
+
+    @Test @MainActor
+    func firmenwerteUebernehmenAendertDenPreisNicht() throws {
+        let el = makeVollesRezept()
+        el.zuschlagEigen = false
+        let vorher = LVKalkulator.kalkuliereElement(el).einheitspreisVK
+
+        // Genau das macht die Oberfläche beim Umschalten auf „abweichen".
+        el.uebernehmeFirmenwerte()
+        el.zuschlagEigen = true
+
+        #expect(abs(LVKalkulator.kalkuliereElement(el).einheitspreisVK - vorher) < 0.001)
     }
 
     // MARK: - Lohnstunden
