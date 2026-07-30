@@ -837,3 +837,52 @@
     Mengen sind mit "geschaetzt" markiert (gemessen verdraengt geschaetzt).
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
+
+- id: "App_LV_Element_Kalkulation"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "B-Element"
+    - "Element rechnen"
+    - "Element kalkulieren"
+    - "Einheitspreis aus mehreren Positionen"
+    - "Preis je Quadratmeter aus Arbeitsschritten"
+    - "Rezept-Mass"
+    - "Bausteine summieren"
+    - "Deckel summiert Bausteine"
+    - "Arbeitsschritte zu einem Preis zusammenfassen"
+  antwort: |
+    Ein Deckel im LV kann ZWEI verschiedene Dinge sein. Umschalten: lange auf den
+    Deckel druecken (Rechtsklick am Mac) -> "Als Element rechnen" bzw. "Wieder als
+    Mengentraeger rechnen".
+
+    1) Mengentraeger (Vorgabe, orange): der Deckel traegt die Menge, die Unterpunkte
+       sind Beleg und "zaehlen nicht". So kommen Excel- und Bestelllisten-Importe herein.
+
+    2) Element (indigo): der Deckel ist die SUMME seiner Bausteine. Beispiel Pflaster:
+       Untergrund, Frostschutz, Bettung, Verlegen, Schneiden, Einsanden, Abruetteln,
+       Nacharbeiten - am Ende steht ein Einheitspreis, z.B. 87,00 EUR/m².
+
+    So legst du ein Element an:
+    - Positionen im LV auswaehlen und gruppieren (der Deckel entsteht).
+    - Deckel lange druecken -> "Als Element rechnen".
+    - Am Deckel Bezugsmenge und Einheit setzen (z.B. 100 m²) - ueber "Bearbeiten".
+    - Je Baustein antippen -> "Bearbeiten" -> Feld "Rezept-Mass": wie viel je Einheit
+      des Elements gebraucht wird, z.B. 0,35 m³ Schotter je m² Pflaster. Die Vorschau
+      zeigt sofort die tatsaechliche Menge (0,35 x 100 = 35 m³).
+    - In jedem Baustein wie gewohnt Material, Lohn und Geraet kalkulieren.
+
+    Wichtig: Zuschlaege (BGK, Wagnis & Gewinn) werden EINMAL oben am Element
+    gerechnet, nicht je Baustein - sonst wuerde doppelt aufgeschlagen. Die
+    Zuschlagsfelder eines Bausteins bleiben deshalb ohne Wirkung, solange er unter
+    einem Element haengt.
+
+    Vorteil: das Element ist ein Rezept. Aendert sich die Flaeche, bleibt der Preis
+    je m² gleich und die Gesamtsumme rechnet sich neu. Die Bausteine duerfen dabei
+    in anderen Einheiten rechnen als das Element (m³, lfm, Stunden) - die Umrechnung
+    macht das Rezept-Mass.
+
+    "Aufloesen" macht aus der Gruppe wieder Einzelpositionen und setzt den Deckel
+    auf Mengentraeger zurueck.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
