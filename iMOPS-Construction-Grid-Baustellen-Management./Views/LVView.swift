@@ -174,6 +174,13 @@ struct LVView: View {
         return Double(sum) / Double(base.count) / 100.0
     }
 
+    /// Lohnstunden des ganzen LV — Elemente ueber ihre Bausteine, Belege zaehlen nicht.
+    private var gesamtStunden: Double {
+        LVKalkulator.gesamtStunden(
+            positionen: Array(positionen).filter { !LVPositionHelper.isAlternative($0) }
+        )
+    }
+
     private var gesamtSumme: Double {
         ohneDuplikate(Array(positionen).filter { !LVPositionHelper.isAlternative($0) }).reduce(0.0) { sum, pos in
             let preis: Double
@@ -597,8 +604,18 @@ struct LVView: View {
         .safeAreaInset(edge: .bottom) {
             if gesamtSumme > 0 {
                 HStack {
-                    Text("Angebotssumme (netto):")
-                        .font(.headline)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Angebotssumme (netto):")
+                            .font(.headline)
+                        // Lohnstunden: die Groesse, an der Termine und Mannschaft haengen.
+                        // Nur zeigen, wenn ueberhaupt jemand Stunden kalkuliert hat.
+                        if gesamtStunden > 0 {
+                            Label("\(gesamtStunden.formatted(.number.precision(.fractionLength(0...1)))) Lohnstunden",
+                                  systemImage: "clock")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     Spacer()
                     Text(gesamtSumme, format: .currency(code: "EUR"))
                         .font(.title3.bold().monospacedDigit())

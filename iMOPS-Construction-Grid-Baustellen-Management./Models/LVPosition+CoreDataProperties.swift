@@ -16,6 +16,23 @@ extension LVPosition {
     @NSManaged var lieferant: String?
     @NSManaged var wagnisGewinnProzent: Double
     @NSManaged var bgkProzent: Double
+
+    // MARK: - Zuschlag je Kostenart
+    // Ein Bauunternehmen schlägt nicht auf alles gleich auf: der Lohn trägt den
+    // Löwenanteil von Gemeinkosten und Gewinn, Material und Gerät kaum etwas.
+    // Typisch sind Faktoren wie Lohn ×2,75, Material ×1,15, Gerät ×1,10.
+    //
+    // `zuschlagJeKostenart == false` (Vorgabe) = alles Bisherige: EIN Satz für W&G
+    // und EINER für BGK, beide auf die Summe. Ist der Schalter an, gilt je Kostenart
+    // ein eigener Satz und W&G/BGK werden nicht mehr gerechnet.
+    //
+    // Die drei Sätze starten bei 0,20 — genau die Summe der bisherigen Vorgaben
+    // (0,12 BGK + 0,08 W&G). Der Schalter allein ändert also KEINE Zahl; erst wer
+    // an einem Regler dreht, verändert den Preis.
+    @NSManaged var zuschlagJeKostenart: Bool
+    @NSManaged var zuschlagLohnProzent: Double
+    @NSManaged var zuschlagMaterialProzent: Double
+    @NSManaged var zuschlagGeraetProzent: Double
     @NSManaged var mengenQuelleRaw: String?
     @NSManaged var event: Event?
     // Welle 9 — Bau-Hierarchie: Position hängt (zusätzlich zu event) an einem Geschoss.

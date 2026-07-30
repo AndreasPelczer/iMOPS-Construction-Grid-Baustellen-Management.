@@ -886,3 +886,48 @@
     auf Mengentraeger zurueck.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Zuschlag_Je_Kostenart"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Zuschlag je Kostenart"
+    - "Zuschlag auf Lohn"
+    - "Lohnzuschlag"
+    - "unterschiedliche Zuschlaege"
+    - "Zuschlagsgruppen"
+    - "Faktor auf den Lohn"
+    - "Gemeinkosten auf Lohn"
+    - "Lohnstunden"
+    - "Mannstunden"
+    - "wie viele Stunden steckt im Angebot"
+  antwort: |
+    In der Tiefenkalkulation gibt es den Schalter "Je Kostenart aufschlagen".
+
+    AUS (Vorgabe): ein Satz Wagnis & Gewinn und ein Satz BGK, beide auf die
+    Selbstkosten. So war es immer.
+
+    AN: je Kostenart ein eigener Satz — Lohn, Material, Geraet getrennt. Das
+    entspricht der ueblichen Praxis: der Lohn traegt den Loewenanteil von
+    Gemeinkosten und Gewinn, Material und Geraet kaum etwas. Groessenordnungen aus
+    der Praxis: Lohn mal 2,75 (also 175 %), Material mal 1,15, Geraet mal 1,10.
+    W&G und BGK werden in diesem Modus NICHT zusaetzlich gerechnet.
+
+    Wichtig: das Umschalten allein aendert keinen Preis. Die drei Saetze starten bei
+    je 20 % — das ist dieselbe Summe wie 12 % BGK + 8 % W&G auf alles. Erst wer an
+    einem Regler dreht, veraendert die Zahl.
+
+    Jeder Regler zeigt beides: den Prozentsatz und den Faktor (175 % = x2,75). Im
+    Ergebnis steht der Aufschlag dann dort, wo er entsteht — so siehst du, dass der
+    Lohn das Geld traegt.
+
+    Beim B-Element gilt der Zuschlag am Element, nicht an den Bausteinen. Ein
+    Baustein rechnet immer zuschlagsfrei, egal was an ihm eingestellt ist.
+
+    LOHNSTUNDEN: unten im LV steht neben der Angebotssumme, wie viele Lohnstunden
+    das ganze Angebot bedeutet — die Groesse, an der Termine und Mannschaftsstaerke
+    haengen. In der Tiefenkalkulation stehen sie je Position (gesamt und je Einheit).
+    Geraetestunden zaehlen NICHT mit: die Maschine steht auch, wenn niemand
+    danebensteht. Belege unter einem Deckel zaehlen nicht doppelt.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"

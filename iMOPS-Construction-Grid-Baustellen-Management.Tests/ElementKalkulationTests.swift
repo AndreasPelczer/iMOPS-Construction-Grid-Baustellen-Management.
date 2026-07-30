@@ -253,6 +253,107 @@ struct ElementKalkulationTests {
         #expect(abs(LVKalkulator.gesamtKalkulation(positionen: alle) - 11_580.00) < 0.01)
     }
 
+    // MARK: - Zuschlag je Kostenart
+
+    /// Der Schalter allein darf KEINE Zahl bewegen: 20 % je Kostenart ist dieselbe
+    /// Summe wie 12 % BGK + 8 % W&G auf alles. Erst wer an einem Regler dreht,
+    /// aendert den Preis.
+    @Test @MainActor
+    func umschaltenAlleinAendertNichts() throws {
+        let el = makeVollesRezept()
+        let vorher = LVKalkulator.kalkuliereElement(el).einheitspreisVK
+
+        el.zuschlagJeKostenart = true      // Vorgaben stehen auf je 0,20
+
+        #expect(abs(LVKalkulator.kalkuliereElement(el).einheitspreisVK - vorher) < 0.001)
+        #expect(abs(vorher - 87.00) < 0.001)
+    }
+
+    /// Das Verfahren aus dem BauSU-Bild: Lohn traegt den Loewenanteil.
+    /// Selbstkosten je m²: Material 42,50 · Lohn 27,50 · Geraet 2,50
+    ///   Lohn     27,50 x 1,75 = 48,125
+    ///   Material 42,50 x 0,15 =  6,375
+    ///   Geraet    2,50 x 0,10 =  0,250
+    ///   72,50 + 54,75 = 127,25 EUR/m²
+    @Test @MainActor
+    func lohnTraegtDenLoewenanteil() throws {
+        let el = makeVollesRezept()
+        el.zuschlagJeKostenart = true
+        el.zuschlagLohnProzent = 1.75      // x2,75
+        el.zuschlagMaterialProzent = 0.15  // x1,15
+        el.zuschlagGeraetProzent = 0.10    // x1,10
+
+        let k = LVKalkulator.kalkuliereElement(el)
+        #expect(abs(k.zuschlagLohn - 48.125) < 0.001)
+        #expect(abs(k.zuschlagMaterial - 6.375) < 0.001)
+        #expect(abs(k.zuschlagGeraet - 0.250) < 0.001)
+        // W&G und BGK werden in diesem Verfahren NICHT zusaetzlich gerechnet.
+        #expect(abs(k.zuschlagWG - 0) < 0.001)
+        #expect(abs(k.zuschlagBGK - 0) < 0.001)
+        #expect(abs(k.einheitspreisVK - 127.25) < 0.001)
+        #expect(abs(k.gesamtpreis - 12_725.00) < 0.01)
+    }
+
+    @Test @MainActor
+    func bausteinTraegtAuchJeKostenartKeinenZuschlag() throws {
+        let el = makeElement()
+        el.zuschlagJeKostenart = true
+        el.zuschlagLohnProzent = 1.75
+
+        let verlegen = makeBaustein(el, posNr: "534.005", bezeichnung: "Pflaster verlegen",
+                                    einheit: "m²", jeElementEinheit: 1.0)
+        verlegen.zuschlagJeKostenart = true      // eigener Schalter — muss ignoriert werden
+        verlegen.zuschlagLohnProzent = 1.75
+        addLohn(verlegen, satz: 55, stunden: 0.5)
+
+        let k = LVKalkulator.kalkuliere(position: verlegen)
+        #expect(abs(k.zuschlagLohn - 0) < 0.001)
+        #expect(abs(k.einheitspreisVK - 27.50) < 0.001)   // reine Selbstkosten
+    }
+
+    // MARK: - Lohnstunden
+
+    @Test @MainActor
+    func elementSummiertLohnstundenUeberDasRezept() throws {
+        let el = makeVollesRezept()          // einziger Lohn: 0,5 Std je m², Faktor 1,0
+        let k = LVKalkulator.kalkuliereElement(el)
+
+        #expect(abs(k.stundenJeEinheit - 0.5) < 0.001)
+        #expect(abs(k.stundenGesamt - 50.0) < 0.001)      // 0,5 x 100 m²
+    }
+
+    @Test @MainActor
+    func stundenSkalierenMitDemRezeptMass() throws {
+        let el = makeElement()
+        // Abruetteln rechnet in Stunden: 1,0 Std je Baustein-Einheit, 0,1 je m².
+        let abruetteln = makeBaustein(el, posNr: "534.007", bezeichnung: "Abrütteln",
+                                      einheit: "h", jeElementEinheit: 0.1)
+        addLohn(abruetteln, satz: 26.55, stunden: 1.0)
+
+        let k = LVKalkulator.kalkuliereElement(el)
+        #expect(abs(k.stundenJeEinheit - 0.1) < 0.001)    // 1,0 x 0,1
+        #expect(abs(k.stundenGesamt - 10.0) < 0.001)      // x 100 m²
+    }
+
+    @Test @MainActor
+    func gesamtstundenUeberDasGanzeLV() throws {
+        let element = makeVollesRezept()                  // 50 Std
+        let wand = LVPosition(context: ctx)               // 0,8 Std/m² x 80 = 64 Std
+        wand.posNr = "331.001"
+        wand.menge = 80
+        wand.einheit = "m²"
+        addLohn(wand, satz: 50, stunden: 0.8)
+
+        let beleg = LVPosition(context: ctx)              // zaehlt nicht
+        beleg.posNr = "331.001.1"
+        beleg.menge = 30
+        beleg.deckel = wand
+        addLohn(beleg, satz: 50, stunden: 2.0)
+
+        let alle = [element, wand, beleg] + element.unterPositionenArray
+        #expect(abs(LVKalkulator.gesamtStunden(positionen: alle) - 114.0) < 0.001)
+    }
+
     @Test @MainActor
     func leerMarkiertesElementRechnetNichts() throws {
         let el = LVPosition(context: ctx)
