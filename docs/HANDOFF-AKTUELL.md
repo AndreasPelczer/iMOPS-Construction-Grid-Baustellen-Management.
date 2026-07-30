@@ -15,6 +15,95 @@
 3. EventDetailView/LVView zerlegen
 4. Kernel-Spike-Entscheidung vorbereiten
 
+## Delta 30./31.07.2026 — Zuschlag je Kostenart + Lohnstunden + Firmenwerte
+
+**Branch `feature/zuschlag-je-kostenart`** (2 Commits, zweigt von
+`feature/lv-element-kalkulation` ab), NICHT gepusht.
+
+Auslöser: ein Foto aus **BauSU** (echtes LV, Position „Schotter liefern"). Darin
+zwei Dinge, die mops nicht konnte — beide jetzt gebaut. Die Zeilen darin
+(`B SCHOTTER03` mit `A`-Positionen darunter, bezogen auf 1,0000 m²) sind **Zeile für
+Zeile unser B-Element**; die Struktur stimmte also schon.
+
+### Zuschlag je Kostenart
+
+Im Bild trägt der Lohn ×2,75, Material ×1,15, Gerät ×1,10 — mops hatte EINEN Satz
+auf alles. Das ist die Stelle, an der auf dem Bau das Geld verdient wird.
+
+- Vier neue Felder: `zuschlagJeKostenart` (Schalter) + je ein Satz für Lohn,
+  Material, Gerät. Regler zeigen **Prozent UND Faktor** (175 % = ×2,75).
+- **Die Vorgaben sind so gewählt, dass Umschalten allein KEINE Zahl bewegt**
+  (je 20 % = 12 % BGK + 8 % W&G). Ein Test hält das fest.
+- `LVKalkulator.zuschlaege(fuer:material:lohn:geraete:)` ist **eine** Funktion für
+  beide Verfahren, benutzt von Position UND Element — bewusst, siehe unten.
+- Nachgerechnet mit den Sätzen aus dem Bild: 72,50 € Selbstkosten + 54,75 Zuschlag
+  = **127,25 €/m²**.
+
+### Lohnstunden
+
+Im Bild läuft eine `Std`-Spalte bis zur LV-Summe durch (67,599 Std).
+
+- `Kalkulation.stundenJeEinheit` / `.stundenGesamt`; das Element summiert die
+  Stunden seiner Bausteine über **dasselbe Rezept-Maß** wie die Kosten.
+- `LVKalkulator.gesamtStunden(positionen:)`, sichtbar unter der Angebotssumme
+  („50 Lohnstunden").
+- **Nur Lohnstunden**, keine Gerätestunden — genau wie im Bild (dort sind LKW und
+  Minibagger nicht in der Std-Spalte). Die Maschine steht auch, wenn niemand
+  danebensteht.
+
+### Sätze als FIRMENWERTE (`759fc8e`)
+
+Sonst müsste man sie in jedes Element neu tippen.
+
+- `FirmenSettings` trägt die sechs Werte, gepflegt unter **Einstellungen →
+  „Kalkulation — Zuschläge"**. Vorgaben identisch zu den bisherigen Core-Data-
+  Defaults, damit die Umstellung für sich genommen nichts bewegt.
+- Neues Feld `LVPosition.zuschlagEigen`. Aus = Firmenwerte, an = eigene Sätze.
+- **Sechs wirksame Sätze als computed properties** (`satzLohn`, `satzBGK`, …).
+  Der Rechner liest NUR die, nie die rohen Felder — sonst rechnet ein Aufrufer mit
+  dem Firmenwert und der nächste mit dem gespeicherten. Genau so sind an einem Tag
+  schon zwei Kataloge und fünf KG-Namen auseinandergelaufen.
+- Oberfläche: Schalter „Von den Firmenwerten abweichen". Aus → Regler zeigen die
+  Firmenwerte **grau** (sichtbar, nicht verstellbar). Beim Einschalten werden die
+  Firmenwerte übernommen, damit der Preis nicht springt.
+
+### 🔴 Beinahe eine stille Preisänderung
+
+Nach dem Firmenwert-Umbau fielen **drei Alt-Tests** um — und das war KEIN
+Testproblem. Die **Marktbreit-Pauschalposition** steht bewusst auf **0 % Zuschlag**
+(Nachunternehmer-Durchleitung) und hätte durch den Fallback 12 % BGK + 8 % W&G
+bekommen: aus **1.549,21 € wären 1.858 €** geworden, ohne dass jemand etwas
+geändert hat.
+
+Zwei Konsequenzen:
+
+- **`Models/ZuschlagMigration.swift`** (Muster: `HierarchieMigration`, aufgerufen in
+  `Persistence.swift`, **nicht** im In-Memory-Store): markiert beim ersten Start
+  jede Bestandsposition, deren Sätze von den Firmenwerten **abweichen**, als
+  `zuschlagEigen`. Wer auf Standardwerten steht, folgt ab jetzt der Firma.
+  **Dadurch ändert sich keine einzige Zahl** — die Migration konserviert den Ist-Stand.
+- **Neuer Vertrag im Code: wer die Zuschlagsfelder schreibt, muss `zuschlagEigen`
+  mitsetzen.** Sonst greifen stillschweigend die Firmenwerte. Umgesetzt im
+  `MarktbreitSeeder` (mit Begründung im Code) und im zugehörigen Test.
+
+### Stand
+
+115 Tests grün (9 neue). Drift-Regel: `App_Zuschlag_Je_Kostenart` in
+`app_bedienung.yaml` (10 Aliase), inkl. Firmenwert-Weg. Snapshot-Ziel
+`scripts/snapshot.sh LVZuschlag eigen|firma`.
+
+### Offen / bewusst nicht gemacht
+
+- Die Sätze sind **Firmenwerte, keine Zuschlagsgruppen.** BauSU kennt 30 Gruppen,
+  denen Positionen zugeordnet werden. Wir haben Firma + Einzelabweichung — reicht
+  fürs Erste, ist aber nicht dasselbe.
+- **Was aus dem BauSU-Bild weiter fehlt** (Reihenfolge = Vorschlag):
+  Variablen + Formeln (`V DI` Schichtdicke, `=DI*1,8`) · Rezept als
+  wiederverwendbarer Stammdaten-Baustein · weitere Kostenarten (Fremd, Sonstiges,
+  Transport, Schalung — **Fremdleistung fehlt am meisten**, Nachunternehmer sind auf
+  dem Bau die Regel) · Material-/Geräte-Stammdaten mit Nummern · die Kosten-/Preis-
+  Matrix je Position und LV.
+
 ## Delta 30.07.2026 — B-Element (Rezept-Kalkulation) + KG-Namen aus einer Quelle
 
 **Zwei Branches, beide NICHT gepusht, kein PR:**
@@ -120,11 +209,16 @@ Die ÖNORM-Erwähnung kam nur daher, dass die gefundene BauSU-Seite aus dem
 
 ```
 main
- ├── fix/din276-kg-532              (29.07., 4 Commits)
- │    └── fix/lv-kg-namen           (30.07., 1 Commit)  ← baut darauf auf!
- ├── feature/lv-element-kalkulation (30.07., 3 Commits, unabhängig)
- └── docs/handoff-29-07             (diese Datei)
+ ├── fix/din276-kg-532                   (29.07., 4 Commits)
+ │    └── fix/lv-kg-namen                (30.07., 1 Commit)  ← baut darauf auf!
+ ├── feature/lv-element-kalkulation      (30.07., 3 Commits, unabhängig)
+ │    └── feature/zuschlag-je-kostenart  (30./31.07., 2 Commits) ← baut darauf auf!
+ └── docs/handoff-29-07                  (diese Datei)
 ```
+
+Zwei Ketten, die sich nicht berühren: DIN/KG-Namen einerseits, Element/Kalkulation
+andererseits. **Innerhalb** einer Kette gilt die Reihenfolge strikt — der Kind-Branch
+braucht den Eltern-Branch.
 
 `fix/lv-kg-namen` **nach** `fix/din276-kg-532` mergen — es braucht dessen abgeleiteten
 Katalog. Die Element-Arbeit ist unabhängig und berührt keine gemeinsame Datei.
@@ -264,20 +358,23 @@ sie bleiben als Spur stehen, damit nachvollziehbar ist, warum die Zuordnung sich
 
 ## Kompass
 
-- **Woran arbeiten wir gerade?** 29.07. DIN-276-Katalog konsolidiert, 30.07. **B-Element**
-  (Rezept-Kalkulation, Preis je m² aus mehreren Arbeitsschritten) gebaut und die KG-Namen auf
-  eine Quelle gezogen — siehe die beiden Deltas oben. Drei Entscheidungen von Andreas stehen
-  offen (Positionsnummer nach KG, hauseigene KG-Zuordnung, hierarchischer Rollup).
+- **Woran arbeiten wir gerade?** Drei Tage Kalkulations-Tiefe: 29.07. DIN-276-Katalog
+  konsolidiert · 30.07. **B-Element** (Rezept-Kalkulation, Preis je m² aus mehreren
+  Arbeitsschritten) + KG-Namen auf eine Quelle · 30./31.07. **Zuschlag je Kostenart,
+  Lohnstunden, Firmenwerte**. Siehe die drei Deltas oben. Drei Entscheidungen von Andreas
+  stehen offen (Positionsnummer nach KG, hauseigene KG-Zuordnung, hierarchischer Rollup),
+  dazu die BauSU-Lücken am Ende des 31.07.-Deltas.
   Als nächster **geplanter** Brocken weiterhin **#3 Unterlagen-Routing `/extract-auto`**
   (App + Box), erster Happen auf der Box gegen zwei Fixtures.
 - **Was ist live?** Backend: Box auf **`main`** (sauberer Checkout `4ff018f`, redeployed 28.07. —
   die frühere Angabe „Box-Branch `feature/lv-seite-provenance`" war überholt). iOS-App am Gerät,
   aber auf **altem Datenmodell** (ohne `ZDECKEL`/`ZDECKELNOTIZ`, keine Importe) — die Geräte-
   Installation ist älter als Deckel/Beleg + Excel-Import, siehe Delta 29.07.
-- **Was ist gebaut, aber nicht gemergt?** Alles vom 29./30.07., **ungepusht, kein PR**:
-  `fix/din276-kg-532` (4) → `fix/lv-kg-namen` (1, baut darauf auf) ·
-  `feature/lv-element-kalkulation` (3, unabhängig) · `docs/handoff-29-07` (diese Datei).
-  Merge-Reihenfolge und der Wegwerf-Branch stehen im Delta 30.07.
+- **Was ist gebaut, aber nicht gemergt?** Alles vom 29.–31.07., **ungepusht, kein PR**:
+  `fix/din276-kg-532` (4) → `fix/lv-kg-namen` (1) ·
+  `feature/lv-element-kalkulation` (3) → `feature/zuschlag-je-kostenart` (2) ·
+  `docs/handoff-29-07` (diese Datei). Zwei unabhängige Ketten; innerhalb einer Kette
+  gilt die Reihenfolge. Merge-Baum und der Wegwerf-Branch stehen im Delta 30.07.
   Älter: #2 Auswertung-speichern (gebaut, Merge-Status prüfen); außerdem siehe
   `docs/HANDOFF-2026-07-09.md` und Falbe-Bericht. (#1 ist schon in `main`.)
 - **Was ist nur Idee?** Nordstern Stufen 3–5, weitere Doctype→LV-Mappings, Kernel-Entscheidung.
