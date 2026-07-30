@@ -15,6 +15,134 @@
 3. EventDetailView/LVView zerlegen
 4. Kernel-Spike-Entscheidung vorbereiten
 
+## Delta 30.07.2026 — B-Element (Rezept-Kalkulation) + KG-Namen aus einer Quelle
+
+**Zwei Branches, beide NICHT gepusht, kein PR:**
+`feature/lv-element-kalkulation` (3 Commits, zweigt von `main` ab) ·
+`fix/lv-kg-namen` (1 Commit, zweigt von **`fix/din276-kg-532`** ab).
+
+### B-Element — ein Deckel, der seine Bausteine zu EINEM Einheitspreis rechnet
+
+Andreas' Kostengruppen-Zettel: acht Arbeitsschritte unter einer KG (`541.001 … 541.008`),
+jeder mit Material/Lohn/Maschine, am Ende ein Preis je m². Genau das kann mops jetzt.
+
+- **Zwei neue Felder** (additiv + optional, leichte Migration greift):
+  `LVPosition.deckelArt` (`nil`/`"mengentraeger"` = alles Bisherige | `"element"`) und
+  `LVPosition.mengeJeDeckelEinheit` (Rezept-Maß des Bausteins je Element-Einheit).
+- **Die Rechnung:** (€ je Baustein-Einheit) × (Baustein-Einheit je Element-Einheit).
+  Die Einheiten kürzen sich heraus — ein Baustein darf in m³, lfm oder Stunden rechnen,
+  das Element trotzdem in m². **Keine Division nötig.**
+- **Zuschlag (BGK/W&G) kommt EINMAL oben am Element drauf** (Entscheidung Andreas).
+  Bausteine rechnen zuschlagsfrei — sonst würde doppelt aufgeschlagen. Ihre eigenen
+  Zuschlagsfelder bleiben ohne Wirkung, solange sie unter einem Element hängen; die
+  Oberfläche sagt das ausdrücklich.
+- **Oberfläche:** Deckel lange drücken → „Als Element rechnen" ⇄ „Wieder als Mengenträger".
+  Element ist indigo (eigenes Symbol) und zeigt den Einheitspreis im Untertitel; Mengenträger
+  bleibt orange mit „zählt einmal". Am Baustein erscheint der Abschnitt „Rezept-Maß" mit
+  Live-Vorschau (0,35 × 100 m² = 35 m³). Drift-Regel erfüllt:
+  `App_LV_Element_Kalkulation` in `app_bedienung.yaml` (9 Aliase).
+- **Kein Rückschritt:** `deckelArt == nil` ist die Vorgabe. Jeder Deckel aus dem Excel- und
+  Bestelllisten-Import bleibt Mengenträger und rechnet unverändert. Zwei Tests sichern das ab.
+- **9 Tests**, u. a. das Pflaster-Rezept auf genau **87,00 €/m²** und 8.700 € Gesamt.
+
+**🔴 Drei Fehler, die erst der Screenshot zeigte — Build und Tests waren grün:**
+
+1. **Die Angebotssumme zeigte 2.880 € statt 11.580 €** — das Element fehlte komplett.
+   Die Annahme, `LVKalkulator.effektiverEP` sei DER eine Einhängepunkt, **war falsch.**
+   Vier Stellen hatten die Preis-Logik nachgebaut und kannten nur `hatKalkulation` —
+   ein Element hat aber keine eigene Kalkulation, sein Preis steckt in den Bausteinen:
+   `LVView.gesamtSumme`, `LVPositionRow`, **`GAEBExporter`** (Element wäre OHNE
+   Einheitspreis in die Datei gegangen) und `LVKalkulator.gesamtKalkulation`.
+   Alle vier element-fähig gemacht — **jeweils nur ein zusätzlicher Zweig**, bestehende
+   Reihenfolgen unangetastet. Regressions-Test `gesamtsummeEnthaeltDasElement`.
+2. **„Sichern" war beim Baustein ausgegraut** — `isValid` verlangte eine Menge, die kommt
+   beim Baustein aber aus dem Rezept. War schlicht nicht speicherbar.
+3. Das leere Mengenfeld daneben war unerklärt → Fußzeile ergänzt.
+
+**Lehre für die nächste Instanz: Build + Tests grün ≠ es funktioniert. Anschauen.**
+
+### KG-Namen: fünf switch-Kopien → eine Quelle
+
+Im selben Screenshot stand „KG 534 – **Sonstige**" statt „Stellplätze", obwohl der Katalog
+seit `23c0b56` stimmt. Grund: **fünf** Views/Exporter hatten je eine handgepflegte
+`switch`-Kopie der KG-Namen (`LVView`, `KostenübersichtView`, `GAEBImportView`,
+`LVPDFExporter`, `GAEBExporter`). Alle fünf kannten nur Hunderter und Zehner — **jede
+dreistellige KG fiel in „Sonstige"**, also genau die Ebene, auf der gearbeitet wird.
+Zwei Namen waren dabei falsch: 200 „Herrichten & Erschließen" (alte Fassung, heute
+„Vorbereitende Maßnahmen") und 380 „Fenster & Türen" (war in *keiner* Fassung richtig,
+korrekt ist „Baukonstruktive Einbauten").
+
+Neu: `DIN276KostenGruppe.bezeichnung(fuer:)` als einzige Stelle. **122 Zeilen weniger**,
+dafür 6 Tests (`DIN276KatalogTests`) — darunter einer, der für **jede** Nummer prüft, dass
+flacher Katalog und Baum dasselbe sagen. Genau die Prüfung, die den 29.07.-Ärger
+gefunden hätte.
+
+**⚠️ PDF- und GAEB-Export tragen damit die aktuelle DIN-Benennung.** Wer alte Exporte
+vergleicht, sieht bei 200 und 380 andere Überschriften. Richtiger, aber sichtbar — und es
+geht raus zum Kunden.
+
+### Screenshots ohne Navigations-Zirkus
+
+„Codis Augen" (`scripts/snapshot.sh` + `App/SnapshotHostView.swift`) hat zwei neue Ziele:
+
+```
+scripts/snapshot.sh LVElement element        → LV mit Element + Mengenträger nebeneinander
+scripts/snapshot.sh LVElementRezept rezept   → Rezept-Maß am Baustein
+```
+
+Die Snapshot-Daten nutzen **dieselben Zahlen wie die Tests** (87,00 €/m²), damit Bild und
+Test nicht auseinanderlaufen. Nichts zu installieren, nichts zu patchen — lief auf Anhieb.
+
+### 🟡 BauSU: A-/B-Element ist Software-Sprech, kein Fachbegriff
+
+Andreas' Notiz „Folge ist B-Element" war in Normen und Fachliteratur nicht auffindbar
+(vier Suchen). Auflösung: **BauSU** (Bausoftware). Auf bausu.de belegt: „Kalkulation … mit
+A- und B-Elementen", „jeder Einzelpreis ist ein A-Element", „A-Elemente werden mit
+B-Elementen verknüpft". **Unser Modell passt** — Baustein = A, Element-Deckel = B.
+
+**Ein Unterschied:** BauSU ordnet jede Position einer von 30 **Zuschlagsgruppen** zu, der
+Zuschlag sitzt dort also am **A**-Element. Wir haben ihn bewusst am **B**. Umkehrbar —
+im Code ist es die Zeile `traegtZuschlag` in `LVKalkulator`.
+
+**🔴 NICHT verifiziert und deshalb NICHT gebaut:** das 8-stellige Nummernschema aus dem
+Andreas zugespielten Text (`39100001` = KG 391 + laufende Nummer, 3 + 5 Stellen), sowie
+„Dialog 5121" und „Schrittweite 10". Auf bausu.de steht Dialog **4122** für B-Elemente,
+Dialognummern gibt es also — 5121 war nicht auffindbar. Der Text liest sich wie
+KI-Ausgabe. **Konzept belegt, konkrete Zahlen sind Folgerung** (Regel „Zitat vs.
+Folgerung"). Vor dem Bau im Programm nachsehen — ein Nummernschema baut man ungern
+zweimal um, und es hängt an jedem Export.
+
+Nebenbei geklärt: gearbeitet wird in **Baden-Württemberg**, also **deutsche DIN + GAEB**.
+Die ÖNORM-Erwähnung kam nur daher, dass die gefundene BauSU-Seite aus dem
+österreichischen Zweig stammte (`bau-su.at`). Im Code ist kein ÖNORM-Rest — geprüft.
+
+### Merge-Reihenfolge (wichtig)
+
+```
+main
+ ├── fix/din276-kg-532              (29.07., 4 Commits)
+ │    └── fix/lv-kg-namen           (30.07., 1 Commit)  ← baut darauf auf!
+ ├── feature/lv-element-kalkulation (30.07., 3 Commits, unabhängig)
+ └── docs/handoff-29-07             (diese Datei)
+```
+
+`fix/lv-kg-namen` **nach** `fix/din276-kg-532` mergen — es braucht dessen abgeleiteten
+Katalog. Die Element-Arbeit ist unabhängig und berührt keine gemeinsame Datei.
+
+**Es existiert lokal ein Branch `WEGWERF/gesamttest-29-07`**, der alles zusammenführt
+(konfliktfrei, 106 Tests grün) — **nur zum Ansehen, nicht mergen, nicht pushen.**
+Löschen mit `git branch -D WEGWERF/gesamttest-29-07`.
+
+### Offen aus dem 30.07.
+
+- **Entscheidung Andreas #1 (Positionsnummer nach KG) hat neuen Input**, bleibt aber
+  offen — siehe BauSU-Abschnitt: erst Quelle klären, dann bauen.
+- Die zwei anderen offenen Punkte vom 29.07. (hauseigene KG-Zuordnung, flacher Rollup
+  ohne Zwischensummen) stehen unverändert weiter unten.
+- **Migration aufs Gerät steht noch aus.** Zwei neue Felder, und der Gerätespeicher hängt
+  ohnehin auf altem Schema (ohne `ZDECKEL`) → migriert über mehrere Schritte auf einmal.
+  Vorher Container ziehen, der Befehl steht im 29.07.-Abschnitt.
+
 ## Delta 29.07.2026 — DIN 276: zwei Kataloge aus zwei Fassungen zusammengeführt
 
 **Branch `fix/din276-kg-532`, vier Commits, NICHT gepusht, kein PR.**
@@ -136,16 +264,22 @@ sie bleiben als Spur stehen, damit nachvollziehbar ist, warum die Zuordnung sich
 
 ## Kompass
 
-- **Woran arbeiten wir gerade?** Zuletzt (29.07.) DIN-276-Katalog konsolidiert — siehe Delta oben;
-  zwei Entscheidungen von Andreas stehen dort offen. Als nächster geplanter Brocken weiterhin
-  **#3 Unterlagen-Routing `/extract-auto`** (App + Box), erster Happen auf der Box gegen zwei Fixtures.
+- **Woran arbeiten wir gerade?** 29.07. DIN-276-Katalog konsolidiert, 30.07. **B-Element**
+  (Rezept-Kalkulation, Preis je m² aus mehreren Arbeitsschritten) gebaut und die KG-Namen auf
+  eine Quelle gezogen — siehe die beiden Deltas oben. Drei Entscheidungen von Andreas stehen
+  offen (Positionsnummer nach KG, hauseigene KG-Zuordnung, hierarchischer Rollup).
+  Als nächster **geplanter** Brocken weiterhin **#3 Unterlagen-Routing `/extract-auto`**
+  (App + Box), erster Happen auf der Box gegen zwei Fixtures.
 - **Was ist live?** Backend: Box auf **`main`** (sauberer Checkout `4ff018f`, redeployed 28.07. —
   die frühere Angabe „Box-Branch `feature/lv-seite-provenance`" war überholt). iOS-App am Gerät,
   aber auf **altem Datenmodell** (ohne `ZDECKEL`/`ZDECKELNOTIZ`, keine Importe) — die Geräte-
   Installation ist älter als Deckel/Beleg + Excel-Import, siehe Delta 29.07.
-- **Was ist gebaut, aber nicht gemergt?** `fix/din276-kg-532` (2 Commits, **ungepusht**, kein PR);
-  #2 Auswertung-speichern (gebaut, Merge-Status prüfen); außerdem siehe `docs/HANDOFF-2026-07-09.md`
-  und Falbe-Bericht. (#1 ist schon in `main`.)
+- **Was ist gebaut, aber nicht gemergt?** Alles vom 29./30.07., **ungepusht, kein PR**:
+  `fix/din276-kg-532` (4) → `fix/lv-kg-namen` (1, baut darauf auf) ·
+  `feature/lv-element-kalkulation` (3, unabhängig) · `docs/handoff-29-07` (diese Datei).
+  Merge-Reihenfolge und der Wegwerf-Branch stehen im Delta 30.07.
+  Älter: #2 Auswertung-speichern (gebaut, Merge-Status prüfen); außerdem siehe
+  `docs/HANDOFF-2026-07-09.md` und Falbe-Bericht. (#1 ist schon in `main`.)
 - **Was ist nur Idee?** Nordstern Stufen 3–5, weitere Doctype→LV-Mappings, Kernel-Entscheidung.
 - **Was darf nicht angefasst werden?** Kundendaten nicht ins Repo; `main` nicht direkt; `Kernel/` nicht mit echten Daten verdrahten.
 
