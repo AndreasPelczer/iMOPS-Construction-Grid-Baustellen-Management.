@@ -390,6 +390,7 @@ public enum DIN276BaumKatalog {
                     bezeichnung: "Oberbau / Deckschichten",
                     kinder: [
                         DIN276BaumKnoten(nummer: "531", bezeichnung: "Wege"),
+                        DIN276BaumKnoten(nummer: "532", bezeichnung: "Straßen"),
                         DIN276BaumKnoten(nummer: "533", bezeichnung: "Plätze, Höfe, Terrassen"),
                         DIN276BaumKnoten(nummer: "534", bezeichnung: "Stellplätze"),
                         DIN276BaumKnoten(nummer: "535", bezeichnung: "Sportplatzflächen"),

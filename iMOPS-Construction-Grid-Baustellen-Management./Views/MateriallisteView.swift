@@ -293,13 +293,16 @@ struct MateriallisteView: View {
     /// DIN-276-Kostengruppe je Kategorie — grobe Vorbelegung (abgeleitet, änderbar).
     private func kgFuer(_ kategorie: String) -> String {
         switch kategorie {
-        case "aussenwand", "innenwand", "beton": return "331"
-        case "bodenplatte":  return "324"
-        case "ringbalken":   return "351"
-        case "sturz":        return "334"
-        case "putz_aussen":  return "335"
-        case "putz_innen", "putz": return "345"
-        case "bodenflaeche": return "325"
+        // Grobe Vorbelegung (mengenQuelle = .schaetzung) — der Nutzer kann jede KG
+        // im LV ändern. Nummern nach DIN276BaumKatalog (siehe DIN276KostenGruppe).
+        case "aussenwand", "beton": return "331"   // Tragende Außenwände
+        case "innenwand":    return "341"          // Tragende Innenwände (lag fälschlich auf 331)
+        case "bodenplatte":  return "322"          // Flachgründungen und Bodenplatten (war 324 = Gründungsbeläge)
+        case "ringbalken":   return "351"          // Deckenkonstruktion
+        case "sturz":        return "334"          // Außenwandöffnungen
+        case "putz_aussen":  return "335"          // Außenwandbekleidung außen
+        case "putz_innen", "putz": return "345"    // Innenwandbekleidung
+        case "bodenflaeche": return "353"          // Deckenbeläge (war 325 = Abdichtungen und Bekleidungen)
         default: return "300"
         }
     }
