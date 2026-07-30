@@ -46,4 +46,19 @@ extension DIN276KostenGruppe {
     static let hauptgruppen: [DIN276KostenGruppe] = alle.filter {
         $0.nummer.count == 3 && $0.nummer.hasSuffix("0")
     }
+
+    /// Bezeichnung zu einer KG-Nummer — **die** Stelle, die den Namen kennt.
+    ///
+    /// Vorher hatten LVView, Kostenübersicht, GAEB-Import, PDF-Export und
+    /// GAEB-Export je eine eigene, handgepflegte `switch`-Kopie. Alle fünf kannten
+    /// nur Hunderter und Zehner (dreistellige KGs fielen in „Sonstige"), und sie
+    /// trugen teils veraltete oder schlicht falsche Namen: 200 hieß dort
+    /// „Herrichten & Erschließen" (alte Fassung, heute „Vorbereitende Maßnahmen"),
+    /// 380 stand als „Fenster & Türen" statt „Baukonstruktive Einbauten".
+    ///
+    /// Der Fallback bleibt bewusst „Sonstige": hauseigene Gliederungsnummern, die
+    /// der Katalog nicht kennt, sollen nicht wie ein Fehler aussehen.
+    static func bezeichnung(fuer nummer: String) -> String {
+        alle.first { $0.nummer == nummer }?.bezeichnung ?? "Sonstige"
+    }
 }
