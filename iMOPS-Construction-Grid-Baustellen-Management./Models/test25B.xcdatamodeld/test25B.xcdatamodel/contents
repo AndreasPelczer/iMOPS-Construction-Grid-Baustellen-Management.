@@ -130,6 +130,11 @@
         <attribute name="posNr" optional="YES" attributeType="String"/>
         <attribute name="quellDatei" optional="YES" attributeType="String"/>
         <attribute name="wagnisGewinnProzent" optional="YES" attributeType="Double" defaultValueString="0.08" usesScalarValueType="YES"/>
+        <attribute name="zuschlagEigen" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="zuschlagJeKostenart" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="zuschlagLohnProzent" optional="YES" attributeType="Double" defaultValueString="0.2" usesScalarValueType="YES"/>
+        <attribute name="zuschlagMaterialProzent" optional="YES" attributeType="Double" defaultValueString="0.2" usesScalarValueType="YES"/>
+        <attribute name="zuschlagGeraetProzent" optional="YES" attributeType="Double" defaultValueString="0.2" usesScalarValueType="YES"/>
         <relationship name="aufmasse" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Aufmass" inverseName="lvPosition" inverseEntity="Aufmass"/>
         <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="lvPositionen" inverseEntity="Event"/>
         <relationship name="geschoss" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="lvPositionen" inverseEntity="Geschoss"/>

@@ -179,6 +179,10 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
         pos.kostenGruppeNummer = "390"
         pos.einheit = "psch"
         pos.menge = 1
+        // Bewusst OHNE Zuschlag (Nachunternehmer-Durchleitung). Seit die Firmenwerte
+        // greifen, muss das ausdrücklich als Abweichung markiert sein — sonst kämen
+        // 12 % BGK + 8 % W&G obendrauf und die Pauschale stimmte nicht mehr.
+        pos.zuschlagEigen = true
         pos.wagnisGewinnProzent = 0
         pos.bgkProzent = 0
         pos.event = event

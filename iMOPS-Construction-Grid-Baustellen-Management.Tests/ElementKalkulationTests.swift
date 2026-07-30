@@ -31,6 +31,10 @@ struct ElementKalkulationTests {
         el.bezeichnung = "Pflasterfläche"
         el.menge = 100
         el.einheit = "m²"
+        // Eigene Sätze statt Firmenwerte — sonst haengen die Tests an UserDefaults,
+        // die zwischen Laeufen stehen bleiben koennen. Der Firmenwert-Weg wird
+        // separat geprueft (firmenwerteGeltenOhneEigeneSaetze).
+        el.zuschlagEigen = true
         el.bgkProzent = 0.12
         el.wagnisGewinnProzent = 0.08
         el.deckelTyp = .element
@@ -50,6 +54,7 @@ struct ElementKalkulationTests {
         b.mengeJeDeckelEinheit = jeElementEinheit
         // Bausteine tragen eigene Zuschlagsätze — die müssen ignoriert werden,
         // sonst wird doppelt aufgeschlagen. Bewusst ungleich null gesetzt.
+        b.zuschlagEigen = true
         b.bgkProzent = 0.12
         b.wagnisGewinnProzent = 0.08
         b.deckel = element
@@ -191,6 +196,7 @@ struct ElementKalkulationTests {
         deckel.bezeichnung = "Außenwand 24 cm"
         deckel.menge = 80
         deckel.einheit = "m²"
+        deckel.zuschlagEigen = true
         deckel.bgkProzent = 0.12
         deckel.wagnisGewinnProzent = 0.08
         addMaterial(deckel, preis: 30)
@@ -220,6 +226,7 @@ struct ElementKalkulationTests {
         pos.posNr = "3.30.1"
         pos.menge = 10
         pos.einheit = "m²"
+        pos.zuschlagEigen = true
         pos.bgkProzent = 0.12
         pos.wagnisGewinnProzent = 0.08
         addMaterial(pos, preis: 100)
@@ -240,6 +247,7 @@ struct ElementKalkulationTests {
         wand.posNr = "331.001"
         wand.menge = 80
         wand.einheit = "m²"
+        wand.zuschlagEigen = true
         wand.bgkProzent = 0.12
         wand.wagnisGewinnProzent = 0.08
         addMaterial(wand, preis: 30)
@@ -251,6 +259,191 @@ struct ElementKalkulationTests {
 
         let alle = [element, wand, beleg] + element.unterPositionenArray
         #expect(abs(LVKalkulator.gesamtKalkulation(positionen: alle) - 11_580.00) < 0.01)
+    }
+
+    // MARK: - Zuschlag je Kostenart
+
+    /// Der Schalter allein darf KEINE Zahl bewegen: 20 % je Kostenart ist dieselbe
+    /// Summe wie 12 % BGK + 8 % W&G auf alles. Erst wer an einem Regler dreht,
+    /// aendert den Preis.
+    @Test @MainActor
+    func umschaltenAlleinAendertNichts() throws {
+        let el = makeVollesRezept()
+        let vorher = LVKalkulator.kalkuliereElement(el).einheitspreisVK
+
+        el.zuschlagJeKostenart = true      // Vorgaben stehen auf je 0,20
+
+        #expect(abs(LVKalkulator.kalkuliereElement(el).einheitspreisVK - vorher) < 0.001)
+        #expect(abs(vorher - 87.00) < 0.001)
+    }
+
+    /// Das Verfahren aus dem BauSU-Bild: Lohn traegt den Loewenanteil.
+    /// Selbstkosten je m²: Material 42,50 · Lohn 27,50 · Geraet 2,50
+    ///   Lohn     27,50 x 1,75 = 48,125
+    ///   Material 42,50 x 0,15 =  6,375
+    ///   Geraet    2,50 x 0,10 =  0,250
+    ///   72,50 + 54,75 = 127,25 EUR/m²
+    @Test @MainActor
+    func lohnTraegtDenLoewenanteil() throws {
+        let el = makeVollesRezept()
+        el.zuschlagJeKostenart = true
+        el.zuschlagLohnProzent = 1.75      // x2,75
+        el.zuschlagMaterialProzent = 0.15  // x1,15
+        el.zuschlagGeraetProzent = 0.10    // x1,10
+
+        let k = LVKalkulator.kalkuliereElement(el)
+        #expect(abs(k.zuschlagLohn - 48.125) < 0.001)
+        #expect(abs(k.zuschlagMaterial - 6.375) < 0.001)
+        #expect(abs(k.zuschlagGeraet - 0.250) < 0.001)
+        // W&G und BGK werden in diesem Verfahren NICHT zusaetzlich gerechnet.
+        #expect(abs(k.zuschlagWG - 0) < 0.001)
+        #expect(abs(k.zuschlagBGK - 0) < 0.001)
+        #expect(abs(k.einheitspreisVK - 127.25) < 0.001)
+        #expect(abs(k.gesamtpreis - 12_725.00) < 0.01)
+    }
+
+    @Test @MainActor
+    func bausteinTraegtAuchJeKostenartKeinenZuschlag() throws {
+        let el = makeElement()
+        el.zuschlagJeKostenart = true
+        el.zuschlagLohnProzent = 1.75
+
+        let verlegen = makeBaustein(el, posNr: "534.005", bezeichnung: "Pflaster verlegen",
+                                    einheit: "m²", jeElementEinheit: 1.0)
+        verlegen.zuschlagJeKostenart = true      // eigener Schalter — muss ignoriert werden
+        verlegen.zuschlagLohnProzent = 1.75
+        addLohn(verlegen, satz: 55, stunden: 0.5)
+
+        let k = LVKalkulator.kalkuliere(position: verlegen)
+        #expect(abs(k.zuschlagLohn - 0) < 0.001)
+        #expect(abs(k.einheitspreisVK - 27.50) < 0.001)   // reine Selbstkosten
+    }
+
+    // MARK: - Reihenfolge
+
+    /// Beim Element erzählt die PosNr die Arbeitsfolge — alphabetisch stünde
+    /// „Abrütteln" ganz oben, also der letzte Arbeitsschritt zuerst.
+    @Test @MainActor
+    func elementSortiertBausteineNachArbeitsfolge() throws {
+        let el = makeVollesRezept()
+        #expect(el.unterPositionenArray.compactMap(\.posNr)
+                == ["534.002", "534.004", "534.005", "534.007"])
+        #expect(el.unterPositionenArray.first?.bezeichnung == "Frostschutz")
+        #expect(el.unterPositionenArray.last?.bezeichnung == "Abrütteln")
+    }
+
+    /// Beim Mengenträger bleibt es alphabetisch — dort sind die Unterpunkte Belege
+    /// ohne Reihenfolge-Aussage, und Suchen ist einfacher.
+    @Test @MainActor
+    func mengentraegerSortiertWeiterAlphabetisch() throws {
+        let deckel = LVPosition(context: ctx)
+        deckel.posNr = "06.01"
+        deckel.menge = 80
+
+        for (nr, bez) in [("06.01.9", "Anbau Nord"), ("06.01.1", "Zwischenwand")] {
+            let beleg = LVPosition(context: ctx)
+            beleg.posNr = nr
+            beleg.bezeichnung = bez
+            beleg.deckel = deckel
+        }
+
+        #expect(!deckel.istElement)
+        #expect(deckel.unterPositionenArray.map(\.bezeichnung) == ["Anbau Nord", "Zwischenwand"])
+    }
+
+    // MARK: - Firmenwerte
+
+    /// Der eigentliche Zweck: ein Satz wird EINMAL gepflegt und wirkt überall.
+    /// Die Position trägt eigene Felder, die aber ignoriert werden, solange sie
+    /// nicht ausdrücklich abweicht.
+    @Test @MainActor
+    func firmenwerteGeltenOhneEigeneSaetze() throws {
+        let keys = [FirmenSettings.Keys.zuschlagJeKostenart,
+                    FirmenSettings.Keys.zuschlagLohn,
+                    FirmenSettings.Keys.zuschlagMaterial,
+                    FirmenSettings.Keys.zuschlagGeraet]
+        defer { keys.forEach { UserDefaults.standard.removeObject(forKey: $0) } }
+
+        UserDefaults.standard.set(true, forKey: FirmenSettings.Keys.zuschlagJeKostenart)
+        UserDefaults.standard.set(1.75, forKey: FirmenSettings.Keys.zuschlagLohn)
+        UserDefaults.standard.set(0.15, forKey: FirmenSettings.Keys.zuschlagMaterial)
+        UserDefaults.standard.set(0.10, forKey: FirmenSettings.Keys.zuschlagGeraet)
+
+        let el = makeVollesRezept()
+        el.zuschlagEigen = false          // folgt der Firma
+        // Absichtlich unsinnige eigene Werte — sie duerfen NICHT durchschlagen.
+        el.zuschlagLohnProzent = 99
+        el.zuschlagMaterialProzent = 99
+
+        let k = LVKalkulator.kalkuliereElement(el)
+        #expect(abs(k.einheitspreisVK - 127.25) < 0.001)
+    }
+
+    @Test @MainActor
+    func eigeneSaetzeSchlagenFirmenwerte() throws {
+        let key = FirmenSettings.Keys.zuschlagLohn
+        defer { UserDefaults.standard.removeObject(forKey: key) }
+        UserDefaults.standard.set(1.75, forKey: key)
+
+        let el = makeVollesRezept()       // makeElement() setzt zuschlagEigen = true
+        // Firma sagt 175 % auf Lohn — die Position rechnet weiter klassisch 12+8 %.
+        #expect(abs(LVKalkulator.kalkuliereElement(el).einheitspreisVK - 87.00) < 0.001)
+    }
+
+    @Test @MainActor
+    func firmenwerteUebernehmenAendertDenPreisNicht() throws {
+        let el = makeVollesRezept()
+        el.zuschlagEigen = false
+        let vorher = LVKalkulator.kalkuliereElement(el).einheitspreisVK
+
+        // Genau das macht die Oberfläche beim Umschalten auf „abweichen".
+        el.uebernehmeFirmenwerte()
+        el.zuschlagEigen = true
+
+        #expect(abs(LVKalkulator.kalkuliereElement(el).einheitspreisVK - vorher) < 0.001)
+    }
+
+    // MARK: - Lohnstunden
+
+    @Test @MainActor
+    func elementSummiertLohnstundenUeberDasRezept() throws {
+        let el = makeVollesRezept()          // einziger Lohn: 0,5 Std je m², Faktor 1,0
+        let k = LVKalkulator.kalkuliereElement(el)
+
+        #expect(abs(k.stundenJeEinheit - 0.5) < 0.001)
+        #expect(abs(k.stundenGesamt - 50.0) < 0.001)      // 0,5 x 100 m²
+    }
+
+    @Test @MainActor
+    func stundenSkalierenMitDemRezeptMass() throws {
+        let el = makeElement()
+        // Abruetteln rechnet in Stunden: 1,0 Std je Baustein-Einheit, 0,1 je m².
+        let abruetteln = makeBaustein(el, posNr: "534.007", bezeichnung: "Abrütteln",
+                                      einheit: "h", jeElementEinheit: 0.1)
+        addLohn(abruetteln, satz: 26.55, stunden: 1.0)
+
+        let k = LVKalkulator.kalkuliereElement(el)
+        #expect(abs(k.stundenJeEinheit - 0.1) < 0.001)    // 1,0 x 0,1
+        #expect(abs(k.stundenGesamt - 10.0) < 0.001)      // x 100 m²
+    }
+
+    @Test @MainActor
+    func gesamtstundenUeberDasGanzeLV() throws {
+        let element = makeVollesRezept()                  // 50 Std
+        let wand = LVPosition(context: ctx)               // 0,8 Std/m² x 80 = 64 Std
+        wand.posNr = "331.001"
+        wand.menge = 80
+        wand.einheit = "m²"
+        addLohn(wand, satz: 50, stunden: 0.8)
+
+        let beleg = LVPosition(context: ctx)              // zaehlt nicht
+        beleg.posNr = "331.001.1"
+        beleg.menge = 30
+        beleg.deckel = wand
+        addLohn(beleg, satz: 50, stunden: 2.0)
+
+        let alle = [element, wand, beleg] + element.unterPositionenArray
+        #expect(abs(LVKalkulator.gesamtStunden(positionen: alle) - 114.0) < 0.001)
     }
 
     @Test @MainActor

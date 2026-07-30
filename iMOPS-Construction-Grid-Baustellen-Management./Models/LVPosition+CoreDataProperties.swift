@@ -16,6 +16,28 @@ extension LVPosition {
     @NSManaged var lieferant: String?
     @NSManaged var wagnisGewinnProzent: Double
     @NSManaged var bgkProzent: Double
+
+    // MARK: - Zuschlag je Kostenart
+    // Ein Bauunternehmen schlägt nicht auf alles gleich auf: der Lohn trägt den
+    // Löwenanteil von Gemeinkosten und Gewinn, Material und Gerät kaum etwas.
+    // Typisch sind Faktoren wie Lohn ×2,75, Material ×1,15, Gerät ×1,10.
+    //
+    // `zuschlagJeKostenart == false` (Vorgabe) = alles Bisherige: EIN Satz für W&G
+    // und EINER für BGK, beide auf die Summe. Ist der Schalter an, gilt je Kostenart
+    // ein eigener Satz und W&G/BGK werden nicht mehr gerechnet.
+    //
+    // Die drei Sätze starten bei 0,20 — genau die Summe der bisherigen Vorgaben
+    // (0,12 BGK + 0,08 W&G). Der Schalter allein ändert also KEINE Zahl; erst wer
+    // an einem Regler dreht, verändert den Preis.
+    // `zuschlagEigen == false` (Vorgabe): die Position rechnet mit den FIRMENWERTEN
+    // (FirmenSettings). Ein Satz wird dann an einer Stelle gepflegt statt in jeder
+    // Position. Erst wer bewusst abweicht, setzt das Flag — dann gelten die vier
+    // Felder unten.
+    @NSManaged var zuschlagEigen: Bool
+    @NSManaged var zuschlagJeKostenart: Bool
+    @NSManaged var zuschlagLohnProzent: Double
+    @NSManaged var zuschlagMaterialProzent: Double
+    @NSManaged var zuschlagGeraetProzent: Double
     @NSManaged var mengenQuelleRaw: String?
     @NSManaged var event: Event?
     // Welle 9 — Bau-Hierarchie: Position hängt (zusätzlich zu event) an einem Geschoss.
@@ -89,11 +111,24 @@ extension LVPosition {
 
     // MARK: - Deckel / Unterpunkte
 
-    /// Die Unterpunkte dieses Deckels, stabil sortiert (Bezeichnung, dann posNr).
+    /// Die Unterpunkte dieses Deckels, stabil sortiert.
+    ///
+    /// Beim **Element** nach PosNr: dort ist die Reihenfolge Information — die Nummer
+    /// erzählt die Arbeitsfolge (534.002 Frostschutz kommt vor 534.007 Abrütteln).
+    /// Alphabetisch stünde „Abrütteln" ganz oben, also der letzte Arbeitsschritt zuerst.
+    ///
+    /// Beim **Mengenträger** bleibt es alphabetisch: die Unterpunkte sind dort Belege
+    /// für eine Menge, ihre Reihenfolge trägt keine Aussage, und Suchen ist einfacher.
     var unterPositionenArray: [LVPosition] {
-        (unterPositionen as? Set<LVPosition>)?.sorted {
+        let kinder = (unterPositionen as? Set<LVPosition>) ?? []
+        if istElement {
+            return kinder.sorted {
+                ($0.posNr ?? "", $0.bezeichnung ?? "") < ($1.posNr ?? "", $1.bezeichnung ?? "")
+            }
+        }
+        return kinder.sorted {
             ($0.bezeichnung ?? "", $0.posNr ?? "") < ($1.bezeichnung ?? "", $1.posNr ?? "")
-        } ?? []
+        }
     }
 
     /// Position hängt als Beleg unter einem Deckel → zählt NICHT in Summen.
@@ -116,6 +151,37 @@ extension LVPosition {
 
     /// Position ist ein Baustein unter einem Element (A-Element).
     var istElementBaustein: Bool { deckel?.istElement == true }
+
+    // MARK: - Wirksame Zuschlagssätze (Firmenwert oder eigener)
+    //
+    // Immer diese sechs benutzen, nie die rohen Felder — sonst rechnet der eine
+    // Aufrufer mit dem Firmenwert und der nächste mit dem gespeicherten. Genau so
+    // sind heute schon zwei Kataloge und fünf KG-Namen auseinandergelaufen.
+
+    /// Rechnet diese Position mit getrennten Sätzen je Kostenart?
+    var rechnetJeKostenart: Bool {
+        zuschlagEigen ? zuschlagJeKostenart : FirmenSettings.zuschlagJeKostenart
+    }
+
+    var satzLohn: Double     { zuschlagEigen ? zuschlagLohnProzent     : FirmenSettings.zuschlagLohn }
+    var satzMaterial: Double { zuschlagEigen ? zuschlagMaterialProzent : FirmenSettings.zuschlagMaterial }
+    var satzGeraet: Double   { zuschlagEigen ? zuschlagGeraetProzent   : FirmenSettings.zuschlagGeraet }
+    var satzBGK: Double      { zuschlagEigen ? bgkProzent              : FirmenSettings.bgk }
+    var satzWagnisGewinn: Double {
+        zuschlagEigen ? wagnisGewinnProzent : FirmenSettings.wagnisGewinn
+    }
+
+    /// Übernimmt die aktuellen Firmenwerte in die eigenen Felder — damit beim
+    /// Umschalten auf „abweichen" nicht plötzlich andere Zahlen dastehen als eben
+    /// noch angezeigt.
+    func uebernehmeFirmenwerte() {
+        zuschlagJeKostenart = FirmenSettings.zuschlagJeKostenart
+        zuschlagLohnProzent = FirmenSettings.zuschlagLohn
+        zuschlagMaterialProzent = FirmenSettings.zuschlagMaterial
+        zuschlagGeraetProzent = FirmenSettings.zuschlagGeraet
+        bgkProzent = FirmenSettings.bgk
+        wagnisGewinnProzent = FirmenSettings.wagnisGewinn
+    }
 
     /// Menge, mit der diese Position tatsächlich rechnet.
     ///

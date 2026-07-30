@@ -25,6 +25,7 @@ struct SnapshotHostView: View {
             switch arg("--target=", "AufmassSheet") {
             case "LVElement":          SnapshotElementHost(ctx: ctx)
             case "LVElementRezept":    SnapshotRezeptHost(ctx: ctx)
+            case "LVZuschlag":         SnapshotZuschlagHost(ctx: ctx, eigen: arg("--state=", "eigen") == "eigen")
             case "LVRowGallery":       SnapshotRowGallery(ctx: ctx)
             case "LVFortschrittSheet": SnapshotFortschrittHost(ctx: ctx)
             case "NeuesAufmassSheet":  NeuesAufmassSheet(position: SnapshotData.position(in: ctx, state: state))
@@ -100,6 +101,26 @@ private struct SnapshotRezeptHost: View {
     var body: some View {
         AddLVPositionView(event: event, editPosition: baustein)
     }
+}
+
+// Zuschlag je Kostenart am Element — die Sätze aus dem BauSU-Bild
+// (Lohn ×2,75, Material ×1,15, Gerät ×1,10) ⇒ 127,25 €/m².
+// `--state=eigen` → Position weicht ab, Regler bedienbar.
+// `--state=firma` → Position folgt den Firmenwerten, Regler nur zur Ansicht.
+private struct SnapshotZuschlagHost: View {
+    private let element: LVPosition
+    @MainActor init(ctx: NSManagedObjectContext, eigen: Bool) {
+        let event = SnapshotData.pflasterBaustelle(in: ctx)
+        let el = (event.lvPositionen as? Set<LVPosition>)?
+            .first { $0.posNr == "534.000" } ?? LVPosition(context: ctx)
+        el.zuschlagEigen = eigen
+        el.zuschlagJeKostenart = true
+        el.zuschlagLohnProzent = 1.75
+        el.zuschlagMaterialProzent = 0.15
+        el.zuschlagGeraetProzent = 0.10
+        element = el
+    }
+    var body: some View { LVTiefenkalkulationView(position: element) }
 }
 
 enum SnapshotState: String {

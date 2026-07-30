@@ -21,6 +21,15 @@ struct SettingsView: View {
     @AppStorage(FirmenSettings.Keys.ustIdNr)  private var ustIdNr      = ""
     @AppStorage(FirmenSettings.Keys.mwstSatz) private var mwstSatz     = 19.0
 
+    // Kalkulations-Zuschläge. Vorgaben identisch zu FirmenSettings — beide lesen
+    // denselben Schlüssel, deshalb müssen die Vorgaben übereinstimmen.
+    @AppStorage(FirmenSettings.Keys.zuschlagJeKostenart) private var zuschlagJeKostenart = false
+    @AppStorage(FirmenSettings.Keys.zuschlagLohn)        private var zuschlagLohn        = 0.20
+    @AppStorage(FirmenSettings.Keys.zuschlagMaterial)    private var zuschlagMaterial    = 0.20
+    @AppStorage(FirmenSettings.Keys.zuschlagGeraet)      private var zuschlagGeraet      = 0.20
+    @AppStorage(FirmenSettings.Keys.bgk)                 private var bgk                 = 0.12
+    @AppStorage(FirmenSettings.Keys.wagnisGewinn)        private var wagnisGewinn        = 0.08
+
     // Benachrichtigungen
     @AppStorage(NotificationService.Keys.fristenEnabled) private var notifsEnabled = true
     @AppStorage(NotificationService.Keys.vorwarnTage)    private var vorwarnTage   = 1
@@ -69,6 +78,36 @@ struct SettingsView: View {
             } footer: {
                 Text("Werden für XRechnung-Export (Rechnungsaussteller) und Bautagesbericht verwendet.")
                     .font(.caption)
+            }
+
+            // --- Kalkulations-Zuschläge (Firmenwerte) ---
+            Section {
+                Toggle(isOn: $zuschlagJeKostenart) {
+                    Label("Je Kostenart aufschlagen", systemImage: "square.split.1x2")
+                }
+                .tint(.orange)
+
+                if zuschlagJeKostenart {
+                    satzZeile("Lohn", wert: $zuschlagLohn, farbe: .green, bis: 3.0)
+                    satzZeile("Material", wert: $zuschlagMaterial, farbe: .blue, bis: 1.0)
+                    satzZeile("Geräte", wert: $zuschlagGeraet, farbe: .purple, bis: 1.0)
+                } else {
+                    satzZeile("Wagnis & Gewinn", wert: $wagnisGewinn, farbe: .orange, bis: 0.25)
+                    satzZeile("BGK", wert: $bgk, farbe: .orange, bis: 0.25)
+                }
+            } header: {
+                Text("Kalkulation — Zuschläge")
+            } footer: {
+                Text("""
+                Gelten für jede LV-Position, die nicht ausdrücklich abweicht. Hier einmal \
+                gepflegt statt in jeder Position einzeln. Wer eine einzelne Position anders \
+                rechnen will, schaltet dort „Von den Firmenwerten abweichen" ein.
+
+                „Je Kostenart" trennt die Sätze nach Lohn, Material und Gerät — auf dem Bau \
+                trägt der Lohn den Löwenanteil (Größenordnung ×2,75), Material und Gerät \
+                kaum etwas. Aus ist es ein Satz W&G plus einer BGK auf die Summe.
+                """)
+                .font(.caption)
             }
 
             // --- Benachrichtigungen ---
@@ -236,5 +275,26 @@ struct SettingsView: View {
                 mopsServerStatus = reachable ? "OK - Mops erreichbar" : "Nicht erreichbar"
             }
         }
+    }
+
+    /// Ein Zuschlagssatz mit Prozent UND Faktor — der Faktor ist die Zahl, in der
+    /// auf dem Bau gedacht wird („mal 2,75 auf den Lohn").
+    @ViewBuilder
+    private func satzZeile(_ titel: String,
+                           wert: Binding<Double>,
+                           farbe: Color,
+                           bis: Double) -> some View {
+        HStack {
+            Text(titel)
+            Spacer()
+            Text("\(Int(wert.wrappedValue * 100)) %")
+                .font(.body.monospacedDigit())
+                .foregroundStyle(farbe)
+            Text("(×\((1 + wert.wrappedValue).formatted(.number.precision(.fractionLength(2)))))")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        Slider(value: wert, in: 0...bis, step: 0.05)
+            .tint(farbe)
     }
 }

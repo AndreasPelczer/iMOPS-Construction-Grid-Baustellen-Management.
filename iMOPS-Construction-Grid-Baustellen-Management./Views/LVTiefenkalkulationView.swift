@@ -27,14 +27,30 @@ struct LVTiefenkalkulationView: View {
         let beschreibung: String
     }
 
+    @State private var eigen: Bool
+    @State private var jeKostenart: Bool
+    @State private var zLohn: Double
+    @State private var zMaterial: Double
+    @State private var zGeraet: Double
+
     init(position: LVPosition) {
         self.position = position
-        _wgProzent = State(initialValue: position.wagnisGewinnProzent)
-        _bgkProzent = State(initialValue: position.bgkProzent)
+        // Immer die WIRKSAMEN Saetze anzeigen — also Firmenwert, solange die Position
+        // nicht ausdruecklich abweicht. Sonst stuende im Regler etwas anderes als das,
+        // womit gerechnet wird.
+        _eigen = State(initialValue: position.zuschlagEigen)
+        _wgProzent = State(initialValue: position.satzWagnisGewinn)
+        _bgkProzent = State(initialValue: position.satzBGK)
+        _jeKostenart = State(initialValue: position.rechnetJeKostenart)
+        _zLohn = State(initialValue: position.satzLohn)
+        _zMaterial = State(initialValue: position.satzMaterial)
+        _zGeraet = State(initialValue: position.satzGeraet)
     }
 
     private var kalkulation: Kalkulation {
-        LVKalkulator.kalkuliere(position: position)
+        // Ein Element rechnet ueber seine Bausteine, nicht ueber eine eigene
+        // Tiefenkalkulation — sonst stuende hier 0.
+        LVKalkulator.kalkulationFuer(position)
     }
 
     var body: some View {
@@ -123,14 +139,31 @@ struct LVTiefenkalkulationView: View {
         }
     }
 
+    /// Leer-Zustand einer Kostenart.
+    ///
+    /// Beim Element ist die Liste immer leer — die Kosten stecken in den Bausteinen.
+    /// „Noch nichts hinterlegt" wäre dort schlicht gelogen: die Kopfzeile zeigt ja
+    /// einen Betrag. Stattdessen der Verweis dorthin, wo wirklich gerechnet wird.
+    @ViewBuilder
+    private func leerHinweis(_ text: String) -> some View {
+        if position.istElement {
+            Label("Kommt aus den \(position.unterPositionenArray.count) Bausteinen — dort bearbeiten",
+                  systemImage: "square.stack.3d.down.right.fill")
+                .font(.subheadline)
+                .foregroundStyle(.indigo)
+        } else {
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     // MARK: - Material
 
     private var materialSection: some View {
         Section {
             if position.materialArray.isEmpty {
-                Text("Noch kein Material hinterlegt")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                leerHinweis("Noch kein Material hinterlegt")
             } else {
                 ForEach(position.materialArray, id: \.objectID) { pm in
                     HStack {
@@ -160,11 +193,13 @@ struct LVTiefenkalkulationView: View {
                 }
             }
 
-            Button { showMaterialPicker = true } label: {
-                Label("Material hinzufügen", systemImage: "plus.circle")
-                    .font(.subheadline)
+            if !position.istElement {
+                Button { showMaterialPicker = true } label: {
+                    Label("Material hinzufügen", systemImage: "plus.circle")
+                        .font(.subheadline)
+                }
+                .tint(.orange)
             }
-            .tint(.orange)
         } header: {
             HStack {
                 Label("Material", systemImage: "shippingbox")
@@ -180,9 +215,7 @@ struct LVTiefenkalkulationView: View {
     private var lohnSection: some View {
         Section {
             if position.lohnArray.isEmpty {
-                Text("Noch kein Lohnanteil hinterlegt")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                leerHinweis("Noch kein Lohnanteil hinterlegt")
             } else {
                 ForEach(position.lohnArray, id: \.objectID) { pl in
                     HStack {
@@ -207,11 +240,13 @@ struct LVTiefenkalkulationView: View {
                 }
             }
 
-            Button { showLohnPicker = true } label: {
-                Label("Lohnanteil hinzufügen", systemImage: "plus.circle")
-                    .font(.subheadline)
+            if !position.istElement {
+                Button { showLohnPicker = true } label: {
+                    Label("Lohnanteil hinzufügen", systemImage: "plus.circle")
+                        .font(.subheadline)
+                }
+                .tint(.orange)
             }
-            .tint(.orange)
         } header: {
             HStack {
                 Label("Lohn", systemImage: "person.fill")
@@ -227,9 +262,7 @@ struct LVTiefenkalkulationView: View {
     private var geraeteSection: some View {
         Section {
             if position.geraeteArray.isEmpty {
-                Text("Keine Gerätekosten hinterlegt")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                leerHinweis("Keine Gerätekosten hinterlegt")
             } else {
                 ForEach(position.geraeteArray, id: \.objectID) { pg in
                     HStack {
@@ -254,11 +287,13 @@ struct LVTiefenkalkulationView: View {
                 }
             }
 
-            Button { showGeraetePicker = true } label: {
-                Label("Gerät hinzufügen", systemImage: "plus.circle")
-                    .font(.subheadline)
+            if !position.istElement {
+                Button { showGeraetePicker = true } label: {
+                    Label("Gerät hinzufügen", systemImage: "plus.circle")
+                        .font(.subheadline)
+                }
+                .tint(.orange)
             }
-            .tint(.orange)
         } header: {
             HStack {
                 Label("Geräte", systemImage: "wrench.and.screwdriver")
@@ -273,39 +308,120 @@ struct LVTiefenkalkulationView: View {
 
     private var zuschlagSection: some View {
         Section {
-            HStack {
-                Text("Wagnis & Gewinn")
-                Spacer()
-                Text("\(Int(wgProzent * 100)) %")
-                    .font(.body.monospacedDigit())
-                    .foregroundStyle(.orange)
+            Toggle(isOn: $eigen) {
+                Label("Von den Firmenwerten abweichen", systemImage: "building.2")
             }
-            Slider(value: $wgProzent, in: 0...0.25, step: 0.01)
-                .tint(.orange)
-                .onChange(of: wgProzent) { _, newVal in
-                    position.wagnisGewinnProzent = newVal
+            .tint(.orange)
+            .onChange(of: eigen) { _, neu in
+                position.zuschlagEigen = neu
+                if neu {
+                    // Beim Umschalten die Firmenwerte uebernehmen — sonst springt der
+                    // Preis, obwohl der Nutzer nur "abweichen" angetippt hat.
+                    position.uebernehmeFirmenwerte()
+                } else {
+                    // Zurueck zur Firma: die Regler wieder auf deren Stand ziehen.
+                    jeKostenart = FirmenSettings.zuschlagJeKostenart
+                    zLohn = FirmenSettings.zuschlagLohn
+                    zMaterial = FirmenSettings.zuschlagMaterial
+                    zGeraet = FirmenSettings.zuschlagGeraet
+                    wgProzent = FirmenSettings.wagnisGewinn
+                    bgkProzent = FirmenSettings.bgk
                 }
+            }
 
-            HStack {
-                Text("BGK (Baustellengemeinkosten)")
-                Spacer()
-                Text("\(Int(bgkProzent * 100)) %")
-                    .font(.body.monospacedDigit())
-                    .foregroundStyle(.orange)
+            Toggle(isOn: $jeKostenart) {
+                Label("Je Kostenart aufschlagen", systemImage: "square.split.1x2")
             }
-            Slider(value: $bgkProzent, in: 0...0.25, step: 0.01)
-                .tint(.orange)
-                .onChange(of: bgkProzent) { _, newVal in
-                    position.bgkProzent = newVal
+            .tint(.orange)
+            .disabled(!eigen)
+            .onChange(of: jeKostenart) { _, neu in position.zuschlagJeKostenart = neu }
+
+            if jeKostenart {
+                zuschlagRegler("Lohn", wert: $zLohn, farbe: .green, bis: 3.0) {
+                    position.zuschlagLohnProzent = $0
                 }
+                zuschlagRegler("Material", wert: $zMaterial, farbe: .blue, bis: 1.0) {
+                    position.zuschlagMaterialProzent = $0
+                }
+                zuschlagRegler("Geräte", wert: $zGeraet, farbe: .purple, bis: 1.0) {
+                    position.zuschlagGeraetProzent = $0
+                }
+            } else {
+                zuschlagRegler("Wagnis & Gewinn", wert: $wgProzent, farbe: .orange, bis: 0.25) {
+                    position.wagnisGewinnProzent = $0
+                }
+                zuschlagRegler("BGK (Baustellengemeinkosten)", wert: $bgkProzent, farbe: .orange, bis: 0.25) {
+                    position.bgkProzent = $0
+                }
+            }
         } header: {
             Label("Zuschläge", systemImage: "percent")
         } footer: {
-            Text("W&G und BGK werden auf den EK aufgeschlagen, um den VK zu berechnen.")
+            VStack(alignment: .leading, spacing: 6) {
+                if eigen {
+                    Text("Diese Position weicht ab. Änderungen hier gelten NUR für sie — die Firmenwerte bleiben unberührt.")
+                        .foregroundStyle(.orange)
+                } else {
+                    Text("Es gelten die Firmenwerte (Einstellungen → Kalkulation). Ein Satz wird dort einmal gepflegt und wirkt in jeder Position, die nicht abweicht. Zum Ändern nur für diese Position den Schalter oben umlegen.")
+                }
+                if jeKostenart {
+                    Text("""
+                    Ein Bauunternehmen schlägt nicht auf alles gleich auf: der Lohn trägt \
+                    den Löwenanteil von Gemeinkosten und Gewinn, Material und Gerät kaum \
+                    etwas. Üblich sind Größenordnungen wie Lohn ×2,75, Material ×1,15, \
+                    Gerät ×1,10. W&G und BGK werden in diesem Modus nicht gerechnet.
+                    """)
+                } else {
+                    Text("W&G und BGK werden auf den EK aufgeschlagen, um den VK zu berechnen. Die Vorgabe 20 % je Kostenart ergibt exakt denselben Preis wie 8 % + 12 % auf alles.")
+                }
+            }
         }
     }
 
+    /// Ein Zuschlags-Regler mit Prozentwert UND Faktor — der Faktor ist die Zahl,
+    /// in der auf dem Bau gedacht wird („mal 2,75 auf den Lohn").
+    @ViewBuilder
+    private func zuschlagRegler(_ titel: String,
+                                wert: Binding<Double>,
+                                farbe: Color,
+                                bis: Double,
+                                speichern: @escaping (Double) -> Void) -> some View {
+        HStack {
+            Text(titel)
+                .foregroundStyle(eigen ? .primary : .secondary)
+            Spacer()
+            Text("\(Int(wert.wrappedValue * 100)) %")
+                .font(.body.monospacedDigit())
+                .foregroundStyle(eigen ? farbe : .secondary)
+            Text("(×\((1 + wert.wrappedValue).formatted(.number.precision(.fractionLength(2)))))")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        Slider(value: wert, in: 0...bis, step: 0.05)
+            .tint(farbe)
+            .disabled(!eigen)   // Firmenwert: sichtbar, aber nicht hier verstellbar
+            .onChange(of: wert.wrappedValue) { _, neu in speichern(neu) }
+    }
+
     // MARK: - Ergebnis
+
+    /// Lohnstunden — je Einheit und für die ganze Position. Nicht Geld, aber die
+    /// Größe, an der Termine und Mannschaftsstärke hängen.
+    private var stundenZeile: some View {
+        HStack {
+            Label("Lohnstunden", systemImage: "clock")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            VStack(alignment: .trailing, spacing: 1) {
+                Text("\(kalkulation.stundenGesamt.formatted(.number.precision(.fractionLength(0...2)))) Std")
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+                Text("\(kalkulation.stundenJeEinheit.formatted(.number.precision(.fractionLength(0...3)))) Std je \(position.einheit ?? "Einheit")")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
 
     private var ergebnisSection: some View {
         Section {
@@ -316,10 +432,28 @@ struct LVTiefenkalkulationView: View {
                 ergebnisZeile(label: "Geräte", wert: kalkulation.geraeteKosten, farbe: .purple)
                 Divider()
                 ergebnisZeile(label: "EP (EK)", wert: kalkulation.einheitspreisEK, farbe: .primary, bold: true)
-                ergebnisZeile(label: "+ W&G (\(Int(wgProzent * 100))%)", wert: kalkulation.zuschlagWG, farbe: .orange)
-                ergebnisZeile(label: "+ BGK (\(Int(bgkProzent * 100))%)", wert: kalkulation.zuschlagBGK, farbe: .orange)
+                if jeKostenart {
+                    // Aufschlag dort zeigen, wo er entsteht — sonst sieht man nicht,
+                    // dass der Lohn den Löwenanteil trägt.
+                    ergebnisZeile(label: "+ auf Lohn (\(Int(zLohn * 100))%)",
+                                  wert: kalkulation.zuschlagLohn, farbe: .green)
+                    ergebnisZeile(label: "+ auf Material (\(Int(zMaterial * 100))%)",
+                                  wert: kalkulation.zuschlagMaterial, farbe: .blue)
+                    ergebnisZeile(label: "+ auf Geräte (\(Int(zGeraet * 100))%)",
+                                  wert: kalkulation.zuschlagGeraet, farbe: .purple)
+                } else {
+                    ergebnisZeile(label: "+ W&G (\(Int(wgProzent * 100))%)",
+                                  wert: kalkulation.zuschlagWG, farbe: .orange)
+                    ergebnisZeile(label: "+ BGK (\(Int(bgkProzent * 100))%)",
+                                  wert: kalkulation.zuschlagBGK, farbe: .orange)
+                }
                 Divider()
                 ergebnisZeile(label: "EP (VK)", wert: kalkulation.einheitspreisVK, farbe: .primary, bold: true)
+
+                if kalkulation.stundenJeEinheit > 0 {
+                    Divider()
+                    stundenZeile
+                }
             }
             .padding(.vertical, 4)
 
@@ -426,8 +560,18 @@ struct LVTiefenkalkulationView: View {
     // MARK: - Actions
 
     private func speichern() {
-        position.wagnisGewinnProzent = wgProzent
-        position.bgkProzent = bgkProzent
+        position.zuschlagEigen = eigen
+        // Nur schreiben, wenn die Position bewusst abweicht. Sonst wuerden die
+        // angezeigten Firmenwerte als eigene Werte festgeschrieben — und eine spaetere
+        // Aenderung an den Firmenwerten wuerde diese Position stillschweigend uebergehen.
+        if eigen {
+            position.wagnisGewinnProzent = wgProzent
+            position.bgkProzent = bgkProzent
+            position.zuschlagJeKostenart = jeKostenart
+            position.zuschlagLohnProzent = zLohn
+            position.zuschlagMaterialProzent = zMaterial
+            position.zuschlagGeraetProzent = zGeraet
+        }
         try? viewContext.save()
     }
 

@@ -83,6 +83,14 @@ struct PersistenceController {
         
         // NEU: Migration für Welle 9 Hierarchie aufrufen
         HierarchieMigration.run(in: container.viewContext)
+
+        // Zuschlagssätze: markiert einmalig, welche Bestandspositionen von den
+        // Firmenwerten abweichen — damit die Umstellung keine Preise verschiebt.
+        // Im In-Memory-Store (Tests, Snapshots) bewusst NICHT: dort gibt es keine
+        // Altdaten, und die Tests setzen ihre Sätze selbst.
+        if !inMemory {
+            ZuschlagMigration.run(in: container.viewContext)
+        }
     
     }
     }
