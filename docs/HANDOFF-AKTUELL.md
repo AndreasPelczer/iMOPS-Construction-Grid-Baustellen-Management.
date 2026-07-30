@@ -86,11 +86,32 @@ Zwei Konsequenzen:
   mitsetzen.** Sonst greifen stillschweigend die Firmenwerte. Umgesetzt im
   `MarktbreitSeeder` (mit Begründung im Code) und im zugehörigen Test.
 
+### Zwei Nachzügler aus dem Simulator-Rundgang
+
+- **`12bc67e` — Element sortiert seine Bausteine nach PosNr.** Aufgeklappt stand da
+  „Abrütteln · Frostschutzschicht · Pflaster verlegen · Pflastersteine liefern", also
+  der LETZTE Arbeitsschritt zuerst. Beim Element ist die Reihenfolge Information: die
+  PosNr erzählt die Arbeitsfolge (534.002 vor 534.007), genau wie die A-Positionen im
+  BauSU-Bild. Beim **Mengenträger** bleibt es bewusst alphabetisch — dort sind die
+  Unterpunkte Belege ohne Reihenfolge-Aussage. Beide Fälle mit Test festgehalten.
+- **`dc1d934` — `scripts/snapshot.sh` nahm gelegentlich das falsche App-Bundle.**
+  `find` liefert ZWEI gleichnamige `.app`-Verzeichnisse: das gebaute und ein
+  Indizierungs-Gerüst unter `Index.noindex/` **ohne `Info.plist`**. Welches `head -1`
+  erwischte, hing an der Dateisystem-Reihenfolge — bisher reines Glück. Symptom war
+  ein wenig hilfreiches `Print: Entry, "CFBundleIdentifier", Does Not Exist`.
+  `Index.noindex/` wird jetzt ausgeschlossen, fehlendes Bundle sagt Klartext.
+  **Latenter Fehler im Werkzeug, nicht in der App** — fällt genau dann auf, wenn man
+  ihn am wenigsten gebrauchen kann.
+
 ### Stand
 
-115 Tests grün (9 neue). Drift-Regel: `App_Zuschlag_Je_Kostenart` in
+117 Tests grün (11 neue). Drift-Regel: `App_Zuschlag_Je_Kostenart` in
 `app_bedienung.yaml` (10 Aliase), inkl. Firmenwert-Weg. Snapshot-Ziel
 `scripts/snapshot.sh LVZuschlag eigen|firma`.
+
+Im Simulator durchgesehen und für gut befunden (Andreas, 31.07.): Element klappt
+auf, Rezept-Maße und Beiträge stimmen, Angebotssumme und Lohnstunden passen.
+**Auf dem Gerät ist es noch nicht** — siehe Migrations-Hinweis unten.
 
 ### Offen / bewusst nicht gemacht
 
