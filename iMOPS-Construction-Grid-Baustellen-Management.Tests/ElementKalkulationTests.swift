@@ -1,0 +1,242 @@
+//
+//  ElementKalkulationTests.swift
+//  iMOPS-Construction-Grid-Baustellen-Management.Tests
+//
+//  B-Element: ein Deckel, der seine Bausteine zu EINEM Einheitspreis zusammenrechnet.
+//  Gerechnet wird das Pflaster-Beispiel vom Zettel: acht Arbeitsschritte, am Ende
+//  steht ein Preis je m².
+//
+
+import Testing
+import Foundation
+import CoreData
+@testable import iMOPS_Construction_Grid_Baustellen_Management_
+
+struct ElementKalkulationTests {
+
+    /// Eigener In-Memory-Stack je Test, festgehalten (vgl. CLAUDE.md) — sonst gibt der
+    /// Container die Objekte sofort wieder frei und die Attribute sind weg.
+    private let controller = PersistenceController(inMemory: true)
+
+    @MainActor
+    private var ctx: NSManagedObjectContext { controller.container.viewContext }
+
+    // MARK: - Aufbau
+
+    /// Das B-Element: 100 m² Pflasterfläche, Zuschlag 12 % BGK + 8 % W&G.
+    @MainActor
+    private func makeElement() -> LVPosition {
+        let el = LVPosition(context: ctx)
+        el.posNr = "534.000"
+        el.bezeichnung = "Pflasterfläche"
+        el.menge = 100
+        el.einheit = "m²"
+        el.bgkProzent = 0.12
+        el.wagnisGewinnProzent = 0.08
+        el.deckelTyp = .element
+        return el
+    }
+
+    @MainActor
+    private func makeBaustein(_ element: LVPosition,
+                              posNr: String,
+                              bezeichnung: String,
+                              einheit: String,
+                              jeElementEinheit: Double) -> LVPosition {
+        let b = LVPosition(context: ctx)
+        b.posNr = posNr
+        b.bezeichnung = bezeichnung
+        b.einheit = einheit
+        b.mengeJeDeckelEinheit = jeElementEinheit
+        // Bausteine tragen eigene Zuschlagsätze — die müssen ignoriert werden,
+        // sonst wird doppelt aufgeschlagen. Bewusst ungleich null gesetzt.
+        b.bgkProzent = 0.12
+        b.wagnisGewinnProzent = 0.08
+        b.deckel = element
+        return b
+    }
+
+    @MainActor
+    private func addMaterial(_ pos: LVPosition, preis: Double, jeEinheit: Double = 1.0) {
+        let m = PositionMaterial(context: ctx)
+        m.id = UUID()
+        m.materialName = "Material \(pos.posNr ?? "")"
+        m.einzelpreis = preis
+        m.mengeProEinheit = jeEinheit
+        m.verschnittProzent = 0
+        m.position = pos
+    }
+
+    @MainActor
+    private func addLohn(_ pos: LVPosition, satz: Double, stunden: Double) {
+        let l = PositionLohn(context: ctx)
+        l.id = UUID()
+        l.qualifikation = "Facharbeiter"
+        l.stundenBruttoEK = satz
+        l.stunden = stunden
+        l.position = pos
+    }
+
+    @MainActor
+    private func addGeraet(_ pos: LVPosition, satz: Double, stunden: Double) {
+        let g = PositionGeraet(context: ctx)
+        g.id = UUID()
+        g.geraetName = "Rüttelplatte"
+        g.kostenProStunde = satz
+        g.stunden = stunden
+        g.position = pos
+    }
+
+    /// Das vollständige Rezept — vier Bausteine in DREI verschiedenen Einheiten:
+    ///
+    ///   Frostschutz     50 €/m³ × 0,35 m³/m²  = 17,50 €/m²
+    ///   Pflastersteine  25 €/m² × 1,00 m²/m²  = 25,00 €/m²
+    ///   Verlegen        55 €/h  × 0,50 h/m²   = 27,50 €/m²
+    ///   Abrütteln       25 €/h  × 0,10 h/m²   =  2,50 €/m²
+    ///                                          ─────────────
+    ///                             Selbstkosten = 72,50 €/m²
+    ///                             + 20 % Zuschlag = 87,00 €/m²
+    @MainActor
+    private func makeVollesRezept() -> LVPosition {
+        let el = makeElement()
+
+        let frostschutz = makeBaustein(el, posNr: "534.002", bezeichnung: "Frostschutz",
+                                       einheit: "m³", jeElementEinheit: 0.35)
+        addMaterial(frostschutz, preis: 50)
+
+        let steine = makeBaustein(el, posNr: "534.004", bezeichnung: "Pflastersteine",
+                                  einheit: "m²", jeElementEinheit: 1.0)
+        addMaterial(steine, preis: 25)
+
+        let verlegen = makeBaustein(el, posNr: "534.005", bezeichnung: "Pflaster verlegen",
+                                    einheit: "m²", jeElementEinheit: 1.0)
+        addLohn(verlegen, satz: 55, stunden: 0.5)
+
+        let abruetteln = makeBaustein(el, posNr: "534.007", bezeichnung: "Abrütteln",
+                                      einheit: "h", jeElementEinheit: 0.1)
+        addGeraet(abruetteln, satz: 25, stunden: 1.0)
+
+        return el
+    }
+
+    // MARK: - Tests
+
+    @Test @MainActor
+    func elementRechnetEinheitspreisAusBausteinen() throws {
+        let el = makeVollesRezept()
+        let k = LVKalkulator.kalkuliereElement(el)
+
+        // Selbstkosten je m² — die Bausteine rechnen in m³, m² und h, das Ergebnis in m².
+        #expect(abs(k.einheitspreisEK - 72.50) < 0.001)
+        // Zuschlag EINMAL oben: 72,50 × 1,20
+        #expect(abs(k.einheitspreisVK - 87.00) < 0.001)
+        #expect(abs(k.gesamtpreis - 8_700.00) < 0.01)
+        #expect(abs(k.menge - 100) < 0.001)
+    }
+
+    @Test @MainActor
+    func anteileWerdenAufgeschluesselt() throws {
+        let el = makeVollesRezept()
+        let k = LVKalkulator.kalkuliereElement(el)
+
+        #expect(abs(k.materialKosten - 42.50) < 0.001)   // 17,50 + 25,00
+        #expect(abs(k.lohnKosten - 27.50) < 0.001)
+        #expect(abs(k.geraeteKosten - 2.50) < 0.001)
+    }
+
+    @Test @MainActor
+    func rezeptSkaliertMitDerBezugsmenge() throws {
+        let el = makeVollesRezept()
+        let epVorher = LVKalkulator.kalkuliereElement(el).einheitspreisVK
+
+        el.menge = 250   // andere Baustelle, dieselbe Rezeptur
+
+        let k = LVKalkulator.kalkuliereElement(el)
+        #expect(abs(k.einheitspreisVK - epVorher) < 0.001)   // Preis je m² bleibt
+        #expect(abs(k.gesamtpreis - 21_750.00) < 0.01)       // Gesamt skaliert mit
+    }
+
+    @Test @MainActor
+    func bausteinTraegtKeinenZuschlagUndRechnetMitRezeptMenge() throws {
+        let el = makeElement()
+        let frostschutz = makeBaustein(el, posNr: "534.002", bezeichnung: "Frostschutz",
+                                       einheit: "m³", jeElementEinheit: 0.35)
+        addMaterial(frostschutz, preis: 50)
+
+        #expect(frostschutz.istElementBaustein)
+        // 0,35 m³/m² × 100 m² = 35 m³
+        #expect(abs(frostschutz.effektiveMenge - 35.0) < 0.001)
+
+        let k = LVKalkulator.kalkuliere(position: frostschutz)
+        #expect(abs(k.einheitspreisEK - 50.0) < 0.001)
+        #expect(abs(k.zuschlagBGK - 0) < 0.001)    // Zuschlag traegt das Element
+        #expect(abs(k.zuschlagWG - 0) < 0.001)
+        #expect(abs(k.einheitspreisVK - 50.0) < 0.001)
+        #expect(abs(k.gesamtpreis - 1_750.0) < 0.01)   // 50 × 35
+    }
+
+    @Test @MainActor
+    func effektiverEPLiefertDenElementPreis() throws {
+        let el = makeVollesRezept()
+        #expect(abs(LVKalkulator.effektiverEP(for: el) - 87.00) < 0.001)
+    }
+
+    // MARK: - Kein Rueckschritt fuer Bestehendes
+
+    @Test @MainActor
+    func mengentraegerDeckelVerhaeltSichUnveraendert() throws {
+        // So kommen Excel-/Bestelllisten-Importe herein: deckelArt bleibt nil.
+        let deckel = LVPosition(context: ctx)
+        deckel.posNr = "06.01"
+        deckel.bezeichnung = "Außenwand 24 cm"
+        deckel.menge = 80
+        deckel.einheit = "m²"
+        deckel.bgkProzent = 0.12
+        deckel.wagnisGewinnProzent = 0.08
+        addMaterial(deckel, preis: 30)
+
+        let beleg = LVPosition(context: ctx)
+        beleg.posNr = "06.01.1"
+        beleg.bezeichnung = "Wand EG Nord"
+        beleg.menge = 30
+        beleg.deckel = deckel
+
+        #expect(deckel.istDeckel)
+        #expect(!deckel.istElement)                  // ohne Markierung kein Element
+        #expect(deckel.deckelTyp == .mengentraeger)  // Vorgabe bei nil
+        #expect(!beleg.istElementBaustein)
+        #expect(abs(beleg.effektiveMenge - 30.0) < 0.001)   // Beleg behaelt seine Menge
+
+        // Der Deckel rechnet wie bisher aus SEINER Kalkulation, nicht aus den Belegen:
+        // 30 €/m² + 20 % = 36 €/m².
+        let k = LVKalkulator.kalkuliere(position: deckel)
+        #expect(abs(k.einheitspreisVK - 36.0) < 0.001)
+        #expect(abs(k.gesamtpreis - 2_880.0) < 0.01)
+    }
+
+    @Test @MainActor
+    func eigenstaendigePositionUnveraendert() throws {
+        let pos = LVPosition(context: ctx)
+        pos.posNr = "3.30.1"
+        pos.menge = 10
+        pos.einheit = "m²"
+        pos.bgkProzent = 0.12
+        pos.wagnisGewinnProzent = 0.08
+        addMaterial(pos, preis: 100)
+
+        #expect(abs(pos.effektiveMenge - 10.0) < 0.001)
+        let k = LVKalkulator.kalkuliere(position: pos)
+        #expect(abs(k.einheitspreisVK - 120.0) < 0.001)   // Zuschlag greift weiterhin
+        #expect(abs(k.gesamtpreis - 1_200.0) < 0.01)
+    }
+
+    @Test @MainActor
+    func leerMarkiertesElementRechnetNichts() throws {
+        let el = LVPosition(context: ctx)
+        el.menge = 100
+        el.deckelTyp = .element      // markiert, aber ohne Bausteine
+
+        #expect(!el.istElement)      // ohne Kinder kein Element
+        #expect(abs(LVKalkulator.kalkuliereElement(el).einheitspreisVK - 0) < 0.001)
+    }
+}

@@ -55,10 +55,18 @@ enum LVKalkulator {
         }
 
         let ek = material + lohn + geraete
-        let wg = ek * position.wagnisGewinnProzent
-        let bgk = ek * position.bgkProzent
+
+        // Baustein unter einem Element: den Zuschlag traegt das Element, nicht der
+        // Baustein — sonst wuerde doppelt aufgeschlagen. Siehe kalkuliereElement.
+        let traegtZuschlag = !position.istElementBaustein
+        let wg = traegtZuschlag ? ek * position.wagnisGewinnProzent : 0
+        let bgk = traegtZuschlag ? ek * position.bgkProzent : 0
         let vk = ek + wg + bgk
-        let gesamt = vk * position.menge
+
+        // effektiveMenge == menge, ausser der Baustein rechnet nach Rezept
+        // (mengeJeDeckelEinheit x Bezugsmenge des Elements).
+        let menge = position.effektiveMenge
+        let gesamt = vk * menge
 
         return Kalkulation(
             materialKosten: material,
@@ -69,7 +77,43 @@ enum LVKalkulator {
             zuschlagBGK: bgk,
             einheitspreisVK: vk,
             gesamtpreis: gesamt,
-            menge: position.menge
+            menge: menge
+        )
+    }
+
+    /// Kalkuliert ein B-Element: die Bausteine liefern ihre Selbstkosten, umgerechnet
+    /// ueber ihr Rezept-Mass auf EINE Einheit des Elements. Der Zuschlag kommt hier
+    /// oben EINMAL drauf (klassische Kalkulation: Einzelkosten der Teilleistungen,
+    /// dann Zuschlag) — deshalb rechnen die Bausteine selbst zuschlagsfrei.
+    ///
+    /// Die Einheiten kuerzen sich dabei heraus: (EUR je m³) x (m³ je m²) = EUR je m².
+    /// Ein Baustein darf also in m³, lfm oder Stunden rechnen, das Element in m².
+    static func kalkuliereElement(_ element: LVPosition) -> Kalkulation {
+        func jeElementEinheit(_ anteil: (LVPosition) -> Double) -> Double {
+            element.unterPositionenArray.reduce(0.0) { summe, baustein in
+                summe + anteil(baustein) * baustein.mengeJeDeckelEinheit
+            }
+        }
+
+        let material = jeElementEinheit { $0.materialArray.reduce(0.0) { $0 + $1.kostenProEinheit } }
+        let lohn     = jeElementEinheit { $0.lohnArray.reduce(0.0)     { $0 + $1.kostenProEinheit } }
+        let geraete  = jeElementEinheit { $0.geraeteArray.reduce(0.0)  { $0 + $1.kostenProEinheit } }
+
+        let ek = material + lohn + geraete
+        let wg = ek * element.wagnisGewinnProzent
+        let bgk = ek * element.bgkProzent
+        let vk = ek + wg + bgk
+
+        return Kalkulation(
+            materialKosten: material,
+            lohnKosten: lohn,
+            geraeteKosten: geraete,
+            einheitspreisEK: ek,
+            zuschlagWG: wg,
+            zuschlagBGK: bgk,
+            einheitspreisVK: vk,
+            gesamtpreis: vk * element.menge,
+            menge: element.menge
         )
     }
 
@@ -93,6 +137,9 @@ enum LVKalkulator {
         let id = position.objectID.uriRepresentation().absoluteString
         let angebotsEP = store.guenstigster(for: id)?.einzelpreis ?? 0
         if angebotsEP > 0 { return angebotsEP }
+        // Element vor Eigenkalkulation: der Preis eines B-Elements ist die Summe
+        // seiner Bausteine, nicht seine eigene (meist leere) Tiefenkalkulation.
+        if position.istElement { return kalkuliereElement(position).einheitspreisVK }
         if position.hatKalkulation { return kalkuliere(position: position).einheitspreisVK }
         return 0
     }

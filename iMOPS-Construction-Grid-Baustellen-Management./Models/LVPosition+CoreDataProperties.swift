@@ -38,6 +38,23 @@ extension LVPosition {
     @NSManaged var unterPositionen: NSSet?        // die Belege unter diesem Deckel
     @NSManaged var deckelNotiz: String?           // „warum zusammengeführt" (Prüfstempel)
 
+    // MARK: - Element-Kalkulation (B-Element)
+    // Ein Deckel kann ZWEI verschiedene Dinge sein. `deckelArt` unterscheidet sie:
+    //
+    //   Mengenträger (Vorgabe, alles Bisherige):  der Deckel trägt die Menge selbst,
+    //     die Unterpunkte sind Beleg. So kommen Excel-/Bestelllisten-Importe rein.
+    //
+    //   Element:  der Deckel ist die Summe seiner Bausteine. Jeder Baustein trägt einen
+    //     Aufwand JE ELEMENT-EINHEIT (`mengeJeDeckelEinheit`) — „0,35 m³ Schotter je m²
+    //     Pflaster". Dadurch kürzen sich die Einheiten heraus und am Element steht ein
+    //     Einheitspreis (87 €/m²), egal in welchen Einheiten die Bausteine rechnen.
+    //     Der Zuschlag (BGK/W&G) kommt EINMAL oben am Element drauf, nicht je Baustein.
+    //
+    // Beide Felder sind additiv und optional — bestehende Positionen verhalten sich
+    // unverändert (deckelArt == nil ⇒ Mengenträger).
+    @NSManaged var deckelArt: String?             // nil/"mengentraeger" | "element"
+    @NSManaged var mengeJeDeckelEinheit: Double   // Rezept-Maß des Bausteins, je Einheit des Elements
+
     // Weg B — Herkunft: Seite im Quell-PDF (1-basiert), aus der Extraktion. nil = unbekannt.
     @NSManaged var seite: NSNumber?
     /// Seitenzahl (1-basiert) im Quell-PDF, falls bekannt.
@@ -85,6 +102,31 @@ extension LVPosition {
     /// Position ist ein Deckel (hat mind. einen Unterpunkt).
     var istDeckel: Bool { (unterPositionen?.count ?? 0) > 0 }
 
+    // MARK: - Element-Kalkulation (B-Element)
+
+    /// Getypter Zugriff auf `deckelArt` — Muster wie bei `mengenQuelle`.
+    var deckelTyp: DeckelArt {
+        get { DeckelArt(rawValue: deckelArt ?? "") ?? .mengentraeger }
+        set { deckelArt = newValue.rawValue }
+    }
+
+    /// Deckel, der seine Bausteine aufsummiert (B-Element).
+    /// Braucht Kinder — ein leer markierter Deckel rechnet nichts.
+    var istElement: Bool { istDeckel && deckelTyp == .element }
+
+    /// Position ist ein Baustein unter einem Element (A-Element).
+    var istElementBaustein: Bool { deckel?.istElement == true }
+
+    /// Menge, mit der diese Position tatsächlich rechnet.
+    ///
+    /// Unter einem Element gilt das Rezept: `mengeJeDeckelEinheit × Bezugsmenge des
+    /// Elements`. „0,35 m³/m²" bei 100 m² Pflaster ⇒ 35 m³ Schotter. Überall sonst
+    /// ist es schlicht `menge` — deshalb ändert sich für bestehende Positionen nichts.
+    var effektiveMenge: Double {
+        guard let element = deckel, element.istElement else { return menge }
+        return mengeJeDeckelEinheit * element.menge
+    }
+
     // Ob fuer diese Position eine Tiefenkalkulation existiert
     var hatKalkulation: Bool {
         !materialArray.isEmpty || !lohnArray.isEmpty || !geraeteArray.isEmpty
@@ -115,6 +157,20 @@ extension LVPosition {
 }
 
 extension LVPosition: Identifiable {}
+
+// Was für eine Art Deckel ist das? Siehe Kommentar bei `deckelArt`.
+// Vorgabe ist bewusst `mengentraeger` — unbekannter/leerer Wert verhält sich wie bisher.
+enum DeckelArt: String, CaseIterable {
+    case mengentraeger = "mengentraeger"  // Deckel trägt die Menge, Unterpunkte sind Beleg
+    case element       = "element"        // Deckel ist die Summe seiner Bausteine (B-Element)
+
+    var anzeige: String {
+        switch self {
+        case .mengentraeger: return "Mengenträger (Belege)"
+        case .element:       return "Element (Bausteine summieren)"
+        }
+    }
+}
 
 // Quelle der MENGEN-Angabe einer LV-Position — getrennt von KalkMaterial.MaterialQuelle,
 // weil es hier um die Herkunft der Menge geht (gemessen/geschätzt), nicht um den Preis.
