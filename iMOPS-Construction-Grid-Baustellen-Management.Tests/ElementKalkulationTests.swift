@@ -319,6 +319,38 @@ struct ElementKalkulationTests {
         #expect(abs(k.einheitspreisVK - 27.50) < 0.001)   // reine Selbstkosten
     }
 
+    // MARK: - Reihenfolge
+
+    /// Beim Element erzählt die PosNr die Arbeitsfolge — alphabetisch stünde
+    /// „Abrütteln" ganz oben, also der letzte Arbeitsschritt zuerst.
+    @Test @MainActor
+    func elementSortiertBausteineNachArbeitsfolge() throws {
+        let el = makeVollesRezept()
+        #expect(el.unterPositionenArray.compactMap(\.posNr)
+                == ["534.002", "534.004", "534.005", "534.007"])
+        #expect(el.unterPositionenArray.first?.bezeichnung == "Frostschutz")
+        #expect(el.unterPositionenArray.last?.bezeichnung == "Abrütteln")
+    }
+
+    /// Beim Mengenträger bleibt es alphabetisch — dort sind die Unterpunkte Belege
+    /// ohne Reihenfolge-Aussage, und Suchen ist einfacher.
+    @Test @MainActor
+    func mengentraegerSortiertWeiterAlphabetisch() throws {
+        let deckel = LVPosition(context: ctx)
+        deckel.posNr = "06.01"
+        deckel.menge = 80
+
+        for (nr, bez) in [("06.01.9", "Anbau Nord"), ("06.01.1", "Zwischenwand")] {
+            let beleg = LVPosition(context: ctx)
+            beleg.posNr = nr
+            beleg.bezeichnung = bez
+            beleg.deckel = deckel
+        }
+
+        #expect(!deckel.istElement)
+        #expect(deckel.unterPositionenArray.map(\.bezeichnung) == ["Anbau Nord", "Zwischenwand"])
+    }
+
     // MARK: - Firmenwerte
 
     /// Der eigentliche Zweck: ein Satz wird EINMAL gepflegt und wirkt überall.

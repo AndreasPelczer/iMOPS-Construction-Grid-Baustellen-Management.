@@ -111,11 +111,24 @@ extension LVPosition {
 
     // MARK: - Deckel / Unterpunkte
 
-    /// Die Unterpunkte dieses Deckels, stabil sortiert (Bezeichnung, dann posNr).
+    /// Die Unterpunkte dieses Deckels, stabil sortiert.
+    ///
+    /// Beim **Element** nach PosNr: dort ist die Reihenfolge Information — die Nummer
+    /// erzählt die Arbeitsfolge (534.002 Frostschutz kommt vor 534.007 Abrütteln).
+    /// Alphabetisch stünde „Abrütteln" ganz oben, also der letzte Arbeitsschritt zuerst.
+    ///
+    /// Beim **Mengenträger** bleibt es alphabetisch: die Unterpunkte sind dort Belege
+    /// für eine Menge, ihre Reihenfolge trägt keine Aussage, und Suchen ist einfacher.
     var unterPositionenArray: [LVPosition] {
-        (unterPositionen as? Set<LVPosition>)?.sorted {
+        let kinder = (unterPositionen as? Set<LVPosition>) ?? []
+        if istElement {
+            return kinder.sorted {
+                ($0.posNr ?? "", $0.bezeichnung ?? "") < ($1.posNr ?? "", $1.bezeichnung ?? "")
+            }
+        }
+        return kinder.sorted {
             ($0.bezeichnung ?? "", $0.posNr ?? "") < ($1.bezeichnung ?? "", $1.posNr ?? "")
-        } ?? []
+        }
     }
 
     /// Position hängt als Beleg unter einem Deckel → zählt NICHT in Summen.
