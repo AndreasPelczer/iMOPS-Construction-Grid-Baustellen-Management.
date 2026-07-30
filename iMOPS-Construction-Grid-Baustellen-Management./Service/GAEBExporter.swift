@@ -221,30 +221,10 @@ struct GAEBExporter {
         }
     }
 
+    /// DIN-276-Bezeichnung zu einer KG-Nummer.
+    /// Kommt aus DIN276KostenGruppe (abgeleitet aus dem Baum-Katalog) — vorher stand
+    /// hier eine eigene switch-Kopie, die nur Hunderter/Zehner kannte.
     private static func kgFullName(_ kg: String) -> String {
-        switch kg {
-        case "100": return "Grundstück"
-        case "200": return "Herrichten und Erschließen"
-        case "300": return "Bauwerk - Baukonstruktionen"
-        case "310": return "Baugrube"
-        case "320": return "Gründung"
-        case "330": return "Außenwände"
-        case "340": return "Innenwände"
-        case "350": return "Decken"
-        case "360": return "Dächer"
-        case "370": return "Infrastruktur"
-        case "380": return "Fenster und Türen"
-        case "390": return "Sonstige Baukonstruktion"
-        case "400": return "Bauwerk - Technische Anlagen"
-        case "410": return "Abwasser, Wasser, Gas"
-        case "420": return "Wärmeversorgung"
-        case "430": return "Lufttechnische Anlagen"
-        case "440": return "Starkstrom"
-        case "450": return "Fernmelde- und IT-Anlagen"
-        case "500": return "Außenanlagen"
-        case "600": return "Ausstattung und Kunstwerke"
-        case "700": return "Baunebenkosten"
-        default:    return "Sonstige"
-        }
+        DIN276KostenGruppe.bezeichnung(fuer: kg)
     }
 }
