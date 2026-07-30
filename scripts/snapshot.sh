@@ -27,7 +27,16 @@ xcodebuild build -project "$PROJ" -scheme "$SCHEME" \
   -destination "platform=iOS Simulator,name=$SIM" >/dev/null
 
 DD="$HOME/Library/Developer/Xcode/DerivedData"
-APP=$(find "$DD" -path "*Debug-iphonesimulator/*.app" -name "${SCHEME}.app" -type d | head -1)
+# Index.noindex/ ausschliessen: Xcode legt dort ein gleichnamiges .app-Geruest der
+# Indizierung ab, OHNE Info.plist. find liefert beide, die Reihenfolge haengt am
+# Dateisystem — erwischt head -1 das falsche, bricht das Skript mit dem wenig
+# hilfreichen "Print: Entry, CFBundleIdentifier, Does Not Exist" ab.
+APP=$(find "$DD" -path "*Debug-iphonesimulator/*.app" -name "${SCHEME}.app" -type d \
+        -not -path "*/Index.noindex/*" | head -1)
+if [ -z "$APP" ] || [ ! -f "$APP/Info.plist" ]; then
+  echo "Kein gebautes App-Bundle mit Info.plist gefunden (gesucht in $DD)." >&2
+  exit 1
+fi
 BID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP/Info.plist")
 UDID=$(xcrun simctl list devices available | grep "$SIM" | grep -oE "[0-9A-F-]{36}" | head -1)
 

@@ -16,6 +16,28 @@ extension LVPosition {
     @NSManaged var lieferant: String?
     @NSManaged var wagnisGewinnProzent: Double
     @NSManaged var bgkProzent: Double
+
+    // MARK: - Zuschlag je Kostenart
+    // Ein Bauunternehmen schlägt nicht auf alles gleich auf: der Lohn trägt den
+    // Löwenanteil von Gemeinkosten und Gewinn, Material und Gerät kaum etwas.
+    // Typisch sind Faktoren wie Lohn ×2,75, Material ×1,15, Gerät ×1,10.
+    //
+    // `zuschlagJeKostenart == false` (Vorgabe) = alles Bisherige: EIN Satz für W&G
+    // und EINER für BGK, beide auf die Summe. Ist der Schalter an, gilt je Kostenart
+    // ein eigener Satz und W&G/BGK werden nicht mehr gerechnet.
+    //
+    // Die drei Sätze starten bei 0,20 — genau die Summe der bisherigen Vorgaben
+    // (0,12 BGK + 0,08 W&G). Der Schalter allein ändert also KEINE Zahl; erst wer
+    // an einem Regler dreht, verändert den Preis.
+    // `zuschlagEigen == false` (Vorgabe): die Position rechnet mit den FIRMENWERTEN
+    // (FirmenSettings). Ein Satz wird dann an einer Stelle gepflegt statt in jeder
+    // Position. Erst wer bewusst abweicht, setzt das Flag — dann gelten die vier
+    // Felder unten.
+    @NSManaged var zuschlagEigen: Bool
+    @NSManaged var zuschlagJeKostenart: Bool
+    @NSManaged var zuschlagLohnProzent: Double
+    @NSManaged var zuschlagMaterialProzent: Double
+    @NSManaged var zuschlagGeraetProzent: Double
     @NSManaged var mengenQuelleRaw: String?
     @NSManaged var event: Event?
     // Welle 9 — Bau-Hierarchie: Position hängt (zusätzlich zu event) an einem Geschoss.
@@ -37,6 +59,23 @@ extension LVPosition {
     @NSManaged var deckel: LVPosition?            // der Deckel, unter dem diese Position hängt (nil = eigenständig)
     @NSManaged var unterPositionen: NSSet?        // die Belege unter diesem Deckel
     @NSManaged var deckelNotiz: String?           // „warum zusammengeführt" (Prüfstempel)
+
+    // MARK: - Element-Kalkulation (B-Element)
+    // Ein Deckel kann ZWEI verschiedene Dinge sein. `deckelArt` unterscheidet sie:
+    //
+    //   Mengenträger (Vorgabe, alles Bisherige):  der Deckel trägt die Menge selbst,
+    //     die Unterpunkte sind Beleg. So kommen Excel-/Bestelllisten-Importe rein.
+    //
+    //   Element:  der Deckel ist die Summe seiner Bausteine. Jeder Baustein trägt einen
+    //     Aufwand JE ELEMENT-EINHEIT (`mengeJeDeckelEinheit`) — „0,35 m³ Schotter je m²
+    //     Pflaster". Dadurch kürzen sich die Einheiten heraus und am Element steht ein
+    //     Einheitspreis (87 €/m²), egal in welchen Einheiten die Bausteine rechnen.
+    //     Der Zuschlag (BGK/W&G) kommt EINMAL oben am Element drauf, nicht je Baustein.
+    //
+    // Beide Felder sind additiv und optional — bestehende Positionen verhalten sich
+    // unverändert (deckelArt == nil ⇒ Mengenträger).
+    @NSManaged var deckelArt: String?             // nil/"mengentraeger" | "element"
+    @NSManaged var mengeJeDeckelEinheit: Double   // Rezept-Maß des Bausteins, je Einheit des Elements
 
     // Weg B — Herkunft: Seite im Quell-PDF (1-basiert), aus der Extraktion. nil = unbekannt.
     @NSManaged var seite: NSNumber?
@@ -72,11 +111,24 @@ extension LVPosition {
 
     // MARK: - Deckel / Unterpunkte
 
-    /// Die Unterpunkte dieses Deckels, stabil sortiert (Bezeichnung, dann posNr).
+    /// Die Unterpunkte dieses Deckels, stabil sortiert.
+    ///
+    /// Beim **Element** nach PosNr: dort ist die Reihenfolge Information — die Nummer
+    /// erzählt die Arbeitsfolge (534.002 Frostschutz kommt vor 534.007 Abrütteln).
+    /// Alphabetisch stünde „Abrütteln" ganz oben, also der letzte Arbeitsschritt zuerst.
+    ///
+    /// Beim **Mengenträger** bleibt es alphabetisch: die Unterpunkte sind dort Belege
+    /// für eine Menge, ihre Reihenfolge trägt keine Aussage, und Suchen ist einfacher.
     var unterPositionenArray: [LVPosition] {
-        (unterPositionen as? Set<LVPosition>)?.sorted {
+        let kinder = (unterPositionen as? Set<LVPosition>) ?? []
+        if istElement {
+            return kinder.sorted {
+                ($0.posNr ?? "", $0.bezeichnung ?? "") < ($1.posNr ?? "", $1.bezeichnung ?? "")
+            }
+        }
+        return kinder.sorted {
             ($0.bezeichnung ?? "", $0.posNr ?? "") < ($1.bezeichnung ?? "", $1.posNr ?? "")
-        } ?? []
+        }
     }
 
     /// Position hängt als Beleg unter einem Deckel → zählt NICHT in Summen.
@@ -84,6 +136,62 @@ extension LVPosition {
 
     /// Position ist ein Deckel (hat mind. einen Unterpunkt).
     var istDeckel: Bool { (unterPositionen?.count ?? 0) > 0 }
+
+    // MARK: - Element-Kalkulation (B-Element)
+
+    /// Getypter Zugriff auf `deckelArt` — Muster wie bei `mengenQuelle`.
+    var deckelTyp: DeckelArt {
+        get { DeckelArt(rawValue: deckelArt ?? "") ?? .mengentraeger }
+        set { deckelArt = newValue.rawValue }
+    }
+
+    /// Deckel, der seine Bausteine aufsummiert (B-Element).
+    /// Braucht Kinder — ein leer markierter Deckel rechnet nichts.
+    var istElement: Bool { istDeckel && deckelTyp == .element }
+
+    /// Position ist ein Baustein unter einem Element (A-Element).
+    var istElementBaustein: Bool { deckel?.istElement == true }
+
+    // MARK: - Wirksame Zuschlagssätze (Firmenwert oder eigener)
+    //
+    // Immer diese sechs benutzen, nie die rohen Felder — sonst rechnet der eine
+    // Aufrufer mit dem Firmenwert und der nächste mit dem gespeicherten. Genau so
+    // sind heute schon zwei Kataloge und fünf KG-Namen auseinandergelaufen.
+
+    /// Rechnet diese Position mit getrennten Sätzen je Kostenart?
+    var rechnetJeKostenart: Bool {
+        zuschlagEigen ? zuschlagJeKostenart : FirmenSettings.zuschlagJeKostenart
+    }
+
+    var satzLohn: Double     { zuschlagEigen ? zuschlagLohnProzent     : FirmenSettings.zuschlagLohn }
+    var satzMaterial: Double { zuschlagEigen ? zuschlagMaterialProzent : FirmenSettings.zuschlagMaterial }
+    var satzGeraet: Double   { zuschlagEigen ? zuschlagGeraetProzent   : FirmenSettings.zuschlagGeraet }
+    var satzBGK: Double      { zuschlagEigen ? bgkProzent              : FirmenSettings.bgk }
+    var satzWagnisGewinn: Double {
+        zuschlagEigen ? wagnisGewinnProzent : FirmenSettings.wagnisGewinn
+    }
+
+    /// Übernimmt die aktuellen Firmenwerte in die eigenen Felder — damit beim
+    /// Umschalten auf „abweichen" nicht plötzlich andere Zahlen dastehen als eben
+    /// noch angezeigt.
+    func uebernehmeFirmenwerte() {
+        zuschlagJeKostenart = FirmenSettings.zuschlagJeKostenart
+        zuschlagLohnProzent = FirmenSettings.zuschlagLohn
+        zuschlagMaterialProzent = FirmenSettings.zuschlagMaterial
+        zuschlagGeraetProzent = FirmenSettings.zuschlagGeraet
+        bgkProzent = FirmenSettings.bgk
+        wagnisGewinnProzent = FirmenSettings.wagnisGewinn
+    }
+
+    /// Menge, mit der diese Position tatsächlich rechnet.
+    ///
+    /// Unter einem Element gilt das Rezept: `mengeJeDeckelEinheit × Bezugsmenge des
+    /// Elements`. „0,35 m³/m²" bei 100 m² Pflaster ⇒ 35 m³ Schotter. Überall sonst
+    /// ist es schlicht `menge` — deshalb ändert sich für bestehende Positionen nichts.
+    var effektiveMenge: Double {
+        guard let element = deckel, element.istElement else { return menge }
+        return mengeJeDeckelEinheit * element.menge
+    }
 
     // Ob fuer diese Position eine Tiefenkalkulation existiert
     var hatKalkulation: Bool {
@@ -115,6 +223,20 @@ extension LVPosition {
 }
 
 extension LVPosition: Identifiable {}
+
+// Was für eine Art Deckel ist das? Siehe Kommentar bei `deckelArt`.
+// Vorgabe ist bewusst `mengentraeger` — unbekannter/leerer Wert verhält sich wie bisher.
+enum DeckelArt: String, CaseIterable {
+    case mengentraeger = "mengentraeger"  // Deckel trägt die Menge, Unterpunkte sind Beleg
+    case element       = "element"        // Deckel ist die Summe seiner Bausteine (B-Element)
+
+    var anzeige: String {
+        switch self {
+        case .mengentraeger: return "Mengenträger (Belege)"
+        case .element:       return "Element (Bausteine summieren)"
+        }
+    }
+}
 
 // Quelle der MENGEN-Angabe einer LV-Position — getrennt von KalkMaterial.MaterialQuelle,
 // weil es hier um die Herkunft der Menge geht (gemessen/geschätzt), nicht um den Preis.

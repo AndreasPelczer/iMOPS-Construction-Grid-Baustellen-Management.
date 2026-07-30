@@ -103,6 +103,10 @@ struct MarktbreitSeeder {
 
         guard let netto = daten.pauschalNetto else { return }
 
+        // Nachunternehmer-Durchleitung: bewusst OHNE Zuschlag. `zuschlagEigen` muss
+        // dazu gesetzt sein, sonst greifen die Firmenwerte und die Pauschale bekaeme
+        // stillschweigend 20 % aufgeschlagen.
+        pos.zuschlagEigen = true
         pos.wagnisGewinnProzent = 0
         pos.bgkProzent = 0
 

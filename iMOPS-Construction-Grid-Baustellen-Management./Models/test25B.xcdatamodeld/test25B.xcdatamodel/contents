@@ -115,6 +115,7 @@
         <attribute name="artikelNummer" optional="YES" attributeType="String"/>
         <attribute name="bezeichnung" optional="YES" attributeType="String"/>
         <attribute name="bgkProzent" optional="YES" attributeType="Double" defaultValueString="0.12" usesScalarValueType="YES"/>
+        <attribute name="deckelArt" optional="YES" attributeType="String"/>
         <attribute name="deckelNotiz" optional="YES" attributeType="String"/>
         <attribute name="seite" optional="YES" attributeType="Integer 32" usesScalarValueType="NO"/>
         <attribute name="dokuName" optional="YES" attributeType="String"/>
@@ -124,10 +125,16 @@
         <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
         <attribute name="lieferant" optional="YES" attributeType="String"/>
         <attribute name="menge" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="mengeJeDeckelEinheit" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="mengenQuelleRaw" optional="YES" attributeType="String" defaultValueString="manuell"/>
         <attribute name="posNr" optional="YES" attributeType="String"/>
         <attribute name="quellDatei" optional="YES" attributeType="String"/>
         <attribute name="wagnisGewinnProzent" optional="YES" attributeType="Double" defaultValueString="0.08" usesScalarValueType="YES"/>
+        <attribute name="zuschlagEigen" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="zuschlagJeKostenart" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="zuschlagLohnProzent" optional="YES" attributeType="Double" defaultValueString="0.2" usesScalarValueType="YES"/>
+        <attribute name="zuschlagMaterialProzent" optional="YES" attributeType="Double" defaultValueString="0.2" usesScalarValueType="YES"/>
+        <attribute name="zuschlagGeraetProzent" optional="YES" attributeType="Double" defaultValueString="0.2" usesScalarValueType="YES"/>
         <relationship name="aufmasse" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Aufmass" inverseName="lvPosition" inverseEntity="Aufmass"/>
         <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="lvPositionen" inverseEntity="Event"/>
         <relationship name="geschoss" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="lvPositionen" inverseEntity="Geschoss"/>

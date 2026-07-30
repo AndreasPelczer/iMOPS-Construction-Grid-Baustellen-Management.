@@ -837,3 +837,107 @@
     Mengen sind mit "geschaetzt" markiert (gemessen verdraengt geschaetzt).
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
+
+- id: "App_LV_Element_Kalkulation"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "B-Element"
+    - "Element rechnen"
+    - "Element kalkulieren"
+    - "Einheitspreis aus mehreren Positionen"
+    - "Preis je Quadratmeter aus Arbeitsschritten"
+    - "Rezept-Mass"
+    - "Bausteine summieren"
+    - "Deckel summiert Bausteine"
+    - "Arbeitsschritte zu einem Preis zusammenfassen"
+  antwort: |
+    Ein Deckel im LV kann ZWEI verschiedene Dinge sein. Umschalten: lange auf den
+    Deckel druecken (Rechtsklick am Mac) -> "Als Element rechnen" bzw. "Wieder als
+    Mengentraeger rechnen".
+
+    1) Mengentraeger (Vorgabe, orange): der Deckel traegt die Menge, die Unterpunkte
+       sind Beleg und "zaehlen nicht". So kommen Excel- und Bestelllisten-Importe herein.
+
+    2) Element (indigo): der Deckel ist die SUMME seiner Bausteine. Beispiel Pflaster:
+       Untergrund, Frostschutz, Bettung, Verlegen, Schneiden, Einsanden, Abruetteln,
+       Nacharbeiten - am Ende steht ein Einheitspreis, z.B. 87,00 EUR/m².
+
+    So legst du ein Element an:
+    - Positionen im LV auswaehlen und gruppieren (der Deckel entsteht).
+    - Deckel lange druecken -> "Als Element rechnen".
+    - Am Deckel Bezugsmenge und Einheit setzen (z.B. 100 m²) - ueber "Bearbeiten".
+    - Je Baustein antippen -> "Bearbeiten" -> Feld "Rezept-Mass": wie viel je Einheit
+      des Elements gebraucht wird, z.B. 0,35 m³ Schotter je m² Pflaster. Die Vorschau
+      zeigt sofort die tatsaechliche Menge (0,35 x 100 = 35 m³).
+    - In jedem Baustein wie gewohnt Material, Lohn und Geraet kalkulieren.
+
+    Wichtig: Zuschlaege (BGK, Wagnis & Gewinn) werden EINMAL oben am Element
+    gerechnet, nicht je Baustein - sonst wuerde doppelt aufgeschlagen. Die
+    Zuschlagsfelder eines Bausteins bleiben deshalb ohne Wirkung, solange er unter
+    einem Element haengt.
+
+    Vorteil: das Element ist ein Rezept. Aendert sich die Flaeche, bleibt der Preis
+    je m² gleich und die Gesamtsumme rechnet sich neu. Die Bausteine duerfen dabei
+    in anderen Einheiten rechnen als das Element (m³, lfm, Stunden) - die Umrechnung
+    macht das Rezept-Mass.
+
+    "Aufloesen" macht aus der Gruppe wieder Einzelpositionen und setzt den Deckel
+    auf Mengentraeger zurueck.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Zuschlag_Je_Kostenart"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Zuschlag je Kostenart"
+    - "Zuschlag auf Lohn"
+    - "Lohnzuschlag"
+    - "unterschiedliche Zuschlaege"
+    - "Zuschlagsgruppen"
+    - "Faktor auf den Lohn"
+    - "Gemeinkosten auf Lohn"
+    - "Lohnstunden"
+    - "Mannstunden"
+    - "wie viele Stunden steckt im Angebot"
+  antwort: |
+    WO DIE SAETZE STEHEN: unter Einstellungen -> "Kalkulation — Zuschlaege". Dort
+    einmal gepflegt, gelten sie fuer JEDE Position, die nicht ausdruecklich abweicht.
+    Wer eine einzelne Position anders rechnen will, schaltet in der Tiefenkalkulation
+    "Von den Firmenwerten abweichen" ein — dann werden die Regler dort bedienbar und
+    gelten nur fuer diese eine Position. Solange der Schalter aus ist, zeigen die
+    Regler die Firmenwerte grau an, damit sichtbar ist, womit gerechnet wird.
+
+    Beim Umschalten auf "abweichen" werden die aktuellen Firmenwerte uebernommen —
+    der Preis springt also nicht, nur weil man "abweichen" antippt.
+
+    Ausserdem gibt es den Schalter "Je Kostenart aufschlagen".
+
+    AUS (Vorgabe): ein Satz Wagnis & Gewinn und ein Satz BGK, beide auf die
+    Selbstkosten. So war es immer.
+
+    AN: je Kostenart ein eigener Satz — Lohn, Material, Geraet getrennt. Das
+    entspricht der ueblichen Praxis: der Lohn traegt den Loewenanteil von
+    Gemeinkosten und Gewinn, Material und Geraet kaum etwas. Groessenordnungen aus
+    der Praxis: Lohn mal 2,75 (also 175 %), Material mal 1,15, Geraet mal 1,10.
+    W&G und BGK werden in diesem Modus NICHT zusaetzlich gerechnet.
+
+    Wichtig: das Umschalten allein aendert keinen Preis. Die drei Saetze starten bei
+    je 20 % — das ist dieselbe Summe wie 12 % BGK + 8 % W&G auf alles. Erst wer an
+    einem Regler dreht, veraendert die Zahl.
+
+    Jeder Regler zeigt beides: den Prozentsatz und den Faktor (175 % = x2,75). Im
+    Ergebnis steht der Aufschlag dann dort, wo er entsteht — so siehst du, dass der
+    Lohn das Geld traegt.
+
+    Beim B-Element gilt der Zuschlag am Element, nicht an den Bausteinen. Ein
+    Baustein rechnet immer zuschlagsfrei, egal was an ihm eingestellt ist.
+
+    LOHNSTUNDEN: unten im LV steht neben der Angebotssumme, wie viele Lohnstunden
+    das ganze Angebot bedeutet — die Groesse, an der Termine und Mannschaftsstaerke
+    haengen. In der Tiefenkalkulation stehen sie je Position (gesamt und je Einheit).
+    Geraetestunden zaehlen NICHT mit: die Maschine steht auch, wenn niemand
+    danebensteht. Belege unter einem Deckel zaehlen nicht doppelt.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"

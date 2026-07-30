@@ -19,13 +19,26 @@ struct AddLVPositionView: View {
     @State private var showKatalog = false
     @State private var kgProposal: KGProposal?
     @State private var selectedGeschoss: Geschoss?   // Welle 9 — Ebene der Position
+    @State private var rezeptMass = ""               // B-Element: Aufwand je Element-Einheit
+
+    /// Das Element, unter dem diese Position als Baustein hängt (nil = kein Baustein).
+    private var elternElement: LVPosition? {
+        guard let deckel = editPosition?.deckel, deckel.istElement else { return nil }
+        return deckel
+    }
 
     let einheiten = ["m²", "m³", "lfm", "Stück", "kg", "t", "Psch", "h"]
     let lieferanten = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
 
     var isValid: Bool {
-        !bezeichnung.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        Double(menge.replacingOccurrences(of: ",", with: ".")) != nil
+        guard !bezeichnung.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        // Baustein unter einem Element: die Menge ergibt sich aus dem Rezept-Maß, das
+        // Mengenfeld bleibt leer. Dann muss das Rezept stimmen, nicht die Menge —
+        // sonst liesse sich ein Baustein nie speichern.
+        if elternElement != nil {
+            return Double(rezeptMass.replacingOccurrences(of: ",", with: ".")) != nil
+        }
+        return Double(menge.replacingOccurrences(of: ",", with: ".")) != nil
     }
 
     var body: some View {
@@ -47,12 +60,51 @@ struct AddLVPositionView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                Section("Menge & Einheit") {
+                Section {
                     HStack {
                         TextField("0,00", text: $menge).keyboardType(.decimalPad).frame(maxWidth: 120)
                         Picker("Einheit", selection: $einheit) {
                             ForEach(einheiten, id: \.self) { Text($0) }
                         }.pickerStyle(.menu)
+                    }
+                } header: {
+                    Text("Menge & Einheit")
+                } footer: {
+                    // Beim Baustein eines Elements ist das Mengenfeld bewusst leer —
+                    // sonst sucht man den Fehler an der falschen Stelle.
+                    if elternElement != nil {
+                        Text("Die Menge kommt aus dem Rezept-Maß unten — dieses Feld bleibt leer. Die Einheit brauchst du: sie sagt, in was der Baustein rechnet.")
+                    }
+                }
+                // Nur wenn die Position ein Baustein unter einem Element ist: das Rezept-Maß.
+                // Nicht die Menge zählt hier, sondern wie viel je Einheit des Elements nötig ist.
+                if let element = elternElement {
+                    Section {
+                        HStack {
+                            TextField("0,00", text: $rezeptMass)
+                                .keyboardType(.decimalPad).frame(maxWidth: 120)
+                            Text("\(einheit) je \(element.einheit ?? "Einheit")")
+                                .foregroundStyle(.secondary)
+                        }
+                        if let vorschau = rezeptVorschau(element) {
+                            HStack {
+                                Text("ergibt").foregroundStyle(.secondary)
+                                Spacer()
+                                Text(vorschau).monospacedDigit()
+                            }
+                            .font(.caption)
+                        }
+                    } header: {
+                        Label("Rezept-Maß für: \(element.bezeichnung ?? "Element")",
+                              systemImage: "square.stack.3d.down.right.fill")
+                    } footer: {
+                        Text("""
+                        Beispiel: 0,35 m³ Schotter je m² Pflaster. Bei \
+                        \(element.menge.formatted(.number.precision(.fractionLength(0...2)))) \
+                        \(element.einheit ?? "") ergibt das die tatsächliche Menge.
+                        Zuschläge (BGK, Wagnis & Gewinn) werden hier NICHT gerechnet — die trägt \
+                        das Element einmal für alle Bausteine.
+                        """)
                     }
                 }
                 Section {
@@ -131,7 +183,21 @@ struct AddLVPositionView: View {
         artikelNummer = p.artikelNummer ?? ""
         lieferant = p.lieferant ?? ""
         isAlternative = LVPositionHelper.isAlternative(p)
+        rezeptMass = p.mengeJeDeckelEinheit == 0
+            ? ""
+            : p.mengeJeDeckelEinheit.formatted(.number.precision(.fractionLength(0...3)))
         refreshKGProposal()
+    }
+
+    // MARK: - B-Element: Rezept-Maß
+
+    /// „0,35 m³/m² × 100 m² = 35 m³" — macht sichtbar, was das Rezept konkret bedeutet.
+    private func rezeptVorschau(_ element: LVPosition) -> String? {
+        guard let faktor = Double(rezeptMass.replacingOccurrences(of: ",", with: ".")),
+              faktor > 0 else { return nil }
+        let gesamt = faktor * element.menge
+        let zahl = gesamt.formatted(.number.precision(.fractionLength(0...2)))
+        return "\(zahl) \(einheit)"
     }
 
     private func save() {
@@ -151,6 +217,11 @@ struct AddLVPositionView: View {
         pos.artikelNummer = artikelNummer.isEmpty ? nil : artikelNummer
         pos.lieferant = lieferant.isEmpty ? nil : lieferant
         pos.event = event
+        // Rezept-Maß nur schreiben, wenn das Feld überhaupt zu sehen war (Baustein
+        // unter einem Element) — sonst würde eine normale Position es auf 0 setzen.
+        if elternElement != nil {
+            pos.mengeJeDeckelEinheit = Double(rezeptMass.replacingOccurrences(of: ",", with: ".")) ?? 0
+        }
         // Welle 9 — Ebene setzen (nie nil): gewähltes Geschoss oder Default der Baustelle.
         pos.geschoss = selectedGeschoss
             ?? HierarchieHelfer.sichereDefaultGeschoss(for: event, in: viewContext).geschoss

@@ -143,7 +143,12 @@ struct GAEBExporter {
             let storeID = pos.objectID.uriRepresentation().absoluteString
             var ep = store.guenstigster(for: storeID)?.einzelpreis ?? 0
             // Fallback: kalkulierter VK-Preis wenn vorhanden
-            if ep == 0 && pos.hatKalkulation {
+            if ep == 0 && pos.istElement {
+                // B-Element: der Preis entsteht aus den Bausteinen, nicht aus einer
+                // eigenen Kalkulation. Ohne diesen Zweig ginge das Element OHNE
+                // Einheitspreis in die GAEB-Datei.
+                ep = LVKalkulator.kalkuliereElement(pos).einheitspreisVK
+            } else if ep == 0 && pos.hatKalkulation {
                 ep = LVKalkulator.kalkuliere(position: pos).einheitspreisVK
             }
             lineTotal = ep * pos.menge

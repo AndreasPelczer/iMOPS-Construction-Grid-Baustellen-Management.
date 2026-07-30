@@ -174,10 +174,21 @@ struct LVView: View {
         return Double(sum) / Double(base.count) / 100.0
     }
 
+    /// Lohnstunden des ganzen LV — Elemente ueber ihre Bausteine, Belege zaehlen nicht.
+    private var gesamtStunden: Double {
+        LVKalkulator.gesamtStunden(
+            positionen: Array(positionen).filter { !LVPositionHelper.isAlternative($0) }
+        )
+    }
+
     private var gesamtSumme: Double {
         ohneDuplikate(Array(positionen).filter { !LVPositionHelper.isAlternative($0) }).reduce(0.0) { sum, pos in
             let preis: Double
-            if pos.hatKalkulation {
+            if pos.istElement {
+                // B-Element: der Preis steckt in den Bausteinen, nicht in einer eigenen
+                // Kalkulation. Ohne diesen Zweig faellt das Element aus der Summe.
+                preis = LVKalkulator.kalkuliereElement(pos).einheitspreisVK
+            } else if pos.hatKalkulation {
                 preis = LVKalkulator.kalkuliere(position: pos).einheitspreisVK
             } else if let best = store.guenstigster(for: pos.objectID.uriRepresentation().absoluteString) {
                 preis = best.einzelpreis
@@ -303,9 +314,18 @@ struct LVView: View {
                         .font(.caption2).foregroundStyle(.secondary)
                     Text(kind.bezeichnung ?? "—").font(.caption)
                     Spacer()
-                    Text("\(mengeText(kind)) \(kind.einheit ?? "")")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                    Text("zählt nicht").font(.caption2).foregroundStyle(.tertiary)
+                    if pos.istElement {
+                        // Baustein eines Elements: das Rezept-Maß und was es beisteuert.
+                        // „0,35 m³/m² · 17,50 €/m²" — beides bezogen auf die Element-Einheit.
+                        Text(rezeptText(kind, element: pos))
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                        Text(bausteinBeitrag(kind), format: .currency(code: "EUR"))
+                            .font(.caption.monospacedDigit()).foregroundStyle(.indigo)
+                    } else {
+                        Text("\(mengeText(kind)) \(kind.einheit ?? "")")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                        Text("zählt nicht").font(.caption2).foregroundStyle(.tertiary)
+                    }
                     pdfKnopf(fuer: kind)
                 }
                 // Auch die einzelnen Belege sind bearbeit-/kalkulierbar (Tippen öffnet den Dialog).
@@ -318,11 +338,20 @@ struct LVView: View {
             }
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: "square.stack.3d.up.fill").font(.footnote).foregroundStyle(.orange)
+                Image(systemName: pos.istElement ? "square.stack.3d.down.right.fill" : "square.stack.3d.up.fill")
+                    .font(.footnote)
+                    .foregroundStyle(pos.istElement ? .indigo : .orange)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(pos.bezeichnung ?? "—").font(.subheadline.weight(.semibold))
-                    Text("Deckel · \(pos.unterPositionenArray.count) Belege · zählt einmal")
-                        .font(.caption2).foregroundStyle(.orange)
+                    if pos.istElement {
+                        // Element: der Preis ENTSTEHT aus den Bausteinen — deshalb steht
+                        // hier der Einheitspreis, nicht „zählt einmal".
+                        Text("Element · \(pos.unterPositionenArray.count) Bausteine · \(elementEPText(pos))")
+                            .font(.caption2).foregroundStyle(.indigo)
+                    } else {
+                        Text("Deckel · \(pos.unterPositionenArray.count) Belege · zählt einmal")
+                            .font(.caption2).foregroundStyle(.orange)
+                    }
                 }
                 Spacer()
                 Text("\(mengeText(pos)) \(pos.einheit ?? "")")
@@ -349,12 +378,51 @@ struct LVView: View {
             Button { fortschrittPosition = pos } label: { Label("Fortschritt", systemImage: "chart.bar") }
             Button { aufmassPosition = pos } label: { Label("Aufmaß", systemImage: "ruler") }
             Divider()
+            if pos.istElement {
+                Button { setzeDeckelArt(pos, .mengentraeger) } label: {
+                    Label("Wieder als Mengenträger rechnen", systemImage: "square.stack.3d.up.fill")
+                }
+            } else {
+                Button { setzeDeckelArt(pos, .element) } label: {
+                    Label("Als Element rechnen (Bausteine summieren)",
+                          systemImage: "square.stack.3d.down.right.fill")
+                }
+            }
+            Divider()
             Button(role: .destructive) {
                 aufloesen(pos)
             } label: {
                 Label("Gruppierung auflösen", systemImage: "square.stack.3d.up.slash")
             }
         }
+    }
+
+    // MARK: - Element (B-Element)
+
+    /// Einheitspreis des Elements, wie ihn die Bausteine ergeben — z.B. „87,00 €/m²".
+    private func elementEPText(_ element: LVPosition) -> String {
+        let ep = LVKalkulator.kalkuliereElement(element).einheitspreisVK
+        let geld = ep.formatted(.currency(code: "EUR"))
+        return "\(geld)/\(element.einheit ?? "Einheit")"
+    }
+
+    /// Das Rezept-Maß eines Bausteins: „0,35 m³/m²".
+    private func rezeptText(_ baustein: LVPosition, element: LVPosition) -> String {
+        let wert = baustein.mengeJeDeckelEinheit.formatted(.number.precision(.fractionLength(0...3)))
+        return "\(wert) \(baustein.einheit ?? "")/\(element.einheit ?? "")"
+    }
+
+    /// Was der Baustein je Einheit des Elements beisteuert (zuschlagsfrei —
+    /// den Zuschlag trägt das Element).
+    private func bausteinBeitrag(_ baustein: LVPosition) -> Double {
+        LVKalkulator.kalkuliere(position: baustein).einheitspreisEK * baustein.mengeJeDeckelEinheit
+    }
+
+    /// Umschalten zwischen Mengenträger (Belege) und Element (Bausteine summieren).
+    /// Ändert nur die Rechenrichtung — die Gruppierung selbst bleibt, wie sie ist.
+    private func setzeDeckelArt(_ deckel: LVPosition, _ art: DeckelArt) {
+        deckel.deckelTyp = art
+        speichere("Deckel-Art \(art.anzeige)")
     }
 
     /// Zeile im Auswahl-Modus: Häkchen + Bezeichnung + Menge.
@@ -398,6 +466,9 @@ struct LVView: View {
     private func aufloesen(_ deckel: LVPosition) {
         for k in deckel.unterPositionenArray { k.deckel = nil }
         deckel.deckelNotiz = nil
+        // Ohne Bausteine ist die Element-Markierung sinnlos — und beim erneuten
+        // Gruppieren soll nicht heimlich die alte Rechenrichtung wieder gelten.
+        deckel.deckelTyp = .mengentraeger
         speichere("Auflösen")
     }
 
@@ -533,8 +604,18 @@ struct LVView: View {
         .safeAreaInset(edge: .bottom) {
             if gesamtSumme > 0 {
                 HStack {
-                    Text("Angebotssumme (netto):")
-                        .font(.headline)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Angebotssumme (netto):")
+                            .font(.headline)
+                        // Lohnstunden: die Groesse, an der Termine und Mannschaft haengen.
+                        // Nur zeigen, wenn ueberhaupt jemand Stunden kalkuliert hat.
+                        if gesamtStunden > 0 {
+                            Label("\(gesamtStunden.formatted(.number.precision(.fractionLength(0...1)))) Lohnstunden",
+                                  systemImage: "clock")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     Spacer()
                     Text(gesamtSumme, format: .currency(code: "EUR"))
                         .font(.title3.bold().monospacedDigit())
