@@ -31,8 +31,14 @@ struct AddLVPositionView: View {
     let lieferanten = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
 
     var isValid: Bool {
-        !bezeichnung.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        Double(menge.replacingOccurrences(of: ",", with: ".")) != nil
+        guard !bezeichnung.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        // Baustein unter einem Element: die Menge ergibt sich aus dem Rezept-Maß, das
+        // Mengenfeld bleibt leer. Dann muss das Rezept stimmen, nicht die Menge —
+        // sonst liesse sich ein Baustein nie speichern.
+        if elternElement != nil {
+            return Double(rezeptMass.replacingOccurrences(of: ",", with: ".")) != nil
+        }
+        return Double(menge.replacingOccurrences(of: ",", with: ".")) != nil
     }
 
     var body: some View {
@@ -54,12 +60,20 @@ struct AddLVPositionView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                Section("Menge & Einheit") {
+                Section {
                     HStack {
                         TextField("0,00", text: $menge).keyboardType(.decimalPad).frame(maxWidth: 120)
                         Picker("Einheit", selection: $einheit) {
                             ForEach(einheiten, id: \.self) { Text($0) }
                         }.pickerStyle(.menu)
+                    }
+                } header: {
+                    Text("Menge & Einheit")
+                } footer: {
+                    // Beim Baustein eines Elements ist das Mengenfeld bewusst leer —
+                    // sonst sucht man den Fehler an der falschen Stelle.
+                    if elternElement != nil {
+                        Text("Die Menge kommt aus dem Rezept-Maß unten — dieses Feld bleibt leer. Die Einheit brauchst du: sie sagt, in was der Baustein rechnet.")
                     }
                 }
                 // Nur wenn die Position ein Baustein unter einem Element ist: das Rezept-Maß.

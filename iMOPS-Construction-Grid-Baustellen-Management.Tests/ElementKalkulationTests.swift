@@ -230,6 +230,29 @@ struct ElementKalkulationTests {
         #expect(abs(k.gesamtpreis - 1_200.0) < 0.01)
     }
 
+    /// Regressions-Wache. Der erste Screenshot zeigte 2.880 EUR statt 11.580 EUR:
+    /// das Element fiel aus der Angebotssumme, weil die Summen-Logik nur
+    /// `hatKalkulation` kannte und ein Element selbst keine Kalkulation hat.
+    @Test @MainActor
+    func gesamtsummeEnthaeltDasElement() throws {
+        let element = makeVollesRezept()                  // 87,00 x 100 m² = 8.700
+        let wand = LVPosition(context: ctx)               // 36,00 x  80 m² = 2.880
+        wand.posNr = "331.001"
+        wand.menge = 80
+        wand.einheit = "m²"
+        wand.bgkProzent = 0.12
+        wand.wagnisGewinnProzent = 0.08
+        addMaterial(wand, preis: 30)
+
+        let beleg = LVPosition(context: ctx)              // zaehlt nicht
+        beleg.posNr = "331.001.1"
+        beleg.menge = 30
+        beleg.deckel = wand
+
+        let alle = [element, wand, beleg] + element.unterPositionenArray
+        #expect(abs(LVKalkulator.gesamtKalkulation(positionen: alle) - 11_580.00) < 0.01)
+    }
+
     @Test @MainActor
     func leerMarkiertesElementRechnetNichts() throws {
         let el = LVPosition(context: ctx)

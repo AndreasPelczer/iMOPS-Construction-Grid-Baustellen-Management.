@@ -118,9 +118,11 @@ enum LVKalkulator {
     }
 
     /// Kalkuliert mehrere Positionen und summiert den Gesamtpreis.
+    /// B-Elemente werden ueber ihre Bausteine gerechnet — ein Element hat selbst
+    /// keine Tiefenkalkulation und faellt sonst mit 0 aus der Summe.
     static func gesamtKalkulation(positionen: [LVPosition]) -> Double {
         positionen.zaehlbarePositionen().reduce(0.0) { sum, pos in
-            sum + kalkuliere(position: pos).gesamtpreis
+            sum + (pos.istElement ? kalkuliereElement(pos) : kalkuliere(position: pos)).gesamtpreis
         }
     }
 

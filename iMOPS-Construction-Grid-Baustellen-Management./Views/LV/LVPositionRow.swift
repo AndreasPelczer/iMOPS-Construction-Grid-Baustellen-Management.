@@ -66,7 +66,23 @@ struct LVPositionRow: View {
             }
 
             HStack(spacing: 6) {
-                if position.hatKalkulation {
+                if position.istElement {
+                    // B-Element: der Preis kommt aus den Bausteinen. Ohne diesen Zweig
+                    // stünde in der Zeile gar kein Preis (ein Element hat selbst keine
+                    // Tiefenkalkulation).
+                    let kalk = LVKalkulator.kalkuliereElement(position)
+                    Image(systemName: "square.stack.3d.down.right.fill")
+                        .font(.caption2).foregroundStyle(.indigo)
+                    Text(kalk.einheitspreisVK, format: .currency(code: "EUR"))
+                        .font(.caption.monospacedDigit()).foregroundStyle(.indigo)
+                    Text("EP (Element)").font(.caption2).foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Text(kalk.gesamtpreis.formatted(.currency(code: "EUR")))
+                        .font(.caption.weight(.semibold)).foregroundStyle(.indigo)
+
+                } else if position.hatKalkulation {
                     let kalk = LVKalkulator.kalkuliere(position: position)
                     Image(systemName: "function").font(.caption2).foregroundStyle(.indigo)
                     Text(kalk.einheitspreisVK, format: .currency(code: "EUR"))
@@ -75,7 +91,7 @@ struct LVPositionRow: View {
 
                     Spacer()
 
-                    Text((position.menge * kalk.einheitspreisVK).formatted(.currency(code: "EUR")))
+                    Text(kalk.gesamtpreis.formatted(.currency(code: "EUR")))
                         .font(.caption.weight(.semibold)).foregroundStyle(.indigo)
 
                 } else if let best = store.guenstigster(for: positionID) {

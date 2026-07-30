@@ -177,7 +177,11 @@ struct LVView: View {
     private var gesamtSumme: Double {
         ohneDuplikate(Array(positionen).filter { !LVPositionHelper.isAlternative($0) }).reduce(0.0) { sum, pos in
             let preis: Double
-            if pos.hatKalkulation {
+            if pos.istElement {
+                // B-Element: der Preis steckt in den Bausteinen, nicht in einer eigenen
+                // Kalkulation. Ohne diesen Zweig faellt das Element aus der Summe.
+                preis = LVKalkulator.kalkuliereElement(pos).einheitspreisVK
+            } else if pos.hatKalkulation {
                 preis = LVKalkulator.kalkuliere(position: pos).einheitspreisVK
             } else if let best = store.guenstigster(for: pos.objectID.uriRepresentation().absoluteString) {
                 preis = best.einzelpreis
