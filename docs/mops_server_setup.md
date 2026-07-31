@@ -25,7 +25,10 @@
   ├── static/            # Web-Dateien (über /admin-ui/ erreichbar)
   │   ├── index.html
   │   ├── chat.html              # öffentlicher Mops-Chat
-  │   ├── kontrollzentrum.html   # Admin-Dashboard
+  │   ├── kontrollzentrum.html   # LIVE — Raphis Verifikations-Posten
+  │   │                          # Umbenennung auf bauhuette.html ist beschlossen (Save #49),
+  │   │                          # auf der Box aber NICHT umgesetzt. Entwurf liegt im
+  │   │                          # iMOPS-Repo als docs/bauhuette_entwurf.html.
   │   └── render-test.html
   ├── data/              # Daten
   ├── qdrant_storage/    # Vektor-DB (Bibliothek "bau_wissen_v1")
@@ -69,7 +72,7 @@ app.mount("/admin-ui", StaticFiles(directory="static", html=True), name="admin-u
 | POST | `/admin/correct/{id}` | Basic | Antwort korrigieren + Goldstandard |
 
 ### Geplant (Backend muss noch geschrieben werden)
-- `GET /imops/puls` → `{welle, last_commit, open_prs, saves_count, branch}` — von neuer kontrollzentrum.html erwartet
+- `GET /imops/puls` → `{welle, last_commit, open_prs, saves_count, branch}` — von der Bauhütte erwartet (heute: kontrollzentrum.html)
 - `/health/detailed` erweitern um `uptime`, `temperature_c`, `claude_fallback` (boolean)
 
 ---
@@ -139,10 +142,10 @@ ssh mops 'ps aux | grep cloudflared'
 
 ---
 
-## 🐶 Wichtige UI-Easteregg-Wörter (chat.html / neue kontrollzentrum.html)
+## 🐶 Wichtige UI-Easteregg-Wörter (chat.html / kontrollzentrum.html, künftig Bauhütte)
 
 - `bin da` · `bin da?` · `feierabend` → triggert das **Mops-Poem** (Buchkern in Lyrik)
-- Klick auf `^Bin da ;=)` im Boot-Header (neue kontrollzentrum.html) → triggert ebenfalls Poem
+- Klick auf `^Bin da ;=)` im Boot-Header (kontrollzentrum.html) → triggert ebenfalls Poem
 - `?as=raphi` in URL → „Willkommen, Lehrmeister"-Bar (alt) / kann in neuer Version übernommen werden
 
 ---
