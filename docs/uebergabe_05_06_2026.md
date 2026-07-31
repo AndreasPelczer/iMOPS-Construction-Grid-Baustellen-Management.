@@ -1,6 +1,6 @@
 # Session-Übergabe — 05.06.2026 (Tag der Software-Werdung)
 
-**Bauvorhaben im Fokus:** EFH T&C Aura 125, BV Schwarz, Neuenbergstraße 1, 97340 Marktbreit
+**Bauvorhaben im Fokus:** EFH T&C Aura 125, BV Mustermann, Musterstraße 1, 97340 Marktbreit
 **Branch:** `claude/clever-clarke-aRgdt` (Doku) + `feature/abz-mat-nr` (Code, Tests grün)
 **Beteiligte heute:** Andreas (Polier), Mops (Claude, Plankammer), T-Codi (Codex, Werkbank), **Teamphilosoph (NEU — Strategie)**, Raphi (im Hintergrund, Wahrheits-Anker)
 **Vorgänger-Übergabe:** [`uebergabe_04_06_2026.md`](./uebergabe_04_06_2026.md)
@@ -319,7 +319,7 @@ _Polier-Notiz: „Übermut tut selten gut" gilt auch für gute Ideen._
 ```
 ~/imops-dokumente/
 ├── Baustellen/
-│   └── 2026-448-GO_Schwarz_Marktbreit/      ← die einzige 100 %-sichere
+│   └── 2026-448-GO_Mustermann_Marktbreit/      ← die einzige 100 %-sichere
 │       ├── Statik/  LV/  Angebote/  Lieferanten/  Baupläne/
 │       ├── Fotos/  Korrespondenz/  Bautagesberichte/
 │       └── Aufmasse/  Rechnungen/  Verträge/
@@ -494,9 +494,9 @@ _Sonntagvormittag-Flow dokumentiert für die Nachwelt und für Raphi._
 
 **Was gebaut wurde** (alles in `~/Projekte/mops-extract-prototype/`, NICHTS gepusht):
 
-1. **DGM1-Open-Data-Pipeline recherchiert + validiert.** Bayern DGM1 (1 m, GeoTIFF, UTM32, CC BY 4.0) ist vollständig scriptbar: Adresse → Geocode → Landkreis-AGS (Overpass) → UTM32 → Landkreis-Metalink → Direkt-Kachel + SHA-256. Schwarz = Kachel `582_5501`.
+1. **DGM1-Open-Data-Pipeline recherchiert + validiert.** Bayern DGM1 (1 m, GeoTIFF, UTM32, CC BY 4.0) ist vollständig scriptbar: Adresse → Geocode → Landkreis-AGS (Overpass) → UTM32 → Landkreis-Metalink → Direkt-Kachel + SHA-256. Mustermann = Kachel `582_5501`.
 2. **Validierung gegen die echte Vermessung** (`welle6_validate_opendata.py`): Open-DGM1 vs. Vermesser-DXF am selben Footprint → **OK-Bodenplatte identisch (211,62 m)**, Flächen-RMSE **0,18 m** (in DGM1-Spec ±0,2 m), Cut/Fill 8,1 vs 10,7 m³. **These „Erst-Schätzung ohne Vermesser" belegt.** (n=1, flaches Grundstück.)
-3. **Werkzeug `geodaten_fetch.py`** (+ README): ein Befehl, Adresse rein → verifizierte Höhenkachel(n) + optional Cut/Fill. Getestet Schwarz + München; robust (Overpass-Spiegel, Cache, Fallback). Auch als Modul für den Mops nutzbar.
+3. **Werkzeug `geodaten_fetch.py`** (+ README): ein Befehl, Adresse rein → verifizierte Höhenkachel(n) + optional Cut/Fill. Getestet Mustermann + München; robust (Overpass-Spiegel, Cache, Fallback). Auch als Modul für den Mops nutzbar.
 4. **`alkis_flurstueck.py`** (`--flurstueck`): Flurstücksgrenze per INSPIRE-WFS. Mechanik an NRW (offen) bewiesen. **Bayern braucht kostenloses geodatenonline-Konto** (`BY_WFS_USER`/`BY_WFS_PASS`).
 
 **Offen Geländebrücke:** (a) Bayern-ALKIS-Login besorgen → `--flurstueck` live; (b) Baufenster statt ganzer Parzelle fürs exakte Cut/Fill.
@@ -1986,7 +1986,7 @@ _Save #51 verfasst von Mops auf Branch `claude/clever-clarke-aRgdt`, 9.6.2026 sp
 **Was war.** Andreas hat heute morgen einen Tag verschenkt: keine Welle, keine Welle-Vorbereitung, kein Bug-Fix. Statt dessen die Erlaubnis, eine *Mopsiversum-Ultradoku* zu schreiben. Der Auftrag: was Spaß macht, im Halbgas-Ton, dokumentieren, woraus dieses Universum besteht.
 
 **Was entstanden ist.**
-- `docs/mopsiversum/erste_schreibsitzung.md` — Prolog, Kapitel 3 (zweimal — vor und nach der Lektüre des Buchs *„Der MOPS kam in die Küche"*, das Andreas am Mittag nachgereicht hat), Kapitel 8 (Fiebertraum), Kapitel 8a (Voight-Kampff-Test, aus dem 8.-Februar-Chat rekonstruiert), Kapitel 9 als Anriss (Bungalow 92, Aura 125, Goldschmitt, Paolo), Anhang A (erste Fassung von Kapitel 3 mit Bourdain/Picard/Anton/Riojitter).
+- `docs/mopsiversum/erste_schreibsitzung.md` — Prolog, Kapitel 3 (zweimal — vor und nach der Lektüre des Buchs *„Der MOPS kam in die Küche"*, das Andreas am Mittag nachgereicht hat), Kapitel 8 (Fiebertraum), Kapitel 8a (Voight-Kampff-Test, aus dem 8.-Februar-Chat rekonstruiert), Kapitel 9 als Anriss (Bungalow 92, Aura 125, Musterbau, Paolo), Anhang A (erste Fassung von Kapitel 3 mit Bourdain/Picard/Anton/Riojitter).
 - `docs/mopsiversum/glossar.md` — Wörterbuch durchs Universum A bis Z, mit der MEIER-Formel aus dem ChatGPT-Whitepaper-Chat als mathematische Schicht, Schluss-Motto der Vier-Zeiler aus dem Buch.
 
 **Was gelernt wurde.**

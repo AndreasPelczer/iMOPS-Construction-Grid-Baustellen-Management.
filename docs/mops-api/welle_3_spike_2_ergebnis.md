@@ -2,12 +2,12 @@
 
 **Version:** 1.0
 **Durchgeführt:** 03.06.2026
-**Frage:** Welche Innen- und Außenwände hat BV Schwarz Marktbreit? Wandtypen (PPW 2-0,35 / PP 4-0,55),
+**Frage:** Welche Innen- und Außenwände hat BV Mustermann Marktbreit? Wandtypen (PPW 2-0,35 / PP 4-0,55),
 Stärken (24 / 36,5 / 17,5 cm), Geschosse?
 **Quelldokumente:**
 - `448-GO Statik 05.03.26 einseitig.pdf` (163 Seiten, Pos 7.1–7.4)
-- `260402_1545_Schwarz_WP_kk.PDF` (11 Seiten, Werkplan)
-**Ground Truth:** `Projekt-Schwarz.md` (Abschnitt 3.3/3.4) + `MarktbreitSeeder.swift` (KG 330/340)
+- `260402_1545_Mustermann_WP_kk.PDF` (11 Seiten, Werkplan)
+**Ground Truth:** `Projekt-Mustermann.md` (Abschnitt 3.3/3.4) + `MarktbreitSeeder.swift` (KG 330/340)
 **Methode:** wie Spike 1 (`welle_3_spike_ergebnis.md`), erweitert um **Text-Layer-Extraktion** (PDFKit/Swift)
 für die born-digital Statik + **Vision auf selbst gerenderten PNGs** für Plan- und Werkplan-Seiten.
 
@@ -17,7 +17,7 @@ für die born-digital Statik + **Vision auf selbst gerenderten PNGs** für Plan-
 
 Die Wand-Frage ist **vollständig beantwortbar** — und zwar überwiegend aus dem **sauberen Text-Layer**
 der Statik (kein Vision/OCR nötig). Alle 5 Wandtypen, Stärken und Geschoss-Zuordnungen sind belegt.
-Ground Truth in `Projekt-Schwarz.md` wird **auf ganzer Linie bestätigt**, mit zwei sinnvollen Präzisierungen,
+Ground Truth in `Projekt-Mustermann.md` wird **auf ganzer Linie bestätigt**, mit zwei sinnvollen Präzisierungen,
 die der Spike zusätzlich gefunden hat.
 
 **Wichtigste Methoden-Erkenntnis:** Die große Statik ist ein **digital erzeugtes PDF mit Text-Layer** →
@@ -27,7 +27,7 @@ Vision/OCR braucht es nur für (a) Plan-/Zeichnungsseiten mit verwürfeltem Text
 
 ---
 
-## 2. Das Ergebnis — Wände BV Schwarz Marktbreit
+## 2. Das Ergebnis — Wände BV Mustermann Marktbreit
 
 ### Außenwände
 | Pos | Typ | Dicke | Geschoss | Mörtel / Detail | Beleg |
@@ -81,7 +81,7 @@ Das war beim Spike 1 (Bewehrungsplan) noch der Schwachpunkt — die Statik liefe
 
 ---
 
-## 4. Abgleich mit Ground Truth (`Projekt-Schwarz.md`)
+## 4. Abgleich mit Ground Truth (`Projekt-Mustermann.md`)
 
 | Ground Truth | Statik-Befund | Verdict |
 |---|---|---|

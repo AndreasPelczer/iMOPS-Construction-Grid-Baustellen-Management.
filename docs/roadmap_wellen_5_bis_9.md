@@ -55,7 +55,7 @@ Es gibt **ein gemeinsames Fundament**, das zwei Wellen gleichzeitig freischaltet
 
 | 🟢 Schon im Code | 🟡 Muss gebaut werden |
 |---|---|
-| Python-Pipeline **vollreif & parametrisierbar**: `geodaten_fetch.py` (Adresse→DGM1-Kachel, mit SHA-Verify+Cache), `alkis_flurstueck.py`, `welle6_schwarz_cutfill.py` (IDW, Cut/Fill, Heatmap-PNG) — validiert am BV Schwarz, OK-BP deckungsgleich mit Vermesser | **Box-Endpoint** `/gelaende-analyse` (Adresse + Footprint rein → Cut/Fill, Schotter t, LKW-Fahrten raus) |
+| Python-Pipeline **vollreif & parametrisierbar**: `geodaten_fetch.py` (Adresse→DGM1-Kachel, mit SHA-Verify+Cache), `alkis_flurstueck.py`, `welle6_mustermann_cutfill.py` (IDW, Cut/Fill, Heatmap-PNG) — validiert am BV Mustermann, OK-BP deckungsgleich mit Vermesser | **Box-Endpoint** `/gelaende-analyse` (Adresse + Footprint rein → Cut/Fill, Schotter t, LKW-Fahrten raus) |
 | `HouseConfigurator` + `HouseProjectGenerator`: Erdarbeiten sind als Bauphase + Masse schon drin (Kellerwand-Aushub `gf × 3,0 m³` pauschal), sogar das Berg-Icon existiert (`HouseConfiguratorView.swift:476`) | Adress-Feld im HouseConfigurator (fehlt heute komplett) |
 | Baunebenkosten enthalten Vermessung + Baugrundgutachten (Pauschalen) | Pauschal-Aushub durch DGM-gerechnete Massen ersetzen, **als Schätzwert gekennzeichnet** (→ Welle-9-Farben) |
 | | PDF-Aushub-Bericht (Python-Seite vorbereiten, App zeigt an) |
@@ -131,5 +131,5 @@ Welle 7 ──→ Welle 9 (DGM-Massen = Schätzwerte, andersfarbig)
 ## Polier-Notizen
 
 - **Risiko Doppelungen** (aus der Galaxie-Betrachtung): bestätigt, aber nicht akut. Kandidat für eine kalte Stunde: `AuftragStatus` vs. `ArbeitsschrittStatus` (zwei Status-Welten), `AngebotsStore` (JSON) vs. Core Data.
-- **Welle-Nummern-Falle:** Die Geländebrücke heißt in alten Dateien noch `welle6_*` (`welle6_schwarz_cutfill.py` etc.) — Dateien NICHT umbenennen, nur wissen.
-- **DSGVO vor jedem Push** der Geländebrücken-Scripts: grep nach Namen/Adressen (BV Schwarz!).
+- **Welle-Nummern-Falle:** Die Geländebrücke heißt in alten Dateien noch `welle6_*` (`welle6_mustermann_cutfill.py` etc.) — Dateien NICHT umbenennen, nur wissen.
+- **DSGVO vor jedem Push** der Geländebrücken-Scripts: grep nach echten Bauherren-Namen, Privat- und Grundstuecksadressen (Beispieldaten immer pseudonym!).

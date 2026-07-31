@@ -49,7 +49,7 @@ HouseConfigurator (App)
 mops-api  NEUER Endpoint  POST /gelaende-analyse
    │  1. Adresse → UTM32 → DGM1-Kachel  (geodaten_fetch.py-Pipeline)
    │  2. DGM laden/cachen  (SHA-Verify, wie im Prototyp)
-   │  3. Footprint auf Kachel legen → Cut/Fill (IDW)  (welle6_schwarz_cutfill.py)
+   │  3. Footprint auf Kachel legen → Cut/Fill (IDW)  (welle6_mustermann_cutfill.py)
    │  4. GelaendeResult zurück (dasselbe Schema wie /gelaendebruecke/calculate!)
    ▼
 App: bestehende geländeCard + insertGelaendeIntoLV WIEDERVERWENDEN
@@ -59,9 +59,9 @@ App: bestehende geländeCard + insertGelaendeIntoLV WIEDERVERWENDEN
 - **Wiederverwenden:** Antwort-Schema `GelaendeResult` **gleich lassen** wie beim
   DXF-Endpoint → die ganze Anzeige + LV-Übernahme funktioniert ohne Änderung.
 - **Prototyp-Bausteine (liegen in `~/Projekte/mops-extract-prototype/`):**
-  `geodaten_fetch.py` (Adresse→Kachel, mit Cache+SHA), `welle6_schwarz_cutfill.py`
+  `geodaten_fetch.py` (Adresse→Kachel, mit Cache+SHA), `welle6_mustermann_cutfill.py`
   (IDW, Cut/Fill, Heatmap-PNG). → In eine `api/routes/gelaende_analyse.py` überführen.
-  ⚠️ DSGVO vor dem Push: kein Kunden-/Adressmaterial ins Repo (grep BV Schwarz etc.).
+  ⚠️ DSGVO vor dem Push: kein Kunden-/Adressmaterial ins Repo (grep nach echten Bauherren-Namen und Adressen — Beispieldaten immer pseudonym).
 
 ## 5. Endpoint-Contract (Entwurf)
 
@@ -92,7 +92,7 @@ App: bestehende geländeCard + insertGelaendeIntoLV WIEDERVERWENDEN
 
 1. **Box-Endpoint zuerst** (wie die Geländebrücke selbst startete): Prototyp
    `geodaten_fetch.py` + `cutfill` als `POST /gelaende-analyse` verdrahten, gegen
-   eine Test-Adresse (BV Schwarz) lokal beweisen. **Kein App-Deploy.**
+   eine Test-Adresse (BV Mustermann) lokal beweisen. **Kein App-Deploy.**
 2. Endpoint live auf der Box (tmux-Runbook), OpenAPI bestätigen.
 3. App: Adressfeld + Auto-Aufruf + Pauschal-Ersatz. Anzeige/LV-Übernahme = bestehend.
 4. Footprint verfeinern (echte Hauslage) — später, Stufe-3-nah.

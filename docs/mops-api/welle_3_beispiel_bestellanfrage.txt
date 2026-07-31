@@ -6,8 +6,8 @@
   Datum:     03.06.2026
 
   Bauvorhaben:  Neubau EFH Town & Country Aura 125
-  Bauherrin:    Angelika Schwarz
-  Standort:     Neuenbergstraße 1, 97340 Marktbreit
+  Bauherrin:    Bauherrin Mustermann
+  Standort:     Musterstraße 1, 97340 Marktbreit
   Projekt-Nr.:  I-25_448-GO  ·  T&C 67774  ·  Baust.-Nr. 2026-011
 
   Sehr geehrte Damen und Herren,
@@ -37,7 +37,7 @@
      Verbrauchs-Stammdaten und sind vor verbindlicher Bestellung zu prüfen.
 
   Mit freundlichen Grüßen
-  G. Goldschmitt Bau GmbH / Bauleitung
+  G. Musterbau GmbH / Bauleitung
 
 ══════════════════════════════════════════════════════════════════════════
   erzeugt automatisch aus Statik-PDF — iMOPS Welle-3-Pipeline (Prototyp)

@@ -106,7 +106,7 @@ Das ist nicht Übervorsicht — das ist **Bauleiter-Standard**. Bei Statik, LVs 
 ```
 /srv/raphi/imops-dokumente/
 ├── Baustellen/
-│   ├── 2026-448-GO_Schwarz_Marktbreit/
+│   ├── 2026-448-GO_Mustermann_Marktbreit/
 │   │   ├── Statik/          (PDF von Statiker, Z-Nummern, abZ)
 │   │   ├── LV/              (Leistungsverzeichnis, GAEB, Excel)
 │   │   ├── Angebote/        (von Lieferanten, Subunternehmen)

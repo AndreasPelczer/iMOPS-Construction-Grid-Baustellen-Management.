@@ -4,38 +4,49 @@ import CoreData
 struct MarktbreitSeeder {
 
     static func seedIfNeeded(context: NSManagedObjectContext) {
-        let key = "marktbreit_efh_schwarz_seeded_v4"  // v4: + Goldschmitt-Zusatzarbeiten (KG 390/500)
+        let key = "marktbreit_efh_beispiel_seeded_v5"  // v5: pseudonymisiert (siehe applyBeteiligte)
 
         let fetch: NSFetchRequest<Event> = Event.fetchRequest()
         fetch.predicate = NSPredicate(format: "eventNumber == %@", "I-25_448-GO")
 
         if let existing = try? context.fetch(fetch).first {
-            // Event existiert schon — Positionen idempotent abgleichen, wenn v4 noch nicht gelaufen
+            // Event existiert schon — Positionen idempotent abgleichen, wenn v5 noch nicht gelaufen
             guard !UserDefaults.standard.bool(forKey: key) else { return }
             patchPositionen(of: existing, in: context)
-            saveAndMark(context: context, key: key, msg: "EFH Schwarz Marktbreit: Goldschmitt-Zusatzarbeiten ergänzt (v4)")
+            saveAndMark(context: context, key: key, msg: "EFH Mustermann Marktbreit: Beteiligte pseudonymisiert + Zusatzarbeiten (v5)")
             return
         }
 
         // Event existiert noch nicht — komplett neu anlegen
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         createEventWithPositionen(in: context)
-        saveAndMark(context: context, key: key, msg: "EFH Schwarz Marktbreit: Event + 24 LV-Positionen angelegt (v4)")
+        saveAndMark(context: context, key: key, msg: "EFH Mustermann Marktbreit: Event + 24 LV-Positionen angelegt (v5)")
     }
 
     // MARK: - Event neu anlegen
 
+    /// Beteiligten-Daten der Beispiel-Baustelle. **Bewusst pseudonym** — dieses Repo ist
+    /// oeffentlich. Namen und Anschriften von Bauherren, Architekten und Nachunternehmern
+    /// gehoeren hier NICHT hinein, auch nicht "nur als Testdaten". Muster: `DemoSeeder`.
+    ///
+    /// Wird von beiden Wegen benutzt (neu anlegen UND patchen), damit eine bestehende
+    /// Installation die Pseudonymisierung nachgezogen bekommt statt auf alten Werten
+    /// sitzen zu bleiben.
+    private static func applyBeteiligte(to event: Event) {
+        event.title = "EFH T&C Aura 125 – Marktbreit"
+        event.name = "EFH Mustermann Marktbreit"
+        event.eventNumber = "I-25_448-GO"
+        event.location = "Musterstraße 1, 97340 Marktbreit"
+        event.bauherr = "Bauherrin Mustermann, Musterweg 3, 97340 Musterstadt"
+        event.architekt = "Musterplan GmbH, Musterallee 5, 72764 Musterstadt"
+        event.baugenehmigungNr = ""
+    }
+
     private static func createEventWithPositionen(in context: NSManagedObjectContext) {
         let event = Event(context: context)
-        event.title = "EFH T&C Aura 125 – Marktbreit"
-        event.name = "EFH Schwarz Marktbreit"
-        event.eventNumber = "I-25_448-GO"
-        event.location = "Neuenbergstraße 1, 97340 Marktbreit"
-        event.bauherr = "Angelika Schwarz, Bahnhofstr. 40, 97346 Iphofen"
-        event.architekt = "ProLa GmbH, Bismarckstraße 40 D, 72764 Reutlingen"
-        event.baugenehmigungNr = ""
+        applyBeteiligte(to: event)
         event.notes = """
-            Typenhaus T&C Aura 125. Tragwerksplanung Neubauer Ingenieurgesellschaft. \
+            Typenhaus T&C Aura 125. Tragwerksplanung Musterstatik Ingenieurgesellschaft. \
             Statik vom 05.03.2026. Projekt-Nr. I-25_448-GO / TC 67774. \
             Decke (Pos 6.1): 10,26 x 6,26 m mit Treppen-Aussparung ~3,6 m², d=20cm. \
             Satteldach 20°/20°, UG+EG+DG. Standort: WZ 1, SLZ 1, sk=0,65 kN/m². \
@@ -56,6 +67,10 @@ struct MarktbreitSeeder {
     // MARK: - Bestehende Positionen patchen
 
     private static func patchPositionen(of event: Event, in context: NSManagedObjectContext) {
+        // Zuerst die Beteiligten: eine Installation, die noch die alten Klarnamen in der
+        // Datenbank hat, bekommt hier die pseudonymen Werte nachgezogen.
+        applyBeteiligte(to: event)
+
         let bestehende = (event.lvPositionen as? Set<LVPosition>) ?? []
         var byPosNr: [String: LVPosition] = [:]
         for pos in bestehende {
@@ -78,16 +93,16 @@ struct MarktbreitSeeder {
                 "Stürze als laufende Meter (4,57 m gesamt)."
         }
 
-        let v4Marker = "[v4-Goldschmitt]"
+        let v4Marker = "[v4-Musterbau]"
         if !(event.notes ?? "").contains(v4Marker) {
-            event.notes = (event.notes ?? "") + "\n\n\(v4Marker) Goldschmitt-Zusatzarbeiten (Angebot 24.03.2026, BV 2026-011) " +
+            event.notes = (event.notes ?? "") + "\n\n\(v4Marker) Musterbau-Zusatzarbeiten (Angebot 24.03.2026, BV 2026-011) " +
                 "als KG-390/500-Pauschalen ergänzt: 9 Titel, 59.132,61 € netto / 70.367,81 € brutto."
         }
     }
 
     // MARK: - Felder + Pauschal-Unterposition setzen (idempotent)
 
-    private static let nuMaterialName = "Fremdleistung NU Goldschmitt"
+    private static let nuMaterialName = "Fremdleistung NU Musterbau"
 
     /// Überträgt LV-Daten auf eine Position. Bei Pauschalpositionen (`pauschalNetto != nil`)
     /// wird der Betrag als NU-Material-Unterposition hinterlegt (Preisträger für den
@@ -196,11 +211,11 @@ struct MarktbreitSeeder {
                     bezeichnung: "PV-Vorrüstung Dachfläche (statisch berücksichtigt, 0,20 kN/m²)",
                     einheit: "psch", menge: 1),
 
-            // KG 390/500 – Goldschmitt-Zusatzarbeiten (Außenanlagen + Erdbau)
-            // Angebot G. Goldschmitt Bau GmbH vom 24.03.2026 (BV-Nr. 2026-011), VOB-Ausführung.
+            // KG 390/500 – Musterbau-Zusatzarbeiten (Außenanlagen + Erdbau)
+            // Angebot G. Musterbau GmbH vom 24.03.2026 (BV-Nr. 2026-011), VOB-Ausführung.
             // Als Fremdleistungs-Pauschalen modelliert: NU-Endpreis netto, daher wg=0 / bgk=0
             // (kein Eigen-Aufschlag auf einen fremd kalkulierten Festpreis).
-            // Titel 05 + 09 fehlen in Goldschmitts Original-Nummerierung — vermutlich aus der
+            // Titel 05 + 09 fehlen in Musterbaus Original-Nummerierung — vermutlich aus der
             // Standard-LV-Vorlage ausgelassen, kein Grund im Angebot vermerkt.
             // Summe der 9 Titel = 59.132,61 € netto (= 70.367,81 € brutto).
             // Baustelleneinrichtung → KG 390 (KG 391 existiert nicht im DIN276-Katalog der App).

@@ -176,7 +176,7 @@ Der innerste Polier-Antrieb unter dem ganzen Mopsiversum: *„Würde ich das mit
 Der Name ist nicht nur das Pug-Maskottchen. Er ist eine Architektur-Aussage. *In-Memory* = nicht primär datenbankgetrieben, sondern aus aktiven Ereignisketten abgeleitet. *Operating* = Betriebs-, nicht Verwaltungssoftware. *Production* = für die Wertschöpfung, nicht für das Reporting darüber.
 
 ### iMOPS Construction Grid
-Die konkrete iOS-App für das Baustellen-Management. SwiftUI / CoreData / SceneKit. Offline-First. Welle 4 erreicht (Stand Juni 2026). Pilotbaustellen u. a. Bungalow 92 (Schmidt, Buchen-Hettingen), Aura 125 (Schwarz, Marktbreit). Iterativer Hauptnutzer: Raffi.
+Die konkrete iOS-App für das Baustellen-Management. SwiftUI / CoreData / SceneKit. Offline-First. Welle 4 erreicht (Stand Juni 2026). Pilotbaustellen u. a. Bungalow 92 (Beispielkunde, Musterstadt), Aura 125 (Mustermann, Marktbreit). Iterativer Hauptnutzer: Raffi.
 
 ### iMOPS Gastro-Grid
 Die ältere Schwester der Construction Grid. Für Gastronomie / Großküche. In der App-Familie weiter eingeordnet: SOLARA, Matjes, MoneyPath2026, Connect4D, WattSafe, FotoFest, VoxelSprite. Diese App-Familie ist der Erntemodus aus zwei Jahren Syntax-Institut.
@@ -281,7 +281,7 @@ Vektordatenbank. Auf der Mops-Box als Docker-Container. Index: `bau_wissen_v1`. 
 ## R
 
 ### Raffi (Raphael de la Cruz)
-Maurermeister. ~36 Jahre Berufserfahrung. 45-jährige Freundschaft mit Andreas. Primärer Pilotnutzer von iMOPS Construction Grid. Lieferte den SketchUp-Ruby-Plugin für `.xlsx`-Bauteillisten-Export. Arbeitet inzwischen bei Goldschmitt — möglicher Pilot-Pfad.
+Maurermeister. ~36 Jahre Berufserfahrung. 45-jährige Freundschaft mit Andreas. Primärer Pilotnutzer von iMOPS Construction Grid. Lieferte den SketchUp-Ruby-Plugin für `.xlsx`-Bauteillisten-Export. Arbeitet inzwischen bei Musterbau — möglicher Pilot-Pfad.
 
 ### RAG (Retrieval-Augmented Generation)
 Die Pipeline, mit der der Mops antwortet. Frage → Embedding → Qdrant-Suche → Quellen → Modell-Antwort mit Quellenangabe. Erste erfolgreiche Antwort: *„Was ist DIN 276?"* am Tag der Geburt.

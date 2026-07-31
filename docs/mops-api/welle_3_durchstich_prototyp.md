@@ -11,7 +11,7 @@ Backend-Code gehört nicht hierher; wandert später in `AndreasPelczer/mops-api`
 ## 1. Was steht
 
 Erster **durchgängiger Durchstich** der Plan-zu-Anfrage-Pipeline, verifiziert am echten
-BV 448-GO Schwarz Marktbreit:
+BV 448-GO Mustermann Marktbreit:
 
 ```
 PDF (163-S. Statik) → Wand-JSON → LV-Positionen (DIN 276) → Bestellliste (Steine/Paletten/Mörtel)

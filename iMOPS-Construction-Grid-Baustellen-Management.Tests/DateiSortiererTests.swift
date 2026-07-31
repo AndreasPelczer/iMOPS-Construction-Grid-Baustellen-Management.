@@ -1,7 +1,7 @@
 //
 //  DateiSortiererTests.swift
 //  Der Sortier-Wächter der „einen Tür": Dateiname → richtiger Korb.
-//  Getestet an echten Schwarz-Marktbreit-Dateinamen.
+//  Getestet an echten Mustermann-Marktbreit-Dateinamen.
 //
 
 import Testing
@@ -23,17 +23,17 @@ struct DateiSortiererTests {
     }
 
     @Test func faktenUnterlagenLandenBeiFakten() {
-        #expect(DateiSortierer.sortiere("Bodengutachten Schwarz.pdf") == .fakten)
+        #expect(DateiSortierer.sortiere("Bodengutachten Mustermann.pdf") == .fakten)
         #expect(DateiSortierer.sortiere("Erschließungsplan Marktbreit.pdf") == .fakten)
         #expect(DateiSortierer.sortiere("Bebauungsplan_WA3.pdf") == .fakten)
     }
 
     @Test func angeboteUndSonstigesLandenBeiAblegen() {
-        #expect(DateiSortierer.sortiere("Angebot 67774 BV Schwarz Marktbreit.pdf") == .ablegen)
+        #expect(DateiSortierer.sortiere("Angebot 67774 BV Mustermann Marktbreit.pdf") == .ablegen)
         #expect(DateiSortierer.sortiere("gespraech_vorarbeiter.pdf") == .ablegen)
-        #expect(DateiSortierer.sortiere("Bestellliste_BV_Schwarz.xlsx") == .ablegen)
+        #expect(DateiSortierer.sortiere("Bestellliste_BV_Mustermann.xlsx") == .ablegen)
         #expect(DateiSortierer.sortiere("Foto_Baustelle.jpg") == .ablegen)
         // kryptischer Name ohne Signal → ablegen (Mensch korrigiert im Sheet)
-        #expect(DateiSortierer.sortiere("260402_1545_Schwarz_WP_kk.PDF") == .ablegen)
+        #expect(DateiSortierer.sortiere("260402_1545_Mustermann_WP_kk.PDF") == .ablegen)
     }
 }
