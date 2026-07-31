@@ -10,10 +10,74 @@
 
 **`uebergaben/2026-07-10-falbe-einstand-pruefstatik.md`** — Falbes Einstand als Prüfstatiker mit vier priorisierten Befunden:
 
-1. Branch-Drift / kanonischer Stand
-2. Doctype-/Türsteher-Confidence
-3. EventDetailView/LVView zerlegen
-4. Kernel-Spike-Entscheidung vorbereiten
+1. Branch-Drift / kanonischer Stand — **🟢 erledigt 31.07.**, siehe unten
+2. Doctype-/Türsteher-Confidence — 🔴 offen
+3. EventDetailView/LVView zerlegen — 🔴 offen (`EventDetailView` ist seither eher gewachsen)
+4. Kernel-Spike-Entscheidung vorbereiten — 🔴 offen
+
+## Delta 31.07.2026 — Aufräumtag: alles gemergt, 18 Branches → 1
+
+**`main` steht allein** (`da32408`). Neun PRs (#109–#117) sind durch, alle Arbeit der
+letzten drei Tage plus die Altlasten. Damit ist Falbes Befund **P1 abgeräumt**: es gibt
+wieder genau einen kanonischen Stand, nicht mehr „Vielleicht".
+
+### Was gemergt wurde
+
+| PR | Inhalt |
+|---|---|
+| #109 | DIN 276 aus einer Quelle (Baum führend), KG 532, 441-Altbug |
+| #110 | KG-Namen aus einer Stelle statt fünf `switch`-Kopien |
+| #111 | B-Element — ein Einheitspreis aus mehreren Arbeitsschritten |
+| #112 | Zuschlag je Kostenart + Lohnstunden + Firmenwerte |
+| #113 | HANDOFF Stand 31.07. |
+| #114 | drei Handoffs vom 08.07., die nur auf dem Mac lagen |
+| #115 | **Pflichtspur** in `CLAUDE.md` + `AGENTS.md` |
+| #116 | Hauslage platzieren (Welle 7, Schritt 2b) |
+| #117 | Mopsiversum-Nachzug: Saves #49–52, Regiezettel-Konzept |
+
+Gestapelte PRs (#110 auf #109, #112 auf #111) hielten die Diffs sauber; die
+Merge-Reihenfolge innerhalb einer Kette war strikt und hat gehalten.
+
+### Drei Fehler, die erst beim Aufräumen sichtbar wurden
+
+Keiner davon war ein Merge-Konflikt, keiner hat einen Test rot gemacht:
+
+- **DWG lief in einen 500er** (#116). `HauslagePlatzierenView` schrieb den Dateinamen
+  fest als `upload.dxf`; der Picker lässt aber `.dwg` zu. Die Box entscheidet an der
+  Endung, ob sie DWG→DXF wandelt — sie hätte `ezdxf` auf DWG-Bytes losgelassen. Der
+  Branch war älter als der `filename:`-Parameter, den `main` inzwischen hat.
+- **Doku zeigte auf eine Datei, die es nicht gibt** (#117). `mops_server_setup.md`
+  führte `bauhuette.html` als „NEU" — auf der Box liegt bis heute nur
+  `kontrollzentrum.html`. Die Umbenennung ist beschlossen (Save #49), nie umgesetzt.
+- **Die Pflichtspur selbst lag 20 Tage ungemergt** (#115). Die globale Notiz sagte,
+  beide Repos hätten sie oben stehen; für dieses stimmte das nicht.
+
+**Das Muster:** ein lange liegender Branch wird nicht durch das gefährlich, was git rot
+anzeigt, sondern durch Annahmen, die inzwischen nicht mehr gelten. Konflikte findet das
+Werkzeug — veraltete Annahmen findet nur, wer gegen den heutigen Stand nachprüft.
+
+### Sortierung + Werkzeug (`12bc67e`, `dc1d934`)
+
+- Ein Element sortiert seine Bausteine nach **PosNr** (= Arbeitsfolge, 534.002 vor
+  534.007), nicht alphabetisch. Der Mengenträger bleibt bewusst alphabetisch — dort sagt
+  die Reihenfolge nichts aus. Im Simulator gefunden, mit zwei Tests festgehalten.
+- `scripts/snapshot.sh` nahm gelegentlich ein Indizierungs-Gerüst unter `Index.noindex/`
+  statt des gebauten Bundles. Welches `head -1` erwischte, war Glückssache.
+
+### Was NICHT im Repo ist
+
+- `uebergaben/2026-07-10-falbe-einstand-pruefstatik.md` — untracked. Laut eigenem Text
+  gehört die Datei ins Repo `Baustellen_Grid`, das es (noch) nicht gibt. Keine
+  Kundendaten drin („Falbe" = Claude Fable 5, kein Personenname).
+- Branch `docs/lieferanten-sync-uebergabe-20260624` — nur lokal, nie gepusht. Enthält
+  `docs/server_kollegen_ssh_zugang.md` und zwei Branding-PNGs (4 MB). **Vor einem Push
+  die SSH-Doku auf Hostnames und Schlüssel lesen** — das Repo ist öffentlich.
+
+### 🔴 Das Wichtigste steht aus: die App ist NICHT auf dem Gerät
+
+Alles Geprüfte war Simulator (iPhone 17 Pro Max). Beim ersten Start auf dem iPhone läuft
+`ZuschlagMigration` **einmalig**. **Vorher den Container ziehen** — läuft sie schief,
+gibt es keinen Weg zurück auf die alten Sätze.
 
 ## Delta 30./31.07.2026 — Zuschlag je Kostenart + Lohnstunden + Firmenwerte
 
@@ -386,18 +450,19 @@ sie bleiben als Spur stehen, damit nachvollziehbar ist, warum die Zuordnung sich
   stehen offen (Positionsnummer nach KG, hauseigene KG-Zuordnung, hierarchischer Rollup),
   dazu die BauSU-Lücken am Ende des 31.07.-Deltas.
   Als nächster **geplanter** Brocken weiterhin **#3 Unterlagen-Routing `/extract-auto`**
-  (App + Box), erster Happen auf der Box gegen zwei Fixtures.
+  (App + Box), erster Happen auf der Box gegen zwei Fixtures — die Spec dazu liegt seit
+  31.07. im Repo (`docs/Unterlagen-Auswerten-Routing-Spec.md`, §4b ist der wichtige Teil).
+  **Davor aber: die App aufs Gerät bringen** (Migration, Container sichern — Delta 31.07.).
 - **Was ist live?** Backend: Box auf **`main`** (sauberer Checkout `4ff018f`, redeployed 28.07. —
   die frühere Angabe „Box-Branch `feature/lv-seite-provenance`" war überholt). iOS-App am Gerät,
   aber auf **altem Datenmodell** (ohne `ZDECKEL`/`ZDECKELNOTIZ`, keine Importe) — die Geräte-
   Installation ist älter als Deckel/Beleg + Excel-Import, siehe Delta 29.07.
-- **Was ist gebaut, aber nicht gemergt?** Alles vom 29.–31.07., **ungepusht, kein PR**:
-  `fix/din276-kg-532` (4) → `fix/lv-kg-namen` (1) ·
-  `feature/lv-element-kalkulation` (3) → `feature/zuschlag-je-kostenart` (2) ·
-  `docs/handoff-29-07` (diese Datei). Zwei unabhängige Ketten; innerhalb einer Kette
-  gilt die Reihenfolge. Merge-Baum und der Wegwerf-Branch stehen im Delta 30.07.
-  Älter: #2 Auswertung-speichern (gebaut, Merge-Status prüfen); außerdem siehe
-  `docs/HANDOFF-2026-07-09.md` und Falbe-Bericht. (#1 ist schon in `main`.)
+- **Was ist gebaut, aber nicht gemergt?** **Nichts.** Stand 31.07. ist `main` der einzige
+  Branch (`da32408`); PRs #109–#117 sind durch, 18 Branches wurden auf 1 zurückgeschnitten
+  (Delta 31.07.). Vor dem Löschen wurde jede Spitze geprüft und notiert — die Nummern
+  stehen im Delta, `git push origin <sha>:refs/heads/<name>` holt sie zurück.
+  Lokal liegt nur noch `docs/lieferanten-sync-uebergabe-20260624` (nie gepusht, SSH-Doku
+  erst lesen). **Wenn diese Antwort wieder länger wird als zwei Zeilen, ist P1 zurück.**
 - **Was ist nur Idee?** Nordstern Stufen 3–5, weitere Doctype→LV-Mappings, Kernel-Entscheidung.
 - **Was darf nicht angefasst werden?** Kundendaten nicht ins Repo; `main` nicht direkt; `Kernel/` nicht mit echten Daten verdrahten.
 
