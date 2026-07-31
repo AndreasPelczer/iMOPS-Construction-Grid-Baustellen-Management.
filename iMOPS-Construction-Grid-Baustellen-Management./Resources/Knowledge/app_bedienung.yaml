@@ -845,8 +845,9 @@
     (nicht die Planer-Schaetzung):
     1. Baustelle oeffnen -> oben die Karte "Baustellen-Übersicht" -> "Ist-Übersicht"
        antippen. Die Karte erscheint automatisch: sind LV-Daten da, fuehrt sie in die
-       Ist-Übersicht (der Planer/Soll ist nur noch ein kleiner Link darunter); ist die
-       Baustelle leer, bietet sie stattdessen das Planen (Soll) an.
+       Ist-Übersicht (darunter ein kleiner Link "Gegen Kennwert pruefen", der das
+       kalkulierte LV der Schaetzung gegenueberstellt und von dort auch in den Planer
+       fuehrt); ist die Baustelle leer, bietet sie stattdessen das Planen (Soll) an.
     2. Kopf: Projekt/Baustelle/Quelldatei aus dem Import + Positionsanzahl, Netto, Brutto.
        Sind Unterlagen ausgewertet UND gespeichert (Karte "Unterlagen auswerten"), zeigt
        der Kopf zusaetzlich Kern-Fakten als Chips: Bodenklasse, Wohnflaeche, Zone/GRZ,
@@ -966,5 +967,55 @@
     haengen. In der Tiefenkalkulation stehen sie je Position (gesamt und je Einheit).
     Geraetestunden zaehlen NICHT mit: die Maschine steht auch, wenn niemand
     danebensteht. Belege unter einem Deckel zaehlen nicht doppelt.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Kennwert_Vergleich"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Gegen Kennwert pruefen"
+    - "Kennwert-Vergleich"
+    - "Kennwert je qm"
+    - "liege ich richtig mit meinem Angebot"
+    - "ist mein LV zu billig"
+    - "Angebot mit Schaetzung vergleichen"
+    - "Soll-Ist-Vergleich Kosten"
+    - "Euro pro Quadratmeter"
+    - "BKI"
+    - "Baukosten pro qm einstellen"
+  antwort: |
+    WO: Baustelle oeffnen -> Karte "Baustellen-Übersicht" -> darunter der kleine Link
+    "Gegen Kennwert pruefen". Er erscheint erst, wenn LV-Positionen da sind — ohne LV
+    gibt es nichts zu vergleichen.
+
+    WAS DA VERGLICHEN WIRD: das kalkulierte LV gegen die Grobkostenschaetzung aus dem
+    Planer (Wohnflaeche x Kennwert, verteilt auf die Gewerke) — aber NUR fuer die
+    Gewerke, die dein LV ueberhaupt abdeckt. Die Schaetzung rechnet das ganze Haus
+    inklusive Sanitaer, Heizung und Maler; ein LV deckt meist nur die eigene Leistung
+    ab. Beide Gesamtsummen nebeneinander zu stellen, liest sich wie "weit unter Plan"
+    und waere ein Vergleich, den es nicht gibt. Was nicht im LV steckt, wird darum
+    ausdruecklich als "Nicht im LV — nicht mitgerechnet" aufgezaehlt statt stillschweigend
+    weggelassen.
+
+    KEINE FARBEN, KEIN URTEIL: unter dem Kennwert zu liegen ist kein Erfolg. Es kann
+    genauso heissen, dass etwas vergessen wurde. Die Ansicht zeigt die Abweichung, das
+    Urteil bleibt beim Menschen.
+
+    WOHER DER KENNWERT KOMMT: aus Einstellungen -> "Kalkulation — Kennwerte je m²",
+    drei Werte fuer einfach / mittel / gehoben (Vorgabe 2000 / 2500 / 3200 EUR je m²).
+    Ein leeres Feld faellt auf die Vorgabe zurueck, damit eine versehentliche 0 nicht
+    die ganze Schaetzung auf null zieht. Welcher der drei gilt, entscheidet das
+    Ausstattungsniveau im Planer.
+
+    ⚠️ Das sind EURE Erfahrungswerte, KEINE lizenzierten BKI-Daten. Echte
+    BKI-Kennwerte kommen vom Baukosteninformationszentrum und sind kostenpflichtig;
+    die App behauptet diese Quelle nicht — darum heisst es "Kennwert" und nicht "BKI".
+    Auch die Verteilung auf die Gewerke ist eine Faustformel. Geschaetzt ist ein anderer
+    Zustand als gemessen: der Vergleich taugt fuer die Groessenordnung, nicht als
+    Nachweis.
+
+    STEHT NICHTS DA? Dann ist im Planer fuer diese Baustelle noch nichts konfiguriert.
+    Die Ansicht sagt das und bietet "Planer oeffnen" an.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"

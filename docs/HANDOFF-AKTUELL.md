@@ -15,6 +15,80 @@
 3. EventDetailView/LVView zerlegen — 🔴 offen (`EventDetailView` ist seither eher gewachsen)
 4. Kernel-Spike-Entscheidung vorbereiten — 🔴 offen
 
+## Delta 31.07.2026 (nachmittags) — Kennwert-Vergleich fertig verdrahtet
+
+**Branch `feature/kennwert-vergleich`, zwei Commits, NICHT gepusht.** Beim Sessionstart
+lagen fünf Dateien unfertig im Arbeitsbaum (Rechenkern + View gebaut, aber nirgends
+verdrahtet). Jetzt zusammengesteckt und belegt: **143 Tests grün**, Build sauber.
+
+| | |
+|---|---|
+| `4fc5513` | Feature: Kennwert-Vergleich, Knopf, Einstellungen, Bedienungshilfe |
+| `797fc44` | 12 Tests für den Rechenkern |
+
+### Worum es geht
+
+Der alte Knopf „Soll/Planer-Schätzung ansehen" stellte die Schätzung fürs **ganze Haus**
+neben die LV-Summe: 386 T€ gegen 112 T€. Das liest sich wie „274 T€ unter Plan" und ist
+trotzdem falsch — die Schätzung rechnet Sanitär, Heizung und Maler mit, das LV deckt sie
+nicht ab. `KennwertVergleich` rechnet die Schätzung jetzt auf die Kostengruppen herunter,
+die im LV wirklich vorkommen. Was übrig bleibt, steht als „Nicht im LV — nicht
+mitgerechnet" darunter statt stillschweigend zu verschwinden.
+
+Die drei Kennwerte (2000/2500/3200 €/m²) standen hart im Code und sind jetzt Firmenwerte
+unter Einstellungen → „Kalkulation — Kennwerte je m²". Alte Zahlen = Vorgaben, es rechnet
+ohne Zutun wie vorher. Leeres Feld fällt auf die Vorgabe zurück.
+
+**Es heißt „Kennwert", nicht „BKI"** — echte BKI-Werte sind kostenpflichtig lizenziert und
+stehen hier nicht drin. Steht so auch in der App, nicht nur im Commit.
+
+### 🔴 Der eigentliche Fund: Beispieldaten sind nicht zurückholbar
+
+Andreas wollte „alle Baustellen löschen → Zauberstab → Beispiel neu". **Das geht nicht**,
+und das ist eine Falle für jeden, der es nochmal versucht:
+
+- Der Zauberstab ruft `DemoSeeder` → „Lindenstraße 12" (`DEMO-BAU-001`), **ohne
+  LV-Positionen**. Das ist nicht die Beispiel-Baustelle.
+- Das kalkulierte Beispiel ist **Marktbreit** (`I-25_448-GO`), gelegt von `MarktbreitSeeder`
+  beim App-Start — geschützt durch das UserDefaults-Flag `marktbreit_efh_beispiel_seeded_v5`.
+- Baustelle gelöscht + Flag gesetzt = **kommt nie wieder**. Der Seeder steigt vorher aus.
+
+Genau das war am Mac passiert („Designed for iPad", Container `581290A0-…`). Flag von Hand
+gelöscht, danach lief die Kette komplett durch: 24 LV-Positionen + `houseProject` mit den
+Aura-125-Daten. Backup der Preferences liegt in `_backups/`.
+
+**Offene Aufgabe daraus:** ein „Beispieldaten neu aufsetzen" in der App. Es gibt derzeit
+keinen Weg über die Oberfläche, und ein `defaults delete` im Container ist keine Antwort
+für einen Anwender.
+
+### Wo der neue Vergleich hängt
+
+`EventDetailView` → Karte „Baustellen-Übersicht" → kleiner Link **„Gegen Kennwert prüfen"**
+(erscheint nur bei vorhandenen LV-Positionen — ohne LV gibt es nichts zu vergleichen).
+`app_bedienung.yaml`: neuer Eintrag `App_Kennwert_Vergleich`, und die Ist-Übersicht
+beschrieb den Link noch als Weg zum Planer — korrigiert (Drift-Regel).
+
+### Was die 12 Tests festnageln
+
+Die Zuordnung Kostengruppe → Gewerke-Topf, vor allem die Sonderregel: **KG 334/344**
+(Fenster, Türen) werden absichtlich aus dem Rohbau gezogen. Dazu der Firmenwert-Durchgriff,
+der 0-Rückfall, das Addieren je Topf und die Deckel/Beleg-Falle (REB-23.003).
+
+Ist-Werte werden bewusst gegen `LVKalkulator.effektiverEP` gehalten, nicht gegen feste
+Euro: geprüft wird das Zuordnen und Addieren, nicht das Preisrechnen. Sonst fällt der Test
+um, sobald jemand an den Zuschlägen dreht, und behauptet dabei, die Zuordnung sei kaputt.
+
+### Offen
+
+- **Nicht gepusht, kein PR.** Branch liegt lokal.
+- **Die Ansicht hat niemand gesehen.** Build grün und Tests grün heißen „nichts
+  kaputtgemacht" — ob die Zahlen am Beispiel plausibel aussehen, ist ungeprüft.
+  Erwartung: 125 m² × 2500 = 312.500 € Schätzung, davon 32 % Rohbau = 100.000 €,
+  LV ≈ 112.000 € netto über mehrere Töpfe.
+- `uebergaben/…falbe-einstand…md` weiterhin untracked (bewusst nicht mitcommittet).
+- **Simulator-Hinweis:** `iPhone 16` aus CLAUDE.md gibt es nicht mehr; verfügbar ist
+  `iPhone 17 Pro Max`. Die Build-Befehle oben in CLAUDE.md sind insofern veraltet.
+
 ## Delta 31.07.2026 — Aufräumtag: alles gemergt, 18 Branches → 1
 
 **`main` steht allein** (`da32408`). Neun PRs (#109–#117) sind durch, alle Arbeit der

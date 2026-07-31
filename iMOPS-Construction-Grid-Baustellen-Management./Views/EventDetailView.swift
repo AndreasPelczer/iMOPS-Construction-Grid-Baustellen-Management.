@@ -247,8 +247,9 @@ struct EventDetailView: View {
     }
 
     /// Prominente Baustellen-Übersicht: „gemessen verdrängt geschätzt" — sind echte
-    /// LV-Daten da, führt die Karte in die Ist-Übersicht (Planer nur noch kleiner Link);
-    /// sonst bietet sie das Planen (Soll) an.
+    /// LV-Daten da, führt die Karte in die Ist-Übersicht; der kleine Link daneben stellt
+    /// das kalkulierte LV der Schätzung gegenüber (und führt von dort in den Planer,
+    /// falls noch nichts konfiguriert ist). Ohne LV-Daten bietet die Karte das Planen an.
     private var uebersichtKarte: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Baustellen-Übersicht", systemImage: "chart.bar.doc.horizontal")
@@ -274,9 +275,9 @@ struct EventDetailView: View {
                 .buttonStyle(.plain)
 
                 NavigationLink {
-                    HouseConfiguratorView(spezielesEvent: event)
+                    KennwertVergleichView(event: event)
                 } label: {
-                    Label("Soll/Planer-Schätzung ansehen", systemImage: "pencil.and.ruler")
+                    Label("Gegen Kennwert prüfen", systemImage: "arrow.left.arrow.right")
                         .font(.caption)
                 }
                 .tint(.secondary)

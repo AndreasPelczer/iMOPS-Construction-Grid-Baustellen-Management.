@@ -38,12 +38,17 @@ enum Ausstattungsniveau: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    /// Baukosten pro m² Wohnflaeche (netto, ohne Grundstueck)
+    /// Baukosten pro m² Wohnflaeche (netto, ohne Grundstueck).
+    ///
+    /// Kommt aus den Firmeneinstellungen — es sind EURE Erfahrungswerte, keine
+    /// lizenzierten BKI-Daten (siehe `FirmenSettings.kennwertMittel`). Vorher standen
+    /// hier drei feste Zahlen; die sind jetzt die Vorgaben, damit sich ohne Zutun
+    /// nichts an der Schaetzung aendert.
     var kostenProQm: Double {
         switch self {
-        case .einfach: return 2000
-        case .mittel:  return 2500
-        case .gehoben: return 3200
+        case .einfach: return FirmenSettings.kennwertEinfach
+        case .mittel:  return FirmenSettings.kennwertMittel
+        case .gehoben: return FirmenSettings.kennwertGehoben
         }
     }
 }

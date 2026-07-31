@@ -8,7 +8,7 @@
 
 **Ziel:** Aus den *text-tragenden* PDFs eines Bauvorhabens automatisch die
 LV-relevanten Fakten ziehen — genau das, was am 03.07. manuell (4 Prüf-Agenten)
-aus dem BV Setiadji herausgeholt wurde, nur als Feature in der App.
+aus dem BV Musterfrau herausgeholt wurde, nur als Feature in der App.
 
 **In Scope:** PDFs mit echter Textebene — Bodengutachten, Wohnflächen-/
 Rauminhalt-Berechnung, Bebauungsplan-Textteil, Erschließungs-Datenblätter.
@@ -60,7 +60,7 @@ App: Felder anzeigen → in Projekt/LV übernehmen (Mensch bestätigt)
 ```json
 {
   "status": "success",
-  "quelle": "Bodengutachten BV Setiadji.pdf",
+  "quelle": "Bodengutachten BV Musterfrau.pdf",
   "doctype_erkannt": "bodengutachten",
   "confidence": 0.9,
   "felder": { ... doctype-spezifisch, s.u. ... },
@@ -139,23 +139,23 @@ ExactMatchKnowledge).
   `quellDateiName`-Muster.
 - **Human-in-the-Loop ist Pflicht** — nichts wird ungeprüft ins LV geschrieben.
 
-## 8. Testplan (Fixtures = die Setiadji-Docs von heute)
+## 8. Testplan (Fixtures = die Musterfrau-Docs von heute)
 
 | Fixture | Erwartet (Auszug) |
 |---|---|
-| `Bodengutachten BV Setiadji.pdf` | bodenklassen „BKL 4-6", frosttiefe 0.8 m, grundwasser.angetroffen=false, abdichtung „W1.1-E" |
+| `Bodengutachten BV Musterfrau.pdf` | bodenklassen „BKL 4-6", frosttiefe 0.8 m, grundwasser.angetroffen=false, abdichtung „W1.1-E" |
 | `250415_WoFiV…pdf` | wohnflaeche_gesamt 112,80 m², raeume enthält Wohnen 33,24 |
 | `250415_BRI…pdf` | bri_m3 623,6 |
 | `bebplan_klinge…pdf` | zone „WA2", stuetzwand_max 2,5 m, dach.neigung 14–50° |
 
 Die erwarteten Werte stehen im heutigen LV-Dossier
-(`~/Downloads/BV-Setiadji-Artanti_LV/`) — 1:1 als Soll nutzbar.
+(`~/Downloads/BV-Musterfrau_LV/`) — 1:1 als Soll nutzbar.
 
 ## 9. Sequenzierung (klein anfangen)
 
 1. **Prototyp zuerst** (wie `gelaendebruecke.py` startete): Standalone-Skript in
    `~/Projekte/mops-extract-prototype/extract_doc.py`, das *eine* Bodengutachten-PDF
-   → Rohtext → Claude → JSON macht. Lokal gegen die Setiadji-PDF getestet, **ohne**
+   → Rohtext → Claude → JSON macht. Lokal gegen die Musterfrau-PDF getestet, **ohne**
    Box-Deploy. Beweist die Pipeline.
 2. Prototyp → Route `/extract-doc` im mops-api, ein Doctype (`bodengutachten`).
 3. Weitere Doctypes (wohnflaeche, bebauungsplan, erschliessung).

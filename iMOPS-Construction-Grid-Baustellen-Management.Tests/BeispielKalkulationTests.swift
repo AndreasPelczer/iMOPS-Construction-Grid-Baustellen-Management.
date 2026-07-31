@@ -3,8 +3,9 @@ import Foundation
 import CoreData
 @testable import iMOPS_Construction_Grid_Baustellen_Management_
 
-/// Haelt die durchkalkulierte Beispiel-Baustelle fest: die sieben Dach-/Decken-/Elektro-
-/// Positionen haben ab jetzt Material, Lohn und teils Geraet — vorher standen sie auf 0,00 €.
+/// Haelt das vollstaendig kalkulierte Beispiel-LV fest: alle 15 Eigenleistungs-Positionen
+/// (Gruendung, Waende, Decken, Dach, Elektro) haben Material, Lohn und teils Geraet.
+/// Vorher standen 8 davon auf 0,00 €, die anderen 7 kamen einen Schritt vorher dazu.
 ///
 /// Die Tests pruefen NICHT, ob die Aufwandswerte richtig sind (das kann nur ein Polier),
 /// sondern dass sie ankommen, sich nicht verdoppeln und die Summe bewegen.
@@ -45,12 +46,16 @@ struct BeispielKalkulationTests {
         return try? ctx.fetch(req).first
     }
 
-    /// Die sieben vorher preislosen Positionen haben jetzt alle einen Preis > 0.
-    @Test @MainActor func siebenPositionenSindNichtMehrNull() {
+    /// Alle 15 Eigenleistungs-Positionen haben jetzt einen Preis > 0. Die uebrigen 9
+    /// sind NU-Pauschalen und werden bewusst nicht aufgerechnet.
+    @Test @MainActor func alleEigenleistungenSindNichtMehrNull() {
         seedeAlles()
 
-        let vorherNull = ["3.50.1", "3.50.2", "3.50.3", "3.60.1", "3.60.2", "3.60.3", "4.40.1"]
-        for nr in vorherNull {
+        let eigenleistung = ["3.20.1", "3.20.2", "3.20.3",
+                             "3.30.1", "3.30.2", "3.30.2b", "3.30.3", "3.40.1",
+                             "3.50.1", "3.50.2", "3.50.3",
+                             "3.60.1", "3.60.2", "3.60.3", "4.40.1"]
+        for nr in eigenleistung {
             guard let pos = position(nr) else {
                 Issue.record("Position \(nr) fehlt — MarktbreitSeeder geaendert?")
                 continue
@@ -58,6 +63,29 @@ struct BeispielKalkulationTests {
             #expect(pos.hatKalkulation, "\(nr) hat keine Kalkulation")
             #expect(LVKalkulator.effektiverEP(for: pos) > 0, "\(nr) rechnet auf 0")
         }
+    }
+
+    /// KEINE Position im Beispiel steht mehr auf 0,00 EUR — weder Eigenleistung noch
+    /// NU-Pauschale. Das ist die Zusage "vollstaendiges Beispiel-LV" als Test.
+    @Test @MainActor func keinePositionMehrOhnePreis() {
+        seedeAlles()
+        let req: NSFetchRequest<LVPosition> = LVPosition.fetchRequest()
+        let alle = (try? ctx.fetch(req)) ?? []
+        let ohnePreis = alle.zaehlbarePositionen()
+            .filter { LVKalkulator.effektiverEP(for: $0) <= 0 }
+            .compactMap(\.posNr)
+        #expect(ohnePreis.isEmpty, "Ohne Preis: \(ohnePreis.sorted())")
+    }
+
+    /// Die dickere Kelleraussenwand (36,5 cm) muss teurer sein als die 24er — mehr Stein,
+    /// mehr Moertel, hoeherer Aufwandswert. Genau der Unterschied, den die Statik-Notiz
+    /// als Stolperstein markiert; wenn der im Preis verschwindet, stimmt das Rezept nicht.
+    @Test @MainActor func dickereKellerwandIstTeurer() {
+        seedeAlles()
+        guard let duenn = position("3.30.2"), let dick = position("3.30.2b") else {
+            Issue.record("Kellerwand-Positionen fehlen"); return
+        }
+        #expect(LVKalkulator.effektiverEP(for: dick) > LVKalkulator.effektiverEP(for: duenn))
     }
 
     /// Dacheindeckung: Ziegel + Lattung + Unterspannbahn, Zimmerer und Helfer.

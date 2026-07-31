@@ -30,6 +30,13 @@ struct SettingsView: View {
     @AppStorage(FirmenSettings.Keys.bgk)                 private var bgk                 = 0.12
     @AppStorage(FirmenSettings.Keys.wagnisGewinn)        private var wagnisGewinn        = 0.08
 
+    // Kennwerte je m² Wohnfläche für die Grobkostenschätzung im Planer.
+    // Vorgaben identisch zu FirmenSettings (siehe dort: es sind EURE Erfahrungswerte,
+    // keine lizenzierten BKI-Daten).
+    @AppStorage(FirmenSettings.Keys.kennwertEinfach) private var kennwertEinfach = 2000.0
+    @AppStorage(FirmenSettings.Keys.kennwertMittel)  private var kennwertMittel  = 2500.0
+    @AppStorage(FirmenSettings.Keys.kennwertGehoben) private var kennwertGehoben = 3200.0
+
     // Benachrichtigungen
     @AppStorage(NotificationService.Keys.fristenEnabled) private var notifsEnabled = true
     @AppStorage(NotificationService.Keys.vorwarnTage)    private var vorwarnTage   = 1
@@ -106,6 +113,28 @@ struct SettingsView: View {
                 „Je Kostenart" trennt die Sätze nach Lohn, Material und Gerät — auf dem Bau \
                 trägt der Lohn den Löwenanteil (Größenordnung ×2,75), Material und Gerät \
                 kaum etwas. Aus ist es ein Satz W&G plus einer BGK auf die Summe.
+                """)
+                .font(.caption)
+            }
+
+            // --- Kennwerte je m² (Grobkostenschätzung im Planer) ---
+            Section {
+                kennwertZeile("Einfach", wert: $kennwertEinfach)
+                kennwertZeile("Mittel",  wert: $kennwertMittel)
+                kennwertZeile("Gehoben", wert: $kennwertGehoben)
+            } header: {
+                Text("Kalkulation — Kennwerte je m²")
+            } footer: {
+                Text("""
+                Womit der Planer eine Baustelle grob schätzt, bevor ein LV da ist: \
+                Wohnfläche × Kennwert, verteilt auf die Gewerke.
+
+                Das sind EURE Erfahrungswerte, keine lizenzierten BKI-Daten — darum heißt \
+                es hier „Kennwert" und nicht „BKI". Eine Schätzung ist ein anderer Zustand \
+                als eine Messung: sie taugt für die Größenordnung, nicht als Nachweis.
+
+                Ein leeres Feld fällt auf die Vorgabe zurück (2000 / 2500 / 3200 €/m²), \
+                damit eine versehentliche 0 nicht die ganze Schätzung auf null zieht.
                 """)
                 .font(.caption)
             }
@@ -296,5 +325,20 @@ struct SettingsView: View {
         }
         Slider(value: wert, in: 0...bis, step: 0.05)
             .tint(farbe)
+    }
+
+    /// Ein Kennwert in €/m². Anders als die Zuschläge kein Slider — Firmenwerte tippt
+    /// man einmal ein, und zwischen 2000 und 3200 wäre ein Schieber ohnehin zu grob.
+    private func kennwertZeile(_ titel: String, wert: Binding<Double>) -> some View {
+        LabeledContent(titel) {
+            HStack(spacing: 4) {
+                TextField(titel, value: wert, format: .number.precision(.fractionLength(0)))
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .font(.body.monospacedDigit())
+                    .frame(maxWidth: 90)
+                Text("€/m²").font(.caption).foregroundStyle(.secondary)
+            }
+        }
     }
 }

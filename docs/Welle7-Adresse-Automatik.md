@@ -31,7 +31,7 @@ aus einer **Adresse** automatisch die DGM-Massen zu ziehen. Damit fehlt:
 
 Cut/Fill braucht eine **Hauslage** (Grundriss-Polygon), um Abtrag/Auftrag im
 Baufeld zu rechnen. Beim DXF-Weg liefert die Zeichnung diese Lage. Bei „nur Adresse"
-gibt es sie nicht (vgl. Handoff-Punkt 3: Setiadji-Bestand-DXF hatte keinen Footprint → 422).
+gibt es sie nicht (vgl. Handoff-Punkt 3: Musterfrau-Bestand-DXF hatte keinen Footprint → 422).
 
 **Vorschlag (Schätzung, ehrlich gelabelt):** Aus dem `HouseConfigurator` einen
 **Rechteck-Footprint** ableiten (Grundfläche aus Wohnfläche ÷ Geschosse, Seitenverhältnis
@@ -68,7 +68,7 @@ App: bestehende geländeCard + insertGelaendeIntoLV WIEDERVERWENDEN
 **Request** `POST /gelaende-analyse` (JSON)
 ```json
 {
-  "adresse": "97225 Zellingen, Jahnstraße 46",
+  "adresse": "97225 Zellingen, Musterstraße 2",
   "footprint_m": {"laenge": 12.0, "breite": 9.0, "rotation_grad": 0},
   "fix_okbp": null
 }
