@@ -30,7 +30,39 @@ enum BeispielKalkulationSeeder {
     static func seedIfNeeded(context: NSManagedObjectContext) {
         ergaenzeStammdaten(context: context)
         kalkuliereBeispielPositionen(context: context)
+        seedPlanerSchaetzung(context: context)
         seedMitarbeiter(context: context)
+    }
+
+    // MARK: - Grobkostenschaetzung fuers Beispiel
+
+    /// Legt die Planer-Konfiguration an, damit der Kennwert-Vergleich am Beispiel
+    /// etwas zu zeigen hat. Werte aus den Event-Notizen (T&C Aura 125, UG+EG+DG,
+    /// Satteldach 20°/20°) — nicht erfunden, sondern aus der Statik uebernommen.
+    ///
+    /// Ueberschreibt NICHTS: wer im Planer schon etwas konfiguriert hat, behaelt es.
+    private static func seedPlanerSchaetzung(context: NSManagedObjectContext) {
+        let req: NSFetchRequest<Event> = Event.fetchRequest()
+        req.predicate = NSPredicate(format: "eventNumber == %@", eventNummer)
+        req.fetchLimit = 1
+        guard let event = try? context.fetch(req).first else { return }
+
+        var extras = EventExtrasPayload.laden(aus: event)
+        guard extras.houseProject == nil else { return }
+
+        var projekt = HouseProject()
+        projekt.projektName = "EFH T&C Aura 125"
+        projekt.haustyp = .einfamilienhaus
+        projekt.wohnflaeche = 125          // Typenhaus Aura 125
+        projekt.geschosse = 2              // EG + DG (Keller separat)
+        projekt.kellerGeplant = true       // Statik weist Keller-Aussenwaende aus
+        projekt.dachform = .satteldach
+        projekt.ausstattung = .mittel
+        projekt.garage = false             // Carport, siehe Stuetzmauer-Position
+
+        extras.houseProject = projekt
+        extras.speichern(in: event)
+        try? context.save()
     }
 
     // MARK: - Rezepte je Position

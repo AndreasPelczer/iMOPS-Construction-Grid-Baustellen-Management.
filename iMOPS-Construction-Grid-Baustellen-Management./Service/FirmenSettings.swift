@@ -17,6 +17,10 @@ enum FirmenSettings {
         static let zuschlagGeraet      = "firma_zuschlag_geraet"
         static let bgk                 = "firma_bgk"
         static let wagnisGewinn        = "firma_wagnis_gewinn"
+        // Kennwerte je m² Wohnflaeche fuer die Grobkostenschaetzung im Planer.
+        static let kennwertEinfach     = "firma_kennwert_einfach"
+        static let kennwertMittel      = "firma_kennwert_mittel"
+        static let kennwertGehoben     = "firma_kennwert_gehoben"
     }
 
     static var name:    String { UserDefaults.standard.string(forKey: Keys.name)    ?? "iMOPS Bauleitung" }
@@ -60,5 +64,30 @@ enum FirmenSettings {
     private static func satz(_ key: String, vorgabe: Double) -> Double {
         guard UserDefaults.standard.object(forKey: key) != nil else { return vorgabe }
         return UserDefaults.standard.double(forKey: key)
+    }
+
+    // MARK: - Kennwerte je m² Wohnflaeche (Grobkostenschaetzung)
+    //
+    // ⚠️ Das sind EURE Erfahrungswerte, KEINE lizenzierten BKI-Daten. Echte
+    // BKI-Kennwerte kommen vom Baukosteninformationszentrum und sind kostenpflichtig;
+    // sie duerfen hier nicht eincodiert werden. Darum heisst es in der App „Kennwert"
+    // und nicht „BKI" — die App soll keine Quelle behaupten, die sie nicht hat.
+    //
+    // Vorgaben entsprechen den Werten, die vorher in `HouseProject.Ausstattung` hart
+    // im Code standen (2000/2500/3200). Solange sie niemand aendert, rechnet der
+    // Planer exakt wie vorher.
+
+    static var kennwertEinfach: Double { kennwert(Keys.kennwertEinfach, vorgabe: 2000) }
+    static var kennwertMittel:  Double { kennwert(Keys.kennwertMittel,  vorgabe: 2500) }
+    static var kennwertGehoben: Double { kennwert(Keys.kennwertGehoben, vorgabe: 3200) }
+
+    /// Ein Kennwert aus den UserDefaults.
+    ///
+    /// Anders als bei den Zuschlaegen ist 0 hier KEINE sinnvolle Einstellung — ein Haus
+    /// fuer 0 €/m² gibt es nicht. Ein versehentlich geleertes Feld faellt darum auf die
+    /// Vorgabe zurueck, statt die ganze Schaetzung auf 0 zu ziehen.
+    private static func kennwert(_ key: String, vorgabe: Double) -> Double {
+        let v = UserDefaults.standard.double(forKey: key)
+        return v > 0 ? v : vorgabe
     }
 }
