@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚧 ERST HIER LESEN — Pflichtspur für jede neue Instanz
+
+**Bevor du irgendetwas analysierst, vorschlägst oder änderst:**
+1. `git status` + `git branch -a` — wo stehst du, welche offenen Branches gibt es? (Oft läuft schon Arbeit am selben Thema.)
+2. **`docs/HANDOFF-AKTUELL.md`** lesen — der stabile Zeiger auf den aktuellen Stand. Nicht die Datumssuche raten.
+3. Bevor du etwas Neues entwirfst: `rg <begriff>` in Code **und** `docs/`. **Das Feature existiert wahrscheinlich schon** (View, Service, Branch, Handoff, Spec) — der Job ist meist *verbinden/reparieren*, nicht neu erfinden.
+4. Zweites Repo mitdenken: iOS-Client ↔ **mops-api** (Box-Backend). Ein Handoff betrifft oft beide.
+
+Erst wenn diese vier Punkte durch sind, Vorschläge machen. **Warum:** jeder Mac-Neustart = frische Instanz ohne Erinnerung an gestern. Das Repo + `docs/` SIND die Kontinuität, die die Instanz selbst nicht hat.
+
+**⏹ Am Session-Ende (Pflicht):** `docs/HANDOFF-AKTUELL.md` auf einen Satz bringen — was ist *jetzt* der Stand, was offen? Sonst lügt der Zeiger die nächste Instanz an. Das ist der wichtigste Schritt der ganzen Spur.
+
 ## Was das ist
 
 SwiftUI/Core-Data iOS-App für Baustellen- und Auftragsmanagement (Bauleitung).
