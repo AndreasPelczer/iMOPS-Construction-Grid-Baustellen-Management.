@@ -146,6 +146,10 @@ struct EventDetailView: View {
     @State private var gelaendeError: String = ""
     @State private var gelaendeResult: GelaendeResult? = nil
     @State private var gelaendeDXFData: Data? = nil        // zuletzt geladenes DXF (für Hauslage-Platzierung)
+    // Der Dateiname muss mit: der Picker laesst auch .dwg zu, und die Box entscheidet an der
+    // Endung, ob sie vorher DWG->DXF wandelt. Ein festes "upload.dxf" wuerde eine DWG
+    // ungewandelt an ezdxf schicken -> 500.
+    @State private var gelaendeDateiname: String = "upload.dxf"
     @State private var zeigeHauslagePlatzieren = false
     @State private var reportPDFURL: URL?
     // Welle 5c: Wände aus Plan lesen
@@ -534,7 +538,7 @@ struct EventDetailView: View {
         }
         .sheet(isPresented: $zeigeHauslagePlatzieren) {
             if let d = gelaendeDXFData {
-                HauslagePlatzierenView(dxfData: d)
+                HauslagePlatzierenView(dxfData: d, dateiname: gelaendeDateiname)
             }
         }
     }
@@ -915,6 +919,7 @@ struct EventDetailView: View {
             do {
                 let dxfData = try Data(contentsOf: url)
                 gelaendeDXFData = dxfData   // für die Hauslage-Platzierung behalten
+                gelaendeDateiname = url.lastPathComponent
                 uploadDXF(dxfData: dxfData, filename: url.lastPathComponent)
             } catch {
                 gelaendeError = "Fehler beim Lesen: \(error.localizedDescription)"

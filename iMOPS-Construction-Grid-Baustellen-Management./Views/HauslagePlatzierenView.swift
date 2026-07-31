@@ -16,6 +16,9 @@ struct GrundstueckInfo: Codable {
 /// Das Haus-Rechteck zum Platzieren kommt im nächsten Schritt dazu.
 struct HauslagePlatzierenView: View {
     let dxfData: Data
+    /// Originaler Dateiname. Die Box entscheidet an der Endung, ob sie DWG->DXF wandelt —
+    /// ein fest verdrahtetes "upload.dxf" wuerde DWG-Bytes ungewandelt an ezdxf schicken.
+    var dateiname: String = "upload.dxf"
 
     @Environment(\.dismiss) private var dismiss
     @State private var info: GrundstueckInfo?
@@ -67,7 +70,7 @@ struct HauslagePlatzierenView: View {
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         var body = Data()
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"dxf_file\"; filename=\"upload.dxf\"\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"dxf_file\"; filename=\"\(dateiname)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
         body.append(dxfData)
         body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
