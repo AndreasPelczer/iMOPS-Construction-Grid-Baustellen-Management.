@@ -59,7 +59,7 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
 
     // MARK: - Bewehrungs-Dedup (Export zählt Plan+Liste nur einmal)
 
-    /// Referenzfall Schunder-Ringbalken: Plan und Export-Liste liefern dieselbe
+    /// Referenzfall Musterbauer-Ringbalken: Plan und Export-Liste liefern dieselbe
     /// Bewehrungsmenge (gleiche Bezeichnung + gleiche kg). Fürs Summieren/Exportieren
     /// darf das nur EINMAL zählen. Vorher rechnete GAEB/PDF flach → 900,28 kg statt 450,14.
     @Test @MainActor func bewehrungsDuplikatZaehltEinmal() {
