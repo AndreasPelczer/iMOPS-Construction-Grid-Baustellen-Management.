@@ -797,10 +797,37 @@
 
     WICHTIG: Das DXF braucht ein eingezeichnetes geplantes Haus (Layer
     "Geplante Hauslage" o. ä.) - sonst meldet es "kein geplantes Haus" und
-    kann den Aushub nicht rechnen (die Hauslage kommt sonst aus dem Lageplan;
-    das manuelle Platzieren ist ein geplanter naechster Schritt). Es ist eine
+    kann den Aushub nicht rechnen. Fehlt das Haus, erscheint der Knopf
+    "Hauslage platzieren" (siehe App_Hauslage_Platzieren). Es ist eine
     Planungs-Schaetzung, ersetzt NICHT Vermesser oder Bodengutachten.
   quelle_kurz: "iMOPS App-Bedienung (Welle 7)"
+  license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Hauslage_Platzieren"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Hauslage platzieren"
+    - "kein geplantes Haus"
+    - "kein Haus im DXF"
+    - "Haus fehlt im Plan"
+    - "Grundstueck anzeigen"
+    - "Grundstuecksgrenzen"
+    - "Haus selbst einzeichnen"
+  antwort: |
+    Meldet die Geländebrücke "kein geplantes Haus", erscheint darunter der Knopf
+    "Hauslage platzieren". Er zeigt das Grundstueck aus demselben DXF, das schon
+    geladen ist - Grundstuecksgrenzen und Gelaende-Ausdehnung, massstaeblich
+    eingepasst. Es wird NICHT neu hochgeladen und NICHT neu gerechnet.
+
+    Stand heute ist das eine reine Ansicht: man sieht, wo das Grundstueck liegt
+    und wie hoch das Gelaende reicht. Das Haus-Rechteck zum Verschieben und
+    Drehen kommt im naechsten Schritt; erst dann koennen die Ecken als
+    Hauslage an die Aushubrechnung gehen.
+
+    Es funktioniert mit DXF und DWG - der Dateiname wird mitgeschickt, damit die
+    Box eine DWG vorher wandelt.
+  quelle_kurz: "iMOPS App-Bedienung (Welle 7, Schritt 2b)"
   license_note: "Eigene Bedienungshilfe"
 
 - id: "App_Ist_Uebersicht"
