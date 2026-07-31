@@ -3,10 +3,11 @@ import CoreData
 
 // MARK: - BeispielKalkulationSeeder
 //
-// Rechnet die Dach- und Decken-Positionen der Beispiel-Baustelle Marktbreit durch
-// (KG 350, 360, 440) und legt zwei Beispiel-Mitarbeiter an. Damit hat das Beispiel
-// erstmals durchkalkulierte Positionen mit Material, Lohn UND Geraet — vorher gab es
-// nur Pauschalen aus NU-Angeboten und Positionen ganz ohne Preis.
+// Rechnet die 15 Eigenleistungs-Positionen der Beispiel-Baustelle Marktbreit durch
+// (KG 320 Gruendung bis KG 440 Elektro) und legt zwei Beispiel-Mitarbeiter an. Damit hat
+// das Beispiel erstmals ein VOLLSTAENDIG kalkuliertes LV: jede Position, die die eigene
+// Kolonne baut, hat Material, Lohn und teils Geraet. Die neun NU-Pauschalen bleiben
+// bewusst unaufgerechnet — fremde Leistung kalkuliert man nicht nach.
 //
 // ⚠️ ZU DEN ZAHLEN: Die Aufwandswerte (h je Einheit) sind recherchierte
 // REFA-Richtwerte, KEINE gemessenen Werte von einer echten Baustelle. Sie sind gut
@@ -60,9 +61,83 @@ enum BeispielKalkulationSeeder {
         let geraete: [Ger]
     }
 
-    /// Die sieben bisher preislosen Positionen. Einheiten stehen im MarktbreitSeeder:
-    /// 3.50.1 m² · 3.50.2 m · 3.50.3 m · 3.60.1 Stk · 3.60.2 m² · 3.60.3 m² · 4.40.1 psch
+    /// Alle 15 Eigenleistungs-Positionen der Beispiel-Baustelle. Die restlichen 9 sind
+    /// Nachunternehmer-Pauschalen (KG 390/5xx) — die haben einen Endpreis und werden
+    /// bewusst NICHT aufgerechnet: fremde Leistung kalkuliert man nicht nach.
     private static let rezepte: [Rezept] = [
+
+        // --- KG 320 Gruendung ---
+
+        // Streifenfundament Aussenwand b=37 d=16 -> rund 0,06 m3 je lfm, zweiseitig geschalt.
+        Rezept(posNr: "3.20.1",
+               material: [Mat(name: "Beton C25/30",       jeEinheit: 0.060, verschnitt: 0.05),
+                          Mat(name: "Bewehrungsstahl",    jeEinheit: 8.0,   verschnitt: 0.08),
+                          Mat(name: "Schalungsplatte",    jeEinheit: 0.35,  verschnitt: 0.15)],
+               lohn:     [Loh(qualifikation: "Betonbauer", stundenJeEinheit: 0.45),
+                          Loh(qualifikation: "Helfer",     stundenJeEinheit: 0.40)],
+               geraete:  [Ger(name: "Rüttler / Verdichter", stundenJeEinheit: 0.10)]),
+
+        Rezept(posNr: "3.20.2",
+               material: [Mat(name: "Beton C25/30",       jeEinheit: 0.050, verschnitt: 0.05),
+                          Mat(name: "Bewehrungsstahl",    jeEinheit: 6.0,   verschnitt: 0.08),
+                          Mat(name: "Schalungsplatte",    jeEinheit: 0.35,  verschnitt: 0.15)],
+               lohn:     [Loh(qualifikation: "Betonbauer", stundenJeEinheit: 0.45),
+                          Loh(qualifikation: "Helfer",     stundenJeEinheit: 0.40)],
+               geraete:  [Ger(name: "Rüttler / Verdichter", stundenJeEinheit: 0.10)]),
+
+        // Sohlplatte: grosse zusammenhaengende Flaeche -> deutlich weniger Stunden je m2
+        // als ein Fundamentgraben. Bewehrung als Matten, keine Seitenschalung gerechnet.
+        Rezept(posNr: "3.20.3",
+               material: [Mat(name: "Beton C25/30",       jeEinheit: 0.165, verschnitt: 0.05),
+                          Mat(name: "Bewehrungsstahl",    jeEinheit: 9.0,   verschnitt: 0.08)],
+               lohn:     [Loh(qualifikation: "Betonbauer", stundenJeEinheit: 0.25),
+                          Loh(qualifikation: "Helfer",     stundenJeEinheit: 0.22)],
+               geraete:  [Ger(name: "Rüttler / Verdichter", stundenJeEinheit: 0.05)]),
+
+        // --- KG 330 Aussenwaende ---
+
+        // Porenbeton-Planstein, Duennbettmoertel. ~6,7 Steine je m2 (Format 599x249).
+        Rezept(posNr: "3.30.1",
+               material: [Mat(name: "Porenbeton PP2 24cm", jeEinheit: 6.7, verschnitt: 0.05),
+                          Mat(name: "Dünnbettmörtel",      jeEinheit: 3.5, verschnitt: 0.08)],
+               lohn:     [Loh(qualifikation: "Maurer",  stundenJeEinheit: 0.55),
+                          Loh(qualifikation: "Helfer",  stundenJeEinheit: 0.35)],
+               geraete:  [Ger(name: "Mörtelschlitten", stundenJeEinheit: 0.10)]),
+
+        Rezept(posNr: "3.30.2",
+               material: [Mat(name: "Porenbeton PP4 24cm", jeEinheit: 6.7, verschnitt: 0.05),
+                          Mat(name: "Dünnbettmörtel",      jeEinheit: 3.5, verschnitt: 0.08)],
+               lohn:     [Loh(qualifikation: "Maurer",  stundenJeEinheit: 0.55),
+                          Loh(qualifikation: "Helfer",  stundenJeEinheit: 0.35)],
+               geraete:  [Ger(name: "Mörtelschlitten", stundenJeEinheit: 0.10)]),
+
+        // d=36,5 cm: schwerere Steine, mehr Moertel, hoeherer Aufwandswert als die 24er.
+        // Genau der Unterschied, den die Statik-Notiz als Stolperstein markiert
+        // ("Zwei Keller-AW-Staerken!") — im Preis muss er sich auch zeigen.
+        Rezept(posNr: "3.30.2b",
+               material: [Mat(name: "Porenbeton PP4 36,5cm", jeEinheit: 6.7, verschnitt: 0.05),
+                          Mat(name: "Dünnbettmörtel",        jeEinheit: 5.0, verschnitt: 0.08)],
+               lohn:     [Loh(qualifikation: "Maurer",  stundenJeEinheit: 0.70),
+                          Loh(qualifikation: "Helfer",  stundenJeEinheit: 0.45)],
+               geraete:  [Ger(name: "Mörtelschlitten", stundenJeEinheit: 0.12)]),
+
+        // Einzelstuetze: fast alles Ruestzeit, deshalb Stunden je STUECK und nicht je m2.
+        Rezept(posNr: "3.30.3",
+               material: [Mat(name: "Beton C25/30",    jeEinheit: 0.12, verschnitt: 0.05),
+                          Mat(name: "Bewehrungsstahl", jeEinheit: 25.0, verschnitt: 0.08),
+                          Mat(name: "Schalungsplatte", jeEinheit: 3.0,  verschnitt: 0.15)],
+               lohn:     [Loh(qualifikation: "Betonbauer", stundenJeEinheit: 3.50),
+                          Loh(qualifikation: "Helfer",     stundenJeEinheit: 2.00)],
+               geraete:  []),
+
+        // --- KG 340 Innenwaende ---
+
+        Rezept(posNr: "3.40.1",
+               material: [Mat(name: "Porenbeton PP4 17,5cm", jeEinheit: 6.7, verschnitt: 0.05),
+                          Mat(name: "Dünnbettmörtel",        jeEinheit: 2.8, verschnitt: 0.08)],
+               lohn:     [Loh(qualifikation: "Maurer",  stundenJeEinheit: 0.45),
+                          Loh(qualifikation: "Helfer",  stundenJeEinheit: 0.28)],
+               geraete:  [Ger(name: "Mörtelschlitten", stundenJeEinheit: 0.08)]),
 
         // --- KG 350 Decken ---
 
@@ -195,6 +270,10 @@ enum BeispielKalkulationSeeder {
 
         let materialien: [(String, String, Double, Double)] = [
             // (Name, Einheit, Preis je Einheit, Verschnitt-Vorgabe)
+            ("Porenbeton PP2 24cm",        "Stk",   3.60, 0.05),
+            ("Porenbeton PP4 24cm",        "Stk",   4.20, 0.05),
+            ("Porenbeton PP4 36,5cm",      "Stk",   6.40, 0.05),
+            ("Porenbeton PP4 17,5cm",      "Stk",   2.90, 0.05),
             ("Filigranplatte 5 cm",        "m²",   46.00, 0.03),
             ("XPS-Schalung 7 cm",          "m²",   14.50, 0.10),
             ("Unterspannbahn",             "m²",    2.80, 0.10),
