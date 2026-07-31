@@ -48,6 +48,9 @@ struct iMOPSApp: App {
                     ScharpeggeSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     StammdatenSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     MarktbreitSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    // NACH MarktbreitSeeder: rechnet dessen Dach-/Decken-Positionen durch
+                    // und braucht sie deshalb schon in der Datenbank.
+                    BeispielKalkulationSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     NotificationService.shared.requestAuthorization()
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)
 
