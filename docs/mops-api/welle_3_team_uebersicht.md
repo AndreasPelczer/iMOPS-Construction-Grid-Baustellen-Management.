@@ -1,6 +1,6 @@
 # Welle 3 — Plan-zu-Anfrage-Pipeline · Team-Überblick
 
-**Stand:** 03.06.2026 · Testprojekt: BV 448-GO Schwarz, Marktbreit
+**Stand:** 03.06.2026 · Testprojekt: BV 448-GO Mustermann, Marktbreit
 
 ## Die Vision in einem Satz
 Aus dem **Statiker-PDF** automatisch **Wände → Mengen → LV → Bestellliste/Anfrage** ziehen —
@@ -54,7 +54,7 @@ B 4   358,2 · B 5   26,9 · B 6 201,7 · B 7  21,1   → Σ 1.709 kg
 - `welle_3_team_uebersicht.md` (dieses Dokument)
 
 **Projekt-Unterlagen sortiert:** `~/Downloads/UnterlagenRaphi/`
-(Schwarz-448-GO Statik/Bewehrung/Architekt/Kaufmännisch · Bungalow · NTH)
+(Mustermann-448-GO Statik/Bewehrung/Architekt/Kaufmännisch · Bungalow · NTH)
 
 ---
 

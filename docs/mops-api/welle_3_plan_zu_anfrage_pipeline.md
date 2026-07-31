@@ -28,7 +28,7 @@ PDF-Pläne  →  Mengen  →  LV  →  Kostenschätzung  →  Gewerke-Anfragen
 |---|---|---|
 | 1. PDF → Strukturierung | **offen** (Kern-Risiko) | Vision-Extraktion, in `mops-api` einbauen |
 | 2. Mengen-Ermittlung | halb da | Plan-Geometrie → Längen/Flächen + Material-DB |
-| 3. LV erstellen | **da** (`LVKalkulator`, Seeder-Pattern) | generisch statt Schwarz-spezifisch |
+| 3. LV erstellen | **da** (`LVKalkulator`, Seeder-Pattern) | generisch statt Mustermann-spezifisch |
 | 4. Kostenschätzung | halb da (`AngebotsStore`) | BKI-Rahmen (vorerst Pauschalpreise/KG) |
 | 5. Gewerke-Anfragen | halb da (`BestelllisteService`) | Gewerke-Zuordnung + NU-Adressbuch + VOB-Template |
 
@@ -53,7 +53,7 @@ Den Vor-Ort-Kontext kann Phase0 strukturell nicht liefern. Das ist die Abgrenzun
 
 Der Mops wurde gefragt, Innen- und Außenwände einer Baustelle aufzulisten — **ohne** die Pläne mitzugeben.
 Ergebnis: er hat **nicht halluziniert**, sondern gesagt *„ohne diese Pläne wäre das pure Spekulation"*.
-Beim Tippfehler „Speed Marktbreit" blieb er beim Wort statt heimlich auf „Schwarz" zu raten.
+Beim Tippfehler „Speed Marktbreit" blieb er beim Wort statt heimlich auf „Mustermann" zu raten.
 
 → Der verschärfte RAG-Prompt wirkt. Lieber „weiß ich nicht" als ein erfundenes Wand-Verzeichnis,
 nach dem ein Bauleiter handeln würde. **Das ist der wichtigere Test als jede Vorzeige-Antwort.**
@@ -66,7 +66,7 @@ nach dem ein Bauleiter handeln würde. **Das ist der wichtigere Test als jede Vo
 
 | Pfad | Was | Ehrliche Einordnung |
 |---|---|---|
-| **A** | `Projekt-Schwarz.md` (handstrukturiert) ins RAG indexieren | Quickwin, aber **Sackgasse**: indexiert Handarbeit, nur 1 Baustelle, **Drift-Risiko** — ein Schnappschuss wird selbstbewusst zitiert, auch wenn das LV sich ändert. Bringt die Vision **nicht** voran. Nur als Demo. |
+| **A** | `Projekt-Mustermann.md` (handstrukturiert) ins RAG indexieren | Quickwin, aber **Sackgasse**: indexiert Handarbeit, nur 1 Baustelle, **Drift-Risiko** — ein Schnappschuss wird selbstbewusst zitiert, auch wenn das LV sich ändert. Bringt die Vision **nicht** voran. Nur als Demo. |
 | **B** | Tool-Use: Mops fragt iMOPS live ab (`getBaustellenLV`) | **Richtige Lösung.** Live, alle Baustellen, kein Drift. Eigene Architektur-Runde. |
 | **C** | PDF-Plan → Extraktion | **Das *ist* Welle 3.** Stufe 1+2 der Vision. Spike = Kern von C. |
 
@@ -86,7 +86,7 @@ zuverlässig Stützen + Wände ziehen — oder halluziniert er?
   - `448-GO B 2 Stb.- Stützen.pdf` → Stützen-Extraktion
   - `448-GO B 1.1 BoPla untere Lage.pdf` → Geometrie / Wände / Bewehrungslage
 - Pro Plan ehrlich protokollieren: **was sicher erkannt, was unsicher, wo würde er raten.**
-- Abgleich gegen Bekanntes: `Projekt-Schwarz.md` (PPW 2-0,35 innen, PP 4-0,55 außen, d=24/36,5/17,5)
+- Abgleich gegen Bekanntes: `Projekt-Mustermann.md` (PPW 2-0,35 innen, PP 4-0,55 außen, d=24/36,5/17,5)
   und `MarktbreitSeeder` (Stb-Stützen Pos 7.2.1 + 7.3.1).
 
 **Erfolgskriterium:** Wenn Vision z.B. „7 von 8 Stützen samt Position erkannt" liefert,

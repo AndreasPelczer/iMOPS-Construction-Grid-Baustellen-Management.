@@ -53,7 +53,7 @@ Du musst nichts davon verwenden. Du kannst alles streichen, alles ändern, oder 
 
 # PROLOG — Der Mops, der Nein sagte
 
-Es ist Mittwoch, 10. Juni 2026, kurz nach acht. Auf der Baustelle Schwarz in Marktbreit steht Raffi de la Cruz vor seinem iPad und schaut auf einen Bildschirm, der ihm gerade nicht das gibt, was er gewohnt war. Er wollte eine schnelle Klassifikation für eine Materialposition aus dem Lieferschein. Er hat sie bekommen — aber nicht die, die er erwartet hatte.
+Es ist Mittwoch, 10. Juni 2026, kurz nach acht. Auf der Baustelle Mustermann in Marktbreit steht Raffi de la Cruz vor seinem iPad und schaut auf einen Bildschirm, der ihm gerade nicht das gibt, was er gewohnt war. Er wollte eine schnelle Klassifikation für eine Materialposition aus dem Lieferschein. Er hat sie bekommen — aber nicht die, die er erwartet hatte.
 
 Der Lieferschein sagt: *„Sp-TT-Decken, Beton C30/37, Wandbaustein."*
 
@@ -438,11 +438,11 @@ Zwischen dem Fiebertraum und der Doku steht eine Schicht, die in dieser Sitzung 
 
 Es gibt eine Liste konkreter Pilot-Objekte, mit Adresse und Hausnummer:
 
-**Bungalow 92** in Buchen-Hettingen, Bauherrin Familie Schmidt. Das ist das Objekt, an dem zum ersten Mal die Construction-Grid-Strukturextraktion in voller Tiefe gegen die Realität gegangen ist. Wände nach Konvention (AW-TR-1-x bis AW-TR-4-x außen, IW-1 bis IW-3 innen, ST-1 bis ST-6 für Stahlbetonstützen), Ringbalken (Pos. 2.1–2.4, 17×19 cm C20/25), Sturze in Pos. 4.2–4.4. Der Kellergrundriss ist nicht rechteckig — im Nordwesten ein Diagonal-Cutoff, weil eine Stahlkonstruktion darüber unabhängig spannt. Das ist nicht Detail-Geometrie. Das ist die Stelle, an der eine US-Norm-trainierte Plan-Erkennung wie Togal.AI ihre 98%-Quote verliert, weil sie nicht weiß, was *„Bungalow 92 mit Kellerverkleinerung"* in einer schwäbischen T&C-Bau-Werkstatt bedeutet.
+**Bungalow 92** in Musterstadt, Bauherrin Familie Schmidt. Das ist das Objekt, an dem zum ersten Mal die Construction-Grid-Strukturextraktion in voller Tiefe gegen die Realität gegangen ist. Wände nach Konvention (AW-TR-1-x bis AW-TR-4-x außen, IW-1 bis IW-3 innen, ST-1 bis ST-6 für Stahlbetonstützen), Ringbalken (Pos. 2.1–2.4, 17×19 cm C20/25), Sturze in Pos. 4.2–4.4. Der Kellergrundriss ist nicht rechteckig — im Nordwesten ein Diagonal-Cutoff, weil eine Stahlkonstruktion darüber unabhängig spannt. Das ist nicht Detail-Geometrie. Das ist die Stelle, an der eine US-Norm-trainierte Plan-Erkennung wie Togal.AI ihre 98%-Quote verliert, weil sie nicht weiß, was *„Bungalow 92 mit Kellerverkleinerung"* in einer schwäbischen T&C-Bau-Werkstatt bedeutet.
 
-**Aura 125** in Marktbreit, Bauherrin Familie Schwarz. Das ist die Baustelle, auf der Raffi vor seinem iPad steht und heute morgen die korrekte DIN-276-Klassifikation für eine Decken-Position bekommt. Marktbreit ist nicht zufällig der Eintrittspunkt für die Doku — er ist der Eintrittspunkt für den ganzen Mops-Bogen.
+**Aura 125** in Marktbreit, Bauherrin Familie Mustermann. Das ist die Baustelle, auf der Raffi vor seinem iPad steht und heute morgen die korrekte DIN-276-Klassifikation für eine Decken-Position bekommt. Marktbreit ist nicht zufällig der Eintrittspunkt für die Doku — er ist der Eintrittspunkt für den ganzen Mops-Bogen.
 
-**Goldschmitt Bau** in Wertheim-Dörlesberg, Inhaber Stefan Goldschmitt, Town & Country Lizenzpartner. Raffi arbeitet inzwischen dort. Das ist der mögliche zweite Pilot-Pfad — nicht eine einzelne Baustelle, sondern ein laufender Betrieb mit eigener ERP (Bau-SU). Der Pitch ist: iMOPS Construction Grid als *human-centered field layer*, der per XML in die ERP einspeist. Nicht Konkurrenz zur ERP, sondern die fehlende Schicht zwischen Polier und Datenbank.
+**Musterbau Bau** in Wertheim-Dörlesberg, Inhaber Stefan Musterbau, Town & Country Lizenzpartner. Raffi arbeitet inzwischen dort. Das ist der mögliche zweite Pilot-Pfad — nicht eine einzelne Baustelle, sondern ein laufender Betrieb mit eigener ERP (Bau-SU). Der Pitch ist: iMOPS Construction Grid als *human-centered field layer*, der per XML in die ERP einspeist. Nicht Konkurrenz zur ERP, sondern die fehlende Schicht zwischen Polier und Datenbank.
 
 **Paolo** auf der iPad in Brasilien. Konkreter Beweis, dass die App auch außerhalb des fränkischen Felds funktioniert. Andreas plant eine 4–6-Wochen-Remote-Phase in Brasilien; dafür muss iMOPS vorher in einem Zustand sein, in dem es ohne ständige Andreas-Intervention läuft.
 

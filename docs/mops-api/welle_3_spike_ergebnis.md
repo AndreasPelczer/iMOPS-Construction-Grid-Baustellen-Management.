@@ -3,10 +3,10 @@
 **Version:** 1.0
 **Durchgeführt:** 03.06.2026
 **Methode:** Claude Vision (Claude Code, Opus) liest die Original-PDFs direkt — kein Mops-Server, kein OCR-Vorlauf.
-**Testmaterial:** BV 448-GO Schwarz Marktbreit, 2 Pläne
+**Testmaterial:** BV 448-GO Mustermann Marktbreit, 2 Pläne
 - `448-GO B 2 Stb.- Stützen.pdf`
 - `448-GO B 1.1 BoPla untere Lage.pdf`
-**Ground Truth:** `Projekt-Schwarz.md` (handstrukturiert, Abschnitt 3.1/3.2) + `MarktbreitSeeder.swift`
+**Ground Truth:** `Projekt-Mustermann.md` (handstrukturiert, Abschnitt 3.1/3.2) + `MarktbreitSeeder.swift`
 **Vorgänger:** `welle_3_plan_zu_anfrage_pipeline.md`
 
 ---
@@ -81,7 +81,7 @@ Der Live-Test scheiterte an der Frage **„liste Innen- und Außenwände"**. Der
 
 > Diese Info steht auf **keinem der beiden Bewehrungspläne**. Wände (PPW 2-0,35 / PP 4-0,55,
 > d=24/36,5/17,5) leben in der **großen Statik** (`448-GO Statik … einseitig.pdf`, Pos 7.2/7.3)
-> und im **Werkplan** (`Schwarz_WP_kk.PDF`).
+> und im **Werkplan** (`Mustermann_WP_kk.PDF`).
 
 **Konsequenz für Pfad C:** „PDF → Extraktion" ist nicht „ein Plan rein, alles raus". Es braucht
 **Dokument-Routing**: pro Frage das *richtige* Dokument wählen (Wände → Statik/Werkplan,

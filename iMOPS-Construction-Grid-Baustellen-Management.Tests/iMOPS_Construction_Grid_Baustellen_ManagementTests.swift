@@ -90,7 +90,7 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
         #expect(kgSumme == 450.14)                             // NICHT 900,28
     }
 
-    /// Gegenprobe (Lehre vom 9.7.2026 am Schwarz-Projekt): Zwei ECHT verschiedene Sätze
+    /// Gegenprobe (Lehre vom 9.7.2026 am Mustermann-Projekt): Zwei ECHT verschiedene Sätze
     /// — Stützenanschluss obere vs. untere Lage, je zufällig 11,19 kg — haben unterschiedliche
     /// Bezeichnung und dürfen NICHT verschmolzen werden. Beide bleiben erhalten.
     @Test @MainActor func verschiedeneBauteileTrotzGleicherMengeBleibenGetrennt() {
@@ -166,12 +166,12 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
 
     // MARK: - Pauschal-Preisträger (Regression: Kostenzusammenfassung/Export = 0,00 €)
 
-    /// Baut eine Goldschmitt-Pauschalposition exakt wie der MarktbreitSeeder:
+    /// Baut eine Musterbau-Pauschalposition exakt wie der MarktbreitSeeder:
     /// Preis als NU-Material-Unterposition, WG/BGK = 0.
     @MainActor
     private func makePauschalPosition(netto: Double) -> LVPosition {
         let event = Event(context: ctx)
-        event.title = "Schwarz Marktbreit"
+        event.title = "Mustermann Marktbreit"
 
         let pos = LVPosition(context: ctx)
         pos.posNr = "3.90.1"
@@ -189,7 +189,7 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
 
         let m = PositionMaterial(context: ctx)
         m.id = UUID()
-        m.materialName = "Fremdleistung NU Goldschmitt"
+        m.materialName = "Fremdleistung NU Musterbau"
         m.mengeProEinheit = 1
         m.einzelpreis = netto
         m.verschnittProzent = 0
@@ -224,7 +224,7 @@ struct iMOPS_Construction_Grid_Baustellen_ManagementTests {
     /// unbemerkt mit 0 € durchrutschen.
     @Test @MainActor func positionOhnePreisFaelltAufNull() {
         let event = Event(context: ctx)
-        event.title = "Schwarz Marktbreit"
+        event.title = "Mustermann Marktbreit"
 
         let pos = LVPosition(context: ctx)
         pos.posNr = "3.90.9"

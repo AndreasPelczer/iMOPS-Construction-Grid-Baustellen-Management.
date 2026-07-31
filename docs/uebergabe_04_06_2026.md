@@ -1,6 +1,6 @@
 # Session-Übergabe — 04.06.2026 (Fronleichnam)
 
-**Bauvorhaben im Fokus:** EFH T&C Aura 125, BV Schwarz, Neuenbergstraße 1, 97340 Marktbreit
+**Bauvorhaben im Fokus:** EFH T&C Aura 125, BV Mustermann, Musterstraße 1, 97340 Marktbreit
 **Branch:** `claude/clever-clarke-aRgdt`
 **Beteiligte heute:** Andreas (Polier), Mops (Claude, Plankammer-Seite), Codi (Codex CLI, Werkbank-Seite)
 **Status:** Tagesabschluss, morgen Welle 1 + 3 scharf
@@ -32,7 +32,7 @@
 | Paket-A-Output | `~/Projekte/mops-extract-prototype/out/Bestellung_Marktbreit_Mauerwerk.xlsx` |
 | älteres Mengen-Skript | `~/Projekte/mops-extract-prototype/bestellanfrage_marktbreit.py` |
 | Übergabe-Notiz (Andreas → Codi) | `~/Downloads/<…>.txt` (Empfehlung Codi: zum Code legen) |
-| Raphis Aufmaß-Excel | `~/Downloads/Bestellliste_BV_Schwarz_Marktbreit_1 2.xlsx` |
+| Raphis Aufmaß-Excel | `~/Downloads/Bestellliste_BV_Mustermann_Marktbreit_1 2.xlsx` |
 | Statik-PDF | `~/Downloads/448-GO Statik 05.03.26 einseitig.pdf` |
 
 ### Auf der Mops-Box (192.168.2.42, Ubuntu 24.04 LTS)
