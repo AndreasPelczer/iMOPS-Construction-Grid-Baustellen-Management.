@@ -15,6 +15,88 @@
 3. EventDetailView/LVView zerlegen — 🔴 offen (`EventDetailView` ist seither eher gewachsen)
 4. Kernel-Spike-Entscheidung vorbereiten — 🔴 offen
 
+## Delta 06.08.2026 — Server-Neustart sah aus wie ein kaputtes CSV
+
+**Branch `fix/serverfehler-lesbare-meldung`, ein Commit `a600e55`, NICHT gepusht.**
+Build grün, komplette Unit-Suite grün.
+
+### Der Vorfall
+
+Raffi lud eine Mengen-CSV hoch und bekam 40 Zeilen rohes HTML ins Fehlerfeld — DOCTYPE,
+IE7-Kommentare, Cloudflare-Markup. Sah nach kaputter Datei aus. War es nicht:
+
+    15:14:43   Serverprozess gestartet, lädt RAG-Modell …
+    15:14:53 ← Raffis Request → Cloudflare: 502 Bad Gateway
+    15:14:54   "Application startup complete"
+
+**Eine Sekunde zu früh.** Der Mops lädt beim Start ein Embedding-Modell und ist dabei
+~11 s nicht ansprechbar; in dem Loch antwortet Cloudflare statt seiner. Dieselbe Datei
+lief Minuten später zweimal mit `200 OK` durch. Weder CSV noch Server waren defekt.
+
+**Zwei Fallen für die nächste Instanz:** Die Box loggt **UTC** (2 h Versatz zu CEST) — ohne
+den Abgleich sucht man am falschen Zeitpunkt. Und ein 502 erzeugt **keine Log-Zeile und
+keinen Traceback**, weil der Request die App nie erreicht. „Nichts im Log" ist hier der
+Befund, keine Sackgasse. Der Zeitstempel steht unten in der HTML-Seite selbst.
+
+### Was gebaut wurde
+
+`Service/ServerFehlertext.swift` (neu) — eine Wahrheit für alle Upload-Wege. Statuscode
+wird ausgewertet statt weggeworfen; 502/503/504 erklären den Neustart; HTML wird auch bei
+Status 200 erkannt (Proxy/Tunnel-Panne); eigene Mops-Meldungen (`{"detail": …}`) werden
+weiter durchgereicht. **Nie wieder roher Antwort-Body in der Oberfläche.**
+
+`MateriallisteView` und `WandLeserView` nutzen sie — beide hatten dieselbe Zeile
+(`String(data: data, encoding: .utf8)`) doppelt. 8 Regressionstests in
+`ServerFehlertextTests.swift`, mit der echten 502-Seite aus Raffis Upload als Fixture.
+
+Der Hinweistext endet mit **„An der Datei liegt es nicht."** — das ist die erste Frage,
+die sich draußen stellt, und sie hat einen Nachmittag Suche gekostet. Bei unlesbarer
+Antwort *ohne* HTML kommt bewusst **nicht** der Neustart-Hinweis, sondern „ließ sich nicht
+lesen" (eigener Test) — ein beruhigender Satz, der nicht stimmt, wäre schlimmer als keiner.
+
+### 🔴 Fund: der Erdaushub geht nur mit EINER DXF — und das ist kein Bug
+
+`/gelaendebruecke/calculate` braucht **zwei** Zutaten: Geländehöhen **und** das geplante
+Haus. Der Server sagt es sauber:
+
+    "91 Höhenpunkte gelesen, aber kein geplantes Haus im DXF
+     (Layer 'Geplante Hauslage' o. ä.). Bitte die Hauslage im Plan platzieren."
+
+Von allen DXF auf der Platte hat **genau eine** diesen Layer — ein Vermesser-Bestandsplan
+auf dem Desktop, der byteidentisch auch als `test.DXF` herumliegt (**echte Kundendaten
+trotz Testname**, nicht als Spielmaterial behandeln). Ergebnis daraus, gerundet: Haus
+~68 m², Cut ≈ Fill ≈ 11 m³ (Auto-Massenausgleich), Schotter ~39 t, ±20 m³ ≈ 3 LKW.
+
+**Die Lücke sitzt in der App.** Serverseitig ist der Ausweg fertig — Form-Feld `footprint`
+(Haus-Ecken als JSON) hat Vorrang vor dem Haus im DXF. Aber:
+
+| Schritt | Stand |
+|---|---|
+| DXF an `/grundstueck`, Grenzen + Gelände zeichnen | ✅ `HauslagePlatzierenView` |
+| Haus-Rechteck drauflegen und verschieben | ❌ fehlt |
+| Bildschirm-Ecken → DXF-Koordinaten | ❌ fehlt |
+| `footprint` an `/calculate` senden | ❌ **kommt in der ganzen App nicht vor** |
+
+Die View heißt „Hauslage platzieren", zeigt aber nur das Grundstück — bewusst als Scheibe
+abgelegt (`// Das Haus-Rechteck zum Platzieren kommt im nächsten Schritt dazu`, Zeile 16),
+nie zu Ende geführt. **Das ist der Hebel für „alle anderen Pläne rechenbar machen".**
+
+Vorher aber Backend lesen: die Rechnung lief auf der Box >125 s (Mac: 0,17 s) und fiel in
+Cloudflares 100-s-Deckel. Ursache war nach heutigem Stand **nicht** eine langsame Box,
+sondern ein parallel laufender **32-MB-DXF-Upload**, der ohne Threadpool denselben
+Event-Loop belegte (Details im mops-api-Handoff). Trotzdem gilt: Bei großen Plänen kann
+der 100-s-Deckel zuschlagen — ein Platzieren-Feature nützt nichts, wenn die Antwort nie
+ankommt.
+
+### Offen
+
+- **Push + Deploy** beider Repos (auch `mops-api` `53a4f29`, Threadpool-Fix).
+- `Service/MaterialImportService.swift` splittet CSV **naiv am Komma ohne Quote-Handling**.
+  Bei SketchUp-Exporten mit Dezimalkommas werden Einheiten zu `0`/`72` und Namen
+  abgeschnitten (`…17cmx6` statt `…17cmx6,0cm_Ost`) — **still, ohne Meldung**. Anderer Weg
+  als „Mengen aus Excel" (Material-Import im Auftrag), eigener Termin.
+- `EventDetailView.swift:978` zeigt womöglich dieselbe Roh-Body-Falle — nicht geprüft.
+
 ## Delta 31.07.2026 (nachmittags) — Kennwert-Vergleich fertig verdrahtet
 
 **Branch `feature/kennwert-vergleich`, zwei Commits, NICHT gepusht.** Beim Sessionstart
