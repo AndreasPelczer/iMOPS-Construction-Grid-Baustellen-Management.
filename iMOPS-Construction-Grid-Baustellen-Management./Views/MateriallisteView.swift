@@ -420,24 +420,21 @@ struct MateriallisteView: View {
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
-        URLSession.shared.uploadTask(with: request, from: body) { data, _, err in
+        URLSession.shared.uploadTask(with: request, from: body) { data, response, err in
             DispatchQueue.main.async {
                 loading = false
                 if let err = err { error = "Netzwerkfehler: \(err.localizedDescription)"; return }
                 guard let data = data else { error = "Keine Antwort vom Server."; return }
-                do {
-                    let r = try JSONDecoder().decode(MateriallisteResult.self, from: data)
+
+                if let r = try? JSONDecoder().decode(MateriallisteResult.self, from: data) {
                     result = r
                     selected = Set(sektionen(r).map(\.key))   // Standard: alle Sektionen gewählt
                     error = ""
-                } catch {
-                    if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       let detail = obj["detail"] as? String {
-                        self.error = detail
-                    } else {
-                        self.error = String(data: data, encoding: .utf8) ?? "Unlesbare Antwort"
-                    }
+                    return
                 }
+
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                error = ServerFehlertext.fuer(status: status, data: data)
             }
         }.resume()
     }
