@@ -162,7 +162,13 @@ enum BestellscheinPDFExporter {
                     y += text(e.abmessung, 8.5, .regular, farbe, x: sp[5], w: 100) + 5
                     if let z1 = z1 {
                         summe += z1.bestellmenge
-                        if z1.zuschlagProzent > 0 {
+                        if z1.vonHand {
+                            y += text("von Hand gesetzt — Vorschlag war "
+                                      + (z1.mengeLV * (1 + z1.zuschlagProzent / 100)).formatiert
+                                      + " m³", 7.5, .regular,
+                                      UIColor(red: 0.75, green: 0.45, blue: 0.10, alpha: 1),
+                                      x: sp[3], w: 240) + 3
+                        } else if z1.zuschlagProzent > 0 {
                             y += text("davon \(Int(z1.zuschlagProzent)) % Eck-/Laibungssteine "
                                       + "(LV \(z1.mengeLV.formatiert) m³, \(z1.positionen) Positionen)",
                                       7.5, .regular, grau, x: sp[3], w: 240) + 3
