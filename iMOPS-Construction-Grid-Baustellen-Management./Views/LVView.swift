@@ -80,6 +80,13 @@ struct LVView: View {
     @State private var auswahlModus = false
     @State private var ausgewaehlt: Set<NSManagedObjectID> = []
     @State private var deckelDialog = false
+    @State private var showBestellschein = false
+
+    /// Tragen überhaupt Positionen eine Material-Nummer? Sonst wäre der
+    /// Bestellschein leer.
+    private var hatMaterialNummern: Bool {
+        positionen.contains { ($0.artikelNummer?.isEmpty == false) }
+    }
     @State private var speicherFehler: String?
 
     @State private var showMissingPricesAlert = false
@@ -707,6 +714,14 @@ struct LVView: View {
                     }
                     .disabled(positionen.isEmpty)
 
+                    // Ersetzt das Faxgerät: Bestellvorschlag als PDF per Mail.
+                    // Nur aktiv, wenn Positionen eine Material-Nummer tragen —
+                    // ohne die gäbe es nichts zu bestellen.
+                    Button { showBestellschein = true } label: {
+                        Label("Bestellschein (Ytong)", systemImage: "doc.badge.plus")
+                    }
+                    .disabled(!hatMaterialNummern)
+
                     Button { showAngebotsVergleich = true } label: {
                         Label("Angebotsvergleich", systemImage: "chart.bar.doc.horizontal")
                     }
@@ -815,6 +830,12 @@ struct LVView: View {
         }
         .fullScreenCover(isPresented: $showBestellliste) {
             LieferantenBestelllisteView(event: event, positionen: Array(positionen))
+        }
+        .fullScreenCover(isPresented: $showBestellschein) {
+            BestellscheinMailView(event: event, positionen: Array(positionen)) {
+                showBestellschein = false
+            }
+            .ignoresSafeArea()
         }
         .fullScreenCover(isPresented: $showAngebotsVergleich) {
             AngebotsVergleichView(event: event, positionen: Array(positionen))
