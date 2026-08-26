@@ -14,7 +14,10 @@ struct BestellscheinMailView: UIViewControllerRepresentable {
     static let empfaengerVorschlag = "servicecenter.suedwest@xella.com"
 
     let event: Event
-    let positionen: [LVPosition]
+    /// Bereits geprüfte und ggf. angepasste Zeilen aus dem Formular — hier wird
+    /// nicht mehr gerechnet, nur noch verschickt.
+    let zeilen: [BestellscheinService.Zeile]
+    let ohneNummer: [LVPosition]
     let angaben: BestellscheinAngaben
     let onFinish: () -> Void
 
@@ -24,7 +27,7 @@ struct BestellscheinMailView: UIViewControllerRepresentable {
         let vc = MFMailComposeViewController()
         vc.mailComposeDelegate = context.coordinator
 
-        let (zeilen, ohne) = BestellscheinService.zeilen(aus: positionen)
+        let ohne = ohneNummer
         let baustelle = event.title ?? event.name ?? "Baustelle"
 
         vc.setToRecipients([Self.empfaengerVorschlag])

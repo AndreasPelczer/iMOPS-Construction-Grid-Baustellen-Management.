@@ -17,8 +17,16 @@ enum BestellscheinService {
         let bezeichnung: String
         let mengeLV: Double
         let zuschlagProzent: Double
-        var bestellmenge: Double { (mengeLV * (1 + zuschlagProzent / 100)).gerundet(2) }
+        /// Von Hand gesetzte Menge. Ist sie belegt, gilt sie statt der gerechneten —
+        /// jemand hat sich das angesehen und entschieden, etwa wegen Restbestand.
+        var bestellmengeManuell: Double? = nil
         let positionen: Int
+
+        var bestellmenge: Double {
+            bestellmengeManuell ?? (mengeLV * (1 + zuschlagProzent / 100)).gerundet(2)
+        }
+        /// Wurde die gerechnete Menge überschrieben? Wird im PDF gekennzeichnet.
+        var vonHand: Bool { bestellmengeManuell != nil }
         var id: String { materialNr }
     }
 
