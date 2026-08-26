@@ -15,6 +15,7 @@ struct BestellscheinMailView: UIViewControllerRepresentable {
 
     let event: Event
     let positionen: [LVPosition]
+    let angaben: BestellscheinAngaben
     let onFinish: () -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(onFinish: onFinish) }
@@ -48,15 +49,26 @@ struct BestellscheinMailView: UIViewControllerRepresentable {
             text += "\n\n\(ohne.count) Position(en) konnten keiner Material-Nummer "
                   + "zugeordnet werden — siehe PDF."
         }
+        let tf = DateFormatter(); tf.dateFormat = "dd.MM.yyyy"
+        text += "\n\nLieferung: \(angaben.lieferart.rawValue), "
+             + (angaben.mitKran ? "mit Kran" : "ohne Kran")
+             + ", \(angaben.zeitfenster.rawValue)"
+             + "\nWunschtermin: \(tf.string(from: angaben.wunschtermin))"
+        if !angaben.bemerkung.isEmpty { text += "\n\nBemerkung: \(angaben.bemerkung)" }
         text += "\n\nDie Einzelheiten stehen im angehängten PDF.\n\nMit freundlichen Grüßen\n"
         vc.setMessageBody(text, isHTML: false)
 
         let pdf = BestellscheinPDFExporter.generate(
             zeilen: zeilen, ohneNummer: ohne,
             kontext: .init(baustelle: baustelle,
-                           bauvorhaben: event.location,
-                           datum: Date(),
-                           bearbeiter: nil))
+                           bvhNr: event.eventNumber,
+                           bauherr: event.bauherr,
+                           strasse: angaben.strasse.isEmpty ? nil : angaben.strasse,
+                           plzOrt: angaben.plzOrt.isEmpty ? event.location : angaben.plzOrt,
+                           objektNr: angaben.objektNr.isEmpty ? nil : angaben.objektNr,
+                           baustoffhandel: angaben.baustoffhandel.isEmpty ? nil : angaben.baustoffhandel,
+                           angaben: angaben,
+                           datum: Date()))
         let dateiname = "Bestellvorschlag_\(baustelle.ersetzeSonderzeichen)_\(df.string(from: Date())).pdf"
         vc.addAttachmentData(pdf, mimeType: "application/pdf", fileName: dateiname)
 
