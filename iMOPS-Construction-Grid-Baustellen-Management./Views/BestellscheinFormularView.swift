@@ -90,11 +90,20 @@ struct BestellscheinFormularView: View {
                             HStack {
                                 Toggle(isOn: $p.dabei) {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(p.basis.materialNr)
-                                            .font(.system(.subheadline, design: .monospaced))
-                                        Text(p.basis.bezeichnung)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                        if p.basis.istFreieZeile {
+                                            Text(p.basis.freitext ?? p.basis.bezeichnung)
+                                                .font(.subheadline)
+                                            Label("freie Zeile — nicht auf dem Vordruck",
+                                                  systemImage: "text.badge.plus")
+                                                .font(.caption2)
+                                                .foregroundStyle(.orange)
+                                        } else {
+                                            Text(p.basis.materialNr)
+                                                .font(.system(.subheadline, design: .monospaced))
+                                            Text(p.basis.bezeichnung)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
                                 }
                             }
@@ -138,19 +147,21 @@ struct BestellscheinFormularView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Mengen lassen sich anpassen — etwa wegen Restbestand auf der "
                              + "Baustelle. Geänderte Zeilen sind im PDF gekennzeichnet.")
-                        if !ohneNummer.isEmpty {
-                            Label("\(ohneNummer.count) Position(en) ohne Material-Nummer stehen "
-                                  + "im PDF unter \u{201C}nicht über diesen Schein bestellbar\u{201D}.",
-                                  systemImage: "questionmark.circle")
-                        }
+                        Text("Zeilen ohne Material-Nummer stehen nicht auf dem Vordruck. "
+                             + "Sie sind trotzdem bestellbar und kommen auf dem Blatt unter "
+                             + "\u{201C}Weitere Positionen\u{201D}.")
+
                     }
                 }
             }
             .onAppear {
                 guard !geladen else { return }
                 let b = BestellscheinService.zeilen(aus: positionen)
-                posten = b.zeilen.map { Posten(basis: $0, menge: $0.bestellmenge, dabei: true) }
-                ohneNummer = b.ohneNummer
+                // Vordruck-Zeilen zuerst, dann die freien — so steht es auch auf
+                // dem Papier: erst die Tabelle, darunter „Sonstiges".
+                posten = (b.zeilen + BestellscheinService.freieZeilen(aus: b.ohneNummer))
+                    .map { Posten(basis: $0, menge: $0.bestellmenge, dabei: true) }
+                ohneNummer = []
                 geladen = true
             }
             .navigationTitle("Bestellschein")

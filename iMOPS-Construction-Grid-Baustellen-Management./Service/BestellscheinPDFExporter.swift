@@ -133,11 +133,14 @@ enum BestellscheinPDFExporter {
             nf.decimalSeparator = ","
             func z(_ d: Double) -> String { nf.string(from: NSNumber(value: d)) ?? "\(d)" }
 
+            let vordruck = zeilen.filter { !$0.istFreieZeile }
+            let freie = zeilen.filter { $0.istFreieZeile }
+
             // Nach den Gruppen des Scheins durchgehen. Zeilen ohne Bestellmenge
             // bleiben stehen -- so liegt das Blatt neben dem Papier und man findet
             // jede Nummer an derselben Stelle. Nur die bestellten sind hervorgehoben.
             var summe = 0.0
-            let bestellt = Dictionary(uniqueKeysWithValues: zeilen.map { ($0.materialNr, $0) })
+            let bestellt = Dictionary(uniqueKeysWithValues: vordruck.map { ($0.materialNr, $0) })
 
             for gruppe in Bestellscheinvorlage.gruppen {
                 y += 6
@@ -179,6 +182,27 @@ enum BestellscheinPDFExporter {
                     }
                     UIColor(white: 0.9, alpha: 1).setFill()
                     c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 0.4)); y += 3.5
+                }
+                y += 6
+            }
+
+            // „Weitere Positionen" — auf dem Papier die freien Zeilen unter der Tabelle
+            if !freie.isEmpty {
+                y += 4
+                _ = text("WEITERE POSITIONEN — nicht auf dem Vordruck", 8, .bold, orange, x: m, w: cW)
+                y += 13
+                for f in freie {
+                    orange.withAlphaComponent(0.05).setFill()
+                    c.cgContext.fill(CGRect(x: m - 3, y: y - 2, width: cW + 6, height: 15))
+                    _ = text(z(f.bestellmenge), 9, .bold,
+                             UIColor(red: 0.75, green: 0.28, blue: 0.08, alpha: 1),
+                             x: sp[2], w: 54, align: .right)
+                    y += text(f.freitext ?? f.bezeichnung, 8.5, .regular, .black, x: sp[0], w: 200) + 4
+                    y += text("\(f.positionen) LV-Position\(f.positionen == 1 ? "" : "en")",
+                              7.5, .regular, grau, x: sp[3], w: 240) + 3
+                    UIColor(white: 0.9, alpha: 1).setFill()
+                    c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 0.4)); y += 4
+                    summe += f.bestellmenge
                 }
                 y += 6
             }

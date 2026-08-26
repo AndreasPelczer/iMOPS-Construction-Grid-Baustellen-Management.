@@ -21,6 +21,11 @@ enum BestellscheinService {
         /// jemand hat sich das angesehen und entschieden, etwa wegen Restbestand.
         var bestellmengeManuell: Double? = nil
         let positionen: Int
+        /// Ohne Material-Nummer: der Text, der auf dem Papier in die freie Zeile
+        /// geschrieben würde („Kalksandstein KS-RP 24 cm"). Der Vordruck kennt nur
+        /// die häufigsten Sorten — alles andere kommt darunter.
+        var freitext: String? = nil
+        var istFreieZeile: Bool { materialNr.isEmpty }
 
         var bestellmenge: Double {
             bestellmengeManuell ?? (mengeLV * (1 + zuschlagProzent / 100)).gerundet(2)
@@ -52,8 +57,8 @@ enum BestellscheinService {
             if (pos.unterPositionen?.count ?? 0) > 0 { continue }
 
             guard let nr = pos.artikelNummer, !nr.isEmpty else {
-                // Nur Wand-Positionen melden — Stürze, Putz und Außenanlagen
-                // gehören ohnehin nicht auf diesen Schein.
+                // Keine Nummer heißt NICHT „nicht bestellbar": der Schein ist ein
+                // Vordruck, alles Weitere kommt in die freien Zeilen darunter.
                 if istWand(pos) { ohne.append(pos) }
                 continue
             }
@@ -74,6 +79,58 @@ enum BestellscheinService {
         }.sorted { $0.materialNr < $1.materialNr }
 
         return (zeilen, ohne)
+    }
+
+    /// Materialbezeichnung aus dem Bauteilnamen.
+    ///
+    /// NICHT pauschal „Ytong" annehmen: „UG_IW_Waende_240mm_KS-RP 20-2,2" ist
+    /// Kalksandstein. Wer da Ytong in die freie Zeile schreibt, bekommt den
+    /// falschen Stein geliefert. Bei Unbekanntem lieber unbestimmt als falsch.
+    private static let materialKuerzel: [(String, String)] = [
+        ("KS-RP", "Kalksandstein KS-RP"), ("KS-", "Kalksandstein"), ("KSV", "Kalksandstein"),
+        ("PPW", "Ytong Planblock"), ("PP", "Ytong Planblock"),
+        ("PSF", "Ytong Flachsturz"), ("PST", "Ytong Sturz"),
+    ]
+
+    static func material(aus name: String) -> (text: String, kuerzel: String?) {
+        for teil in name.split(separator: "_") {
+            let t = teil.trimmingCharacters(in: .whitespaces)
+            for (k, klartext) in materialKuerzel where t.uppercased().hasPrefix(k) {
+                return (klartext, t)
+            }
+        }
+        return ("Mauerwerk", nil)
+    }
+
+    /// Aus den Positionen ohne Material-Nummer die freien Zeilen bauen.
+    ///
+    /// Gruppiert wie die Vordruck-Zeilen nach Material und Dicke — sonst stünden
+    /// zwölf Einzelwände auf dem Zettel statt einer Menge je Sorte.
+    static func freieZeilen(aus positionen: [LVPosition]) -> [Zeile] {
+        var nach: [String: (menge: Double, dicke: Double, anzahl: Int, name: String)] = [:]
+        for pos in positionen {
+            let name = pos.bezeichnung ?? ""
+            let dicke = dickeMM(aus: name)
+            let (mat, kuerzel) = material(aus: name)
+            let schluessel = "\(mat)|\(dicke)|\(kuerzel ?? "")"
+            var e = nach[schluessel] ?? (0, dicke, 0, name)
+            e.menge += pos.menge
+            e.anzahl += 1
+            nach[schluessel] = e
+        }
+        return nach.map { (_, e) in
+            let (mat, kuerzel) = material(aus: e.name)
+            let dickeText = e.dicke > 0
+                ? " \(("\(e.dicke / 10)" as NSString).replacingOccurrences(of: ".0", with: "").replacingOccurrences(of: ".", with: ",")) cm"
+                : ""
+            let sorte = kuerzel.map { ", \($0)" } ?? " (Sorte bitte ergänzen)"
+            return Zeile(materialNr: "",
+                         bezeichnung: mat + dickeText,
+                         mengeLV: e.menge.gerundet(2),
+                         zuschlagProzent: e.dicke > zuschlagAbMM ? zuschlagProzent : 0,
+                         positionen: e.anzahl,
+                         freitext: mat + dickeText + sorte)
+        }.sorted { $0.bezeichnung < $1.bezeichnung }
     }
 
     // MARK: - Hilfen
