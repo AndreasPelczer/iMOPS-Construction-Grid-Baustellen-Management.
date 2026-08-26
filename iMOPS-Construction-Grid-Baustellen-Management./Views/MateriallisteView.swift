@@ -26,6 +26,16 @@ private struct MBauteil: Codable, Identifiable {
     let volumen_m3: Double?
     let flaeche_m2: Double?
     let dicke_m: Double?
+
+    /// Material-Nummer vom T&C-Bestellschein, wenn der Server sie eindeutig
+    /// zuordnen konnte. Landet beim Import in `LVPosition.artikelNummer` — dem
+    /// Feld, das Bestellliste, Anfrage-PDF und Mail-Export bereits auswerten.
+    let material_nr: String?
+    /// Erkannte Güte („PPW 2-0,35"), nur zur Anzeige.
+    let material_guete: String?
+    /// Warum keine Nummer da ist: keine_guete / mehrdeutig / nicht_im_schein.
+    let material_befund: String?
+
     var id: String { name }
 }
 
@@ -363,6 +373,11 @@ struct MateriallisteView: View {
                 kind.mengenQuelleRaw = deckel.mengenQuelleRaw
                 kind.event = deckel.event
                 kind.quellDatei = "\(fileName) · \(b.name)"
+                // Material-Nummer an den BELEG, nicht an den Deckel: unter einem
+                // Deckel „Außenwand 24 cm" stecken zwei Steinsorten mit zwei
+                // Nummern — eine Nummer je Deckel wäre gelogen. Damit taucht das
+                // Bauteil im bestehenden Bestelllisten-Weg mit Artikelnummer auf.
+                kind.artikelNummer = b.material_nr
                 kind.deckel = deckel   // → Unterpunkt
                 kinderAngelegt += 1
             }

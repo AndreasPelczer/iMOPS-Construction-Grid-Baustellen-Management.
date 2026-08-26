@@ -37,12 +37,12 @@ Es gibt keine `.xcworkspace` — direkt das `.xcodeproj` bauen.
 # Build (Simulator)
 xcodebuild -project "iMOPS-Construction-Grid-Baustellen-Management..xcodeproj" \
   -scheme "iMOPS-Construction-Grid-Baustellen-Management." \
-  -destination 'platform=iOS Simulator,name=iPhone 16' build
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
 
 # Alle Tests
 xcodebuild test -project "iMOPS-Construction-Grid-Baustellen-Management..xcodeproj" \
   -scheme "iMOPS-Construction-Grid-Baustellen-Management." \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'
 
 # Einzelner Test (Swift Testing → -only-testing mit Test-ID)
 xcodebuild test ... -only-testing:"iMOPS-Construction-Grid-Baustellen-Management.Tests/iMOPS_Construction_Grid_Baustellen_ManagementTests/appLaunches"
@@ -59,7 +59,7 @@ Empfohlener Befehl für die Unit-Tests — gezielt nur das Unit-Target:
 xcodebuild test -project "iMOPS-Construction-Grid-Baustellen-Management..xcodeproj" \
   -scheme "iMOPS-Construction-Grid-Baustellen-Management." \
   -only-testing:"iMOPS-Construction-Grid-Baustellen-Management.Tests" \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'
 ```
 
 **Ohne `-only-testing`** zieht das Scheme zusätzlich das **UITests-Target** hoch — das
