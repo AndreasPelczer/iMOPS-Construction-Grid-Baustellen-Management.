@@ -296,7 +296,19 @@ struct MateriallisteView: View {
         case "bodenflaeche": return "Bodenflächen"
         // Bestellliste-Sektionen tragen den Gruppentitel als Kategorie (z.B.
         // „1 Abdichtung …") — den direkt zeigen statt „Nicht zugeordnet".
-        default: return k.isEmpty ? "Nicht zugeordnet" : k
+        default:
+            // Der Server bildet Bauteile ohne bekannte Bauart, die aber eine
+            // Kostengruppe im Namen tragen, auf „kg_360" ab. Roh sieht das im LV
+            // häßlich aus — die Bezeichnung steht im DIN-276-Katalog, den die App
+            // ohnehin mitbringt.
+            if k.hasPrefix("kg_") {
+                let nummer = String(k.dropFirst(3))
+                if let knoten = DIN276BaumKatalog.knoten(mitNummer: nummer) {
+                    return "KG \(nummer) \(knoten.bezeichnung)"
+                }
+                return "KG \(nummer)"
+            }
+            return k.isEmpty ? "Nicht zugeordnet" : k
         }
     }
 
@@ -313,7 +325,12 @@ struct MateriallisteView: View {
         case "putz_aussen":  return "335"          // Außenwandbekleidung außen
         case "putz_innen", "putz": return "345"    // Innenwandbekleidung
         case "bodenflaeche": return "353"          // Deckenbeläge (war 325 = Abdichtungen und Bekleidungen)
-        default: return "300"
+        default:
+            // „kg_520" heißt: der Server hat die Kostengruppe im Bauteilnamen
+            // gefunden. Die ist genauer als alles, was wir hier raten könnten —
+            // ein Mensch hat sie in die Zeichnung geschrieben.
+            if kategorie.hasPrefix("kg_") { return String(kategorie.dropFirst(3)) }
+            return "300"
         }
     }
 
