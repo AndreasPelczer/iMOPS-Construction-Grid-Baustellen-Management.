@@ -74,6 +74,11 @@ struct MateriallisteView: View {
     @State private var result: MateriallisteResult?
     @State private var loading = false
     @State private var error = ""
+    /// Lieferant für Bauteile, die eine Material-Nummer vom Ytong-Bestellschein
+    /// tragen. Bewusst eine Konstante an einer Stelle — beim nächsten Baustoffhandel
+    /// hier ändern, nicht suchen.
+    private static let ytongLieferant = "Xella"
+
     @State private var selected: Set<String> = []      // gewählte Sektionen (Deckel)
     @State private var uebernahmeMeldung = ""
 
@@ -395,6 +400,13 @@ struct MateriallisteView: View {
                 // Nummern — eine Nummer je Deckel wäre gelogen. Damit taucht das
                 // Bauteil im bestehenden Bestelllisten-Weg mit Artikelnummer auf.
                 kind.artikelNummer = b.material_nr
+                // Lieferant nur setzen, wenn wirklich eine Nummer erkannt wurde.
+                // Die Nummern stammen vom Ytong-Bestellschein, Hersteller ist Xella
+                // (so auch der Platzhalter in der Stammdatenpflege). Ohne Nummer
+                // wird NICHT geraten — die Position bleibt „ohne Lieferant" und
+                // fällt in der Bestellliste auf, statt still falsch zugeordnet
+                // zu werden. In der Stammdatenpflege jederzeit änderbar.
+                if b.material_nr != nil { kind.lieferant = Self.ytongLieferant }
                 kind.deckel = deckel   // → Unterpunkt
                 kinderAngelegt += 1
             }
