@@ -13,9 +13,14 @@ enum BestellscheinPDFExporter {
 
     struct Kontext {
         let baustelle: String
-        let bauvorhaben: String?
+        let bvhNr: String?
+        let bauherr: String?
+        let strasse: String?
+        let plzOrt: String?
+        let objektNr: String?
+        let baustoffhandel: String?
+        let angaben: BestellscheinAngaben
         let datum: Date
-        let bearbeiter: String?
     }
 
     static func generate(zeilen: [BestellscheinService.Zeile],
@@ -66,12 +71,46 @@ enum BestellscheinPDFExporter {
             // Kopf
             y += text("BESTELLVORSCHLAG · YTONG-WANDBAUSTOFFE", 8.5, .semibold, orange) + 6
             y += text(kontext.baustelle, 20, .bold) + 4
-            if let bv = kontext.bauvorhaben, !bv.isEmpty { y += text(bv, 11, .regular, grau) + 2 }
             let df = DateFormatter(); df.dateFormat = "dd.MM.yyyy"
-            y += text("Gerechnet am \(df.string(from: kontext.datum))"
-                      + (kontext.bearbeiter.map { " · \($0)" } ?? ""), 9.5, .regular, grau) + 10
+            y += text("Gerechnet am \(df.string(from: kontext.datum))", 9.5, .regular, grau) + 10
             orange.setFill()
-            c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 1.6)); y += 18
+            c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 1.6)); y += 16
+
+            // Zwei Spalten: links die Baustelle, rechts die Lieferung.
+            // Entspricht dem Aufbau des Originalscheins, ohne ihn nachzuahmen.
+            let spaltenBreite = (cW - 24) / 2
+            let rechts = m + spaltenBreite + 24
+            let yStart = y
+
+            func feld(_ titel: String, _ wert: String?, x: CGFloat) {
+                guard let w = wert, !w.isEmpty else { return }
+                _ = text(titel, 7.5, .semibold, grau, x: x, w: spaltenBreite)
+                y += 9
+                y += text(w, 10, .regular, .black, x: x, w: spaltenBreite) + 7
+            }
+
+            _ = text("BAUSTELLE", 8, .bold, orange, x: m, w: spaltenBreite); y += 13
+            feld("Bauvorhaben", kontext.baustelle, x: m)
+            feld("BVH-Nr.", kontext.bvhNr, x: m)
+            feld("Bauherr", kontext.bauherr, x: m)
+            feld("Straße", kontext.strasse, x: m)
+            feld("PLZ / Ort", kontext.plzOrt, x: m)
+            feld("Objekt-Nr. (Xella)", kontext.objektNr, x: m)
+            feld("Baustoffhandel", kontext.baustoffhandel, x: m)
+            let yLinks = y
+
+            y = yStart
+            _ = text("LIEFERUNG", 8, .bold, orange, x: rechts, w: spaltenBreite); y += 13
+            let a = kontext.angaben
+            feld("Art", a.lieferart.rawValue + (a.mitKran ? ", mit Kran" : ", ohne Kran"), x: rechts)
+            feld("Zeitfenster", a.zeitfenster.rawValue, x: rechts)
+            feld("Wunschtermin", df.string(from: a.wunschtermin)
+                 + (a.vorlaufKnapp ? "  ⚠ unter 3 Werktagen" : ""), x: rechts)
+            feld("Bemerkung", a.bemerkung, x: rechts)
+
+            y = max(yLinks, y) + 8
+            UIColor(white: 0.85, alpha: 1).setFill()
+            c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 0.7)); y += 14
 
             y += text("Bestelleinheit ist m³ — wie auf dem T&C-Schein vermerkt.", 9.5, .regular, grau) + 16
 
