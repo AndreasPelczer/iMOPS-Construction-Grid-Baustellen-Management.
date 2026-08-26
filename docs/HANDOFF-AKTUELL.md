@@ -15,6 +15,17 @@
 3. EventDetailView/LVView zerlegen — 🔴 offen (`EventDetailView` ist seither eher gewachsen)
 4. Kernel-Spike-Entscheidung vorbereiten — 🔴 offen
 
+## Bestandsaufnahme SketchUp → LV (26.08.2026)
+
+**`docs/2026-08-26-bestandsaufnahme-sketchup-ins-lv.md`** — erhoben, bevor Raphis neue
+Datei da war. Drei Import-Wege und welcher der aktuelle ist, die drei Bruchstellen des
+Parsers (zwei davon brechen still), die **zwei KG-Systeme, die nichts voneinander wissen**,
+der Zuordnungsservice samt belegtem Kollisionsrisiko, die Deckel-Mechanik und der offene
+Umbau zur benennbaren Gruppe. Mit Datei- und Zeilenangaben.
+
+**Wenn eine SketchUp-Datei Ärger macht, zuerst dort Abschnitt 8 lesen** — zwei Blicke
+(Kopfzeile, Bauteilnamen) entscheiden in einer Minute, ob es ein Parser- oder ein LV-Thema ist.
+
 ## Delta 06.08.2026 — Server-Neustart sah aus wie ein kaputtes CSV
 
 **Branch `fix/serverfehler-lesbare-meldung`, ein Commit `a600e55`, NICHT gepusht.**
