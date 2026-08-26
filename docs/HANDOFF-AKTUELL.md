@@ -1,6 +1,51 @@
-# HANDOFF — AKTUELL (stabiler Zeiger)
+# HANDOFF — AKTUELL (iMOPS)
 
-> Diese Datei wird am Ende jeder Session aktualisiert. Sie zeigt auf die letzte Vollübergabe und fasst den Delta seither. Eine neue Instanz muss nicht raten, ob 07-09, 07-08 oder sonstwas gilt — hier steht es.
+> Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
+
+## Delta 26.08.2026 (abends) — Lernliste im Import (PR #134, in `main`)
+
+Gegenstück zu mops-api PR #46. Der Server meldet jetzt, wo Raphis Zeichnung eine
+Güte führt, die es beim Lieferanten nicht gibt — die App zeigte das bisher nicht an,
+die Position bekam einfach keine Material-Nummer.
+
+**Neu im Import-Bildschirm** (`Views/MateriallisteView.swift`), über den Hinweisen:
+
+```
+Bezeichnungen, die der Bestellschein nicht kennt
+
+17,5 cm    Zeichnung: PPW 4-0,50     Vordruck: PPW 4-0,60 · PPW 6-0,65
+24 cm      Zeichnung: PPW 4-0,55     Vordruck: PPW 2-0,35 · 2-0,40 · 4-0,50 · 6-0,65
+36,5 cm    Zeichnung: PPW 4-0,55     Vordruck: PPW 2-0,35 · 2-0,40 · 4-0,50 · 6-0,65
+
+[Als Text kopieren]
+```
+
+### Entscheidungen
+
+- **Kein Fehler-Rot.** Der Import ist gelungen; nur diese Positionen bekommen keine
+  Nummer, weil die Bezeichnung beim Lieferanten nicht existiert. Orange = Rückfrage.
+- **Kopieren statt Mail.** Der Text geht an den, der die Zeichnung gebaut hat —
+  über welchen Kanal, entscheidet der Nutzer.
+- **`lernliste` optional dekodiert.** Gegen einen Server ohne den Fix verhält sich der
+  Bildschirm exakt wie vorher, statt den ganzen Import mit einem Decoding-Fehler zu killen.
+
+⚠️ Der Vordruck schlägt die Zeichnungsdatei — **umgelenkt wird nichts.** Von `4-0,55`
+auf `4-0,50` zu raten läge nahe und stimmte meistens; im Ausnahmefall kommt der falsche
+Stein auf die Baustelle. Details im mops-api-HANDOFF.
+
+
+### Aufgeräumt am 26.08. abends
+
+`main` ist der einzige Branch. **13 gemergte Branches gelöscht** — es lag nichts
+Unfertiges darin, alle Inhalte waren in `main`. Wer hier eine alte Branch-Referenz in
+einem Dokument findet: sie ist Geschichte, nicht Arbeitsvorrat.
+
+DSGVO-Prüfung vor dem Klonen durch Raphi: sauber. Die `aura125`-Fundstellen in `docs/`
+sind **Dateinamen mit ausdrücklichem Hinweis**, dass die echten Dateien außerhalb des
+Repos liegen — das gute Muster. Die Adresse in `baustellen-grid.html` gehört dem
+Lieferanten Scharpegge samt öffentlicher Website, kein Leck.
+
+---
 
 ## Letzte Vollübergabe
 
