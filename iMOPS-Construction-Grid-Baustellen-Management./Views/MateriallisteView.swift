@@ -74,6 +74,11 @@ struct MateriallisteView: View {
     @State private var result: MateriallisteResult?
     @State private var loading = false
     @State private var error = ""
+    /// Lieferant für Bauteile, die eine Material-Nummer vom Ytong-Bestellschein
+    /// tragen. Bewusst eine Konstante an einer Stelle — beim nächsten Baustoffhandel
+    /// hier ändern, nicht suchen.
+    private static let ytongLieferant = "Xella"
+
     @State private var selected: Set<String> = []      // gewählte Sektionen (Deckel)
     @State private var uebernahmeMeldung = ""
 
@@ -296,7 +301,19 @@ struct MateriallisteView: View {
         case "bodenflaeche": return "Bodenflächen"
         // Bestellliste-Sektionen tragen den Gruppentitel als Kategorie (z.B.
         // „1 Abdichtung …") — den direkt zeigen statt „Nicht zugeordnet".
-        default: return k.isEmpty ? "Nicht zugeordnet" : k
+        default:
+            // Der Server bildet Bauteile ohne bekannte Bauart, die aber eine
+            // Kostengruppe im Namen tragen, auf „kg_360" ab. Roh sieht das im LV
+            // häßlich aus — die Bezeichnung steht im DIN-276-Katalog, den die App
+            // ohnehin mitbringt.
+            if k.hasPrefix("kg_") {
+                let nummer = String(k.dropFirst(3))
+                if let knoten = DIN276BaumKatalog.knoten(mitNummer: nummer) {
+                    return "KG \(nummer) \(knoten.bezeichnung)"
+                }
+                return "KG \(nummer)"
+            }
+            return k.isEmpty ? "Nicht zugeordnet" : k
         }
     }
 
@@ -313,7 +330,12 @@ struct MateriallisteView: View {
         case "putz_aussen":  return "335"          // Außenwandbekleidung außen
         case "putz_innen", "putz": return "345"    // Innenwandbekleidung
         case "bodenflaeche": return "353"          // Deckenbeläge (war 325 = Abdichtungen und Bekleidungen)
-        default: return "300"
+        default:
+            // „kg_520" heißt: der Server hat die Kostengruppe im Bauteilnamen
+            // gefunden. Die ist genauer als alles, was wir hier raten könnten —
+            // ein Mensch hat sie in die Zeichnung geschrieben.
+            if kategorie.hasPrefix("kg_") { return String(kategorie.dropFirst(3)) }
+            return "300"
         }
     }
 
@@ -378,6 +400,13 @@ struct MateriallisteView: View {
                 // Nummern — eine Nummer je Deckel wäre gelogen. Damit taucht das
                 // Bauteil im bestehenden Bestelllisten-Weg mit Artikelnummer auf.
                 kind.artikelNummer = b.material_nr
+                // Lieferant nur setzen, wenn wirklich eine Nummer erkannt wurde.
+                // Die Nummern stammen vom Ytong-Bestellschein, Hersteller ist Xella
+                // (so auch der Platzhalter in der Stammdatenpflege). Ohne Nummer
+                // wird NICHT geraten — die Position bleibt „ohne Lieferant" und
+                // fällt in der Bestellliste auf, statt still falsch zugeordnet
+                // zu werden. In der Stammdatenpflege jederzeit änderbar.
+                if b.material_nr != nil { kind.lieferant = Self.ytongLieferant }
                 kind.deckel = deckel   // → Unterpunkt
                 kinderAngelegt += 1
             }
