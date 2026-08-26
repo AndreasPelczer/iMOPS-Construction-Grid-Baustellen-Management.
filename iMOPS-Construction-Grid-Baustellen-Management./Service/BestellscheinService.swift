@@ -38,6 +38,11 @@ enum BestellscheinService {
         var ohne: [LVPosition] = []
 
         for pos in positionen {
+            // Deckel überspringen: Sie tragen die Summe ihrer Belege, und die Belege
+            // sind unten einzeln erfasst. Sonst stünde dieselbe Menge zweimal da —
+            // einmal gezählt und einmal als „nicht zugeordnet".
+            if (pos.unterPositionen?.count ?? 0) > 0 { continue }
+
             guard let nr = pos.artikelNummer, !nr.isEmpty else {
                 // Nur Wand-Positionen melden — Stürze, Putz und Außenanlagen
                 // gehören ohnehin nicht auf diesen Schein.
@@ -100,5 +105,66 @@ private extension Double {
     func gerundet(_ stellen: Int) -> Double {
         let f = pow(10.0, Double(stellen))
         return (self * f).rounded() / f
+    }
+}
+
+
+// MARK: - Der Bestellschein als Vorlage
+
+/// Die Zeilen des T&C-Bestellscheins SÜD 2022 in **seiner** Reihenfolge.
+///
+/// Damit lässt sich das PDF Zeile für Zeile gegen das Papier abgleichen — der
+/// Grund, warum diese Tabelle hier steht und nicht nur im Backend. Wer den Schein
+/// in der Hand hält, findet jede Nummer an derselben Stelle.
+///
+/// ⚠️ Aus einem Foto des Scheins abgetippt. Vor dem Bestellen gegen das Original
+/// prüfen: Ein Zahlendreher in einer Material-Nr lässt den falschen Stein kommen.
+enum Bestellscheinvorlage {
+
+    struct Eintrag {
+        let materialNr: String
+        let stueckJePalette: Int
+        let guete: String
+        let profil: String
+        let abmessung: String
+    }
+
+    struct Gruppe {
+        let titel: String
+        let eintraege: [Eintrag]
+    }
+
+    static let gruppen: [Gruppe] = [
+        Gruppe(titel: "YTONG Planbauplatte", eintraege: [
+            .init(materialNr: "10005034", stueckJePalette: 162, guete: "PPpl-0,50", profil: "glatt", abmessung: "599 x 50 x 249"),
+            .init(materialNr: "10005036", stueckJePalette: 120, guete: "PPpl-0,50", profil: "glatt", abmessung: "599 x 75 x 249"),
+            .init(materialNr: "10005000", stueckJePalette: 90,  guete: "PPpl-0,50", profil: "glatt", abmessung: "599 x 100 x 249"),
+        ]),
+        Gruppe(titel: "YTONG Planblock W", eintraege: [
+            .init(materialNr: "10005006", stueckJePalette: 78, guete: "PPW 4-0,55", profil: "glatt", abmessung: "599 x 115 x 249"),
+            .init(materialNr: "10005008", stueckJePalette: 60, guete: "PPW 4-0,55", profil: "NF",    abmessung: "599 x 150 x 249"),
+            .init(materialNr: "10005026", stueckJePalette: 48, guete: "PPW 4-0,60", profil: "NF-GT", abmessung: "599 x 175 x 249"),
+            .init(materialNr: "10005003", stueckJePalette: 48, guete: "PPW 6-0,65", profil: "NF-GT", abmessung: "599 x 175 x 249"),
+            .init(materialNr: "10005129", stueckJePalette: 42, guete: "PPW 4-0,55", profil: "NF-GT", abmessung: "599 x 200 x 249"),
+            .init(materialNr: "10005028", stueckJePalette: 36, guete: "PPW 2-0,35 (0,09)", profil: "NF-GT", abmessung: "599 x 240 x 249"),
+            .init(materialNr: "10005013", stueckJePalette: 36, guete: "PPW 2-0,40", profil: "NF-GT", abmessung: "599 x 240 x 249"),
+            .init(materialNr: "10005022", stueckJePalette: 36, guete: "PPW 4-0,50", profil: "NF-GT", abmessung: "599 x 240 x 249"),
+            .init(materialNr: "10005045", stueckJePalette: 36, guete: "PPW 6-0,65", profil: "NF-GT", abmessung: "499 x 240 x 249"),
+            .init(materialNr: "10005030", stueckJePalette: 30, guete: "PPW 2-0,35 (0,09)", profil: "NF-GT", abmessung: "599 x 300 x 249"),
+            .init(materialNr: "10005015", stueckJePalette: 30, guete: "PPW 2-0,40", profil: "NF-GT", abmessung: "599 x 300 x 249"),
+            .init(materialNr: "10005042", stueckJePalette: 30, guete: "PPW 4-0,50", profil: "NF-GT", abmessung: "499 x 300 x 249"),
+            .init(materialNr: "10005056", stueckJePalette: 30, guete: "PPW 6-0,65", profil: "NF-GT", abmessung: "499 x 300 x 249"),
+            .init(materialNr: "10005032", stueckJePalette: 24, guete: "PPW 2-0,35 (0,09)", profil: "NF-GT", abmessung: "599 x 365 x 249"),
+            .init(materialNr: "10005213", stueckJePalette: 24, guete: "PPW 2-0,35 (0,09)", profil: "NF-GT", abmessung: "499 x 365 x 249"),
+            .init(materialNr: "10005017", stueckJePalette: 24, guete: "PPW 2-0,40", profil: "NF-GT", abmessung: "499 x 365 x 249"),
+            .init(materialNr: "10005024", stueckJePalette: 24, guete: "PPW 4-0,50", profil: "NF-GT", abmessung: "499 x 365 x 249"),
+            .init(materialNr: "10005058", stueckJePalette: 24, guete: "PPW 6-0,65", profil: "NF-GT", abmessung: "499 x 365 x 249"),
+            .init(materialNr: "10005485", stueckJePalette: 18, guete: "PPW 2-0,35 (0,09)", profil: "NF-GT", abmessung: "499 x 425 x 249"),
+        ]),
+    ]
+
+    /// Alle Einträge flach — zum Nachschlagen einer Nummer.
+    static func eintrag(zu materialNr: String) -> Eintrag? {
+        gruppen.flatMap(\.eintraege).first { $0.materialNr == materialNr }
     }
 }
