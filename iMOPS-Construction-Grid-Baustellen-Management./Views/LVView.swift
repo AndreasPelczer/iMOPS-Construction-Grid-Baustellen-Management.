@@ -832,10 +832,9 @@ struct LVView: View {
             LieferantenBestelllisteView(event: event, positionen: Array(positionen))
         }
         .fullScreenCover(isPresented: $showBestellschein) {
-            BestellscheinMailView(event: event, positionen: Array(positionen)) {
-                showBestellschein = false
-            }
-            .ignoresSafeArea()
+            // Erst die Angaben (Lieferart, Kran, Termin), dann die Mail —
+            // Kran und Zeitfenster kosten Geld, das soll jemand bewusst setzen.
+            BestellscheinFormularView(event: event, positionen: Array(positionen))
         }
         .fullScreenCover(isPresented: $showAngebotsVergleich) {
             AngebotsVergleichView(event: event, positionen: Array(positionen))
