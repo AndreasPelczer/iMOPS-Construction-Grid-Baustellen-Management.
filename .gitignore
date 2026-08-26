@@ -54,3 +54,4 @@ Secrets.plist
 
 # Große CAD-Testartefakte (nicht ins Repo)
 /test.DXF
+_backups/

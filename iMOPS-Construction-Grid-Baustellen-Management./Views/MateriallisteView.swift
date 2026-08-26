@@ -33,10 +33,31 @@ private struct MBauteil: Codable, Identifiable {
     let material_nr: String?
     /// Erkannte Güte („PPW 2-0,35"), nur zur Anzeige.
     let material_guete: String?
-    /// Warum keine Nummer da ist: keine_guete / mehrdeutig / nicht_im_schein.
+    /// Warum keine Nummer da ist: keine_guete (Zeichnung nennt keine) /
+    /// guete_nicht_im_vordruck (nennt eine, die es beim Lieferanten nicht gibt) /
+    /// mehrdeutig / nicht_im_schein.
     let material_befund: String?
 
     var id: String { name }
+}
+
+/// Eine Bezeichnung, die die Zeichnung anders führt als der Bestellschein.
+/// Kein Fehler im Sinne von kaputt — eine Rückmeldung an den, der die Datei
+/// gebaut hat: so heißt der Stein beim Lieferanten.
+private struct MLernzeile: Codable, Identifiable {
+    let wandstaerke_mm: Int
+    let in_der_datei: String
+    let im_vordruck: [String]
+    let betrifft: [String]?
+
+    var id: String { "\(wandstaerke_mm)-\(in_der_datei)" }
+
+    /// „36,5 cm" statt „365 mm" — so steht es auf dem Papier.
+    var dickeText: String {
+        let cm = Double(wandstaerke_mm) / 10.0
+        let s = cm == cm.rounded() ? String(Int(cm)) : String(format: "%.1f", cm)
+        return s.replacingOccurrences(of: ".", with: ",") + " cm"
+    }
 }
 
 private struct MateriallisteResult: Codable {
@@ -48,6 +69,8 @@ private struct MateriallisteResult: Codable {
     let unbekannt: [String]
     let geschaetzt: Bool
     let hinweise: [String]
+    /// Fehlt in älteren Server-Ständen — deshalb optional, nicht Pflicht.
+    let lernliste: [MLernzeile]?
 }
 
 // MARK: - Sektion (= ein Deckel im LV)
@@ -99,6 +122,7 @@ struct MateriallisteView: View {
                         gesamtsumme(r)
                         sektionsAuswahl(r)
                         if !selected.isEmpty { uebernahmeLeiste(r) }
+                        if let l = r.lernliste, !l.isEmpty { lernlisteBox(l) }
                         ForEach(r.hinweise, id: \.self) { h in
                             Text("• " + h).font(.caption2).foregroundStyle(.secondary)
                         }
@@ -123,6 +147,68 @@ struct MateriallisteView: View {
     }
 
     // MARK: - Bausteine
+
+    /// Was die Zeichnung anders nennt als der Bestellschein. Bewusst kein
+    /// Fehler-Rot: Der Import ist gelungen, nur diese Positionen bekommen keine
+    /// Material-Nummer, weil es die Bezeichnung beim Lieferanten nicht gibt.
+    private func lernlisteBox(_ zeilen: [MLernzeile]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Bezeichnungen, die der Bestellschein nicht kennt",
+                  systemImage: "text.magnifyingglass")
+                .font(.subheadline.weight(.semibold))
+            Text("Diese Positionen bekommen keine Material-Nummer. Nicht geraten — "
+                 + "wer bei einer unbekannten Güte auf die nächstbeste umlenkt, "
+                 + "lässt den falschen Stein liefern.")
+                .font(.caption).foregroundStyle(.secondary)
+
+            ForEach(zeilen) { z in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(z.dickeText).font(.caption.weight(.semibold))
+                    HStack(alignment: .top, spacing: 6) {
+                        Text("Zeichnung:").font(.caption2).foregroundStyle(.secondary)
+                            .frame(width: 72, alignment: .leading)
+                        Text(z.in_der_datei).font(.caption2.monospaced())
+                    }
+                    HStack(alignment: .top, spacing: 6) {
+                        Text("Vordruck:").font(.caption2).foregroundStyle(.secondary)
+                            .frame(width: 72, alignment: .leading)
+                        Text(z.im_vordruck.joined(separator: " · ")).font(.caption2.monospaced())
+                    }
+                    if let b = z.betrifft, !b.isEmpty {
+                        Text("z. B. " + b.prefix(2).joined(separator: ", "))
+                            .font(.caption2).foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+
+            Button {
+                UIPasteboard.general.string = lernlisteAlsText(zeilen)
+            } label: {
+                Label("Als Text kopieren", systemImage: "doc.on.doc")
+                    .font(.caption)
+            }
+            .padding(.top, 2)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// Zum Weiterschicken an den, der die Zeichnung gebaut hat.
+    private func lernlisteAlsText(_ zeilen: [MLernzeile]) -> String {
+        var t = "Bezeichnungen, die der Bestellschein nicht kennt:\n\n"
+        for z in zeilen {
+            t += "\(z.dickeText)\n"
+            t += "  Zeichnung: \(z.in_der_datei)\n"
+            t += "  Vordruck:  \(z.im_vordruck.joined(separator: " · "))\n"
+            if let b = z.betrifft, !b.isEmpty {
+                t += "  betrifft:  \(b.prefix(3).joined(separator: ", "))\n"
+            }
+            t += "\n"
+        }
+        return t
+    }
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: 8) {
