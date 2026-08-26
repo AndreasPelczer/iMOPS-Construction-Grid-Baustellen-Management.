@@ -97,6 +97,89 @@ ankommt.
   als „Mengen aus Excel" (Material-Import im Auftrag), eigener Termin.
 - `EventDetailView.swift:978` zeigt womöglich dieselbe Roh-Body-Falle — nicht geprüft.
 
+## Delta 31.07.2026 (nachts) — DSGVO-Fund + Beispiel durchkalkuliert
+
+> **Nachgetragen am 26.08.2026.** Dieser Abschnitt lag seit dem 31.07. auf einem lokalen
+> Branch und fehlte in `main` — der Code-Fix war drin, die Erklärung dazu nicht.
+> Der Originaltext sprach von zwei **offenen** PRs; [#119](../../pull/119) und
+> [#120](../../pull/120) sind inzwischen **beide gemergt**. Der Rest steht unverändert.
+
+### 🔴 Echte Kundendaten lagen im öffentlichen Repo (#119)
+
+Gefunden nebenbei, beim Nachsehen, warum ein Test keine Positionen fand.
+`MarktbreitSeeder` enthielt auf `main`:
+
+- Name und **Privatanschrift der Bauherrin** — eine Privatperson
+- die Adresse ihres Grundstücks
+- Klarnamen von Architekturbüro, Tragwerksplaner und Nachunternehmer, beim NU samt
+  Angebotsnummer und dessen Preisen
+
+Ersetzt in 18 Dateien (Code, Tests, docs) nach dem Muster von `DemoSeeder`, der es
+richtig macht. „Marktbreit" bleibt — der Ort steckt in Klassennamen, und eine Stadt
+allein ist keine Person. `docs/Roman_*` blieb unangetastet.
+
+Zwei Dinge, die dazugehörten:
+- **`applyBeteiligte()`** wird jetzt von BEIDEN Wegen benutzt (neu anlegen UND patchen).
+  Vorher setzte nur der Neuanlage-Pfad diese Felder — eine Installation mit vorhandener
+  Datenbank wäre auf den Klarnamen sitzengeblieben, der Austausch hätte sie nie erreicht.
+- **UserDefaults-Schlüssel** trug den Namen im Quelltext, heißt jetzt
+  `marktbreit_efh_beispiel_seeded_v5`.
+
+**Merksatz, der bisher fehlte:** echte Daten haben in einem Seeder nichts verloren,
+auch nicht „nur zum Testen". Ein Seeder sieht nach Wegwerf-Code aus und wird mit
+demselben Ernst veröffentlicht wie alles andere.
+
+**🔴 OFFEN und Andreas' Entscheidung: die Historie.** Vier ältere Commits enthalten die
+Daten weiterhin, dazu Klone und GitHub-Caches; öffentlich seit Anfang Juni. #119 senkt
+das künftige Risiko, er repariert die Vergangenheit nicht. Wege: so lassen ·
+`git-filter-repo` + Force-Push (bricht jeden Klon) · Repo auf privat. Ebenfalls offen
+und nicht delegierbar: ob die Bauherrin informiert wird.
+
+### Beispiel-Baustelle ist erstmals durchgerechnet (#120)
+
+Sieben Positionen standen auf 0,00 € — drei Decken, drei Dach, PV-Vorrüstung. Sie
+hatten Mengen aus der Statik, aber keinen Preis; die Statik gibt Maße her, keine Kosten.
+
+`BeispielKalkulationSeeder` hängt Material, Lohn und teils Gerät an:
+
+| Position | Menge | EP | GP | Std |
+|---|---|---|---|---|
+| 3.50.1 Filigrandecke | 60,62 m² | 130,02 | 7.881,74 | 45,5 |
+| 3.50.2 Ringbalken | 33,00 m | 67,15 | 2.216,06 | 33,0 |
+| 3.50.3 Fenstersturz | 4,57 m | 128,68 | 588,05 | 8,2 |
+| 3.60.1 Binder | 14 Stk | 323,68 | 4.531,53 | 23,8 |
+| 3.60.2 Dacheindeckung | 82,00 m² | 74,79 | 6.133,08 | 69,7 |
+| 3.60.3 Untergurt-Ausbau | 60,62 m² | 78,27 | 4.745,00 | 42,4 |
+| 4.40.1 PV-Vorrüstung | 1 psch | 873,26 | 873,26 | 6,0 |
+
+**Netto 59.132,61 → 86.101,32 €**, Lohnstunden erstmals > 0: **228,6**. Dazu zwei
+Mitarbeiter (Polier + Maurer) für die Crew-Planung.
+
+**⚠️ Die Aufwandswerte sind recherchierte REFA-Richtwerte, NICHT gemessen.** Steht im
+Dateikopf, und die Positionen tragen `mengenQuelle = .schaetzung`. 228,6 Std für Dach
+und Decken sind gut zwei Wochen für eine Dreier-Kolonne — **ungeprüft**. Vor jedem
+echten Angebot muss jemand drüber, der so ein Dach gebaut hat.
+
+**Warum nicht über den Mops**, obwohl er es kann (`MopsVorschlagSheet` →
+`aufwandswertVorschlag` fragt den Prof nach REFA-Werten, `MaterialQuelle.mops` stempelt
+die Herkunft): Fixtures müssen reproduzierbar, offline und testbar sein. Fragt der
+Seeder den Mops, sieht das Beispiel bei jedem Aufsetzen anders aus und Tests wackeln.
+**Der Mops gehört ins Feature, nicht in die Fixture.**
+
+Preise kommen aus den Stammdaten statt aus einer zweiten Liste; fehlende Einträge
+werden EINZELN ergänzt, weil `StammdatenSeeder` nur anlegt, solange seine Tabelle
+komplett leer ist.
+
+### Nebenbefund: Seeder-Tests brauchen das UserDefaults-Flag
+
+`MarktbreitSeeder.seedIfNeeded` hängt an einem UserDefaults-Schlüssel. Im Test-Host
+steht der schon auf `true` → der Seeder legt nichts an → Tests ohne Positionen, mit
+Meldungen, die xcodebuild nicht ausgibt. `BeispielKalkulationTests` löscht den
+Schlüssel vorher und baut in einem `static let` genau einmal auf (Swift Testing läuft
+parallel). Wer den nächsten Seeder-Test schreibt, spart sich damit eine Stunde.
+
+123 Tests grün.
+
 ## Delta 31.07.2026 (nachmittags) — Kennwert-Vergleich fertig verdrahtet
 
 **Branch `feature/kennwert-vergleich`, zwei Commits, NICHT gepusht.** Beim Sessionstart
