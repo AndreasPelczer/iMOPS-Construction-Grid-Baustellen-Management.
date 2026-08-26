@@ -75,47 +75,81 @@ enum BestellscheinPDFExporter {
 
             y += text("Bestelleinheit ist m³ — wie auf dem T&C-Schein vermerkt.", 9.5, .regular, grau) + 16
 
-            // Tabellenkopf
-            let sp: [CGFloat] = [m, m + 82, m + 300, m + 372, m + 448]
-            _ = text("MATERIAL-NR", 8, .semibold, grau, x: sp[0], w: 80)
-            _ = text("POSITION", 8, .semibold, grau, x: sp[1], w: 210)
-            _ = text("LV", 8, .semibold, grau, x: sp[2], w: 62, align: .right)
-            _ = text("ZUSCHLAG", 8, .semibold, grau, x: sp[3], w: 68, align: .right)
-            y += text("BESTELLEN", 8, .semibold, grau, x: sp[4], w: 55, align: .right) + 6
-            UIColor(white: 0.75, alpha: 1).setFill()
-            c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 0.7)); y += 8
+            // Spalten wie auf dem Papierschein, damit sich beides nebeneinanderlegen
+            // laesst: Material-Nr · Stk/Pal · m³ · Guete · Profil · Abmessung
+            let sp: [CGFloat] = [m, m + 66, m + 108, m + 168, m + 268, m + 320]
+            func kopfzeile() {
+                _ = text("MATERIAL-NR", 7, .semibold, grau, x: sp[0], w: 64)
+                _ = text("STK", 7, .semibold, grau, x: sp[1], w: 38, align: .right)
+                _ = text("m³", 7, .semibold, grau, x: sp[2], w: 54, align: .right)
+                _ = text("GÜTE", 7, .semibold, grau, x: sp[3], w: 96)
+                _ = text("PROFIL", 7, .semibold, grau, x: sp[4], w: 48)
+                y += text("ABMESSUNG", 7, .semibold, grau, x: sp[5], w: 100) + 5
+                UIColor(white: 0.7, alpha: 1).setFill()
+                c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 0.7)); y += 6
+            }
 
             let nf = NumberFormatter()
             nf.minimumFractionDigits = 2; nf.maximumFractionDigits = 2
             nf.decimalSeparator = ","
             func z(_ d: Double) -> String { nf.string(from: NSNumber(value: d)) ?? "\(d)" }
 
+            // Nach den Gruppen des Scheins durchgehen. Zeilen ohne Bestellmenge
+            // bleiben stehen -- so liegt das Blatt neben dem Papier und man findet
+            // jede Nummer an derselben Stelle. Nur die bestellten sind hervorgehoben.
             var summe = 0.0
-            for zeile in zeilen {
-                _ = text(zeile.materialNr, 9.5, .medium, .black, x: sp[0], w: 80)
-                _ = text(zeile.mengeLV.formatiert, 9.5, .regular, .black, x: sp[2], w: 62, align: .right)
-                _ = text(zeile.zuschlagProzent > 0 ? "+\(Int(zeile.zuschlagProzent)) %" : "—",
-                         9.5, .regular, grau, x: sp[3], w: 68, align: .right)
-                _ = text(z(zeile.bestellmenge), 9.5, .bold, .black, x: sp[4], w: 55, align: .right)
-                let h = text(zeile.bezeichnung, 9.5, .regular, .black, x: sp[1], w: 210)
-                y += h + 3
-                y += text("\(zeile.positionen) LV-Position\(zeile.positionen == 1 ? "" : "en")",
-                          8, .regular, UIColor(white: 0.55, alpha: 1), x: sp[1], w: 210) + 7
-                UIColor(white: 0.88, alpha: 1).setFill()
-                c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 0.5)); y += 8
-                summe += zeile.bestellmenge
+            let bestellt = Dictionary(uniqueKeysWithValues: zeilen.map { ($0.materialNr, $0) })
+
+            for gruppe in Bestellscheinvorlage.gruppen {
+                y += 6
+                _ = text(gruppe.titel, 9, .bold, .black, x: m, w: cW); y += 13
+                kopfzeile()
+
+                for e in gruppe.eintraege {
+                    let z1 = bestellt[e.materialNr]
+                    let aktiv = z1 != nil
+                    if aktiv {
+                        orange.withAlphaComponent(0.07).setFill()
+                        c.cgContext.fill(CGRect(x: m - 3, y: y - 2, width: cW + 6, height: 15))
+                    }
+                    let farbe: UIColor = aktiv ? .black : UIColor(white: 0.62, alpha: 1)
+                    _ = text(e.materialNr, 8.5, aktiv ? .semibold : .regular, farbe, x: sp[0], w: 64)
+                    _ = text("\(e.stueckJePalette)", 8.5, .regular, farbe, x: sp[1], w: 38, align: .right)
+                    _ = text(z1.map { z($0.bestellmenge) } ?? "", 9, .bold,
+                             aktiv ? UIColor(red: 0.75, green: 0.28, blue: 0.08, alpha: 1) : farbe,
+                             x: sp[2], w: 54, align: .right)
+                    _ = text(e.guete, 8.5, .regular, farbe, x: sp[3], w: 96)
+                    _ = text(e.profil, 8.5, .regular, farbe, x: sp[4], w: 48)
+                    y += text(e.abmessung, 8.5, .regular, farbe, x: sp[5], w: 100) + 5
+                    if let z1 = z1 {
+                        summe += z1.bestellmenge
+                        if z1.zuschlagProzent > 0 {
+                            y += text("davon \(Int(z1.zuschlagProzent)) % Eck-/Laibungssteine "
+                                      + "(LV \(z1.mengeLV.formatiert) m³, \(z1.positionen) Positionen)",
+                                      7.5, .regular, grau, x: sp[3], w: 240) + 3
+                        } else {
+                            y += text("\(z1.positionen) LV-Position\(z1.positionen == 1 ? "" : "en")",
+                                      7.5, .regular, grau, x: sp[3], w: 240) + 3
+                        }
+                    }
+                    UIColor(white: 0.9, alpha: 1).setFill()
+                    c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 0.4)); y += 3.5
+                }
+                y += 6
             }
 
             y += 4
             UIColor.black.setFill(); c.cgContext.fill(CGRect(x: m, y: y, width: cW, height: 1)); y += 8
-            _ = text("Summe", 10.5, .bold, .black, x: sp[1], w: 210)
-            y += text("\(z(summe)) m³", 10.5, .bold, .black, x: sp[4], w: 55, align: .right) + 20
+            _ = text("Bestellmenge gesamt", 10.5, .bold, .black, x: sp[3], w: 200)
+            y += text("\(z(summe)) m³", 10.5, .bold, .black, x: sp[2], w: 54, align: .right) + 20
 
             // Offene Stellen
             if !ohneNummer.isEmpty {
-                y += text("NICHT ZUGEORDNET — BRAUCHT EINE ENTSCHEIDUNG", 8.5, .semibold, grau) + 8
-                y += text("Diese Positionen stehen im LV, tragen aber keine Material-Nummer. "
-                          + "Sie sind NICHT in der Summe enthalten.", 9.5, .regular, grau) + 10
+                y += text("NICHT ÜBER DIESEN SCHEIN BESTELLBAR", 8.5, .semibold, grau) + 8
+                y += text("Diese Positionen stehen im LV, gehören aber nicht ins Ytong-Sortiment "
+                          + "oder tragen keine Material-Nummer — etwa Kalksandstein oder Beton. "
+                          + "Sie sind NICHT in der Summe enthalten und müssen getrennt bestellt werden.",
+                          9, .regular, grau) + 10
                 for pos in ohneNummer.prefix(10) {
                     orange.setFill(); c.cgContext.fill(CGRect(x: m, y: y, width: 2, height: 26))
                     _ = text("\(z(pos.menge)) \(pos.einheit ?? "")", 9.5, .medium, .black,
