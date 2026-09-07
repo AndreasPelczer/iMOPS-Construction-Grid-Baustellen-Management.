@@ -55,3 +55,6 @@ Secrets.plist
 # Große CAD-Testartefakte (nicht ins Repo)
 /test.DXF
 _backups/
+
+# Wer gerade schreibt (siehe AGENTS.md, Hausordnung)
+.arbeitsplatz
