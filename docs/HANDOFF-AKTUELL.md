@@ -2,6 +2,65 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 07.09.2026 — Bautagesbericht wird zum Tagebuch (Branch `feature/bautagesbericht-persistenz`)
+
+**Nicht gepusht, kein PR.** Vier Commits, Build und Unit-Suite grün.
+
+### Was vorher war
+Der Bautagesbericht war ein **Generator**, kein Tagebuch: alle Felder lagen in `@State`,
+nach dem PDF war der Bericht weg. Es gab keinen Datensatz, nur ein Dokument. Und der
+Exporter zog Aufträge, LV und Mängel **live** aus dem Event — ein Bericht vom Juli hätte
+beim Nachdrucken die Mängelzahlen von heute gezeigt.
+
+### Was jetzt steht
+
+| | |
+|---|---|
+| **Entity `Bautagesbericht`** | im Modell, Relation zu `Event` exakt wie `Mangel`; `@objc(Bautagesbericht)` + Category-Files, Codegen bleibt Manual/None |
+| **Speichern** | Button heißt „Speichern & PDF" — erst Datensatz, dann PDF **daraus**, damit beide nicht auseinanderlaufen |
+| **Snapshot** | Aufträge, LV-Positionen und Mängel werden beim Speichern **eingefroren** |
+| **Historie** | `BautagesberichtListeView`, neuester zuerst, Leseansicht + „Als PDF" mit den Zahlen von damals |
+| **Freigabe** | setzt `gesperrtAm`/`freigegebenVon` aus `FirmenSettings.name` — dieselbe Quelle wie die Welle-9-Ampel |
+| **Korrektur** | neuer Bericht mit `korrigiertVonID`, Original bleibt unberührt |
+
+### Der Kern in einem Satz
+Ein Bautagesbericht weist einen bestimmten Tag nach. Zöge er seine Zahlen beim Drucken
+frisch aus der Baustelle, schriebe die App still die Vergangenheit um. **Deshalb wird
+einmal gezählt, beim Speichern** — und ein Test beweist es:
+
+```
+Bericht speichern            → snapMaengel == 2
+danach neuen Mangel anlegen  → Baustelle hat 3
+alter Bericht                → zeigt weiter 2
+```
+
+7 Tests in `BautagesberichtTests.swift`, eigener In-Memory-Stack je Test wie in
+`AufmassTests`. Mit dabei: die Inverse greift in beide Richtungen (stimmte sie nicht,
+bliebe die Liste stumm leer und der Zähler stünde auf 0), und die Zahl überlebt
+`refreshAllObjects` samt Neuladen.
+
+### Über den Auftrag hinaus
+Der Exporter listete nicht nur Zahlen, sondern auch die **einzelnen** Aufträge und Mängel —
+live. Bei einem gespeicherten Bericht zeigt er jetzt nur die eingefrorenen Zahlen mit dem
+Satz „Diese Zahlen wurden beim Speichern festgehalten und ändern sich nicht mehr."
+Eine Mängelliste von heute in einem Bericht vom Juli wäre derselbe Fehler eine Ebene tiefer.
+
+### Drift-Regel eingehalten
+`Resources/Knowledge/app_bedienung.yaml` hat einen eigenen Eintrag bekommen (10 Aliase):
+Ablauf, warum der Knopf „Speichern & PDF" heißt, Historie, Freigabe, Korrektur — samt der
+Begründung, warum das Bearbeiten dort **nicht** geht.
+
+### Offen
+- **Nicht gepusht, kein PR.** Vor dem Merge: Falbe-Blick auf Snapshot-Korrektheit und Sperr-Logik.
+- **Inhaltlich fehlt noch** (VOB-typisch, war nicht im Auftrag): Materiallieferungen/Wareneingang
+  als eigenes Feld, Personalstärke je Gewerk statt einer Gesamtzahl, Fotodokumentation am Bericht.
+- **Hash-Ketten-Manipulationssicherheit** (HACCP-Muster) bleibt der optionale Ausbau danach —
+  bewusstes Nicht-Ziel für v1.
+- Die Freigabe nutzt `FirmenSettings.name`. Ist der leer, sagt der Dialog das ausdrücklich,
+  gibt aber trotzdem frei. Ob das reicht, muss die Praxis zeigen.
+
+---
+
 ## Delta 26.08.2026 (abends) — Lernliste im Import (PR #134, in `main`)
 
 Gegenstück zu mops-api PR #46. Der Server meldet jetzt, wo Raphis Zeichnung eine
