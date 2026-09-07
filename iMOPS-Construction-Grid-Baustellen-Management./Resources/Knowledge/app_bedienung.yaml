@@ -418,6 +418,45 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_IFC_auswerten"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "IFC"
+    - "IFC auswerten"
+    - "SketchUp Datei einlesen"
+    - "SketchUp Mengen"
+    - "IFC importieren"
+    - "Mengen aus SketchUp"
+  antwort: |
+    Mengen aus einem SketchUp-Modell holen:
+    1. Baustelle oeffnen
+    2. Oben rechts "IFC auswerten (SketchUp)"
+    3. "IFC-Datei waehlen", dann "Auswerten"
+
+    Die Datei geht an die Mops-Box und kommt geschossweise zurueck: Bauteile
+    mit Menge, Material und DIN-276-Kostengruppe, dazu Summen je Geschoss.
+
+    WORAUF DU ACHTEN MUSST - die Zeile unter jeder Menge:
+      "aus dem Modell" (gruen) = die Zahl stand so im IFC
+      "gerechnet" (orange)     = wir haben sie aus den Maßen geschaetzt
+    SketchUp exportiert meist KEINE fertigen Mengen. Dann steht ueberall
+    "gerechnet", und die Zahlen sind Naeherungen aus der Geometrie.
+
+    "KG offen" in Orange heisst: die Kostengruppe stand weder im Objektnamen
+    noch in der Zuordnungstabelle. Das ist kein Fehler, sondern eine offene
+    Frage an den Planer.
+
+    Woher die Angaben kommen: aus den OBJEKTNAMEN im Modell. Raffi schreibt
+    dort Geschoss, Bauteil, Dicke, Guete und Kostengruppe hinein, zum Beispiel
+    "UG_AW_Waende_365mm_PP4-0,50_KG 340.001". Aendert sich diese Schreibweise,
+    findet die Auswertung weniger.
+
+    Ein SketchUp-Modell ist ein Entwurf: Rohbaumasse ohne Schichtaufbau. Die
+    Mengen taugen zum Abschaetzen, nicht als Bestellmenge ohne Gegenrechnen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Bautagesbericht_schreiben"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
