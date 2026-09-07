@@ -33,10 +33,29 @@ extension Event {
     @NSManaged var baugenehmigungNr: String?
     @NSManaged var jobs: NSSet?
     @NSManaged var maengel: NSSet?
+    /// Bautagesberichte dieser Baustelle, chronologisch geführt.
+    @NSManaged var bautagesberichte: NSSet?
     @NSManaged var lvPositionen: NSSet?
     // Welle 9 — Bau-Hierarchie: Gebäude dieser Baustelle (Relation im Modell definiert,
     // Inverse Gebaeude.event). Getypter Accessor freigelegt für den Hierarchie-Helfer.
     @NSManaged var gebaeude: NSSet?
+
+}
+
+// MARK: Generated accessors for bautagesberichte
+extension Event {
+
+    @objc(addBautagesberichteObject:)
+    @NSManaged func addToBautagesberichte(_ value: Bautagesbericht)
+
+    @objc(removeBautagesberichteObject:)
+    @NSManaged func removeFromBautagesberichte(_ value: Bautagesbericht)
+
+    @objc(addBautagesberichte:)
+    @NSManaged func addToBautagesberichte(_ values: NSSet)
+
+    @objc(removeBautagesberichte:)
+    @NSManaged func removeFromBautagesberichte(_ values: NSSet)
 
 }
 
