@@ -418,6 +418,41 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Bautagesbericht_schreiben"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Bautagesbericht"
+    - "Bautagesbericht schreiben"
+    - "Bautagebuch"
+    - "Bericht speichern"
+    - "Wie schreibe ich einen Bautagesbericht"
+    - "Tagesbericht"
+  antwort: |
+    Bautagesbericht schreiben:
+    1. Baustelle oeffnen
+    2. Oben rechts "Bautagesbericht erstellen"
+    3. Datum, Witterung, Temperatur, Personalanzahl, Geraete, ausgefuehrte
+       Arbeiten, Behinderungen und Notizen ausfuellen. Jedes Textfeld hat
+       ein Mikrofon-Symbol - du kannst diktieren statt tippen.
+    4. Oben rechts "Speichern & PDF"
+
+    Der Knopf heisst mit Absicht so: Der Bericht wird zuerst als Datensatz
+    gespeichert und das PDF danach aus diesem Datensatz erzeugt. So koennen
+    Bericht und Ausdruck nicht auseinanderlaufen.
+
+    Beim Speichern werden die Zaehlstaende der Baustelle festgehalten -
+    Auftraege, LV-Positionen und Maengel, so wie sie an diesem Tag standen.
+    Diese Zahlen aendern sich spaeter NICHT mehr. Kommt naechste Woche ein
+    Mangel dazu, zeigt der Bericht von heute weiterhin den Stand von heute.
+    Ein Bautagesbericht weist einen bestimmten Tag nach; wuerde er seine
+    Zahlen beim Drucken neu holen, wuerde er die Vergangenheit umschreiben.
+
+    Am Mac oeffnet sich ein "Sichern unter"-Fenster, auf iPhone und iPad das
+    Teilen-Blatt (AirDrop, In Dateien sichern).
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Mops_Selbsterklaerung"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
