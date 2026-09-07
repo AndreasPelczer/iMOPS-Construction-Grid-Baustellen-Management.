@@ -43,3 +43,7 @@ extension Bautagesbericht {
     /// Korrektur-Einträge zeigen auf ihr Original.
     var istKorrektur: Bool { korrigiertVonID != nil }
 }
+
+// Wie bei Event und Aufmass: Core Data liefert die Identität über die
+// objectID, SwiftUI braucht das Protokoll für ForEach.
+extension Bautagesbericht: Identifiable {}

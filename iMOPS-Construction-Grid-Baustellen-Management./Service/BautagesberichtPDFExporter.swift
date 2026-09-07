@@ -39,6 +39,37 @@ struct BautagesberichtPDFExporter {
         Generator(event: event, config: config).generate()
     }
 
+    /// Baut die Konfiguration aus einem gespeicherten Bericht.
+    ///
+    /// Damit erzeugen Formular und Historie dasselbe PDF aus derselben Quelle —
+    /// dem Datensatz. Die Zaehlstaende kommen aus den eingefrorenen Feldern,
+    /// nicht aus der Baustelle von heute.
+    static func config(aus bericht: Bautagesbericht) -> BautagesberichtConfig {
+        let witterungText = bericht.witterung ?? ""
+        let symbol = Witterung(rawValue: witterungText)?.symbol ?? "cloud.fill"
+        return BautagesberichtConfig(
+            datum:               bericht.datum ?? bericht.erstelltAm ?? Date(),
+            witterung:           witterungText,
+            witterungSymbol:     symbol,
+            temperatur:          bericht.temperatur ?? "",
+            personalAnzahl:      Int(bericht.personalAnzahl),
+            geraete:             bericht.geraete ?? "",
+            ausgefuehrteArbeiten: bericht.ausgefuehrteArbeiten ?? "",
+            behinderungen:       bericht.behinderungen ?? "",
+            notizen:             bericht.notizen ?? "",
+            snapAuftraegeGesamt: Int(bericht.snapAuftraegeGesamt),
+            snapAuftraegeOffen:  Int(bericht.snapAuftraegeOffen),
+            snapLVPositionen:    Int(bericht.snapLVPositionen),
+            snapMaengel:         Int(bericht.snapMaengel)
+        )
+    }
+
+    /// PDF eines gespeicherten Berichts — der Weg aus der Historie.
+    static func generate(bericht: Bautagesbericht) -> Data? {
+        guard let event = bericht.event else { return nil }
+        return generate(event: event, config: config(aus: bericht))
+    }
+
     private class Generator {
         let event:  Event
         let config: BautagesberichtConfig
