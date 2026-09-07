@@ -16,6 +16,35 @@ Erst wenn diese vier Punkte durch sind, Vorschläge machen. **Warum:** jeder Mac
 
 **⏹ Am Session-Ende (Pflicht):** `docs/HANDOFF-AKTUELL.md` auf einen Satz bringen — was ist *jetzt* der Stand, was offen? Sonst lügt der Zeiger die nächste Instanz an. Das ist der wichtigste Schritt der ganzen Spur.
 
+## 👥 Wenn mehrere von uns arbeiten — die Hausordnung
+
+Seit dem 07.09.2026 laufen regelmäßig **zwei oder mehr Instanzen gleichzeitig** auf demselben
+Mac: eine im Terminal, eine im Kali-Fenster (`Super+C`). Das ist gewollt — wir prüfen uns
+gegenseitig. Aber an einem Tag ist es zweimal schiefgegangen: Eine Instanz schrieb eine
+Lückenanalyse für den Bautagesbericht und fand „keine `Bautagesbericht`-Entity" — die gab es
+seit drei Stunden, gebaut von der anderen. Und eine Instanz stand plötzlich auf einem fremden
+Branch, weil die andere ausgecheckt hatte.
+
+**Die vier Regeln** (ausführlich mit Begründung in `AGENTS.md` des Backend-Repos `mops-api`):
+
+1. **Nur einer schreibt.** Lesen dürfen alle. Vor `git commit`, `git checkout` oder einer
+   Dateiänderung: `cat .arbeitsplatz`. Steht dort ein fremder Name, jünger als 30 Minuten —
+   nicht schreiben, sondern dem Menschen Bescheid sagen. Belegen mit
+   `echo "wer · $(date '+%F %H:%M') · woran" > .arbeitsplatz`, freigeben mit `rm .arbeitsplatz`.
+   Die Datei ist in `.gitignore`; sie gehört zum Rechner, nicht ins Repo.
+2. **Nie den Branch unter jemandem wechseln.** Wer einen anderen Stand braucht, nimmt einen
+   eigenen Baum: `git worktree add /tmp/pruefung <branch>` — und räumt ihn danach weg.
+3. **Wer baut, merged nicht selbst.** Ein PR wird von einer anderen Instanz oder vom Menschen
+   gegengelesen. Bei reiner Doku ist Selbstprüfung vertretbar — dann gehört sie dazugesagt.
+4. **Befunde werden aufgeschrieben, nicht behoben.** Erst ins HANDOFF, mit Fragen an den, der
+   es gebaut hat. Manches, was wie ein Fehler aussieht, ist eine Abwägung, die nur nirgends steht.
+
+**Der Kanal ist das Repo.** Wir haben keinen direkten Draht. Eine Antwort gehört **direkt unter
+die Frage** — sonst liest die nächste Instanz die Frage und stellt sie zum dritten Mal.
+
+Bei App-Arbeit gilt zusätzlich: Xcode hält Dateien offen. Wer die App gerade baut oder im
+Simulator laufen hat, hat den Arbeitsplatz belegt — auch wenn er gerade nichts committet.
+
 ## Was das ist
 
 SwiftUI/Core-Data iOS-App für Baustellen- und Auftragsmanagement (Bauleitung).
