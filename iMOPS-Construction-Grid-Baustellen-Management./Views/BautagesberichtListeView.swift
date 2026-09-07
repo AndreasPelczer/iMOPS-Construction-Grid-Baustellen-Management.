@@ -128,7 +128,10 @@ struct BautagesberichtZeile: View {
 // MARK: - Detailansicht (lesen und ausdrucken, nicht ändern)
 
 struct BautagesberichtDetailView: View {
+    @Environment(\.managedObjectContext) private var ctx
     let bericht: Bautagesbericht
+    @State private var zeigeFreigabeFrage = false
+    @State private var zeigeKorrektur = false
     @State private var pdfURL: URL?
     @State private var pdfData: Data?
     @State private var showSaveDialog = false
@@ -176,6 +179,28 @@ struct BautagesberichtDetailView: View {
             }
 
             Section {
+                if bericht.istGesperrt {
+                    Button {
+                        zeigeKorrektur = true
+                    } label: {
+                        Label("Korrektur anlegen", systemImage: "arrow.uturn.left.square")
+                    }
+                    Text("Der freigegebene Bericht bleibt unverändert. Eine Korrektur ist ein neuer Bericht, der auf diesen hier verweist.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Button {
+                        zeigeFreigabeFrage = true
+                    } label: {
+                        Label("Freigeben", systemImage: "lock")
+                    }
+                    Text("Nach der Freigabe ist der Bericht ein Nachweis und wird nicht mehr geändert.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
                 if bericht.istGesperrt, let d = bericht.gesperrtAm {
                     Label("Freigegeben am \(d.formatted(date: .abbreviated, time: .shortened))"
                           + (bericht.freigegebenVon.map { " von \($0)" } ?? ""),
@@ -199,6 +224,28 @@ struct BautagesberichtDetailView: View {
         .sheet(isPresented: $showShare) {
             if let url = pdfURL { LVShareSheet(url: url).ignoresSafeArea() }
         }
+        .sheet(isPresented: $zeigeKorrektur) {
+            if let event = bericht.event {
+                BautagesberichtView(event: event, korrekturVon: bericht)
+                    .environment(\.managedObjectContext, ctx)
+                    .presentationSizing(.page)
+            }
+        }
+        .confirmationDialog("Bericht freigeben?",
+                            isPresented: $zeigeFreigabeFrage,
+                            titleVisibility: .visible) {
+            Button("Freigeben") { freigeben() }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            // Folgen benennen, nicht nur fragen: die Freigabe laesst sich
+            // nicht zuruecknehmen. Wer sich vertut, muss danach eine
+            // Korrektur anlegen — der falsche Bericht bleibt sichtbar.
+            Text("Danach lässt sich dieser Bericht nicht mehr ändern. "
+                 + "Eine spätere Richtigstellung wird ein neuer Bericht, "
+                 + "der auf diesen verweist. Freigegeben als "
+                 + (FirmenSettings.name.isEmpty ? "(kein Firmenname in den Einstellungen)" : FirmenSettings.name)
+                 + ".")
+        }
         .fileExporter(
             isPresented: $showSaveDialog,
             document: PDFFileDocument(data: pdfData ?? Data()),
@@ -212,6 +259,20 @@ struct BautagesberichtDetailView: View {
             Text(titel)
             Spacer()
             Text(wert).foregroundStyle(.secondary)
+        }
+    }
+
+    /// Freigabe: der Bericht wird zum Nachweis. Wie bei der Welle-9-Ampel
+    /// haelt `FirmenSettings.name` fest, wer freigegeben hat — dieselbe
+    /// Quelle, damit nicht zwei Wahrheiten ueber denselben Vorgang entstehen.
+    private func freigeben() {
+        bericht.gesperrtAm = Date()
+        bericht.freigegebenVon = FirmenSettings.name
+        do {
+            try ctx.save()
+        } catch {
+            print("Freigabe konnte nicht gespeichert werden: \(error)")
+            ctx.rollback()
         }
     }
 

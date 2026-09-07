@@ -428,6 +428,10 @@
     - "Bericht speichern"
     - "Wie schreibe ich einen Bautagesbericht"
     - "Tagesbericht"
+    - "Bautagesberichte ansehen"
+    - "Bericht freigeben"
+    - "Bautagesbericht korrigieren"
+    - "Bautagesbericht aendern"
   antwort: |
     Bautagesbericht schreiben:
     1. Baustelle oeffnen
@@ -450,6 +454,26 @@
 
     Am Mac oeffnet sich ein "Sichern unter"-Fenster, auf iPhone und iPad das
     Teilen-Blatt (AirDrop, In Dateien sichern).
+
+    Fruehere Berichte ansehen:
+    Baustelle oeffnen, dann "Bautagesberichte ansehen". Die Liste zeigt alle
+    Berichte dieser Baustelle, der neueste oben. Ein Bericht laesst sich
+    oeffnen und erneut als PDF ausgeben - mit den Zahlen von damals.
+    Bearbeiten geht dort nicht, und das ist Absicht: ein Bericht haelt einen
+    vergangenen Tag fest.
+
+    Freigeben:
+    In der Berichtsansicht "Freigeben". Danach ist der Bericht ein Nachweis
+    und wird nicht mehr geaendert. Festgehalten wird das Datum und der
+    Firmenname aus den Einstellungen. Die Freigabe laesst sich nicht
+    zuruecknehmen.
+
+    Etwas richtigstellen:
+    Bei einem freigegebenen Bericht "Korrektur anlegen". Das oeffnet ein
+    neues Formular, vorbefuellt mit den Werten des Originals. Der alte
+    Bericht bleibt unveraendert stehen, der neue verweist auf ihn. So bleibt
+    nachvollziehbar, was urspruenglich dokumentiert wurde und was spaeter
+    richtiggestellt wurde - genau das macht einen Nachweis aus.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 

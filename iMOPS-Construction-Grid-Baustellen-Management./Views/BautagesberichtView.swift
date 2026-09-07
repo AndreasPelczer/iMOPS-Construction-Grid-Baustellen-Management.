@@ -41,6 +41,12 @@ struct BautagesberichtView: View {
     @Environment(\.managedObjectContext) private var ctx
     let event: Event
 
+    /// Gesetzt, wenn dieser Bericht die Korrektur eines freigegebenen ist.
+    /// Das Original wird NICHT geändert — es bleibt stehen, und der neue
+    /// Bericht trägt den Bezug darauf. So bleibt nachvollziehbar, was
+    /// ursprünglich dokumentiert wurde und was später richtiggestellt wurde.
+    private let korrekturVon: Bautagesbericht?
+
     @State private var datum              = Date()
     @State private var witterung: Witterung = .bewoelkt
     @State private var temperatur         = ""
@@ -55,6 +61,21 @@ struct BautagesberichtView: View {
     @State private var showSaveDialog     = false
     @State private var pdfData: Data?
     @State private var saveFilename       = "Bautagesbericht"
+
+    init(event: Event, korrekturVon: Bautagesbericht? = nil) {
+        self.event = event
+        self.korrekturVon = korrekturVon
+        // Bei einer Korrektur startet das Formular mit den Werten des
+        // Originals — geändert wird nur, was wirklich falsch war.
+        _datum      = State(initialValue: korrekturVon?.datum ?? Date())
+        _witterung  = State(initialValue: Witterung(rawValue: korrekturVon?.witterung ?? "") ?? .bewoelkt)
+        _temperatur = State(initialValue: korrekturVon?.temperatur ?? "")
+        _personalAnzahl = State(initialValue: korrekturVon.map { String($0.personalAnzahl) } ?? "1")
+        _geraete    = State(initialValue: korrekturVon?.geraete ?? "")
+        _ausgefuehrteArbeiten = State(initialValue: korrekturVon?.ausgefuehrteArbeiten ?? "")
+        _behinderungen = State(initialValue: korrekturVon?.behinderungen ?? "")
+        _notizen    = State(initialValue: korrekturVon?.notizen ?? "")
+    }
 
     private var auftraege: [Auftrag]  { (event.jobs?.allObjects as? [Auftrag]) ?? [] }
     private var lvAnzahl:  Int        { event.lvPositionen?.count ?? 0 }
@@ -152,7 +173,7 @@ struct BautagesberichtView: View {
                     LabeledContent("Mängel",        value: "\(maengel)")
                 }
             }
-            .navigationTitle("Bautagesbericht")
+            .navigationTitle(korrekturVon == nil ? "Bautagesbericht" : "Korrektur")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -204,6 +225,8 @@ struct BautagesberichtView: View {
         b.snapAuftraegeOffen  = Int16(auftraege.filter { !$0.isCompleted }.count)
         b.snapLVPositionen    = Int16(lv.count)
         b.snapMaengel         = Int16(maengel.count)
+
+        b.korrigiertVonID = korrekturVon?.id
 
         event.addToBautagesberichte(b)
         do {
