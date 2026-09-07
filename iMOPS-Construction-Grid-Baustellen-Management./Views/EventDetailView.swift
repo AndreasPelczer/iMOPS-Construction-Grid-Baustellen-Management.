@@ -133,6 +133,7 @@ struct EventDetailView: View {
     @State private var lvPDFURL: URL?
     @State private var lvCSVURL: URL?
     @State private var showBautagesbericht = false
+    @State private var showBautagesberichtListe = false
     @State private var zeigeLVAbriss = false
     @State private var isConverting = false
     @State private var conversionError: String?
@@ -401,6 +402,12 @@ struct EventDetailView: View {
                     .disabled(lvPositionenCount == 0)
 
                     Button {
+                        showBautagesberichtListe = true
+                    } label: {
+                        Label("Bautagesberichte ansehen", systemImage: "calendar.day.timeline.left")
+                    }
+
+                    Button {
                         showBautagesbericht = true
                     } label: {
                         Label("Bautagesbericht", systemImage: "calendar.badge.clock")
@@ -458,6 +465,11 @@ struct EventDetailView: View {
         .teilenOderSpeichern(datei: $lvCSVURL)
         .sheet(isPresented: $showBautagesbericht) {
             BautagesberichtView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+                .presentationSizing(.page)
+        }
+        .sheet(isPresented: $showBautagesberichtListe) {
+            BautagesberichtListeView(event: event)
                 .environment(\.managedObjectContext, viewContext)
                 .presentationSizing(.page)
         }

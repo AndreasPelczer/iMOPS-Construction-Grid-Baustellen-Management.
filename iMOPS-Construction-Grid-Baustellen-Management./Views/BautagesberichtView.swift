@@ -38,7 +38,14 @@ enum Witterung: String, CaseIterable, Identifiable {
 
 struct BautagesberichtView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.managedObjectContext) private var ctx
     let event: Event
+
+    /// Gesetzt, wenn dieser Bericht die Korrektur eines freigegebenen ist.
+    /// Das Original wird NICHT geändert — es bleibt stehen, und der neue
+    /// Bericht trägt den Bezug darauf. So bleibt nachvollziehbar, was
+    /// ursprünglich dokumentiert wurde und was später richtiggestellt wurde.
+    private let korrekturVon: Bautagesbericht?
 
     @State private var datum              = Date()
     @State private var witterung: Witterung = .bewoelkt
@@ -54,6 +61,21 @@ struct BautagesberichtView: View {
     @State private var showSaveDialog     = false
     @State private var pdfData: Data?
     @State private var saveFilename       = "Bautagesbericht"
+
+    init(event: Event, korrekturVon: Bautagesbericht? = nil) {
+        self.event = event
+        self.korrekturVon = korrekturVon
+        // Bei einer Korrektur startet das Formular mit den Werten des
+        // Originals — geändert wird nur, was wirklich falsch war.
+        _datum      = State(initialValue: korrekturVon?.datum ?? Date())
+        _witterung  = State(initialValue: Witterung(rawValue: korrekturVon?.witterung ?? "") ?? .bewoelkt)
+        _temperatur = State(initialValue: korrekturVon?.temperatur ?? "")
+        _personalAnzahl = State(initialValue: korrekturVon.map { String($0.personalAnzahl) } ?? "1")
+        _geraete    = State(initialValue: korrekturVon?.geraete ?? "")
+        _ausgefuehrteArbeiten = State(initialValue: korrekturVon?.ausgefuehrteArbeiten ?? "")
+        _behinderungen = State(initialValue: korrekturVon?.behinderungen ?? "")
+        _notizen    = State(initialValue: korrekturVon?.notizen ?? "")
+    }
 
     private var auftraege: [Auftrag]  { (event.jobs?.allObjects as? [Auftrag]) ?? [] }
     private var lvAnzahl:  Int        { event.lvPositionen?.count ?? 0 }
@@ -151,14 +173,14 @@ struct BautagesberichtView: View {
                     LabeledContent("Mängel",        value: "\(maengel)")
                 }
             }
-            .navigationTitle("Bautagesbericht")
+            .navigationTitle(korrekturVon == nil ? "Bautagesbericht" : "Korrektur")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("PDF erstellen") { createPDF() }.tint(.orange)
+                    Button("Speichern & PDF") { speichernUndPDF() }.tint(.orange)
                 }
             }
             .sheet(isPresented: $showShare) {
@@ -175,7 +197,58 @@ struct BautagesberichtView: View {
         }
     }
 
-    private func createPDF() {
+    /// Legt den Bericht als Datensatz an und friert die Zaehlstaende ein.
+    ///
+    /// Warum eingefroren: Ein Bautagesbericht weist einen bestimmten Tag nach.
+    /// Zoege er seine Zahlen spaeter frisch aus der Baustelle, zeigte ein
+    /// Bericht vom Juli heute die Maengel von heute — die App schriebe still
+    /// die Vergangenheit um. Deshalb wird hier gezaehlt, einmal, jetzt.
+    @discardableResult
+    private func berichtSpeichern() -> Bautagesbericht? {
+        let auftraege = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        let maengel   = (event.maengel?.allObjects as? [Mangel]) ?? []
+        let lv        = (event.lvPositionen?.allObjects as? [LVPosition]) ?? []
+
+        let b = Bautagesbericht(context: ctx)
+        b.id        = UUID()
+        b.datum     = datum
+        b.erstelltAm = Date()
+        b.witterung = witterung.rawValue
+        b.temperatur = temperatur
+        b.personalAnzahl = Int16(Int(personalAnzahl) ?? 1)
+        b.geraete   = geraete
+        b.ausgefuehrteArbeiten = ausgefuehrteArbeiten
+        b.behinderungen = behinderungen
+        b.notizen   = notizen
+
+        b.snapAuftraegeGesamt = Int16(auftraege.count)
+        b.snapAuftraegeOffen  = Int16(auftraege.filter { !$0.isCompleted }.count)
+        b.snapLVPositionen    = Int16(lv.count)
+        b.snapMaengel         = Int16(maengel.count)
+
+        b.korrigiertVonID = korrekturVon?.id
+
+        event.addToBautagesberichte(b)
+        do {
+            try ctx.save()
+            return b
+        } catch {
+            // Nicht still verschlucken: ohne Datensatz waere das PDF ein
+            // Dokument ohne Nachweis dahinter.
+            print("Bautagesbericht konnte nicht gespeichert werden: \(error)")
+            ctx.rollback()
+            return nil
+        }
+    }
+
+    /// Erst speichern, dann drucken — das PDF entsteht aus dem Datensatz,
+    /// damit Bericht und Ausdruck nie auseinanderlaufen.
+    private func speichernUndPDF() {
+        let bericht = berichtSpeichern()
+        createPDF(aus: bericht)
+    }
+
+    private func createPDF(aus bericht: Bautagesbericht? = nil) {
         let config = BautagesberichtConfig(
             datum:               datum,
             witterung:           witterung.rawValue,
@@ -185,7 +258,14 @@ struct BautagesberichtView: View {
             geraete:             geraete,
             ausgefuehrteArbeiten: ausgefuehrteArbeiten,
             behinderungen:       behinderungen,
-            notizen:             notizen
+            notizen:             notizen,
+            // Nur wenn der Bericht gespeichert wurde, tragen wir die
+            // eingefrorenen Zahlen ein. Ohne Datensatz bleibt es eine
+            // Vorschau mit dem aktuellen Stand.
+            snapAuftraegeGesamt: bericht.map { Int($0.snapAuftraegeGesamt) },
+            snapAuftraegeOffen:  bericht.map { Int($0.snapAuftraegeOffen) },
+            snapLVPositionen:    bericht.map { Int($0.snapLVPositionen) },
+            snapMaengel:         bericht.map { Int($0.snapMaengel) }
         )
         let data = BautagesberichtPDFExporter.generate(event: event, config: config)
         let fmt  = DateFormatter()

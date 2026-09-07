@@ -12,6 +12,23 @@ struct BautagesberichtConfig {
     var ausgefuehrteArbeiten: String
     var behinderungen:       String
     var notizen:             String
+
+    // MARK: Eingefrorene Zaehlstaende
+    //
+    // Sind diese gesetzt, stammt der Bericht aus einem gespeicherten Datensatz
+    // und zeigt die Zahlen SEINES Tages. Sind sie nil, ist es die Vorschau vor
+    // dem Speichern — dann werden die aktuellen Zahlen aus dem Event gezogen.
+    //
+    // Warum das wichtig ist: Ein Bautagesbericht ist ein Nachweis. Zoege er die
+    // Zahlen beim Drucken frisch aus der Baustelle, zeigte ein Bericht vom Juli
+    // heute die Maengel von heute — die App schriebe still die Vergangenheit um.
+    var snapAuftraegeGesamt:  Int? = nil
+    var snapAuftraegeOffen:   Int? = nil
+    var snapLVPositionen:     Int? = nil
+    var snapMaengel:          Int? = nil
+
+    /// Der Bericht kommt aus einem gespeicherten Datensatz.
+    var istGespeichert: Bool { snapAuftraegeGesamt != nil }
 }
 
 // MARK: - Exporter
@@ -20,6 +37,37 @@ struct BautagesberichtPDFExporter {
 
     static func generate(event: Event, config: BautagesberichtConfig) -> Data {
         Generator(event: event, config: config).generate()
+    }
+
+    /// Baut die Konfiguration aus einem gespeicherten Bericht.
+    ///
+    /// Damit erzeugen Formular und Historie dasselbe PDF aus derselben Quelle —
+    /// dem Datensatz. Die Zaehlstaende kommen aus den eingefrorenen Feldern,
+    /// nicht aus der Baustelle von heute.
+    static func config(aus bericht: Bautagesbericht) -> BautagesberichtConfig {
+        let witterungText = bericht.witterung ?? ""
+        let symbol = Witterung(rawValue: witterungText)?.symbol ?? "cloud.fill"
+        return BautagesberichtConfig(
+            datum:               bericht.datum ?? bericht.erstelltAm ?? Date(),
+            witterung:           witterungText,
+            witterungSymbol:     symbol,
+            temperatur:          bericht.temperatur ?? "",
+            personalAnzahl:      Int(bericht.personalAnzahl),
+            geraete:             bericht.geraete ?? "",
+            ausgefuehrteArbeiten: bericht.ausgefuehrteArbeiten ?? "",
+            behinderungen:       bericht.behinderungen ?? "",
+            notizen:             bericht.notizen ?? "",
+            snapAuftraegeGesamt: Int(bericht.snapAuftraegeGesamt),
+            snapAuftraegeOffen:  Int(bericht.snapAuftraegeOffen),
+            snapLVPositionen:    Int(bericht.snapLVPositionen),
+            snapMaengel:         Int(bericht.snapMaengel)
+        )
+    }
+
+    /// PDF eines gespeicherten Berichts — der Weg aus der Historie.
+    static func generate(bericht: Bautagesbericht) -> Data? {
+        guard let event = bericht.event else { return nil }
+        return generate(event: event, config: config(aus: bericht))
     }
 
     private class Generator {
@@ -136,7 +184,38 @@ struct BautagesberichtPDFExporter {
 
         // MARK: Aufträge
 
+        /// Die Zahlen, wie sie am Tag des Berichts standen.
+        func drawSnapshotZahlen() {
+            pageBreakIfNeeded(80)
+            sectionHeader("Stand am Berichtstag")
+            let z: [(String, Int?)] = [
+                ("Aufträge gesamt", config.snapAuftraegeGesamt),
+                ("davon offen",     config.snapAuftraegeOffen),
+                ("LV-Positionen",   config.snapLVPositionen),
+                ("Mängel",          config.snapMaengel),
+            ]
+            for (titel, wert) in z {
+                guard let wert = wert else { continue }
+                txt("\(titel): \(wert)", x: mH + 12, y: y + 8,
+                    font: .systemFont(ofSize: 11))
+                y += 16
+            }
+            y += 8
+            txt("Diese Zahlen wurden beim Speichern festgehalten und ändern sich nicht mehr.",
+                x: mH + 12, y: y,
+                font: .systemFont(ofSize: 8),
+                color: UIColor(white: 0.45, alpha: 1))
+            y += 20
+        }
+
         func drawAuftraege() {
+            // Gespeicherter Bericht: nur die eingefrorenen Zahlen. Die
+            // Einzelliste waere die von heute und gehoert nicht in ein
+            // Dokument, das einen vergangenen Tag nachweist.
+            if config.istGespeichert {
+                drawSnapshotZahlen()
+                return
+            }
             let all = (event.jobs?.allObjects as? [Auftrag]) ?? []
             guard !all.isEmpty else { return }
             let offen    = all.filter { !$0.isCompleted }
@@ -166,6 +245,7 @@ struct BautagesberichtPDFExporter {
         // MARK: LV
 
         func drawLV() {
+            if config.istGespeichert { return }   // in drawSnapshotZahlen enthalten
             let pos = (event.lvPositionen?.allObjects as? [LVPosition]) ?? []
             guard !pos.isEmpty else { return }
             pageBreakIfNeeded(60)
@@ -184,6 +264,7 @@ struct BautagesberichtPDFExporter {
         // MARK: Mängel
 
         func drawMaengel() {
+            if config.istGespeichert { return }   // in drawSnapshotZahlen enthalten
             let all = (event.maengel?.allObjects as? [Mangel]) ?? []
             guard !all.isEmpty else { return }
             pageBreakIfNeeded(50)

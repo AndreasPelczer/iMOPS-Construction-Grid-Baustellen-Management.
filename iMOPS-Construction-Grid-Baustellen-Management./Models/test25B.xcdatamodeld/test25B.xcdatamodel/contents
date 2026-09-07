@@ -25,6 +25,27 @@
         <attribute name="totalProcessingTime" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="jobs" inverseEntity="Event"/>
     </entity>
+    <entity name="Bautagesbericht" representedClassName="Bautagesbericht" syncable="YES">
+        <attribute name="ausgefuehrteArbeiten" optional="YES" attributeType="String"/>
+        <attribute name="autor" optional="YES" attributeType="String"/>
+        <attribute name="behinderungen" optional="YES" attributeType="String"/>
+        <attribute name="datum" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="erstelltAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="freigegebenVon" optional="YES" attributeType="String"/>
+        <attribute name="geraete" optional="YES" attributeType="String"/>
+        <attribute name="gesperrtAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="korrigiertVonID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="notizen" optional="YES" attributeType="String"/>
+        <attribute name="personalAnzahl" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="snapAuftraegeGesamt" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="snapAuftraegeOffen" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="snapLVPositionen" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="snapMaengel" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="temperatur" optional="YES" attributeType="String"/>
+        <attribute name="witterung" optional="YES" attributeType="String"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="bautagesberichte" inverseEntity="Event"/>
+    </entity>
     <entity name="CDLexikonEntry" representedClassName="CDLexikonEntry" syncable="YES">
         <attribute name="beschreibung" optional="YES" attributeType="String"/>
         <attribute name="code" optional="YES" attributeType="String"/>
@@ -59,6 +80,7 @@
         <relationship name="gebaeude" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Gebaeude" inverseName="event" inverseEntity="Gebaeude"/>
         <relationship name="jobs" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="event" inverseEntity="Auftrag"/>
         <relationship name="lvPositionen" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="LVPosition" inverseName="event" inverseEntity="LVPosition"/>
+        <relationship name="bautagesberichte" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Bautagesbericht" inverseName="event" inverseEntity="Bautagesbericht"/>
         <relationship name="maengel" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Mangel" inverseName="event" inverseEntity="Mangel"/>
     </entity>
     <entity name="Gebaeude" representedClassName="Gebaeude" syncable="YES">
