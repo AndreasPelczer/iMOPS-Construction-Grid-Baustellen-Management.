@@ -134,6 +134,7 @@ struct EventDetailView: View {
     @State private var lvCSVURL: URL?
     @State private var showBautagesbericht = false
     @State private var showBautagesberichtListe = false
+    @State private var showIFCLeser = false
     @State private var zeigeLVAbriss = false
     @State private var isConverting = false
     @State private var conversionError: String?
@@ -402,6 +403,12 @@ struct EventDetailView: View {
                     .disabled(lvPositionenCount == 0)
 
                     Button {
+                        showIFCLeser = true
+                    } label: {
+                        Label("IFC auswerten (SketchUp)", systemImage: "cube.transparent")
+                    }
+
+                    Button {
                         showBautagesberichtListe = true
                     } label: {
                         Label("Bautagesberichte ansehen", systemImage: "calendar.day.timeline.left")
@@ -465,6 +472,11 @@ struct EventDetailView: View {
         .teilenOderSpeichern(datei: $lvCSVURL)
         .sheet(isPresented: $showBautagesbericht) {
             BautagesberichtView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+                .presentationSizing(.page)
+        }
+        .sheet(isPresented: $showIFCLeser) {
+            IFCLeserView(event: event)
                 .environment(\.managedObjectContext, viewContext)
                 .presentationSizing(.page)
         }
