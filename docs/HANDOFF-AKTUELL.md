@@ -2,9 +2,44 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
-## Delta 07.09.2026 — Bautagesbericht wird zum Tagebuch (Branch `feature/bautagesbericht-persistenz`)
+## Delta 07.09.2026 (nachmittags) — IFC-Leser in der App (PR #138, in `main`)
 
-**Nicht gepusht, kein PR.** Vier Commits, Build und Unit-Suite grün.
+Gegenstück zu **mops-api #52**. Der Endpunkt `POST /ifc/analyse` lag auf der Box, die App wusste
+nichts von ihm — damit war es ein Werkzeug für den Server und keins für die Baustelle.
+
+**Neu `Views/IFCLeserView.swift`** — Datei wählen, auswerten, Ergebnis. Upload nach demselben
+Muster wie der Wand-Leser (`MopsConfig.host`, multipart, `ServerFehlertext`). Einstieg als
+**„IFC auswerten (SketchUp)"** im Baustellen-Menü.
+
+### Die Reihenfolge in der Ansicht ist eine Entscheidung
+| | |
+|---|---|
+| **Volumen zuoberst** | Mauerwerk wird nach m³ bestellt, nicht nach m² |
+| **Herkunft unter jeder Menge** | grün „aus dem Modell" (Qto) gegen orange „gerechnet" (aus Maßen geschätzt) |
+| **`KG offen` in Orange** | damit ungeklärte Kostengruppen nicht als erledigt durchgehen |
+| **Warnung bei fehlender Einheit** | dann sind die Werte Rohwerte, keine Meter — wie `$INSUNITS` beim DXF |
+| **„Nicht als Bauteil gewertet"** | Beschriftungen werden ausgewiesen, nicht verschluckt |
+
+**Die Herkunftszeile ist wichtiger als die Zahl daneben.** SketchUp exportiert meist keine Base
+Quantities — dann steht überall „gerechnet", und das muss man sehen, bevor man danach bestellt.
+
+Alle Felder der Antwort sind **optional dekodiert**: Der Server ist ehrlich, wenn er etwas nicht
+weiß (`einheit_bekannt: false`, `kg: "offen"`). Ein Decoder, der auf Vollständigkeit besteht,
+würde genau diese Ehrlichkeit in einen Parse-Fehler verwandeln.
+
+Bedienungshilfe mitgezogen (Drift-Regel), 6 Aliase.
+
+### Offen
+- **Keine Übernahme ins LV.** Die Ansicht zeigt die Mengen, schreibt sie nicht in Positionen.
+  Das braucht eine Entscheidung, wie Kostengruppe und LV-Position zusammenfinden.
+- **Noch kein Lauf gegen die echte Box:** `/ifc/analyse` ist dort erst nach
+  `sudo systemctl restart mops-api` erreichbar. Bis dahin bekäme die App einen 404.
+
+---
+
+## Delta 07.09.2026 — Bautagesbericht wird zum Tagebuch (PR #137, in `main`)
+
+**In `main` (PR #137).** Vier Commits, Build und Unit-Suite grün.
 
 ### Was vorher war
 Der Bautagesbericht war ein **Generator**, kein Tagebuch: alle Felder lagen in `@State`,
@@ -51,7 +86,8 @@ Ablauf, warum der Knopf „Speichern & PDF" heißt, Historie, Freigabe, Korrektu
 Begründung, warum das Bearbeiten dort **nicht** geht.
 
 ### Offen
-- **Nicht gepusht, kein PR.** Vor dem Merge: Falbe-Blick auf Snapshot-Korrektheit und Sperr-Logik.
+- **Gemergt (PR #137).** Der Falbe-Blick auf Snapshot-Korrektheit und Sperr-Logik steht weiterhin aus —
+  er war als Bedingung gedacht, der Merge kam vorher.
 - **Inhaltlich fehlt noch** (VOB-typisch, war nicht im Auftrag): Materiallieferungen/Wareneingang
   als eigenes Feld, Personalstärke je Gewerk statt einer Gesamtzahl, Fotodokumentation am Bericht.
 - **Hash-Ketten-Manipulationssicherheit** (HACCP-Muster) bleibt der optionale Ausbau danach —
