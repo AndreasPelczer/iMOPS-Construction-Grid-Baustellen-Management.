@@ -4,8 +4,12 @@
 
 ## Delta 08.09.2026 — Grap8 Branch 1: die Kausalkette bekommt einen Datenkern
 
-**Branch `feature/grap8-kausalkette`.** Reiner Datenkern + Logik + Tests. **Keine UI** —
-die Leinwand kommt in einem späteren Branch (Nicht-Ziel des Auftrags).
+**PR #140, in `main`.** Reiner Datenkern + Logik + Tests. **Keine UI** — die Leinwand
+kommt in einem späteren Branch (Nicht-Ziel des Auftrags).
+
+> ⚠️ **Wer nach `Voraussetzung.quelle` im Modell sucht: die steht in `test25B 2.xcdatamodel`,
+> nicht in `test25B.xcdatamodel`.** Seit der Versionierung (nächster Abschnitt) ist V2 die
+> aktuelle Version; V1 ist bewusst der Stand davor.
 
 ### Der Befund, der vorher stand
 `Views/KausalbauketteView.swift` **gibt es schon** — aber die Kette darin ist **fest
