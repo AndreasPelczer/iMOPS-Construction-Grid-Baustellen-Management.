@@ -74,19 +74,18 @@ struct KausalbauketteView: View {
                     } else {
                         ForEach(infraJobs, id: \.objectID) { job in
                             HStack {
-                                Image(systemName: job.isCompleted ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(job.isCompleted ? .green : .orange)
+                                Image(systemName: job.istFertig ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(job.istFertig ? .green : .orange)
                                 
                                 VStack(alignment: .leading) {
                                     Text(job.processingDetails ?? "Einrichtungs-Schritt").font(.subheadline)
-                                    Text(job.isCompleted ? "Erledigt" : "Offen / In Vorbereitung").font(.caption2).foregroundStyle(.secondary)
+                                    Text(job.istFertig ? "Erledigt" : "Offen / In Vorbereitung").font(.caption2).foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 
                                 // Schnelles Umschalten direkt in der Kette
-                                Button(job.isCompleted ? "Öffnen" : "Erledigt") {
-                                    job.isCompleted.toggle()
-                                    job.status = job.isCompleted ? .completed : .inProgress
+                                Button(job.istFertig ? "Öffnen" : "Erledigt") {
+                                    job.setzeFertig(!job.istFertig)
                                     try? viewContext.save()
                                 }
                                 .buttonStyle(.bordered)
@@ -113,10 +112,10 @@ struct KausalbauketteView: View {
                     } else {
                         ForEach(handwerkJobs, id: \.objectID) { job in
                             HStack {
-                                Circle().fill(job.isCompleted ? Color.green : Color.orange).frame(width: 8, height: 8)
+                                Circle().fill(job.istFertig ? Color.green : Color.orange).frame(width: 8, height: 8)
                                 Text(job.processingDetails ?? "Gewerk").font(.subheadline)
                                 Spacer()
-                                Text(job.isCompleted ? "Abgeschlossen" : "Aktiv").font(.caption).foregroundStyle(.secondary)
+                                Text(job.istFertig ? "Abgeschlossen" : "Aktiv").font(.caption).foregroundStyle(.secondary)
                             }
                         }
                     }

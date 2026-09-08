@@ -222,8 +222,8 @@ struct GlobalSearchView: View {
             ForEach(foundAuftraege, id: \.objectID) { job in
                 NavigationLink { AuftragDetailView(job: job) } label: {
                     HStack(spacing: 10) {
-                        Image(systemName: job.isCompleted ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(job.isCompleted ? .green : .orange).frame(width: 20)
+                        Image(systemName: job.istFertig ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(job.istFertig ? .green : .orange).frame(width: 20)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(job.employeeName ?? "–").font(.body).lineLimit(1)
                             HStack(spacing: 6) {

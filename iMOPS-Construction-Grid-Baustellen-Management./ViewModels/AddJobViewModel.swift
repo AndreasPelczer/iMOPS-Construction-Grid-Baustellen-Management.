@@ -95,7 +95,6 @@ final class AddJobViewModel {
         newJob.deliveryTemperature = isHotDelivery
         newJob.processingDetails = taskSummary
         newJob.status = jobStatus
-        newJob.isCompleted = (jobStatus == .completed)
         newJob.event = event
         newJob.totalProcessingTime = 0.0
         newJob.lastStartTime = nil

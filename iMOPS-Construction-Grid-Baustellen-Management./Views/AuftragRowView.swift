@@ -147,8 +147,11 @@ struct AuftragRowView: View {
     // MARK: - Actions
 
     private func setStatus(_ s: AuftragStatus) {
+        // Das Legacy-Flag zieht der Setter in `Auftrag.swift` mit — und zwar in
+        // beide Richtungen. Die Sonderbehandlung hier setzte es nur auf `true`,
+        // nie zurück: ein fertiger Auftrag, der wieder auf `.pending` ging, blieb
+        // im Flag „fertig".
         auftrag.status = s
-        if s == .completed { auftrag.isCompleted = true }
         save()
     }
 

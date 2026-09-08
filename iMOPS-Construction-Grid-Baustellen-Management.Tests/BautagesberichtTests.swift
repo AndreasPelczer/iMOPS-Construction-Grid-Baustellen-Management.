@@ -53,7 +53,7 @@ struct BautagesberichtTests {
         b.ausgefuehrteArbeiten = "Wände gemauert"
         b.personalAnzahl = 4
         b.snapAuftraegeGesamt = Int16(auftraege.count)
-        b.snapAuftraegeOffen  = Int16(auftraege.filter { !$0.isCompleted }.count)
+        b.snapAuftraegeOffen  = Int16(auftraege.filter { !$0.istFertig }.count)
         b.snapLVPositionen    = Int16(lv.count)
         b.snapMaengel         = Int16(maengel.count)
         event.addToBautagesberichte(b)

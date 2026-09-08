@@ -155,7 +155,8 @@ struct EmployeeRowView: View {
         let name = employee.name ?? ""
         guard !name.isEmpty else { return 0 }
         let req: NSFetchRequest<Auftrag> = Auftrag.fetchRequest()
-        req.predicate = NSPredicate(format: "employeeName == %@ AND isCompleted == NO", name)
+        req.predicate = NSPredicate(format: "employeeName == %@ AND statusRawValue != %@",
+                                    name, AuftragStatus.completed.rawValue)
         return (try? ctx.count(for: req)) ?? 0
     }
 
@@ -356,7 +357,8 @@ struct CrewLoadSummary: View {
         employees.compactMap { emp -> LoadItem? in
             guard let name = emp.name, !name.isEmpty else { return nil }
             let req: NSFetchRequest<Auftrag> = Auftrag.fetchRequest()
-            req.predicate = NSPredicate(format: "employeeName == %@ AND isCompleted == NO", name)
+            req.predicate = NSPredicate(format: "employeeName == %@ AND statusRawValue != %@",
+                                    name, AuftragStatus.completed.rawValue)
             let count = (try? ctx.count(for: req)) ?? 0
             return LoadItem(name: name, count: count)
         }

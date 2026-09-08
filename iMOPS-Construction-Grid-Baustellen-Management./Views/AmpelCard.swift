@@ -36,7 +36,7 @@ struct AmpelCard: View {
                            details.contains("baustrom") ||
                            details.contains("bauwasser") ||
                            details.contains("einrichtung")
-            return istInfra && !job.isCompleted
+            return istInfra && !job.istFertig
         }
         
         if infraOffen {
@@ -62,7 +62,7 @@ struct AmpelCard: View {
         }
         
         // Prüfen, ob noch reguläre Handwerker-Aufträge offen sind
-        let handwerkOffen = auftraege.contains(where: { !$0.isCompleted })
+        let handwerkOffen = auftraege.contains(where: { !$0.istFertig })
         if handwerkOffen {
             return (
                 .orange,
@@ -74,7 +74,7 @@ struct AmpelCard: View {
         // -----------------------------------------------------------------
         // ZIEL: ALLES ERLEDIGT
         // -----------------------------------------------------------------
-        if !auftraege.isEmpty && auftraege.allSatisfy({ $0.isCompleted }) {
+        if !auftraege.isEmpty && auftraege.allSatisfy({ $0.istFertig }) {
             return (
                 .green,
                 "Baufreiheit vollständig erteilt",

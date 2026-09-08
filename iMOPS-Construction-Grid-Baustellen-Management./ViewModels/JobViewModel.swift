@@ -46,9 +46,8 @@ class JobViewModel {
             job.lastStartTime = nil
         }
 
-        // 3. Status setzen und Abschluss-Flag synchronisieren
+        // 3. Status setzen — das Legacy-Flag zieht der Setter in Auftrag.swift mit.
         job.status = newStatus
-        job.isCompleted = (newStatus == .completed)
 
         saveContext()
     }

@@ -70,7 +70,7 @@ struct AuftragDetailView: View {
                 .font(.title2.weight(.bold)).lineLimit(3)
             if extras.trainingMode,
                let next = nextOpenStepTitle,
-               !job.isCompleted {
+               !job.istFertig {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.right.circle.fill")
                     Text(next)
@@ -129,7 +129,7 @@ struct AuftragDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
 
-            if extras.trainingMode, let next = nextOpenStepTitle, !job.isCompleted {
+            if extras.trainingMode, let next = nextOpenStepTitle, !job.istFertig {
                 Text("Jetzt: \(next)")
                     .font(.subheadline.weight(.semibold)).padding(.top, 2)
             }
@@ -225,7 +225,7 @@ struct AuftragDetailView: View {
                     Divider()
                     Button(role: .destructive) {
                         extras.checklist.removeAll()
-                        job.isCompleted = false
+                        job.setzeFertig(false)
                         saveExtras(extras)
                     } label: {
                         Label("Leeren", systemImage: "trash")
@@ -258,8 +258,8 @@ struct AuftragDetailView: View {
             } else {
                 HStack(spacing: 10) {
                     Button { markJobCompleted() } label: {
-                        Label(job.isCompleted ? "Auftrag ist fertig" : "Auftrag fertig",
-                              systemImage: job.isCompleted ? "checkmark.seal.fill" : "checkmark.circle.fill")
+                        Label(job.istFertig ? "Auftrag ist fertig" : "Auftrag fertig",
+                              systemImage: job.istFertig ? "checkmark.seal.fill" : "checkmark.circle.fill")
                             .font(.headline)
                     }
                     .buttonStyle(.borderedProminent)
@@ -268,7 +268,7 @@ struct AuftragDetailView: View {
                         Label("Reset", systemImage: "arrow.counterclockwise")
                     }
                     .buttonStyle(.bordered)
-                    .disabled(!job.isCompleted)
+                    .disabled(!job.istFertig)
                 }
 
                 if extras.checklist.isEmpty {
@@ -343,7 +343,7 @@ struct AuftragDetailView: View {
         guard !t.isEmpty else { return }
         extras.checklist.append(AuftragChecklistItem(title: t))
         newStepText = ""
-        job.isCompleted = false
+        job.setzeFertig(false)
         saveExtras(extras)
     }
 
@@ -351,26 +351,25 @@ struct AuftragDetailView: View {
         guard let idx = extras.checklist.firstIndex(where: { $0.id == id }) else { return }
         extras.checklist[idx].isDone.toggle()
         let allDone = !extras.checklist.isEmpty && extras.checklist.allSatisfy { $0.isDone }
-        job.isCompleted = allDone
+        job.setzeFertig(allDone)
         saveExtras(extras)
     }
 
     private func deleteStep(_ id: String) {
         extras.checklist.removeAll { $0.id == id }
         let allDone = !extras.checklist.isEmpty && extras.checklist.allSatisfy { $0.isDone }
-        job.isCompleted = allDone
+        job.setzeFertig(allDone)
         saveExtras(extras)
     }
 
     private func markJobCompleted() {
-        job.isCompleted = true
         job.status = .completed
         for i in extras.checklist.indices { extras.checklist[i].isDone = true }
         saveExtras(extras)
     }
 
     private func resetCompletion() {
-        job.isCompleted = false
+        job.setzeFertig(false)
         for i in extras.checklist.indices { extras.checklist[i].isDone = false }
         saveExtras(extras)
     }
@@ -385,7 +384,7 @@ struct AuftragDetailView: View {
         } else {
             extras.checklist.append(contentsOf: newItems)
         }
-        job.isCompleted = false
+        job.setzeFertig(false)
         saveExtras(extras)
     }
 

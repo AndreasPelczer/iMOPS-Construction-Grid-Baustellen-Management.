@@ -33,7 +33,7 @@ struct EditJobView: View {
         _storageLocation = State(initialValue: job.storageLocation ?? "Baustelle EG")
         _processingDetails = State(initialValue: job.processingDetails ?? "")
         _isHotDelivery = State(initialValue: job.deliveryTemperature)
-        _isCompleted = State(initialValue: job.isCompleted)
+        _isCompleted = State(initialValue: job.istFertig)
         _storageNote = State(initialValue: job.storageNote ?? "Palette")
 
         let gespeicherteNummer = job.kostenGruppeNummer
@@ -115,7 +115,9 @@ struct EditJobView: View {
         job.storageLocation = storageLocation
         job.processingDetails = processingDetails
         job.deliveryTemperature = isHotDelivery
-        job.isCompleted = isCompleted
+        // Kein eigenes Fertig-Häkchen mehr: der Status oben IST die Aussage.
+        // Zwei UI-Felder für denselben Zustand waren die schlimmste Divergenzquelle.
+        job.setzeFertig(isCompleted)
         job.storageNote = storageNote
         job.kostenGruppeNummer = selectedKG?.nummer
         job.kostenGruppeBezeichnung = selectedKG?.bezeichnung
