@@ -2,6 +2,87 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 08.09.2026 — Fundament: das Datenmodell ist jetzt versioniert
+
+**Branch `fix/coredata-model-versioning`.** Kein Schema-Inhalt geändert — nur der
+Versionsweg aufgesetzt, damit Lightweight Migration ab jetzt tatsächlich greifen *kann*.
+
+### Warum das nötig war
+Core Data kann eine Migration nur **inferieren**, wenn das alte Modell noch als eigene
+Version im Bundle liegt. `test25B.xcdatamodeld` enthielt **genau eine** Version und keine
+`.xccurrentversion` — es gab also kein „von-Modell". Auf einem Gerät mit Altdaten kann
+das erste Öffnen nach einem Update deshalb hart scheitern (`fatalError` in
+`loadPersistentStores`). **Im Simulator fällt das nie auf**, weil dort neu installiert wird.
+Das galt für *alle* bisherigen Modelländerungen, zuletzt Entity `Bautagesbericht`.
+
+### Was gemacht wurde
+- `test25B 2.xcdatamodel` als **bitgleiche Kopie** von V1 angelegt (`diff -r` sauber).
+- `.xccurrentversion` zeigt auf `test25B 2.xcdatamodel`. Format an echten Beispielen
+  auf diesem Rechner abgeglichen (`_Uebungen/test25B`, `CatchTheDrop`), nicht geraten.
+
+### Am Kompilat nachgeprüft, nicht behauptet
+`momc` erzeugt jetzt **beide** Versionen im `.momd`:
+```
+test25B.mom · test25B 2.mom · VersionInfo.plist
+NSManagedObjectModel_CurrentVersionName = "test25B 2"
+Checksummen V1 == V2  (kbIYLkBGZ8qrfvPkOixAVlWXNV6cDYxAXUcQ1OySyr4=)
+```
+Gleiche Checksumme heißt: **bestehende Stores bleiben kompatibel**, es wird gar nichts
+migriert. Genau das ist gewollt — der Schritt legt nur das Fundament.
+
+`Persistence.swift` lädt weiter per `.momd`-URL; ein Test prüft, dass dabei wirklich die
+als *current* markierte Version geladen wird (bei V1 == V2 ist das sonst nicht zu merken).
+
+### Nachweis — und was ausdrücklich NICHT nachgewiesen ist
+`ModellVersionierungTests.swift`, **2 Tests**:
+
+| Test | prüft |
+|---|---|
+| `momdEnthaeltMehrAlsEineVersion` | es gibt überhaupt ein von-Modell |
+| `geladenesModellIstDieAktuelleVersion` | `Persistence.swift` lädt per `.momd`-URL wirklich die *current*-Version (bei V1 == V2 sonst nicht zu merken) |
+
+**Ein dritter Test wurde gebaut und wieder entfernt.** Er legte einen echten SQLite-Store
+mit der V1-Version an und öffnete ihn mit dem aktuellen Modell — isoliert grün, in der
+vollen Suite hat er reihenweise fremde Tests umgeworfen, mit wechselnden Opfern. Der
+Crash-Report nennt die Ursache:
+
+```
+-[NSManagedObject initWithEntity:insertIntoManagedObjectContext:]
+Event.init(entity:insertInto:)
+```
+
+Genau das, wovor `Persistence.swift` warnt: das Modell wird dort **absichtlich genau einmal**
+geladen, weil zwei Modelle im selben Prozess doppelte `NSEntityDescription`s für dieselbe
+Subklasse ergeben. **Swift Testing fährt Suites parallel** — der Alt-Store-Test lief also
+gegen die Core-Data-Tests der anderen Suites. Die Entities der Modellkopien auf
+`NSManagedObject` umzubiegen hat **nicht** gereicht; sauber ginge es nur in einem eigenen
+Testprozess (eigenes Test-Target).
+
+> **Damit ist DoD-Punkt 3 als „manuelle Prüfung" erfüllt, nicht als Test.**
+> **Offen und von Hand zu prüfen:** App mit gewachsenem Datenbestand installieren, Update
+> einspielen, prüfen dass sie **ohne Reset** startet. Im Simulator fällt ein Fehler hier nie
+> auf, weil dort neu installiert wird. Solange das nicht gelaufen ist, gilt der Versionsweg
+> als *strukturell korrekt*, aber **nicht am Altbestand erprobt**.
+
+### 🔴 Vor dem Merge lesen: die Reihenfolge zu PR #140
+**PR #140 (Grap8) ändert `test25B.xcdatamodel/contents` — das ist nach diesem Branch V1.**
+Beide Branches fassen *verschiedene Dateien* an, **git meldet also keinen Konflikt**. Das
+Ergebnis wäre trotzdem falsch:
+
+> Die vier Grap8-Relationen stünden in **V1**, current ist aber **V2** ohne sie.
+> Die App lädt V2, `@NSManaged var quelle` zeigt ins Leere → die Kausalkette findet nichts,
+> im Zugriff droht ein Absturz. **Build und Merge blieben grün.**
+
+**Nötige Nacharbeit an PR #140 (nicht Teil dieses Branches):** die vier Relationen von
+`test25B.xcdatamodel` nach `test25B 2.xcdatamodel` verschieben, V1 auf den `main`-Stand
+zurück. Dann greift Grap8 über den regulären Versionsweg — und der Migrationstest wird
+zum ersten Mal scharf, weil V1 und V2 sich dann echt unterscheiden.
+
+Ebenfalls zu erwarten: **Konflikt in dieser Datei** (`HANDOFF-AKTUELL.md`), weil beide
+Branches oben einen Eintrag einfügen. Harmlos, beide Abschnitte behalten.
+
+---
+
 ## Delta 07.09.2026 — Bautagesbericht wird zum Tagebuch (Branch `feature/bautagesbericht-persistenz`)
 
 **Nicht gepusht, kein PR.** Vier Commits, Build und Unit-Suite grün.

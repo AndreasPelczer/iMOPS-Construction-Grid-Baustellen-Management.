@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24512" systemVersion="25F80" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="Aufmass" representedClassName="Aufmass" syncable="YES">
+        <attribute name="erstelltAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="fotoData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="istEinheit" optional="YES" attributeType="String"/>
+        <attribute name="istMenge" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="notiz" optional="YES" attributeType="String"/>
+        <attribute name="quelleRaw" optional="YES" attributeType="String" defaultValueString="manuell"/>
+        <relationship name="lvPosition" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="aufmasse" inverseEntity="LVPosition"/>
+    </entity>
+    <entity name="Auftrag" representedClassName=".Auftrag" syncable="YES">
+        <attribute name="deliveryTemperature" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="employeeName" optional="YES" attributeType="String"/>
+        <attribute name="extras" optional="YES" attributeType="String" defaultValueString=""/>
+        <attribute name="isCompleted" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="kostenGruppeBezeichnung" optional="YES" attributeType="String"/>
+        <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
+        <attribute name="lastStartTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="processingDetails" optional="YES" attributeType="String"/>
+        <attribute name="statusRawValue" attributeType="String"/>
+        <attribute name="storageLocation" optional="YES" attributeType="String"/>
+        <attribute name="storageNote" attributeType="String"/>
+        <attribute name="totalProcessingTime" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="jobs" inverseEntity="Event"/>
+    </entity>
+    <entity name="Bautagesbericht" representedClassName="Bautagesbericht" syncable="YES">
+        <attribute name="ausgefuehrteArbeiten" optional="YES" attributeType="String"/>
+        <attribute name="autor" optional="YES" attributeType="String"/>
+        <attribute name="behinderungen" optional="YES" attributeType="String"/>
+        <attribute name="datum" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="erstelltAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="freigegebenVon" optional="YES" attributeType="String"/>
+        <attribute name="geraete" optional="YES" attributeType="String"/>
+        <attribute name="gesperrtAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="korrigiertVonID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="notizen" optional="YES" attributeType="String"/>
+        <attribute name="personalAnzahl" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="snapAuftraegeGesamt" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="snapAuftraegeOffen" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="snapLVPositionen" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="snapMaengel" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="temperatur" optional="YES" attributeType="String"/>
+        <attribute name="witterung" optional="YES" attributeType="String"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="bautagesberichte" inverseEntity="Event"/>
+    </entity>
+    <entity name="CDLexikonEntry" representedClassName="CDLexikonEntry" syncable="YES">
+        <attribute name="beschreibung" optional="YES" attributeType="String"/>
+        <attribute name="code" optional="YES" attributeType="String"/>
+        <attribute name="details" optional="YES" attributeType="String"/>
+        <attribute name="kategorie" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="Employee" representedClassName="Employee" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isActive" optional="YES" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="notiz" optional="YES" attributeType="String"/>
+        <attribute name="pin" optional="YES" attributeType="String"/>
+        <attribute name="rolle" optional="YES" attributeType="String"/>
+        <attribute name="telefon" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="Event" representedClassName=".Event" syncable="YES">
+        <attribute name="architekt" optional="YES" attributeType="String"/>
+        <attribute name="baugenehmigungNr" optional="YES" attributeType="String"/>
+        <attribute name="bauherr" optional="YES" attributeType="String"/>
+        <attribute name="eventEndTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="eventNumber" optional="YES" attributeType="String"/>
+        <attribute name="eventStartTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="extras" optional="YES" attributeType="String"/>
+        <attribute name="location" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="setupTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="timeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="gebaeude" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Gebaeude" inverseName="event" inverseEntity="Gebaeude"/>
+        <relationship name="jobs" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="event" inverseEntity="Auftrag"/>
+        <relationship name="lvPositionen" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="LVPosition" inverseName="event" inverseEntity="LVPosition"/>
+        <relationship name="bautagesberichte" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Bautagesbericht" inverseName="event" inverseEntity="Bautagesbericht"/>
+        <relationship name="maengel" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Mangel" inverseName="event" inverseEntity="Mangel"/>
+    </entity>
+    <entity name="Gebaeude" representedClassName="Gebaeude" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="reihenfolge" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="gebaeude" inverseEntity="Event"/>
+        <relationship name="geschosse" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="gebaeude" inverseEntity="Geschoss"/>
+    </entity>
+    <entity name="Geraet" representedClassName="Geraet" syncable="YES">
+        <attribute name="anschaffungsKosten" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="notiz" optional="YES" attributeType="String"/>
+        <attribute name="nutzungsdauerStunden" optional="YES" attributeType="Integer 32" defaultValueString="1000" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="Geschoss" representedClassName="Geschoss" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="reihenfolge" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="freigegeben" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="freigegebenAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="freigegebenVon" optional="YES" attributeType="String"/>
+        <relationship name="gebaeude" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Gebaeude" inverseName="geschosse" inverseEntity="Gebaeude"/>
+        <relationship name="lvPositionen" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="geschoss" inverseEntity="LVPosition"/>
+        <relationship name="voraussetzungen" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Voraussetzung" inverseName="geschoss" inverseEntity="Voraussetzung"/>
+    </entity>
+    <entity name="Voraussetzung" representedClassName="Voraussetzung" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="typ" optional="YES" attributeType="String" defaultValueString="manuell"/>
+        <attribute name="erfuellt" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="reihenfolge" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="geschoss" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="voraussetzungen" inverseEntity="Geschoss"/>
+    </entity>
+    <entity name="KalkMaterial" representedClassName="KalkMaterial" syncable="YES">
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="letzteAktualisierung" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lieferant" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="preisProEinheit" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="quelleRaw" optional="YES" attributeType="String" defaultValueString="manuell"/>
+        <attribute name="verbrauchProM2" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="verschnittProzent" optional="YES" attributeType="Double" defaultValueString="0.05" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="Lohnsatz" representedClassName="Lohnsatz" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="qualifikation" optional="YES" attributeType="String"/>
+        <attribute name="stundenlohn" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="zuschlagFaktor" optional="YES" attributeType="Double" defaultValueString="1.65" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="LVPosition" representedClassName="LVPosition" syncable="YES">
+        <attribute name="artikelNummer" optional="YES" attributeType="String"/>
+        <attribute name="bezeichnung" optional="YES" attributeType="String"/>
+        <attribute name="bgkProzent" optional="YES" attributeType="Double" defaultValueString="0.12" usesScalarValueType="YES"/>
+        <attribute name="deckelArt" optional="YES" attributeType="String"/>
+        <attribute name="deckelNotiz" optional="YES" attributeType="String"/>
+        <attribute name="seite" optional="YES" attributeType="Integer 32" usesScalarValueType="NO"/>
+        <attribute name="dokuName" optional="YES" attributeType="String"/>
+        <attribute name="dokuPath" optional="YES" attributeType="String"/>
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <attribute name="einkaufspreis" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
+        <attribute name="lieferant" optional="YES" attributeType="String"/>
+        <attribute name="menge" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="mengeJeDeckelEinheit" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="mengenQuelleRaw" optional="YES" attributeType="String" defaultValueString="manuell"/>
+        <attribute name="posNr" optional="YES" attributeType="String"/>
+        <attribute name="quellDatei" optional="YES" attributeType="String"/>
+        <attribute name="wagnisGewinnProzent" optional="YES" attributeType="Double" defaultValueString="0.08" usesScalarValueType="YES"/>
+        <attribute name="zuschlagEigen" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="zuschlagJeKostenart" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="zuschlagLohnProzent" optional="YES" attributeType="Double" defaultValueString="0.2" usesScalarValueType="YES"/>
+        <attribute name="zuschlagMaterialProzent" optional="YES" attributeType="Double" defaultValueString="0.2" usesScalarValueType="YES"/>
+        <attribute name="zuschlagGeraetProzent" optional="YES" attributeType="Double" defaultValueString="0.2" usesScalarValueType="YES"/>
+        <relationship name="aufmasse" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Aufmass" inverseName="lvPosition" inverseEntity="Aufmass"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="lvPositionen" inverseEntity="Event"/>
+        <relationship name="geschoss" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="lvPositionen" inverseEntity="Geschoss"/>
+        <relationship name="kalkGeraete" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionGeraet" inverseName="position" inverseEntity="PositionGeraet"/>
+        <relationship name="kalkLohn" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionLohn" inverseName="position" inverseEntity="PositionLohn"/>
+        <relationship name="kalkMaterialien" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PositionMaterial" inverseName="position" inverseEntity="PositionMaterial"/>
+        <relationship name="deckel" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="unterPositionen" inverseEntity="LVPosition"/>
+        <relationship name="unterPositionen" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="deckel" inverseEntity="LVPosition"/>
+    </entity>
+    <entity name="Mangel" representedClassName="Mangel" syncable="YES">
+        <attribute name="beschreibung" optional="YES" attributeType="String"/>
+        <attribute name="erfasstAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="erfasstVon" optional="YES" attributeType="String"/>
+        <attribute name="fotoPfad" optional="YES" attributeType="String"/>
+        <attribute name="frist" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="gewerk" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
+        <attribute name="ort" optional="YES" attributeType="String"/>
+        <attribute name="schwere" optional="YES" attributeType="String" defaultValueString="mittel"/>
+        <attribute name="statusRawValue" optional="YES" attributeType="String" defaultValueString="offen"/>
+        <attribute name="titel" optional="YES" attributeType="String"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="maengel" inverseEntity="Event"/>
+    </entity>
+    <entity name="PositionGeraet" representedClassName="PositionGeraet" syncable="YES">
+        <attribute name="geraetName" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="kostenProStunde" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="stunden" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkGeraete" inverseEntity="LVPosition"/>
+    </entity>
+    <entity name="PositionLohn" representedClassName="PositionLohn" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="qualifikation" optional="YES" attributeType="String"/>
+        <attribute name="stunden" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="stundenBruttoEK" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkLohn" inverseEntity="LVPosition"/>
+    </entity>
+    <entity name="PositionMaterial" representedClassName="PositionMaterial" syncable="YES">
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <attribute name="einzelpreis" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="materialName" optional="YES" attributeType="String"/>
+        <attribute name="mengeProEinheit" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="verschnittProzent" optional="YES" attributeType="Double" defaultValueString="0.05" usesScalarValueType="YES"/>
+        <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkMaterialien" inverseEntity="LVPosition"/>
+    </entity>
+</model>
