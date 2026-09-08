@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var searchText = ""
     @State private var showingAddEventSheet = false
     @State private var showingHousePlanner = false
+    @State private var showingGrap8 = false
     @State private var showHelp = false
 
     var body: some View {
@@ -61,6 +62,11 @@ struct ContentView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showingGrap8 = true } label: {
+                    Label("Grap8", systemImage: "point.3.connected.trianglepath.dotted")
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddEventSheet = true }) {
                     Label("Neue Baustelle", systemImage: "plus.circle.fill")
                 }
@@ -74,6 +80,12 @@ struct ContentView: View {
                 .environment(\.managedObjectContext, viewContext)
             }
             .presentationSizing(.page)
+        }
+        .sheet(isPresented: $showingGrap8) {
+            // Schritt 1: die Leinwand zeigt ihre Beispieldaten, noch ohne Verbindung
+            // zu Core Data. Darum hängt sie an der Liste und nicht an einer Baustelle.
+            Grap8View()
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $showingAddEventSheet) {
             AddEventView()

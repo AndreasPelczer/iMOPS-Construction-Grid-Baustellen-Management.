@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C0DE8000000000000000A002 /* Grap8Web in Resources */ = {isa = PBXBuildFile; fileRef = C0DE8000000000000000A001 /* Grap8Web */; };
 		1AD049962FCD7FC800DEF29D /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 1AD049952FCD7FC800DEF29D /* Yams */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C0DE8000000000000000A001 /* Grap8Web */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Grap8Web; sourceTree = "<group>"; };
 		1A961ED92F45FFC30027C5B3 /* iMOPS-Construction-Grid-Baustellen-Management..app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iMOPS-Construction-Grid-Baustellen-Management..app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A961EE82F45FFC50027C5B3 /* iMOPS-Construction-Grid-Baustellen-Management.Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "iMOPS-Construction-Grid-Baustellen-Management.Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A961EF22F45FFC50027C5B3 /* iMOPS-Construction-Grid-Baustellen-Management.UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "iMOPS-Construction-Grid-Baustellen-Management.UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,6 +98,7 @@
 				1A961EDB2F45FFC30027C5B3 /* iMOPS-Construction-Grid-Baustellen-Management. */,
 				1A961EEB2F45FFC50027C5B3 /* iMOPS-Construction-Grid-Baustellen-Management.Tests */,
 				1A961EF52F45FFC50027C5B3 /* iMOPS-Construction-Grid-Baustellen-Management.UITests */,
+				C0DE8000000000000000A001 /* Grap8Web */,
 				1A961EDA2F45FFC30027C5B3 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -234,6 +237,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0DE8000000000000000A002 /* Grap8Web in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

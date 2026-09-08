@@ -2,6 +2,58 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 08.09.2026 — Grap8 als Fenster in der App (WKWebView, Schritt 1)
+
+**Branch `feature/grap8-webview`.** Die Web-Leinwand läuft **gebündelt** in der App.
+Kein SwiftUI-Nachbau, **keine** Datenbrücke, **kein** Core-Data-Delta. Die Leinwand zeigt
+ihre eigenen Beispieldaten.
+
+### Was neu ist
+| Stelle | |
+|---|---|
+| `Grap8Web/` (Repo-Wurzel) | gebaute Leinwand, als **Folder Reference** im Bundle |
+| `Views/Grap8View.swift` | `UIViewRepresentable` um eine `WKWebView` + Auslieferung aus dem Bundle |
+| `ContentView` | Toolbar-Knopf „Grap8" → Blatt, gleiches Muster wie der Hausplaner daneben |
+| `scripts/grap8-bauen.sh` | baut `~/Projekte/grap8-canvas` neu nach `Grap8Web/` |
+| `~/Projekte/grap8-canvas/vite.config.js` | `base: './'` (liegt außerhalb des Repos) |
+
+### Zwei Fallen — beide im Simulator nachgemessen, nicht vermutet
+**1. Die synchronisierte Xcode-Gruppe klopft Unterordner flach.** Belegt am bestehenden
+Bundle: `Resources/scharpegge_katalog.csv` liegt darin im Wurzelverzeichnis, es gibt kein
+`Resources/` und kein `Knowledge/`. `ExactMatchKnowledge.locateYAML` fängt das mit einem
+zweiten Versuch ab — für die Leinwand geht das nicht, `index.html` sucht `./assets/…` als
+echten Unterordner. Darum liegt `Grap8Web` **außerhalb** des Quellordners und ist von Hand
+als Folder Reference (`lastKnownFileType = folder`) in `project.pbxproj` eingetragen.
+
+**2. `loadFileURL` ergibt einen weißen Schirm — und meldet nichts.** Vite baut
+`<script type="module">`. Ein Modul hat über `file://` die Herkunft `null`, die CORS-Prüfung
+verwirft es **stillschweigend**: das Hauptdokument lädt sauber durch (im Log
+`ProgressTracker::progressCompleted … isMainLoad 1`), `didFail` feuert nie, die Seite bleibt
+leer. Der Auftrag sah `loadFileURL` vor — das trägt nicht.
+**Ersetzt durch ein eigenes Schema:** `Grap8BundleHandler` (`WKURLSchemeHandler`) liefert
+den Bundle-Ordner unter `grap8://leinwand/` aus. Damit hat die Leinwand eine echte Herkunft,
+Module laden normal, und es geht **kein Byte ins Netz** — geprüft: in `Grap8Web` stehen nur
+XML-Namensräume und ein Attributionslink, nichts wird nachgeladen.
+
+### Nachgewiesen
+- Bundle-Struktur erhalten: `…app/Grap8Web/assets/index-*.js` liegt als Unterordner drin.
+- Leinwand läuft im iPad-Simulator: Knoten, Kanten, Bausteine-Palette, Detail-Seitenleiste,
+  Zoom-Steuerung, Minikarte. Screenshot beim Auftrag.
+- `** TEST SUCCEEDED **` (Unit-Suite), Build grün.
+
+### Offen
+- **Fingertipp-Weg ungeprüft.** Der Simulator lief hier headless, der Menüpunkt wurde nicht
+  angetippt — das Blatt wurde zum Prüfen vorübergehend automatisch geöffnet (zurückgenommen).
+  Auf dem iPad rutscht „Grap8" wie Demo/Hausplaner/+ ins „⋯"-Überlaufmenü. **Andreas testet.**
+- **Kneifgriff auf echter Hardware.** Seitenzoom ist per Viewport-Skript abgeschaltet, die
+  Geste gehört React Flow. Im Simulator nicht belastbar zu prüfen.
+- **Datenbrücke** bleibt Nicht-Ziel: erst Design-Gate „wo lebt der Graph", dann entweder
+  `WKScriptMessageHandler` oder — bevorzugt — beide Seiten über die Box-Graph-API.
+- `Grap8Web/` ist **Bauergebnis im Repo**. Bewusst so: sonst baut die App nicht ohne das
+  Web-Projekt daneben. Nach jeder Änderung `scripts/grap8-bauen.sh` laufen lassen.
+
+---
+
 ## Delta 08.09.2026 — eine Quelle für „fertig" (`status` schlägt `isCompleted`)
 
 **Branch `refactor/auftrag-status-eine-quelle`.** Löst die Grap8-Krücke ab.
