@@ -24,6 +24,8 @@
         <attribute name="storageNote" attributeType="String"/>
         <attribute name="totalProcessingTime" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Event" inverseName="jobs" inverseEntity="Event"/>
+        <relationship name="istVoraussetzungFuer" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Voraussetzung" inverseName="quelle" inverseEntity="Voraussetzung"/>
+        <relationship name="voraussetzungen" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Voraussetzung" inverseName="auftrag" inverseEntity="Voraussetzung"/>
     </entity>
     <entity name="Bautagesbericht" representedClassName="Bautagesbericht" syncable="YES">
         <attribute name="ausgefuehrteArbeiten" optional="YES" attributeType="String"/>
@@ -115,6 +117,8 @@
         <attribute name="erfuellt" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="reihenfolge" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="geschoss" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="voraussetzungen" inverseEntity="Geschoss"/>
+        <relationship name="quelle" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="istVoraussetzungFuer" inverseEntity="Auftrag"/>
+        <relationship name="auftrag" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="voraussetzungen" inverseEntity="Auftrag"/>
     </entity>
     <entity name="KalkMaterial" representedClassName="KalkMaterial" syncable="YES">
         <attribute name="einheit" optional="YES" attributeType="String"/>

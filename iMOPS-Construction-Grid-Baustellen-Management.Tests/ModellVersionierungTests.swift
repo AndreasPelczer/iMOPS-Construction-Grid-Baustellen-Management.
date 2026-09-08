@@ -80,6 +80,50 @@ struct ModellVersionierungTests {
         return kopie
     }
 
+    // MARK: - Migration V1 -> V2
+
+    /// Der eigentliche Nachweis — und er kommt ohne Store aus.
+    ///
+    /// `NSMappingModel.inferredMappingModel` arbeitet **rein auf Modellebene**: kein
+    /// Coordinator, kein `NSPersistentContainer`, keine Objekte. Damit fällt genau das
+    /// weg, was den früheren Alt-Store-Test die halbe Suite hat umwerfen lassen
+    /// (siehe unten). Wirft die Methode, ist die Migration NICHT inferierbar — dann
+    /// scheitert auf einem Gerät mit Altdaten das erste Öffnen nach dem Update.
+    @Test func migrationVonDerAltenZurAktuellenVersionIstInferierbar() throws {
+        let momd = try momdURL
+        let info = try versionInfo
+        let aktuell = try #require(info["NSManagedObjectModel_CurrentVersionName"] as? String)
+        let alleHashes = try #require(info["NSManagedObjectModel_VersionHashes"] as? [String: Any])
+        let altName = try #require(alleHashes.keys.first { $0 != aktuell })
+
+        let quelle = try #require(
+            NSManagedObjectModel(contentsOf: momd.appendingPathComponent("\(altName).mom")))
+        let ziel = try #require(
+            NSManagedObjectModel(contentsOf: momd.appendingPathComponent("\(aktuell).mom")))
+
+        // Wenn beide gleich wären, prüfte der Test nichts.
+        #expect(quelle.entityVersionHashesByName != ziel.entityVersionHashesByName,
+                "Alte und aktuelle Version sind identisch — hier ist nichts zu migrieren.")
+
+        let mapping = try NSMappingModel.inferredMappingModel(
+            forSourceModel: quelle, destinationModel: ziel)
+        #expect(mapping.entityMappings.isEmpty == false)
+    }
+
+    /// Schutz gegen genau den Fehler, der beim Aufsetzen der Versionierung passiert ist:
+    /// eine Modelländerung landet in der ALTEN Version, current bleibt ohne sie. Build
+    /// und Merge blieben dabei grün, die App lädt aber ein Modell ohne die Relationen.
+    @Test func aktuelleVersionTraegtDieKausalketteAusPR140() throws {
+        let geladen = try #require(NSManagedObjectModel(contentsOf: try momdURL))
+        let voraussetzung = try #require(geladen.entitiesByName["Voraussetzung"])
+        let auftrag = try #require(geladen.entitiesByName["Auftrag"])
+
+        #expect(voraussetzung.relationshipsByName["quelle"] != nil)
+        #expect(voraussetzung.relationshipsByName["auftrag"] != nil)
+        #expect(auftrag.relationshipsByName["istVoraussetzungFuer"] != nil)
+        #expect(auftrag.relationshipsByName["voraussetzungen"] != nil)
+    }
+
     // MARK: - Was hier NICHT getestet wird, und warum
 
     // Ein Test, der einen echten Alt-Store anlegt (SQLite mit der V1-Version) und
