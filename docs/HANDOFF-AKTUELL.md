@@ -2,6 +2,74 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 08.09.2026 — Grap8 Branch 1: die Kausalkette bekommt einen Datenkern
+
+**Branch `feature/grap8-kausalkette`.** Reiner Datenkern + Logik + Tests. **Keine UI** —
+die Leinwand kommt in einem späteren Branch (Nicht-Ziel des Auftrags).
+
+### Der Befund, der vorher stand
+`Views/KausalbauketteView.swift` **gibt es schon** — aber die Kette darin ist **fest
+verdrahtet**: drei Glieder, und die Zuordnung läuft über Textsuche in `processingDetails`
+(`"bauzaun"`, `"baustrom"`, `"bauwasser"`). Das ist keine Graph-Struktur, sondern eine
+Annahme über Auftragsnamen. Branch 1 legt darunter die echten Kanten — die View bleibt
+vorerst unangetastet.
+
+Ebenso vorher geprüft: **eine eigene `Schritt`-Entity gibt es nicht.** Der `Auftrag` *ist*
+der Schritt. Es wurde keine neue Entity erfunden.
+
+### Modell (additiv, in-place wie im Repo üblich)
+| Relation | | |
+|---|---|---|
+| `Voraussetzung.quelle -> Auftrag` | optional, maxCount 1 | der Schritt, der zuerst fertig sein muss |
+| `Voraussetzung.auftrag -> Auftrag` | optional, maxCount 1 | der abhängige Schritt |
+| `Auftrag.istVoraussetzungFuer` | to-many, **Cascade** | Kanten, in denen er die Quelle ist |
+| `Auftrag.voraussetzungen` | to-many, **Cascade** | Kanten, auf die er wartet |
+
+`geschoss -> Geschoss` **bleibt unberührt**: eine Voraussetzung ohne `quelle` ist weiter
+das manuelle Welle-9-Häkchen und richtet sich nach dem gespeicherten `erfuellt`.
+
+**Warum Cascade und nicht Nullify:** eine Kante, deren Auftrag gelöscht wurde, fiele auf
+`erfuellt` (Default NO) zurück und blockierte den Nachfolger **für immer** — ein Geist,
+den niemand mehr abhaken kann. Ein Test hält das fest.
+
+### Logik: `Service/Kausalkette.swift`
+Nichts davon wird persistiert — Startbarkeit ist immer live gerechnet, wie beim
+Welle-9-Rollup in `Hierarchie+Status.swift`. Kein zweiter Zustand, der veralten kann.
+
+- `Voraussetzung.istErfuellt` — mit `quelle`: ist der Vorgänger fertig? Ohne: `erfuellt`.
+- `Auftrag.istStartbar` / `.offeneVoraussetzungen` / `.vorgaenger`
+- `Kausalkette.verknuepfe(_:brauchtVorher:in:)` — legt die Kante an und **wirft**, wenn
+  ein Kreis entstünde (Tiefensuche rückwärts über die `quelle`-Kanten).
+
+### Die Entscheidung, die man kennen muss: was heißt „fertig"?
+`isCompleted` und `status` sind **zwei Felder für dieselbe Aussage** und laufen im Bestand
+auseinander: `JobViewModel` setzt beide, **`AuftragDetailView:367` setzt nur `status`**.
+Eine reine `isCompleted`-Prüfung hätte also den Nachfolger nicht freigegeben, wenn jemand
+über die Detailansicht abhakt — ein Blocker, den keiner sieht. Darum zählt hier **jedes von
+beiden** als fertig, und ein Test deckt genau diesen Weg ab.
+**Das ist eine Krücke, keine Lösung.** Die zwei Felder gehören zusammengeführt — eigener Punkt.
+
+### Nachweis
+**11 Tests** in `KausalketteTests.swift`, alle namentlich grün (Nudel-Test, direkter und
+transitiver Zyklus, Selbstbezug, Kompatibilität der Geschoss-Voraussetzung, Löschregel).
+Build grün, ganze Unit-Suite `TEST SUCCEEDED`. Der gezielte Einzellauf war Absicht: die
+Sammelmeldung sagt nicht, ob ein Test **gelaufen** oder nur nicht fehlgeschlagen ist.
+
+### Offen / für den Statik-Blick
+- **Migration.** Das Modell hat weiterhin **nur eine Version** (kein `.xccurrentversion`),
+  wie bei allen bisherigen Modelländerungen im Repo (zuletzt Entity `Bautagesbericht`).
+  Lightweight Migration ist im `PersistenceController` eingeschaltet, aber für ein
+  *inferiertes* Mapping braucht Core Data das **Quellmodell** — das es ohne Versionierung
+  nicht mehr gibt. Auf einem Gerät mit Altbestand kann das erste Öffnen deshalb scheitern
+  (`fatalError` in `loadPersistentStores`). Im Simulator/Neubau fällt das nicht auf.
+  **Nicht eigenmächtig geändert** — eine zweite Modellversion einzuführen ist eine
+  strukturelle Entscheidung für Andreas, kein Nebenbei-Commit.
+- **Doppelte Kanten** werden nicht verhindert (zweimal dieselbe Verknüpfung ist erlaubt).
+  Harmlos für die Rechnung, unsauber in der Liste. Bewusst außerhalb des Auftrags gelassen.
+- **Keine Ableitung aus Statik/Geometrie** — nur der Kanten-Mechanismus, wie beauftragt.
+
+---
+
 ## Delta 07.09.2026 — Bautagesbericht wird zum Tagebuch (Branch `feature/bautagesbericht-persistenz`)
 
 **Nicht gepusht, kein PR.** Vier Commits, Build und Unit-Suite grün.
