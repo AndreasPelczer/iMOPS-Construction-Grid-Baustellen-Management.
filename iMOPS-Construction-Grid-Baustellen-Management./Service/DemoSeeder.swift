@@ -228,7 +228,6 @@ Sanitaer OG – Baeder + Kueche
         job.event = event
         job.employeeName = employeeName
         job.status = status
-        job.isCompleted = (status == .completed)
         job.storageLocation = storageLocation
         job.storageNote = storageNote
         job.deliveryTemperature = isHotDelivery

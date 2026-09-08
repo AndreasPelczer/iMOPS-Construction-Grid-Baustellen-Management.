@@ -216,7 +216,8 @@ struct EmployeeDetailView: View {
         let name = employee.name ?? ""
         guard !name.isEmpty else { employeeJobs = []; return }
         let req: NSFetchRequest<Auftrag> = Auftrag.fetchRequest()
-        req.predicate = NSPredicate(format: "employeeName == %@ AND isCompleted == NO", name)
+        req.predicate = NSPredicate(format: "employeeName == %@ AND statusRawValue != %@",
+                                    name, AuftragStatus.completed.rawValue)
         req.sortDescriptors = [NSSortDescriptor(keyPath: \Auftrag.statusRawValue, ascending: true)]
         employeeJobs = (try? ctx.fetch(req)) ?? []
     }

@@ -1031,8 +1031,7 @@ enum HouseProjectGenerator {
             let job = Auftrag(context: context)
             job.event = event
             job.employeeName = ""
-            job.status = .pending
-            job.isCompleted = false
+            job.status = .pending   // zieht isCompleted mit
             job.storageLocation = ""
             job.storageNote = ""
             job.deliveryTemperature = false

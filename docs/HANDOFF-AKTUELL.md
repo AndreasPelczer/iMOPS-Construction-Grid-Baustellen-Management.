@@ -2,6 +2,62 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 08.09.2026 — eine Quelle für „fertig" (`status` schlägt `isCompleted`)
+
+**Branch `refactor/auftrag-status-eine-quelle`.** Löst die Grap8-Krücke ab.
+**Kein Schema-Delta** — `.xcdatamodel` bitgleich gegen `main` (belegt per `git diff`).
+
+### Was auseinanderlief — vollständig, nicht wie beim ersten Anlauf
+| Stelle | setzte |
+|---|---|
+| `addStep` · `toggleStep` · `deleteStep` · `applyTemplate` · Checkliste leeren | **nur `isCompleted`**, nie `status` |
+| `resetCompletion()` | `isCompleted = false`, **`status` blieb `.completed`** — „geöffnet" und gleichzeitig fertig |
+| `EditJobView` | Status **und** Häkchen als **getrennte Eingabefelder** — der Nutzer konnte sie widersprüchlich setzen |
+| `AuftragRowView.setStatus` | `isCompleted = true` **nur beim Fertigsetzen, nie zurück** — ein Auftrag, der wieder auf `.pending` ging, blieb im Flag „fertig" |
+| `markJobCompleted` · `JobViewModel` · `AddJobViewModel` · `DemoSeeder` | beide, konsistent |
+
+**`AuftragRowView` ist mir beim ersten Durchgang entgangen** — mein eigener `grep`-Filter
+(`grep -v "== "`) hat die Zeile weggeworfen, weil sie zufällig ein `==` enthielt. Gefunden
+erst bei der Abschluss-Gegenprobe **ohne** selbstgebauten Filter. Merksatz: der Filter, der
+die Suche übersichtlich macht, ist der, der den Fund versteckt.
+
+**`EditJobView` war die schlimmste Quelle:** zwei Bedienelemente für einen Zustand.
+
+### Wie es jetzt aussieht
+- **`Auftrag.istFertig`** (`status == .completed`) ist **die eine Stelle**, die die Frage
+  beantwortet. Alle Leser darauf umgestellt — 24 Fundstellen in 7 Dateien, plus Grap8.
+- **Der `status`-Setter zieht `isCompleted` mit.** `statusRawValue` wird nirgends sonst
+  geschrieben (geprüft) — damit ist der Setter die einzige Tür, und *jeder* bestehende
+  `job.status = …`-Pfad wird automatisch konsistent, ohne ihn anzufassen.
+- **`setzeFertig(_:)`** für Pfade, die „fertig/nicht fertig" ausdrücken. „Nicht fertig"
+  stuft **nur herab, was fertig war**: ein Auftrag auf `.pending` bleibt `.pending`, wenn
+  jemand einen Checklistenpunkt anlegt. Ziel beim Öffnen ist `.inProgress` — so hat es
+  `KausalbauketteView` beim Umschalten schon immer gemacht.
+- **`isCompleted` bleibt** als Legacy-Feld (Schema unverändert), wird aber von keinem Pfad
+  mehr direkt geschrieben. Rauswerfen braucht V3 → eigener Branch.
+- **Drei NSPredicates** (`EmployeeDetailView`, `CrewPlanningView` ×2) mussten auf
+  `statusRawValue` statt `isCompleted` — **ein Prädikat kann keine computed property sehen.**
+  Wer `istFertig` in einen Fetch schreibt, bekommt einen Laufzeitfehler.
+
+### Backfill
+`Models/AuftragFertigMigration.swift`, im Boot-Pfad neben `HierarchieMigration`.
+**Konfliktregel konservativ:** fertig ⇔ `status == .completed` **ODER** `isCompleted == true`.
+Nimmt also niemandem einen Haken weg.
+
+Kein `UserDefaults`-Flag wie bei `ZuschlagMigration`, mit Absicht: das **Prädikat holt nur
+die widersprüchlichen Datensätze** — im Normalfall werden gar keine Objekte geladen. Damit
+ist der Lauf billig, idempotent *by design* und selbstheilend, falls doch je wieder etwas
+auseinanderläuft. Anzahl wird geloggt.
+
+### Offen
+- **`isCompleted` wirklich entfernen** — braucht eine neue Modellversion (V3) und damit
+  PR #141 als Basis. Eigener Branch, ausdrücklich nicht hier.
+- **`EditJobView` zeigt weiter ein Fertig-Häkchen.** Es schreibt jetzt über `setzeFertig`
+  auf den Status, ist also nicht mehr widersprüchlich — aber ein zweites Bedienelement für
+  etwas, das der Status-Picker daneben schon sagt. UI-Frage, kein Datenproblem.
+
+---
+
 ## Delta 08.09.2026 — Grap8 Branch 1: die Kausalkette bekommt einen Datenkern
 
 **Branch `feature/grap8-kausalkette`.** Reiner Datenkern + Logik + Tests. **Keine UI** —
@@ -42,12 +98,20 @@ Welle-9-Rollup in `Hierarchie+Status.swift`. Kein zweiter Zustand, der veralten 
   ein Kreis entstünde (Tiefensuche rückwärts über die `quelle`-Kanten).
 
 ### Die Entscheidung, die man kennen muss: was heißt „fertig"?
-`isCompleted` und `status` sind **zwei Felder für dieselbe Aussage** und laufen im Bestand
-auseinander: `JobViewModel` setzt beide, **`AuftragDetailView:367` setzt nur `status`**.
-Eine reine `isCompleted`-Prüfung hätte also den Nachfolger nicht freigegeben, wenn jemand
-über die Detailansicht abhakt — ein Blocker, den keiner sieht. Darum zählt hier **jedes von
-beiden** als fertig, und ein Test deckt genau diesen Weg ab.
-**Das ist eine Krücke, keine Lösung.** Die zwei Felder gehören zusammengeführt — eigener Punkt.
+`isCompleted` und `status` sind **zwei Felder für dieselbe Aussage** und liefen im Bestand
+auseinander. Darum zählte hier **jedes von beiden** als fertig — eine Krücke.
+
+> **✏️ Korrektur (08.09., beim Aufräumen).** Hier stand: „`JobViewModel` setzt beide,
+> `AuftragDetailView:367` setzt nur `status`". **Das war falsch herum.**
+> `markJobCompleted()` setzte sehr wohl beide. Die echte Divergenz saß in den
+> Checklisten-Aktionen (`addStep`, `toggleStep`, `deleteStep`, `applyTemplate`), die
+> **nur `isCompleted`** setzten und nie `status` — und in `resetCompletion()`, das den
+> Auftrag öffnete, `status` aber auf `.completed` stehen ließ. Dazu bot `EditJobView`
+> beides als **getrennte Eingabefelder** an.
+> Die Krücke war also nötig, nur die Begründung war vertauscht. Aufgefallen erst, als
+> für die Ablösung wirklich jede Fundstelle durchgegangen wurde.
+
+**Abgelöst am 08.09.** durch `Auftrag.istFertig` — siehe eigenen Eintrag unten.
 
 ### Nachweis
 **11 Tests** in `KausalketteTests.swift`, alle namentlich grün (Nudel-Test, direkter und

@@ -176,10 +176,10 @@ struct EventDetailView: View {
         guard let jobsSet = event.jobs,
               var allJobs = jobsSet.allObjects as? [Auftrag] else { return [] }
         if selectedJobFilter == .open {
-            allJobs = allJobs.filter { !$0.isCompleted }
+            allJobs = allJobs.filter { !$0.istFertig }
         }
         return allJobs.sorted { a, b in
-            if a.isCompleted != b.isCompleted { return !a.isCompleted }
+            if a.istFertig != b.istFertig { return !a.istFertig }
             return (a.employeeName ?? "") < (b.employeeName ?? "")
         }
     }

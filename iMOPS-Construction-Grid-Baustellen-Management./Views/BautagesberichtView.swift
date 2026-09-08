@@ -80,7 +80,7 @@ struct BautagesberichtView: View {
     private var auftraege: [Auftrag]  { (event.jobs?.allObjects as? [Auftrag]) ?? [] }
     private var lvAnzahl:  Int        { event.lvPositionen?.count ?? 0 }
     private var maengel:   Int        { event.maengel?.count ?? 0 }
-    private var offene:    Int        { auftraege.filter { !$0.isCompleted }.count }
+    private var offene:    Int        { auftraege.filter { !$0.istFertig }.count }
 
     var body: some View {
         NavigationStack {
@@ -222,7 +222,7 @@ struct BautagesberichtView: View {
         b.notizen   = notizen
 
         b.snapAuftraegeGesamt = Int16(auftraege.count)
-        b.snapAuftraegeOffen  = Int16(auftraege.filter { !$0.isCompleted }.count)
+        b.snapAuftraegeOffen  = Int16(auftraege.filter { !$0.istFertig }.count)
         b.snapLVPositionen    = Int16(lv.count)
         b.snapMaengel         = Int16(maengel.count)
 

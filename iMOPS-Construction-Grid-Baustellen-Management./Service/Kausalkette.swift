@@ -43,15 +43,17 @@ enum Kausalkette {
 
     /// Gilt ein Auftrag als erledigt?
     ///
-    /// Bewusst ODER: `isCompleted` und `status` sind zwei Felder für dieselbe
-    /// Aussage und laufen im Bestand auseinander — `JobViewModel` setzt beide
-    /// (`job.isCompleted = (newStatus == .completed)`), `AuftragDetailView`
-    /// setzt nur `status = .completed`. Wer also über die Detailansicht abhakt,
-    /// hätte bei reiner `isCompleted`-Prüfung den Nachfolger nicht freigegeben.
-    /// Solange die zwei Felder nicht zusammengeführt sind, zählt hier jedes von
-    /// beiden als „fertig“ — lieber freigeben als stillschweigend blockieren.
+    /// Die Krücke ist abgelöst: hier stand eine ODER-Prüfung über `isCompleted`
+    /// **und** `status`, weil die beiden Felder auseinanderliefen. Seit
+    /// `Auftrag.istFertig` gibt es genau eine Quelle, und `status` ist sie.
+    ///
+    /// *Nachtrag zur Begründung von damals:* Die Richtung war falsch beschrieben.
+    /// Nicht `AuftragDetailView` setzte allein den Status — umgekehrt setzten die
+    /// Checklisten-Aktionen dort **nur** `isCompleted` und nie `status`, und
+    /// `resetCompletion()` öffnete den Auftrag, ließ `status` aber auf
+    /// `.completed`. Die Krücke war trotzdem nötig, nur eben andersherum.
     static func istFertig(_ auftrag: Auftrag) -> Bool {
-        auftrag.isCompleted || auftrag.status == .completed
+        auftrag.istFertig
     }
 
     /// Legt die Kante „\(ziel) braucht vorher \(quelle)“ an.

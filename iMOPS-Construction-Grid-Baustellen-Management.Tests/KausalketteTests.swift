@@ -27,7 +27,6 @@ struct KausalketteTests {
         a.processingDetails = bezeichnung
         a.status = .pending
         a.storageNote = ""
-        a.isCompleted = false
         return a
     }
 
@@ -46,22 +45,23 @@ struct KausalketteTests {
         #expect(wasser.istStartbar == true)
         #expect(wasser.istVoraussetzungFuerArray.count == 1)
 
-        wasser.isCompleted = true
+        wasser.status = .completed
 
         #expect(nudeln.istStartbar == true)
         #expect(nudeln.offeneVoraussetzungen.isEmpty)
     }
 
-    /// Der zweite Weg, einen Auftrag abzuhaken: `AuftragDetailView` setzt nur
-    /// `status`, nicht `isCompleted`. Auch der muss den Nachfolger freigeben.
-    @Test @MainActor func statusAlleinGibtAuchFrei() throws {
+    /// Früher zählte hier eine ODER-Krücke über `isCompleted` UND `status`, weil
+    /// die zwei Felder auseinanderliefen. Seit `Auftrag.istFertig` gibt es eine
+    /// Quelle — der Status. Das Legacy-Feld zieht der Setter mit.
+    @Test @MainActor func derStatusGibtDenNachfolgerFrei() throws {
         let wasser = macheAuftrag("Wasser erhitzen")
         let nudeln = macheAuftrag("Nudeln kochen")
         try Kausalkette.verknuepfe(nudeln, brauchtVorher: wasser, in: ctx)
 
         #expect(nudeln.istStartbar == false)
-        wasser.status = .completed          // isCompleted bleibt false
-        #expect(wasser.isCompleted == false)
+        wasser.status = .completed
+        #expect(wasser.isCompleted == true, "Das Legacy-Feld muss mitgezogen werden.")
         #expect(nudeln.istStartbar == true)
     }
 
@@ -79,10 +79,10 @@ struct KausalketteTests {
         try Kausalkette.verknuepfe(nudeln, brauchtVorher: salz, in: ctx)
 
         #expect(nudeln.offeneVoraussetzungen.count == 2)
-        topf.isCompleted = true
+        topf.status = .completed
         #expect(nudeln.istStartbar == false)          // einer reicht nicht
         #expect(nudeln.offeneVoraussetzungen.count == 1)
-        salz.isCompleted = true
+        salz.status = .completed
         #expect(nudeln.istStartbar == true)
     }
 
@@ -136,11 +136,11 @@ struct KausalketteTests {
         #expect(b.istStartbar == false)
         #expect(c.istStartbar == false)
 
-        a.isCompleted = true
+        a.status = .completed
         #expect(b.istStartbar == true)
         #expect(c.istStartbar == false)   // b ist noch nicht fertig
 
-        b.isCompleted = true
+        b.status = .completed
         #expect(c.istStartbar == true)
     }
 
