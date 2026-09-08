@@ -4,8 +4,12 @@
 
 ## Delta 08.09.2026 — Grap8 Branch 1: die Kausalkette bekommt einen Datenkern
 
-**Branch `feature/grap8-kausalkette`.** Reiner Datenkern + Logik + Tests. **Keine UI** —
-die Leinwand kommt in einem späteren Branch (Nicht-Ziel des Auftrags).
+**PR #140, in `main`.** Reiner Datenkern + Logik + Tests. **Keine UI** — die Leinwand
+kommt in einem späteren Branch (Nicht-Ziel des Auftrags).
+
+> ⚠️ **Wer nach `Voraussetzung.quelle` im Modell sucht: die steht in `test25B 2.xcdatamodel`,
+> nicht in `test25B.xcdatamodel`.** Seit der Versionierung (nächster Abschnitt) ist V2 die
+> aktuelle Version; V1 ist bewusst der Stand davor.
 
 ### Der Befund, der vorher stand
 `Views/KausalbauketteView.swift` **gibt es schon** — aber die Kette darin ist **fest
@@ -67,8 +71,78 @@ Sammelmeldung sagt nicht, ob ein Test **gelaufen** oder nur nicht fehlgeschlagen
 - **Doppelte Kanten** werden nicht verhindert (zweimal dieselbe Verknüpfung ist erlaubt).
   Harmlos für die Rechnung, unsauber in der Liste. Bewusst außerhalb des Auftrags gelassen.
 - **Keine Ableitung aus Statik/Geometrie** — nur der Kanten-Mechanismus, wie beauftragt.
+## Delta 08.09.2026 — Fundament: das Datenmodell ist jetzt versioniert
 
----
+**Branch `fix/coredata-model-versioning` (PR #141).** Aufgesetzt **nach** dem Merge von
+PR #140 — und dadurch schärfer geworden als geplant (siehe „Die Reihenfolge").
+
+### Warum das nötig war
+Core Data kann eine Migration nur **inferieren**, wenn das alte Modell noch als eigene
+Version im Bundle liegt. `test25B.xcdatamodeld` enthielt **genau eine** Version und keine
+`.xccurrentversion` — es gab kein „von-Modell". Auf einem Gerät mit Altdaten kann das erste
+Öffnen nach einem Update deshalb hart scheitern (`fatalError` in `loadPersistentStores`).
+**Im Simulator fällt das nie auf**, weil dort neu installiert wird. Das galt für *alle*
+bisherigen Modelländerungen, zuletzt Entity `Bautagesbericht` — kein Grap8-Problem.
+
+### Wie die zwei Versionen belegt sind
+| Version | Inhalt | |
+|---|---|---|
+| `test25B.xcdatamodel` (V1) | Stand **vor** Grap8 (`42f4e32`) | das Modell, das auf einem Gerät mit Altdaten liegt |
+| `test25B 2.xcdatamodel` (V2) | Stand **mit** Grap8 (= `main`) | **current** |
+
+Beides bitgleich gegen die jeweiligen git-Stände geprüft. **Kein Schema-Inhalt erfunden** —
+V2 ist exakt `main`, V1 exakt der Vorgänger.
+
+### Die Reihenfolge — was passiert ist und warum es besser wurde
+Geplant war: erst versionieren (V1 == V2 bitgleich), dann PR #140 mergen und dessen
+Relationen nach V2 schieben. Gemergt wurde **#140 zuerst**. Statt einer Nacharbeit ergibt
+das denselben Zielzustand in einem Zug — mit einem Gewinn: weil V1 und V2 sich jetzt **echt
+unterscheiden**, ist die Migration nicht nur strukturell vorbereitet, sondern **nachweisbar**.
+
+⚠️ **Die Falle dabei war real:** nach dem Merge von `main` in diesen Branch stand Grap8 in
+**V1**, während **V2** (current) es nicht hatte. Die App hätte ein Modell ohne die neuen
+Relationen geladen — `@NSManaged var quelle` ins Leere, bei grünem Build und grünem Merge.
+Genau dagegen steht jetzt ein Test.
+
+### Nachweis
+`ModellVersionierungTests.swift`:
+
+| Test | prüft |
+|---|---|
+| `momdEnthaeltMehrAlsEineVersion` | es gibt überhaupt ein von-Modell |
+| `geladenesModellIstDieAktuelleVersion` | `Persistence.swift` lädt per `.momd`-URL die *current*-Version |
+| `migrationVonDerAltenZurAktuellenVersionIstInferierbar` | **der eigentliche Nachweis:** `NSMappingModel.inferredMappingModel` von V1 nach V2 gelingt |
+| `aktuelleVersionTraegtDieKausalketteAusPR140` | die Grap8-Relationen stehen in der **current**-Version, nicht in der alten |
+
+**Der Migrationstest kommt ohne Store aus** — `inferredMappingModel` arbeitet rein auf
+Modellebene, kein Coordinator, keine Objekte.
+
+Alle vier namentlich grün, ganze Unit-Suite `TEST SUCCEEDED`. Der Migrationstest ist
+**scharf**, weil V1 und V2 sich echt unterscheiden — bei bitgleichen Versionen hätte er
+nichts geprüft.
+
+### Ein Test wurde gebaut und wieder entfernt
+Ein Test, der einen echten SQLite-Store mit V1 anlegt und mit dem aktuellen Modell öffnet,
+lief **isoliert grün** und hat in der vollen Suite **reihenweise fremde Tests umgeworfen**,
+mit wechselnden Opfern. Crash-Report:
+
+```
+-[NSManagedObject initWithEntity:insertIntoManagedObjectContext:]
+Event.init(entity:insertInto:)
+```
+
+Genau das, wovor `Persistence.swift` warnt: das Modell wird dort **absichtlich genau einmal**
+geladen, weil zwei Modelle im selben Prozess doppelte `NSEntityDescription`s für dieselbe
+Subklasse ergeben — und **Swift Testing fährt Suites parallel**. Die Entities der Kopien auf
+`NSManagedObject` umzubiegen hat **nicht** gereicht. Sauber ginge es nur in einem eigenen
+Test-Target. Begründung steht in der Testdatei, damit der Nächste nicht dieselbe Runde dreht.
+
+### Offen — ehrlich, kein stilles „erledigt"
+**Das Öffnen eines echten, gewachsenen Altbestands ist nicht getestet.** Der Test zeigt, dass
+die Migration *inferierbar* ist; ob sie auf einem Gerät mit Jahresdaten auch durchläuft, sagt
+er nicht. **Manuell zu prüfen:** App mit Datenbestand installieren, Update einspielen, prüfen
+dass sie **ohne Reset** startet.
+
 
 ## Delta 07.09.2026 — Bautagesbericht wird zum Tagebuch (Branch `feature/bautagesbericht-persistenz`)
 
