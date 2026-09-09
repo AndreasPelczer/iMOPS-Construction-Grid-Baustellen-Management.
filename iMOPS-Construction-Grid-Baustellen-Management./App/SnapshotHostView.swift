@@ -12,6 +12,7 @@ import CoreData
 //   --snapshot-mode --target=VoraussetzungWahl   (Auswahl der möglichen Vorgänger)
 //   --snapshot-mode --target=VoraussetzungZyklus (die Meldung bei einem Kreis)
 //   --snapshot-mode --target=Grap8Kette          (die Leinwand mit einer echten Kante)
+//   --snapshot-mode --target=Grap8Generator      (echtes Hausprojekt: Symbole je Gewerk)
 // scripts/snapshot.sh fängt den Screen per simctl io ab. Roman Anhang C: VTP für die UI.
 struct SnapshotHostView: View {
     @State private var controller = PersistenceController(inMemory: true)
@@ -36,6 +37,7 @@ struct SnapshotHostView: View {
             case "VoraussetzungWahl":  SnapshotVoraussetzungWahlHost(ctx: ctx)
             case "VoraussetzungZyklus": SnapshotZyklusHost(ctx: ctx)
             case "Grap8Kette":         SnapshotGrap8Host(ctx: ctx)
+            case "Grap8Generator":     SnapshotGeneratorHost(ctx: ctx)
             case "NeuesAufmassSheet":  NeuesAufmassSheet(position: SnapshotData.position(in: ctx, state: state))
             default:                   AufmassSheet(position: SnapshotData.position(in: ctx, state: state))
             }
@@ -310,6 +312,21 @@ private struct SnapshotGrap8Host: View {
     private let baustelle: Event
     @MainActor init(ctx: NSManagedObjectContext) {
         baustelle = SnapshotKette.baue(in: ctx).event!
+    }
+    var body: some View { Grap8View(event: baustelle) }
+}
+
+// Ein echtes generiertes Hausprojekt auf der Leinwand — nicht gestellt: derselbe
+// `HouseProjectGenerator`, den auch der Hausplaner ruft. Zeigt, ob die Aufträge
+// Kostengruppen tragen und dadurch unterschiedliche Symbole bekommen.
+private struct SnapshotGeneratorHost: View {
+    private let baustelle: Event
+    @MainActor init(ctx: NSManagedObjectContext) {
+        var projekt = HouseProject()
+        projekt.projektName = "Musterhaus — Generator"
+        projekt.garage = true          // zieht das Gewerk „Aussenanlagen" mit herein
+        let ergebnis = HouseProjectGenerator.generate(from: projekt)
+        baustelle = HouseProjectGenerator.createEvent(from: ergebnis, into: ctx)
     }
     var body: some View { Grap8View(event: baustelle) }
 }

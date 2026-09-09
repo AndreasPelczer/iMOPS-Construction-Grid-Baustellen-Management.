@@ -275,3 +275,77 @@ struct KausalketteTests {
         #expect(nudeln.istStartbar == true)
     }
 }
+// MARK: - Generator: tragen die Aufträge Kostengruppen?
+
+/// Ohne Kostengruppe steht auf der Grap8-Leinwand „KG —" und alles trägt dasselbe
+/// Symbol. Der Test hält fest, dass der Generator sie setzt — und dass die Nummern
+/// zu denen passen, die `Grap8Graph` auf ein Symbol abbildet.
+struct GeneratorKostengruppeTests {
+
+    private let controller = PersistenceController(inMemory: true)
+    @MainActor private var ctx: NSManagedObjectContext { controller.container.viewContext }
+
+    @Test @MainActor func jederGenerierteAuftragHatEineKostengruppe() throws {
+        var projekt = HouseProject()
+        projekt.garage = true
+        let ergebnis = HouseProjectGenerator.generate(from: projekt)
+        let event = HouseProjectGenerator.createEvent(from: ergebnis, into: ctx)
+
+        let auftraege = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        #expect(!auftraege.isEmpty)
+
+        let ohne = auftraege.filter { ($0.kostenGruppeNummer ?? "").isEmpty }
+        #expect(ohne.isEmpty,
+                "ohne Kostengruppe: \(ohne.map(Kausalkette.bezeichnung).sorted())")
+    }
+
+    /// Der eigentliche Zweck: unterscheidbare Symbole. Ein einziges Symbol für alle
+    /// wäre genau der Zustand, den dieser Branch beseitigt.
+    @Test @MainActor func dieLeinwandBekommtMehrereSymbole() throws {
+        var projekt = HouseProject()
+        projekt.garage = true
+        let ergebnis = HouseProjectGenerator.generate(from: projekt)
+        let event = HouseProjectGenerator.createEvent(from: ergebnis, into: ctx)
+
+        let graph = Grap8Graph.aus(event)
+        let symbole = Set(graph.nodes.map(\.data.icon))
+
+        #expect(symbole.count >= 4, "nur diese Symbole: \(symbole.sorted())")
+        // „KG —" darf nirgends mehr stehen.
+        #expect(graph.nodes.allSatisfy { $0.data.kg != "KG —" })
+    }
+
+    /// Hält die Zuordnung fest, die auf der Leinwand ankommt. Ein Screenshot zeigt
+    /// nur, DASS Symbole verschieden sind; das hier sagt, WELCHES Gewerk welches
+    /// bekommt — und schlägt an, wenn jemand eine Kostengruppe verschiebt.
+    @Test @MainActor func gewerkeBekommenIhrEigenesSymbol() throws {
+        var projekt = HouseProject()
+        projekt.garage = true
+        let ergebnis = HouseProjectGenerator.generate(from: projekt)
+        let event = HouseProjectGenerator.createEvent(from: ergebnis, into: ctx)
+        let graph = Grap8Graph.aus(event)
+
+        // Knoten-Titel ist „<Gewerk> – Neubau <Haustyp>"; das Gewerk steht vorn.
+        var gefunden: [String: String] = [:]
+        for knoten in graph.nodes {
+            let gewerk = knoten.data.title.components(separatedBy: " – ").first ?? ""
+            gefunden[gewerk] = "\(knoten.data.kg)/\(knoten.data.icon)"
+        }
+
+        let erwartet: [String: String] = [
+            "Rohbau":           "KG 331/Blocks",
+            "Dach":             "KG 361/Home",
+            "Fenster & Tueren": "KG 334/Blocks",
+            "Trockenbau":       "KG 346/Blocks",
+            "Malerarbeiten":    "KG 345/Layers",
+            "Estrich & Boden":  "KG 353/Grid2x2",
+            "Elektro":          "KG 444/Zap",
+            "Sanitaer":         "KG 410/Route",
+            "Heizung":          "KG 420/Route",
+        ]
+        for (gewerk, paar) in erwartet {
+            #expect(gefunden[gewerk] == paar,
+                    "\(gewerk): erwartet \(paar), bekommen \(gefunden[gewerk] ?? "—")")
+        }
+    }
+}

@@ -211,22 +211,50 @@ extension Grap8Graph {
         return nummer.isEmpty ? "KG —" : "KG \(nummer)"
     }
 
-    /// Symbol aus der Kostengruppe. Core Data speichert kein Symbol; die
-    /// Zuordnung folgt der Bausteine-Palette der Leinwand (`PALETTE` in `App.jsx`).
+    /// Symbol aus der Kostengruppe. Core Data speichert kein Symbol; die Zuordnung
+    /// nutzt die neun Icons der Leinwand (`ICONS` in `App.jsx`) — mehr gibt es nicht.
+    ///
+    /// **Korrigiert:** die erste Fassung dieser Liste trug Bezeichnungen aus dem
+    /// Gedächtnis, und drei davon waren falsch — 352 ist „Deckenöffnungen" (nicht
+    /// Estrich, das ist 353), 336 ist „Außenwandbekleidung innen" (nicht tragende
+    /// Innenwände, das ist 341), 534 ist „Stellplätze" (nicht Zäune). Jede Nummer
+    /// hier ist jetzt gegen `DIN276BaumKatalog` geprüft; die Kommentare sind die
+    /// Katalog-Bezeichnungen. Die alten Nummern bleiben stehen — Bestandsdaten
+    /// können sie tragen —, aber sie stehen nicht mehr für das Falsche.
+    ///
+    /// Zwei Doppelungen, bewusst: **Sanitär und Heizung** teilen sich `Route`, weil
+    /// die Palette kein Haustechnik-Symbol hat und beides Rohrleitungs-Gewerke sind.
+    /// **Estrich und Ausbau** teilen sich `Grid2x2`, weil Fliesen und Bodenbeläge
+    /// dieselbe Kostengruppe tragen (353).
     private static func symbol(_ auftrag: Auftrag) -> String {
         let nummer = auftrag.kostenGruppeNummer?.trimmingCharacters(in: .whitespaces) ?? ""
         switch nummer.prefix(3) {
-        case "322": return "Box"        // Baugrube/Gründung
+        // 300 — Baukonstruktionen
+        case "322": return "Box"        // Flachgründungen und Bodenplatten
         case "331": return "Blocks"     // Tragende Außenwände
-        case "334": return "Blocks"     // Außentüren und -fenster
-        case "336": return "Blocks"     // Tragende Innenwände
-        case "351": return "Layers"     // Decken
-        case "352": return "Grid2x2"    // Deckenbeläge/Estrich
-        case "361": return "Home"       // Dachkonstruktion
+        case "334": return "Blocks"     // Außenwandöffnungen
+        case "336": return "Blocks"     // Außenwandbekleidung innen
+        case "341": return "Blocks"     // Tragende Innenwände
+        case "342": return "Blocks"     // Nichttragende Innenwände
+        case "346": return "Blocks"     // Elementierte Innenwände
+        case "345": return "Layers"     // Innenwandbekleidung
+        case "351": return "Layers"     // Deckenkonstruktion
+        case "352": return "Layers"     // Deckenöffnungen
+        case "353": return "Grid2x2"    // Deckenbeläge
+        case "354": return "Grid2x2"    // Deckenbekleidungen
+        case "361": return "Home"       // Dachkonstruktionen
         case "363": return "Home"       // Dachbeläge
-        case "442": return "Zap"        // Elektro/Leerrohre
-        case "523": return "Route"      // Wege/Pflaster
-        case "534": return "Fence"      // Zäune/Pfosten
+        case "397": return "SquarePlus" // Zusätzliche Maßnahmen
+        // 400 — Technische Anlagen
+        case "410", "411", "412": return "Route"   // Abwasser-, Wasser-, Gasanlagen
+        case "420", "421", "422": return "Route"   // Wärmeversorgungsanlagen
+        case "442": return "Zap"        // Eigenstromversorgungsanlagen
+        case "444": return "Zap"        // Niederspannungsinstallationsanlagen
+        // 500 — Außenanlagen und Freiflächen
+        case "523": return "Fence"      // Gründungsbeläge
+        case "531": return "Fence"      // Wege
+        case "533": return "Fence"      // Plätze, Höfe, Terrassen
+        case "534": return "Fence"      // Stellplätze
         default:    return "Box"
         }
     }

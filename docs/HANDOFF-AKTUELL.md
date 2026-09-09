@@ -2,6 +2,74 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 09.09.2026 — Kostengruppen im Generator: die Leinwand wird bunt
+
+**Branch `fix/generator-kostengruppe`.** Generierte Aufträge trugen keine
+`kostenGruppeNummer` → auf jedem Knoten stand „KG —", alle mit demselben Symbol.
+Jetzt setzt der Generator je Gewerk eine DIN-276-KG. **Kein Core-Data-Delta.**
+
+### 🔴 Der Befund, der den Auftrag umgestellt hat
+Der Auftrag schlug vor, die KG an `AuftragTemplate` zu hängen. **Geht nicht:**
+`templateFuerGewerk` kennt nur **6 der 13** Gewerke (nachgezählt) — die übrigen 7 bekämen
+keine Kostengruppe. Darum eine eigene `kostenGruppeFuerGewerk(_:)` neben dem Template.
+
+### 🔴 Und der zweite: meine eigenen Kommentare in `Grap8Graph.symbol()` waren falsch
+Die Liste stammte aus #145 — **von mir, aus dem Gedächtnis geschrieben statt gegen den
+Katalog geprüft**. Gegen `DIN276BaumKatalog` gemessen stimmten drei Bezeichnungen nicht:
+
+| Nummer | stand da | heißt im Katalog |
+|---|---|---|
+| 352 | „Deckenbeläge/Estrich" | **Deckenöffnungen** (Estrich ist 353) |
+| 336 | „Tragende Innenwände" | **Außenwandbekleidung innen** (tragende Innenwände sind 341) |
+| 534 | „Zäune/Pfosten" | **Stellplätze** |
+
+Genau der Fehler, den die Tao-Regel verbietet — plausibel geklungen, nie nachgesehen.
+Korrigiert, und die Datei **musste** entgegen dem Nicht-Ziel angefasst werden: sie kannte
+keine der Nummern, die der Generator jetzt setzt, alles wäre auf „Box" gefallen.
+
+### Die Zuordnung (jede Nummer gegen `DIN276BaumKatalog` geprüft)
+| Gewerk | KG | Katalog-Bezeichnung | Symbol |
+|---|---|---|---|
+| Erdarbeiten | 322 | Flachgründungen und Bodenplatten | Box |
+| Rohbau | 331 | Tragende Außenwände | Blocks |
+| Fenster & Tueren | 334 | Außenwandöffnungen | Blocks |
+| Malerarbeiten | 345 | Innenwandbekleidung | Layers |
+| Trockenbau | 346 | Elementierte Innenwände | Blocks |
+| Estrich & Boden | 353 | Deckenbeläge | Grid2x2 |
+| Ausbau | 353 | Deckenbeläge | Grid2x2 |
+| Dach | 361 | Dachkonstruktionen | Home |
+| Allgemein | 397 | Zusätzliche Maßnahmen | SquarePlus |
+| Sanitaer | 410 | Abwasser-, Wasser-, Gasanlagen | Route |
+| Heizung | 420 | Wärmeversorgungsanlagen | Route |
+| Elektro | 444 | Niederspannungsinstallationsanlagen | Zap |
+| Aussenanlagen | 531 | Wege | Fence |
+
+**Benannte Notlösungen:** Ausbau teilt sich 353 mit Estrich (Fliesen und Bodenbeläge sind
+beides Deckenbeläge). Allgemein (Endreinigung, Abnahme) ist kein Bauteil — 397 ist der
+ehrlichste Platz. Sanitär/Heizung bekommen die **Gruppen-KG** statt einer willkürlichen
+Unterposition und teilen sich `Route`: die Palette der Leinwand hat **neun** Icons und
+kein einziges für Haustechnik (nachgesehen in `ICONS`, `App.jsx`).
+
+### Nachgewiesen
+- **Screenshot iPad:** 10 Aufträge, **sechs verschiedene Symbole**, überall echte
+  KG-Labels, kein „KG —" mehr.
+- Drei neue Tests (`GeneratorKostengruppeTests`), `** TEST SUCCEEDED **`, Exit 0. Einer
+  hält die **konkrete** Gewerk→KG→Symbol-Zuordnung fest — ein Screenshot zeigt nur, *dass*
+  Symbole verschieden sind, der Test sagt *welches wohin gehört*.
+
+### Falle beim Screenshot — für die Nachwelt
+`scripts/snapshot.sh` installiert die App neu, und die Neuinstallation setzt die
+Mitteilungs-Berechtigung zurück → **der Systemdialog legt sich über den Screenshot**.
+`xcrun simctl privacy … deny` gibt es nicht (die Aktionen sind `grant`/`revoke`/`reset`).
+Weg: einmal installieren, `grant notifications`, dann starten — oder den Shot auf einem
+Simulator machen, auf dem die App schon lief.
+
+### Offen
+- iPad-Test — Andreas: Hausprojekt erzeugen → Grap8 öffnen → unterscheidbare Symbole.
+- Fachliche Gegenprobe der KGs — Falbe.
+
+---
+
 ## Delta 09.09.2026 — Aufträge verknüpfen: die Ketten bekommen eine Bedienung
 
 **Branch `feature/auftrag-verknuepfen-ui`.** Schließt den Befund aus #145: die Kanten-
