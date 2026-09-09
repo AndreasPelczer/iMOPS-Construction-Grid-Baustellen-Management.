@@ -1117,3 +1117,39 @@
     Die Ansicht sagt das und bietet "Planer oeffnen" an.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Grap8_Leinwand"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Grap8"
+    - "Leinwand"
+    - "Kausalkette ansehen"
+    - "Was ist Grap8"
+    - "Abhaengigkeiten sehen"
+    - "Wer wartet auf wen"
+  antwort: |
+    Grap8 zeigt die Auftraege einer Baustelle als Flaeche mit Kaesten und Pfeilen —
+    wer auf wen wartet.
+
+    So oeffnest du sie:
+    1. Tab "Baustellen"
+    2. Oben rechts das "..."-Menue antippen
+    3. "Grap8" waehlen
+    4. Baustelle aus der Liste antippen (die Zahl dahinter sagt, wie viele
+       Auftraege dranhaengen)
+    5. "Fertig" oben rechts schliesst die Leinwand, "Baustelle" oben links
+       wechselt zu einer anderen
+
+    Was du siehst: je ein Kasten pro Auftrag mit Name, Kostengruppe und Zustand
+    (offen / in Arbeit / erledigt). Ein Auftrag, dessen Vorgaenger alle fertig
+    sind, wird als "startklar" gezeigt; fehlt noch einer, steht "wartet".
+
+    WICHTIG — die Leinwand ist derzeit NUR ANSICHT. Sie liest die Auftraege aus
+    der App; was du dort anklickst oder verschiebst, wird NICHT gespeichert und
+    ist nach dem Schliessen weg. Aendern kannst du einen Auftrag nur in der
+    Baustelle selbst.
+
+    Warum stehen die Kaesten nebeneinander statt in einer Kette? Weil zwischen
+    den Auftraegen noch keine Abhaengigkeiten hinterlegt sind. Die App hat dafuer
+    bisher keine Bedienung — sobald es sie gibt, zeichnet Grap8 die Pfeile.
