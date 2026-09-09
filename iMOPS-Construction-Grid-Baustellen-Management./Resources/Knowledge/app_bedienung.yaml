@@ -1150,6 +1150,38 @@
     ist nach dem Schliessen weg. Aendern kannst du einen Auftrag nur in der
     Baustelle selbst.
 
-    Warum stehen die Kaesten nebeneinander statt in einer Kette? Weil zwischen
-    den Auftraegen noch keine Abhaengigkeiten hinterlegt sind. Die App hat dafuer
-    bisher keine Bedienung — sobald es sie gibt, zeichnet Grap8 die Pfeile.
+    Pfeile erscheinen, sobald du Auftraege verknuepft hast. Das machst du im
+    Auftrag selbst unter "Wartet auf" — siehe "Voraussetzung setzen".
+
+- id: "App_Voraussetzung_setzen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Voraussetzung setzen"
+    - "Auftraege verknuepfen"
+    - "Wartet auf"
+    - "Reihenfolge festlegen"
+    - "Vorgewerk festlegen"
+    - "Auftrag haengt von anderem ab"
+  antwort: |
+    Festlegen, dass ein Auftrag auf einen anderen warten muss:
+    1. Baustelle oeffnen, den Auftrag antippen
+    2. Abschnitt "Wartet auf" (unten in der Auftragsansicht)
+    3. Auf "+" tippen
+    4. Aus der Liste den Auftrag waehlen, der VORHER fertig sein muss
+       (es erscheinen nur Auftraege derselben Baustelle, die noch nicht
+       verknuepft sind)
+
+    Wieder loesen: in der Zeile auf das rote Minus tippen.
+
+    Was du siehst: ein gruener Haken heisst, der Vorgaenger ist fertig; eine
+    orange Uhr heisst, er laeuft noch. Der Auftrag gilt als startklar, sobald
+    alle Vorgaenger fertig sind — das rechnet die App live, du musst nichts
+    abhaken.
+
+    Kreis nicht moeglich: Wenn A auf B wartet, kann B nicht auch auf A warten —
+    dann koennte keiner von beiden je anfangen. Die App lehnt das mit einer
+    Meldung ab und nennt beide Auftraege beim Namen. Das gilt auch ueber
+    Zwischenschritte (A wartet auf B, B auf C, C kann nicht auf A warten).
+
+    Die Verknuepfungen sind dasselbe, was Grap8 als Pfeile zeichnet.

@@ -2,6 +2,75 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 09.09.2026 — Aufträge verknüpfen: die Ketten bekommen eine Bedienung
+
+**Branch `feature/auftrag-verknuepfen-ui`.** Schließt den Befund aus #145: die Kanten-
+Infrastruktur aus #140 stand, aber niemand konnte sie füllen — `Kausalkette.verknuepfe`
+wurde nur in Tests gerufen. Jetzt gibt es „Wartet auf" in `AuftragDetailView`.
+**Kein Core-Data-Delta**, keine Leinwand-Änderung.
+
+### Was neu ist
+| Stelle | |
+|---|---|
+| `AuftragDetailView` | Abschnitt **„Wartet auf"** — anzeigen, hinzufügen („+"), lösen (⊖) |
+| `Views/VoraussetzungWaehlenView.swift` | Auswahl der möglichen Vorgänger |
+| `Kausalkette.entknuepfe(_:brauchtNichtMehr:in:)` | Gegenstück zu `verknuepfe` |
+| `SnapshotHostView` | vier neue Ziele für „Codis Augen" (siehe unten) |
+
+### 🔴 Was die Tests gefunden haben — die `delete`-Falle
+`context.delete(kante)` **markiert nur**. Bis der Kontext seine Änderungen verarbeitet,
+steht die gelöschte Kante **weiterhin in `auftrag.voraussetzungen`**. Die erste Fassung
+von `entknuepfe` zählte sie deshalb beim Neu-Nummerieren mit und vergab die
+`reihenfolge` um eins verschoben; direkt nach dem Lösen sah der Auftrag seine Kante noch.
+**Drei Tests fielen durch, bevor eine Zeile Produktionscode falsch in Betrieb ging.**
+Behoben mit `context.processPendingChanges()` vor dem Neu-Nummerieren.
+
+**Merksatz:** in Core Data ist ein `delete` erst nach `processPendingChanges()` oder
+`save()` in den Beziehungen sichtbar. Wer direkt danach über eine Beziehung läuft,
+läuft über Leichen.
+
+### Warum die `reihenfolge` überhaupt nachgezogen wird
+`verknuepfe` zieht ihre Nummer aus `voraussetzungenArray.count`. Bliebe nach dem Lösen
+aus der Mitte eine Lücke (0, 2, 3 …), vergäbe die nächste Verknüpfung eine Nummer, die
+es schon gibt — zwei Kanten stritten um denselben Platz. Test: `reihenfolgeBleibtLueckenlos`.
+
+### Entscheidungen
+- **Zyklus:** wird **nicht** vorab aus der Auswahlliste gefiltert. `verknuepfe` prüft und
+  wirft mit einer Begründung, die **beide Auftragsnamen nennt** — die zeigt die Ansicht als
+  Meldung. Einen Auftrag stumm wegzulassen wäre die schlechtere Auskunft: der Nutzer wüsste
+  nicht, warum er fehlt.
+- **Bei Fehler `ctx.rollback()`**, damit keine halbe Kante im Kontext hängenbleibt.
+- **`istKante`-Filter** überall: manuelle Geschoss-Häkchen (Welle 9) tauchen im Abschnitt
+  nicht auf und werden von `entknuepfe` nicht angefasst. Heute hängt zwar keins an einem
+  Auftrag (`HierarchieHelfer` setzt nur `v.geschoss`) — der Filter hält es auch dann
+  richtig, wenn das jemand ändert. Test: `manuellesHaekchenBleibtUnberuehrt`.
+- **Eine Quelle für „wer ist wählbar":** `AuftragDetailView.moeglicheVorgaenger(fuer:)`
+  füttert Liste **und** „+"-Knopf (der ist aus, wenn niemand übrig ist).
+
+### Nachgewiesen — mit „Codis Augen", nicht mit Prüfmarkern
+`scripts/snapshot.sh <Ziel> <Name>`, vier neue Ziele in `SnapshotHostView`:
+| Ziel | zeigt |
+|---|---|
+| `Voraussetzungen` | „Wartet auf" mit zwei Vorgängern: grüner Haken (fertig) / orange Uhr (läuft) |
+| `VoraussetzungWahl` | die Auswahlliste |
+| `VoraussetzungZyklus` | die Kreis-Meldung — Text aus einem **echten** fehlgeschlagenen Versuch |
+| `Grap8Kette` | **die Leinwand mit der Kante**: grüner Pfeil vom fertigen Vorgänger, orange gestrichelt vom laufenden, Zähler „1 wartet" |
+
+`** TEST SUCCEEDED **`, `xcodebuild`-Exit 0, alle 15 `KausalketteTests` grün.
+
+> **Für die nächste Instanz:** UI-Nachweise gehören **nicht** in selbstgebaute Prüfmarker.
+> `scripts/snapshot.sh` + `App/SnapshotHostView.swift` („Codis Augen") ist der Weg —
+> Ziel eintragen, Skript rufen, PNG in `/tmp/imops-shots`. Ich habe das an einem Tag
+> zweimal von Hand nachgebaut, bevor ich es gefunden habe.
+
+### Offen
+- Kostengruppen beim Erzeugen setzen (`HouseProjectGenerator`) — auf der Leinwand steht
+  sonst „KG —" und alles trägt dasselbe Symbol.
+- iPad-Test — Andreas: zwei Aufträge verknüpfen, auf der Leinwand die Kante sehen.
+- Zurückschreiben *von* der Leinwand: weiterhin bewusst offen.
+
+---
+
 ## Delta 09.09.2026 — Grap8 zeigt echte Aufträge (App-Brücke, nur lesen)
 
 **Branch `feature/grap8-echte-daten`.** Die Leinwand zeigt die Aufträge einer Baustelle

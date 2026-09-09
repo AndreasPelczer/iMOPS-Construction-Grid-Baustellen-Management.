@@ -83,6 +83,44 @@ enum Kausalkette {
         return kante
     }
 
+    /// Löst die Kante „ziel braucht vorher quelle" wieder.
+    ///
+    /// Gegenstück zu `verknuepfe`. Löst **nur** echte Graph-Kanten (`istKante`):
+    /// eine `Voraussetzung` ohne Quelle ist ein manuelles Geschoss-Häkchen aus
+    /// Welle 9 und geht diesen Weg nichts an.
+    ///
+    /// Die `reihenfolge` der verbleibenden Kanten wird nachgezogen. Sonst risse das
+    /// Entfernen Lücken (0, 2, 3 …), und die nächste `verknuepfe` — die ihre Nummer
+    /// aus `count` zieht — vergäbe eine, die es schon gibt.
+    ///
+    /// - Returns: ob tatsächlich eine Kante gelöst wurde.
+    @discardableResult
+    static func entknuepfe(_ ziel: Auftrag,
+                           brauchtNichtMehr quelle: Auftrag,
+                           in context: NSManagedObjectContext) -> Bool {
+        let treffer = ziel.voraussetzungenArray.filter { $0.istKante && $0.quelle === quelle }
+        guard !treffer.isEmpty else { return false }
+
+        treffer.forEach(context.delete)
+        // `delete` markiert nur — bis der Kontext seine Änderungen verarbeitet, steht
+        // die gelöschte Kante noch in `ziel.voraussetzungen`. Ohne diese Zeile zählte
+        // `ordneNeu` sie mit und vergäbe die Nummern um eins verschoben; die Tests
+        // sahen die Kante direkt nach dem Lösen ebenfalls noch. Gemessen, nicht vermutet.
+        context.processPendingChanges()
+        ordneNeu(ziel)
+        return true
+    }
+
+    /// Vergibt die `reihenfolge` der verbleibenden Kanten lückenlos neu.
+    private static func ordneNeu(_ auftrag: Auftrag) {
+        // Frisch aus der Beziehung lesen — die gelöschten Objekte sind hier schon raus.
+        for (nummer, kante) in auftrag.voraussetzungenArray.enumerated() {
+            let neu = Int16(nummer)
+            // Nur schreiben, wenn nötig: sonst meldet Core Data Änderungen, wo keine sind.
+            if kante.reihenfolge != neu { kante.reihenfolge = neu }
+        }
+    }
+
     /// Würde „ziel braucht quelle“ einen Kreis schließen?
     ///
     /// Tiefensuche rückwärts über die `quelle`-Kanten: erreicht man vom
