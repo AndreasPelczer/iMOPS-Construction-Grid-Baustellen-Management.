@@ -1036,6 +1036,7 @@ enum HouseProjectGenerator {
             job.storageNote = ""
             job.deliveryTemperature = false
             job.processingDetails = "\(gewerk) – Neubau \(result.project.haustyp.rawValue)"
+            job.kostenGruppeNummer = kostenGruppeFuerGewerk(gewerk)
             job.totalProcessingTime = 0
 
             var jobExtras = AuftragExtrasPayload()
@@ -1079,6 +1080,42 @@ enum HouseProjectGenerator {
         case "Estrich & Boden": return .estrich
         case "Malerarbeiten": return .maler
         default: return nil
+        }
+    }
+
+    /// DIN-276-Kostengruppe je Gewerk.
+    ///
+    /// Ohne sie steht auf jedem Knoten der Grap8-Leinwand „KG —" und alle tragen
+    /// dasselbe Symbol. Die Nummern sind **gegen `DIN276BaumKatalog` geprüft**, nicht
+    /// aus dem Kopf — die Bezeichnung in Klammern ist die aus dem Katalog.
+    ///
+    /// Bewusst **nicht** an `AuftragTemplate` gehängt: `templateFuerGewerk` kennt nur
+    /// 6 der 13 Gewerke (nachgezählt), die übrigen 7 bekämen dann keine Kostengruppe.
+    ///
+    /// Notlösungen, benannt statt versteckt:
+    /// - **Ausbau** teilt sich 353 mit Estrich — Fliesen und Bodenbeläge sind beides
+    ///   Deckenbeläge; eine eigene KG gibt DIN 276 dafür nicht her.
+    /// - **Allgemein** (Endreinigung, Abnahme) ist kein Bauteil. 397 „Zusätzliche
+    ///   Maßnahmen" ist der ehrlichste Platz dafür.
+    /// - **Sanitär/Heizung** bekommen die Gruppen-KG (410/420) statt einer willkürlich
+    ///   gewählten Unterposition: eine Heizungsanlage ist Erzeugung *und* Verteilung
+    ///   *und* Heizflächen.
+    private static func kostenGruppeFuerGewerk(_ gewerk: String) -> String? {
+        switch gewerk {
+        case "Erdarbeiten":      return "322"   // Flachgründungen und Bodenplatten
+        case "Rohbau":           return "331"   // Tragende Außenwände
+        case "Fenster & Tueren": return "334"   // Außenwandöffnungen
+        case "Malerarbeiten":    return "345"   // Innenwandbekleidung
+        case "Trockenbau":       return "346"   // Elementierte Innenwände
+        case "Estrich & Boden":  return "353"   // Deckenbeläge
+        case "Ausbau":           return "353"   // Deckenbeläge (Fliesen, Bodenbeläge)
+        case "Dach":             return "361"   // Dachkonstruktionen
+        case "Allgemein":        return "397"   // Zusätzliche Maßnahmen
+        case "Sanitaer":         return "410"   // Abwasser-, Wasser-, Gasanlagen
+        case "Heizung":          return "420"   // Wärmeversorgungsanlagen
+        case "Elektro":          return "444"   // Niederspannungsinstallationsanlagen
+        case "Aussenanlagen":    return "531"   // Wege
+        default:                 return nil
         }
     }
 
