@@ -9,9 +9,18 @@
 //  ins Bundle kopiert. Kein SwiftUI-Nachbau: Zoom, Ziehen, Kabel, Anschlusspunkte und
 //  Zyklusprüfung kommen fertig aus React Flow.
 //
-//  Schritt 1 zeigt die **Beispieldaten** der Leinwand. Es gibt bewusst *keine*
-//  Brücke zwischen JavaScript und Swift und keinen Zugriff auf Core Data —
-//  die Datenanbindung ist ein eigenes Kapitel.
+//  Schritt 2 zeigt die **echten Aufträge** einer Baustelle. Die App reicht sie
+//  über einen `WKScriptMessageHandler` herein — App-intern, ohne Netz, offline-fest.
+//
+//  **Einbahnstraße.** Die Leinwand liest nur. Wer dort einen Knoten anklickt,
+//  ändert die Ansicht, nicht Core Data; beim Schließen ist es weg. Das ist für
+//  diesen Schritt Absicht: erst soll sich zeigen, ob die Leinwand überhaupt der
+//  richtige Weg ist, Kausalketten zu sehen. Damit das niemanden überrascht,
+//  schreibt die Leinwand im Brückenmodus „nur Ansicht" in ihre Kopfzeile.
+//
+//  Der Kontrakt mit `App.jsx`, beide Seiten müssen zusammenpassen:
+//    Web → App:  postMessage({action:'ready'})   sobald `window.grap8SetGraph` steht
+//    App → Web:  window.grap8SetGraph({baustelle, nodes, edges})
 //
 //  ── Zwei Fallen, beide im Simulator nachgemessen ──────────────────────────────
 //
@@ -32,6 +41,7 @@
 
 import SwiftUI
 import WebKit
+import CoreData
 import os
 
 private let logger = Logger(subsystem: "com.deadrabbit.imops", category: "Grap8")
@@ -42,22 +52,46 @@ struct Grap8View: View {
     @Environment(\.dismiss) private var dismiss
     @State private var ladefehler: String?
 
+    /// Die Baustelle, deren Kette gezeigt wird.
+    ///
+    /// Aus dem „⋯"-Menü der Baustellenliste heraus gibt es keine — dann fragt die
+    /// Ansicht zuerst, welche. Wird Grap8 später aus einer Baustelle heraus
+    /// geöffnet, kommt sie hier herein und die Frage entfällt.
+    private let vorgabe: Event?
+    @State private var gewaehlt: Event?
+
+    init(event: Event? = nil) {
+        self.vorgabe = event
+        _gewaehlt = State(initialValue: event)
+    }
+
     var body: some View {
         NavigationStack {
             Group {
                 if let ladefehler {
                     fehlerbox(ladefehler)
-                } else {
-                    Grap8WebView(ladefehler: $ladefehler)
+                } else if let event = gewaehlt {
+                    Grap8WebView(graph: Grap8Graph.aus(event), ladefehler: $ladefehler)
                         .ignoresSafeArea(edges: .bottom)
+                } else {
+                    Baustellenwahl(gewaehlt: $gewaehlt)
                 }
             }
-            .navigationTitle("Grap8")
+            .navigationTitle(gewaehlt.flatMap { $0.title ?? $0.name } ?? "Grap8")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }
                         .tint(.orange)
+                }
+                // Zurück zur Auswahl — nur, wenn hier gewählt wurde. Kam die
+                // Baustelle von außen, wäre „andere Baustelle" ein falsches
+                // Versprechen: die Ansicht gehört dann zu ihr.
+                if vorgabe == nil, gewaehlt != nil {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Baustelle") { gewaehlt = nil }
+                            .tint(.orange)
+                    }
                 }
             }
         }
@@ -73,6 +107,58 @@ struct Grap8View: View {
     }
 }
 
+// MARK: - Welche Baustelle?
+
+/// Kurze Liste statt Raten. „Die erste nehmen" wäre bei mehreren Baustellen
+/// Willkür — und beim Prüfen wüsste niemand, ob die richtige zu sehen ist.
+private struct Baustellenwahl: View {
+    @Binding var gewaehlt: Event?
+
+    @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \Event.title, ascending: true)])
+    private var baustellen: FetchedResults<Event>
+
+    var body: some View {
+        if baustellen.isEmpty {
+            ContentUnavailableView {
+                Label("Keine Baustelle", systemImage: "point.3.connected.trianglepath.dotted")
+            } description: {
+                Text("Grap8 zeigt die Kette einer Baustelle. Lege zuerst eine an — "
+                     + "oder lade die Demo-Daten über den Zauberstab.")
+            }
+        } else {
+            List(baustellen) { baustelle in
+                Button {
+                    gewaehlt = baustelle
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(baustelle.title ?? baustelle.name ?? "Ohne Namen")
+                                .font(.body)
+                            if let ort = baustelle.location, !ort.isEmpty {
+                                Text(ort).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                        Text(anzahlText(baustelle))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .navigationTitle("Baustelle wählen")
+        }
+    }
+
+    /// Wie viele Aufträge hängen dran? Eine Baustelle ohne Aufträge ergibt eine
+    /// leere Leinwand — besser vorher sehen als hinterher rätseln.
+    private func anzahlText(_ baustelle: Event) -> String {
+        let anzahl = baustelle.jobs?.count ?? 0
+        return anzahl == 1 ? "1 Auftrag" : "\(anzahl) Aufträge"
+    }
+}
+
 // MARK: - Die Leinwand selbst
 
 private struct Grap8WebView: UIViewRepresentable {
@@ -83,6 +169,10 @@ private struct Grap8WebView: UIViewRepresentable {
     static let schema = "grap8"
     static let startseite = URL(string: "\(schema)://leinwand/index.html")!
 
+    /// Name des Briefkastens auf beiden Seiten: `window.webkit.messageHandlers.grap8`.
+    static let bruecke = "grap8"
+
+    let graph: Grap8Graph
     @Binding var ladefehler: String?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -90,6 +180,8 @@ private struct Grap8WebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let konfiguration = WKWebViewConfiguration()
         konfiguration.userContentController.addUserScript(Self.viewportSkript)
+        // Die Leinwand meldet sich, sobald sie Daten annehmen kann.
+        konfiguration.userContentController.add(context.coordinator, name: Self.bruecke)
 
         // Das Bundle unter eigenem Schema ausliefern — siehe Falle 2 im Dateikopf.
         if let wurzel = Self.bundleWurzel() {
@@ -106,6 +198,9 @@ private struct Grap8WebView: UIViewRepresentable {
         web.scrollView.isScrollEnabled = false
         web.scrollView.bounces = false
         web.allowsBackForwardNavigationGestures = false
+        // Schwach: der `userContentController` hält den Coordinator fest. Hielte der
+        // die WebView stark, schlösse sich der Ring und keiner käme je frei.
+        context.coordinator.web = web
         return web
     }
 
@@ -130,7 +225,7 @@ private struct Grap8WebView: UIViewRepresentable {
             .deletingLastPathComponent()
     }
 
-    private func melde(_ text: String) {
+    fileprivate func melde(_ text: String) {
         logger.error("\(text, privacy: .public)")
         // Nicht während des Zeichnens in den Zustand schreiben.
         DispatchQueue.main.async { ladefehler = text }
@@ -152,11 +247,48 @@ private struct Grap8WebView: UIViewRepresentable {
 
     // MARK: Coordinator
 
-    final class Coordinator: NSObject, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         private let eltern: Grap8WebView
         var hatGeladen = false
+        weak var web: WKWebView?
 
         init(_ eltern: Grap8WebView) { self.eltern = eltern }
+
+        // MARK: Brücke — die Leinwand fragt, Swift antwortet
+
+        /// `{action:'ready'}` heißt: `window.grap8SetGraph` steht, schick die Daten.
+        ///
+        /// Warum die Leinwand fragt statt Swift einfach zu schicken: `didFinish`
+        /// feuert, wenn das Dokument geladen ist — React kann dann noch nicht
+        /// gemountet sein. Ein Aufruf zu früh liefe ins Leere, und zwar
+        /// stillschweigend. Also klingelt die Seite, wenn sie wirklich bereit ist.
+        func userContentController(_ controller: WKUserContentController,
+                                   didReceive nachricht: WKScriptMessage) {
+            guard nachricht.name == Grap8WebView.bruecke,
+                  let inhalt = nachricht.body as? [String: Any],
+                  inhalt["action"] as? String == "ready" else { return }
+            schickeGraph()
+        }
+
+        private func schickeGraph() {
+            guard let web else { return }
+            let graph = eltern.graph
+            guard let daten = try? JSONEncoder().encode(graph),
+                  let json = String(data: daten, encoding: .utf8) else {
+                eltern.melde("Die Aufträge ließen sich nicht für die Leinwand aufbereiten.")
+                return
+            }
+
+            logger.info("Grap8: \(graph.nodes.count) Aufträge, \(graph.edges.count) Kanten an die Leinwand.")
+            web.evaluateJavaScript("window.grap8SetGraph(\(json))") { _, fehler in
+                // Ein stiller Fehlschlag wäre der schlimmste Fall: die Leinwand bliebe
+                // leer und niemand wüsste warum. Also protokollieren und anzeigen.
+                if let fehler {
+                    self.eltern.melde("Die Leinwand nahm die Aufträge nicht an: "
+                                      + fehler.localizedDescription)
+                }
+            }
+        }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             logger.info("Grap8-Leinwand geladen.")
@@ -240,4 +372,7 @@ private final class Grap8BundleHandler: NSObject, WKURLSchemeHandler {
 
 #Preview {
     Grap8View()
+        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 }
+
+

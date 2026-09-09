@@ -2,6 +2,74 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 09.09.2026 — Grap8 zeigt echte Aufträge (App-Brücke, nur lesen)
+
+**Branch `feature/grap8-echte-daten`.** Die Leinwand zeigt die Aufträge einer Baustelle
+aus Core Data statt der Beispieldaten. **App-intern über `WKScriptMessageHandler`** —
+kein Netz, keine Box, offline-fest. **Kein Core-Data-Delta** (`git diff main` auf die
+Modelldateien ist leer), **kein Zurückschreiben**.
+
+> Zweig-Hinweis: dieser Branch kommt von `main` und kennt darum den Vollbild-Umbau aus
+> PR #144 (`feature/grap8-vollbild`) noch nicht — dort wird aus dem Blatt ein Vollbild.
+> Andere Dateien, kein Konflikt zu erwarten; wer zuerst gemergt wird, ist egal.
+
+### Der Brücken-Kontrakt (beide Seiten müssen zusammenpassen)
+| Richtung | |
+|---|---|
+| Web → App | `postMessage({action:'ready'})`, sobald `window.grap8SetGraph` steht |
+| App → Web | `window.grap8SetGraph({baustelle, nodes, edges})` |
+
+**Warum die Leinwand fragt statt die App einfach zu schicken:** `didFinish` feuert, wenn
+das *Dokument* geladen ist — React kann dann noch nicht gemountet sein. Ein Aufruf zu früh
+liefe ins Leere, und zwar stillschweigend. Also klingelt die Seite, wenn sie bereit ist.
+Auf der Web-Seite steht darum das Aufhängen des Briefkastens **vor** dem Klingeln.
+
+### 🔴 Zwei Befunde, die größer sind als dieser Branch
+1. **Die App kann keine Kausalketten anlegen.** `Kausalkette.verknuepfe` wird
+   **ausschließlich in Tests** gerufen — `grep` über das ganze Repo. Die Kanten-
+   Infrastruktur aus #140 (`Voraussetzung.quelle`/`.auftrag`) steht, aber es gibt keine
+   Bedienung, um zwei Aufträge zu verknüpfen. **Folge:** die Leinwand zeigt heute Kästen
+   ohne Pfeile — im Simulator nachgemessen: 9 Aufträge, **0 Kanten**, alle „startklar".
+   Das ist kein Fehler der Brücke, das ist die Antwort auf die Frage, die dieser Branch
+   stellen sollte. **Der nächste sinnvolle Schritt ist die Verknüpfen-Bedienung, nicht
+   mehr Leinwand.**
+2. **`HouseProjectGenerator` setzt keine `kostenGruppeNummer`.** Darum steht auf jedem
+   Kasten „KG —" und alle tragen dasselbe Symbol. Die Symbol-Zuordnung nach KG ist
+   gebaut und wartet auf Daten.
+
+### v1-Notlösungen (bewusst, alle im Code vermerkt)
+| Stelle | Lösung | Warum |
+|---|---|---|
+| Auftragsname | `Kausalkette.bezeichnung()` → `processingDetails` | `Auftrag` hat **kein** Namensfeld; „Auftrag anlegen" schreibt `taskSummary` dorthin |
+| Kennung | Core-Data-Objekt-URI | `Auftrag` hat **keine** `id` (anders als `Voraussetzung`) |
+| `onHold` | → `inArbeit` | die Leinwand kennt nur offen/inArbeit/erledigt |
+| `anf` (Chips) | leer | im Modell steht nicht, welcher Auftrag Material/Mensch/Maschine braucht |
+| Anordnung | Ketten in Spalten nach Tiefe, **Freistehende im 4er-Raster** | erste Fassung setzte alles in Spalte 0 — neun Aufträge, neun Zeilen, endlose Kolonne (im Simulator gesehen und behoben) |
+| Baustelle | Auswahlliste beim Öffnen | Grap8 kommt aus dem „⋯"-Menü der **Liste**, es gibt keine Baustelle im Kontext. „Die erste nehmen" wäre Willkür; die Liste zeigt die Auftragszahl je Baustelle. `Grap8View(event:)` nimmt eine Baustelle entgegen, falls Grap8 später aus einer Baustelle heraus geöffnet wird |
+
+### Nur Ansicht — und das steht auch da
+Klicks auf der Leinwand ändern Core Data **nicht**. Damit das niemanden überrascht,
+schreibt die Leinwand im Brückenmodus „aus der App geladen · nur Ansicht" in ihre
+Kopfzeile; „Beispiel"/„Leeren" sind dort ausgeblendet (sie würden die echten Aufträge
+wegwerfen) und `localStorage` ist abgeschaltet — ein alter Browserstand darf die echten
+Daten nicht überschreiben. **Standalone im Browser bleibt alles wie vorher.**
+
+### Nachgewiesen
+- **Screenshot iPad Pro 13" (Simulator):** neun echte Aufträge („Rohbau – Neubau
+  Einfamilienhaus" usw.), echter Baustellenname in der Kopfzeile, „nur Ansicht"-Hinweis.
+- `** TEST SUCCEEDED **`, `xcodebuild`-Exit 0; iPad-Build `** BUILD SUCCEEDED **`.
+- Dafür standen zwei **Prüfmarker** im Code (Grap8 automatisch öffnen, größte Baustelle
+  vorwählen) — **beide zurückgenommen**, per `grep` gegengeprüft.
+- `app_bedienung.yaml`: Eintrag `App_Grap8_Leinwand` ergänzt (Drift-Regel aus CONTRIBUTING).
+
+### Offen
+- **Verknüpfen-Bedienung** — ohne sie bleibt Grap8 eine Kästchen-Sammlung. Siehe Befund 1.
+- Kostengruppen beim Erzeugen setzen. Siehe Befund 2.
+- Finger-Test auf echtem iPad — Andreas.
+- Zurückschreiben, Positionen merken, Anforderungs-Chips: alles bewusst nicht in diesem Branch.
+
+---
+
 ## Delta 08.09.2026 — Grap8 als Fenster in der App (WKWebView, Schritt 1)
 
 **Branch `feature/grap8-webview`.** Die Web-Leinwand läuft **gebündelt** in der App.
