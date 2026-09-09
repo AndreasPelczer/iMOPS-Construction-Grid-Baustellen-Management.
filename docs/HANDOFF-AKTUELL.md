@@ -2,6 +2,41 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 09.09.2026 — Grap8 im Vollbild statt im Blatt
+
+**Branch `feature/grap8-vollbild`.** Eine Zeile Präsentation, sonst nichts.
+`Grap8View`, das `grap8://`-Schema und `Grap8Web/` sind **unangetastet**, kein Core-Data-Delta
+(`git diff main` auf die Modelldateien ist leer).
+
+### Was geändert ist
+`ContentView.swift`: `.sheet(isPresented: $showingGrap8)` → **`.fullScreenCover`**,
+`.presentationSizing(.page)` entfällt. Der Menüpunkt „Grap8" im „⋯"-Menü bleibt, wo er war.
+
+### Warum kein zweiter Schließen-Knopf nötig war
+`Grap8View` bringt seit Schritt 1 einen eigenen `NavigationStack` mit „Fertig" in
+`.confirmationAction` mit, der über `@Environment(\.dismiss)` schließt. Das wirkt bei
+`fullScreenCover` genauso wie beim Blatt, und die Navigationsleiste sitzt im sicheren Bereich.
+**Wichtig für später:** ein Vollbild lässt sich **nicht wegwischen** — dieser Knopf ist die
+einzige Tür zurück. Wer die Werkzeugleiste aus `Grap8View` entfernt, sperrt den Nutzer ein.
+
+### Nachgewiesen (nicht vermutet)
+- **Sicht-Nachweis auf dem iPad Pro 13" (Simulator):** Screenshot zeigt die Leinwand ganzflächig,
+  keinen Blatt-Rand, „Fertig" oben rechts unterhalb der Statusleiste. Dafür stand `showingGrap8`
+  vorübergehend auf `true` — **zurückgenommen**, per `rg` gegengeprüft.
+- `** TEST SUCCEEDED **`, `xcodebuild`-Exit **0**, iPad-Build `** BUILD SUCCEEDED **`.
+
+### Falle beim Messen — für die Nachwelt
+Der erste Testlauf lief durch `| tail -40`. Das meldete Exit 0 — aber das war der Exit-Code von
+`tail`, nicht von `xcodebuild`, und `** TEST SUCCEEDED **` stand weiter oben im Log und wurde
+vom `tail` abgeschnitten. **Ein grüner Exit-Code hinter einer Pipe ist kein Nachweis.**
+Zweiter Lauf ohne Pipe, Ausgabe in eine Datei, Exit-Code direkt gelesen.
+
+### Offen
+- **Finger-Test auf echtem iPad** (Kneifzoom + Ziehen) — Andreas. Unverändert offen.
+- Datenbrücke bleibt Nicht-Ziel bis zum Design-Gate „wo lebt der Graph".
+
+---
+
 ## Delta 08.09.2026 — Grap8 als Fenster in der App (WKWebView, Schritt 1)
 
 **Branch `feature/grap8-webview`.** Die Web-Leinwand läuft **gebündelt** in der App.
