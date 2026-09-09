@@ -81,11 +81,14 @@ struct ContentView: View {
             }
             .presentationSizing(.page)
         }
-        .sheet(isPresented: $showingGrap8) {
+        // Vollbild statt Blatt: eine Leinwand zum Ziehen und Zoomen braucht den ganzen
+        // Schirm; ein Blatt-Rand nimmt Platz und fängt Randgesten ab.
+        // Achtung: ein Vollbild lässt sich NICHT wegwischen — die einzige Tür zurück ist
+        // der „Fertig"-Knopf in der Werkzeugleiste von `Grap8View`.
+        .fullScreenCover(isPresented: $showingGrap8) {
             // Schritt 1: die Leinwand zeigt ihre Beispieldaten, noch ohne Verbindung
             // zu Core Data. Darum hängt sie an der Liste und nicht an einer Baustelle.
             Grap8View()
-                .presentationSizing(.page)
         }
         .sheet(isPresented: $showingAddEventSheet) {
             AddEventView()
