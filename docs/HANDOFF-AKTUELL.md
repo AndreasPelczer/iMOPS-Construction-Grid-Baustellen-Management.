@@ -2,6 +2,54 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Entscheidung 09.09.2026 — „Wo lebt der Graph?" ist beantwortet (vorerst)
+
+**Die App bleibt die Quelle. Die Box bekommt kein Graph-Gedächtnis — noch nicht.**
+Getroffen von Andreas und Falbe. Kein Code, nur Festhalten — damit die Frage nicht
+alle paar Wochen neu aufgemacht wird.
+
+### Was gegen den Box-Umbau sprach (gemessen, nicht vermutet)
+- **`mops-api` hat heute überhaupt kein Gedächtnis.** Alle Endpunkte sind POST: rein,
+  verarbeiten, raus (`extract`, `classify`, `wandleser`, `ifc`, `gelaendebruecke`). Keine
+  Datenbank für Vorgänge, nur qdrant für den RAG. „Die Box wird die Quelle" heißt darum
+  nicht „ein Endpunkt", sondern **Datenbank, Schema, Migrationen, Backup, Mehrbenutzer** —
+  ein neues Stockwerk, kein Kabel.
+- **Die Baustelle hat kein Netz.** Die App arbeitet draußen, die Box steht im Heim-LAN.
+  Wäre die Box die einzige Wahrheit, wäre die App auf der Baustelle tot. Also braucht die
+  App ohnehin eine lokale Kopie — „reines A" ist gar nicht baubar.
+- Das Argument „zwei Wahrheiten wie bei `isCompleted`/`status`" **trägt hier nicht**: das
+  waren zwei Felder im selben Datensatz, beide beschreibbar, ohne Schiedsrichter. Eine Kopie
+  mit klarer Schreibrichtung ist keine zweite Wahrheit.
+
+### Wann die Frage wieder aufgeht
+**Sobald ein Zweiter mitschauen soll** — Raphi, ein Polier. Solange nur ein Gerät auf den
+Graphen sieht, ist die App-Brücke (#145) genug. Vorher ist die Diskussion theoretisch.
+
+### Was daraus folgt
+- Zurückschreiben von der Leinwand und Positionen-Merken bleiben **liegen** — beide brauchen
+  einen Schreibweg, und der hinge an dieser Entscheidung.
+- Die Richtung „ein Kern, viele Sichten" bleibt richtig; nur der Zeitpunkt ist später.
+
+---
+
+## Offen & blockiert — Finger-Test auf echter Hardware
+
+**Blockiert, nicht vergessen: es ist kein iPad verfügbar** (Stand 09.09.2026). Der Punkt
+steht seit dem ersten Grap8-Branch und ist der einzige, den kein Simulator klären kann.
+
+**Prüfliste für den Tag, an dem ein Gerät da ist:**
+1. „⋯"-Menü → „Grap8" öffnet die Leinwand **im Vollbild**, „Fertig" oben rechts erreichbar.
+2. **Kneifgriff zoomt die Leinwand** — nicht die Seite. Der Seitenzoom ist per Viewport-Skript
+   abgeschaltet (`Grap8View.viewportSkript`), die Geste soll React Flow gehören. **Das ist die
+   eigentliche Wette hinter Grap8** und im Simulator nicht belastbar zu prüfen.
+3. Ein-Finger-Ziehen verschiebt die Fläche, Knoten lassen sich einzeln ziehen.
+4. Doppeltipp auf einen Knoten öffnet das Umbenennen (Tastatur verdeckt nichts Wichtiges).
+
+Hakt Punkt 2, ist das wichtiger als jedes Feature obendrauf — dann trägt der Web-Ansatz die
+Geste nicht, und das sollte man wissen, bevor mehr daran hängt.
+
+---
+
 ## Delta 09.09.2026 — Kostengruppen im Generator: die Leinwand wird bunt
 
 **Branch `fix/generator-kostengruppe`.** Generierte Aufträge trugen keine
