@@ -30,6 +30,78 @@ struct KausalketteTests {
         return a
     }
 
+    // MARK: - Lösen
+
+    @Test @MainActor func entknuepfenGibtDenSchrittFrei() throws {
+        let wasser = macheAuftrag("Wasser erhitzen")
+        let nudeln = macheAuftrag("Nudeln kochen")
+        try Kausalkette.verknuepfe(nudeln, brauchtVorher: wasser, in: ctx)
+        #expect(nudeln.istStartbar == false)
+
+        let geloest = Kausalkette.entknuepfe(nudeln, brauchtNichtMehr: wasser, in: ctx)
+
+        #expect(geloest == true)
+        #expect(nudeln.voraussetzungenArray.isEmpty)
+        #expect(nudeln.istStartbar == true)
+        // Auch die Gegenrichtung muss leer sein, sonst bliebe eine halbe Kante stehen.
+        #expect(wasser.istVoraussetzungFuerArray.isEmpty)
+    }
+
+    @Test @MainActor func entknuepfenOhneKanteMeldetFalse() throws {
+        let a = macheAuftrag("A")
+        let b = macheAuftrag("B")
+
+        #expect(Kausalkette.entknuepfe(a, brauchtNichtMehr: b, in: ctx) == false)
+    }
+
+    /// Nach dem Lösen aus der Mitte darf keine Lücke bleiben: `verknuepfe` zieht
+    /// die nächste `reihenfolge` aus `count` — bei einer Lücke käme eine Nummer
+    /// heraus, die es schon gibt, und zwei Kanten stritten um denselben Platz.
+    @Test @MainActor func reihenfolgeBleibtLueckenlos() throws {
+        let ziel = macheAuftrag("Nudeln kochen")
+        let a = macheAuftrag("Wasser erhitzen")
+        let b = macheAuftrag("Topf aufsetzen")
+        let c = macheAuftrag("Salz holen")
+        try Kausalkette.verknuepfe(ziel, brauchtVorher: a, in: ctx)
+        try Kausalkette.verknuepfe(ziel, brauchtVorher: b, in: ctx)
+        try Kausalkette.verknuepfe(ziel, brauchtVorher: c, in: ctx)
+
+        // Die mittlere lösen.
+        Kausalkette.entknuepfe(ziel, brauchtNichtMehr: b, in: ctx)
+
+        #expect(ziel.voraussetzungenArray.map(\.reihenfolge) == [0, 1])
+
+        // Und eine neue dazu: sie darf keine Nummer doppelt vergeben.
+        let d = macheAuftrag("Sieb bereitstellen")
+        try Kausalkette.verknuepfe(ziel, brauchtVorher: d, in: ctx)
+
+        #expect(ziel.voraussetzungenArray.map(\.reihenfolge) == [0, 1, 2])
+        #expect(ziel.vorgaenger.count == 3)
+    }
+
+    /// Ein manuelles Geschoss-Häkchen (Welle 9) ist keine Graph-Kante — `entknuepfe`
+    /// darf es nicht anfassen, auch nicht versehentlich.
+    @Test @MainActor func manuellesHaekchenBleibtUnberuehrt() throws {
+        let ziel = macheAuftrag("Nudeln kochen")
+        let quelle = macheAuftrag("Wasser erhitzen")
+
+        let haekchen = Voraussetzung(context: ctx)
+        haekchen.id = UUID()
+        haekchen.name = "Abnahme durch den Polier"
+        haekchen.typ = VoraussetzungsTyp.manuell.rawValue
+        haekchen.erfuellt = false
+        haekchen.reihenfolge = 0
+        haekchen.auftrag = ziel
+
+        try Kausalkette.verknuepfe(ziel, brauchtVorher: quelle, in: ctx)
+        Kausalkette.entknuepfe(ziel, brauchtNichtMehr: quelle, in: ctx)
+
+        // Die Kante ist weg, das Häkchen steht noch.
+        #expect(ziel.voraussetzungenArray.count == 1)
+        #expect(ziel.voraussetzungenArray.first?.istKante == false)
+        #expect(ziel.voraussetzungenArray.first?.name == "Abnahme durch den Polier")
+    }
+
     // MARK: - Der Nudel-Test
 
     @Test @MainActor func nudelnWartenAufWasser() throws {

@@ -8,6 +8,10 @@ import CoreData
 //   --snapshot-mode --target=LVFortschrittSheet  (5.2.1 — R3-Override-Hinweis)
 //   --snapshot-mode --target=LVElement           (B-Element: Deckel summiert Bausteine)
 //   --snapshot-mode --target=LVElementRezept     (B-Element: Rezept-Maß am Baustein)
+//   --snapshot-mode --target=Voraussetzungen     (Auftrag wartet auf zwei Vorgänger)
+//   --snapshot-mode --target=VoraussetzungWahl   (Auswahl der möglichen Vorgänger)
+//   --snapshot-mode --target=VoraussetzungZyklus (die Meldung bei einem Kreis)
+//   --snapshot-mode --target=Grap8Kette          (die Leinwand mit einer echten Kante)
 // scripts/snapshot.sh fängt den Screen per simctl io ab. Roman Anhang C: VTP für die UI.
 struct SnapshotHostView: View {
     @State private var controller = PersistenceController(inMemory: true)
@@ -28,6 +32,10 @@ struct SnapshotHostView: View {
             case "LVZuschlag":         SnapshotZuschlagHost(ctx: ctx, eigen: arg("--state=", "eigen") == "eigen")
             case "LVRowGallery":       SnapshotRowGallery(ctx: ctx)
             case "LVFortschrittSheet": SnapshotFortschrittHost(ctx: ctx)
+            case "Voraussetzungen":    SnapshotVoraussetzungenHost(ctx: ctx)
+            case "VoraussetzungWahl":  SnapshotVoraussetzungWahlHost(ctx: ctx)
+            case "VoraussetzungZyklus": SnapshotZyklusHost(ctx: ctx)
+            case "Grap8Kette":         SnapshotGrap8Host(ctx: ctx)
             case "NeuesAufmassSheet":  NeuesAufmassSheet(position: SnapshotData.position(in: ctx, state: state))
             default:                   AufmassSheet(position: SnapshotData.position(in: ctx, state: state))
             }
@@ -270,4 +278,96 @@ enum SnapshotData {
         LVFortschrittStore.shared.setFortschritt(LVFortschritt(prozent: prozent), for: id)
     }
 }
+
+// Voraussetzungen — ein Auftrag, der auf zwei Vorgänger wartet, einer davon fertig.
+// Zeigt den „Wartet auf"-Abschnitt in `AuftragDetailView` mit beiden Zuständen.
+private struct SnapshotVoraussetzungenHost: View {
+    private let ziel: Auftrag
+    @MainActor init(ctx: NSManagedObjectContext) {
+        ziel = SnapshotKette.baue(in: ctx)
+    }
+    var body: some View {
+        NavigationStack { AuftragDetailView(job: ziel) }
+    }
+}
+
+// Die Auswahl der möglichen Vorgänger — Geschwister ohne sich selbst und ohne
+// die bereits verknüpften.
+private struct SnapshotVoraussetzungWahlHost: View {
+    private let ziel: Auftrag
+    @MainActor init(ctx: NSManagedObjectContext) {
+        ziel = SnapshotKette.baue(in: ctx)
+    }
+    var body: some View {
+        VoraussetzungWaehlenView(auftrag: ziel) { _ in }
+    }
+}
+
+// Die Leinwand mit einer echten Kette: zeigt, dass ein in der App gesetztes
+// „wartet auf" drüben als Pfeil ankommt. Der Weg ist derselbe wie in der App —
+// `Grap8Graph.aus(event)` über die Brücke, keine gestellten Daten.
+private struct SnapshotGrap8Host: View {
+    private let baustelle: Event
+    @MainActor init(ctx: NSManagedObjectContext) {
+        baustelle = SnapshotKette.baue(in: ctx).event!
+    }
+    var body: some View { Grap8View(event: baustelle) }
+}
+
+// Die Zyklus-Meldung. Der Text ist NICHT gestellt: hier wird wirklich versucht,
+// einen Kreis zu schließen, und angezeigt wird, was `KausalketteFehler` dabei wirft —
+// derselbe Weg, den `AuftragDetailView.verknuepfeMit` nimmt.
+private struct SnapshotZyklusHost: View {
+    private let meldung: String
+    @MainActor init(ctx: NSManagedObjectContext) {
+        let estrich = SnapshotKette.baue(in: ctx)
+        let fundament = estrich.vorgaenger.first!
+        do {
+            // Fundament soll auf Estrich warten — Estrich wartet aber schon auf Fundament.
+            try Kausalkette.verknuepfe(fundament, brauchtVorher: estrich, in: ctx)
+            meldung = "kein Fehler — das wäre ein Befund!"
+        } catch let fehler as KausalketteFehler {
+            meldung = fehler.errorDescription ?? ""
+        } catch {
+            meldung = error.localizedDescription
+        }
+    }
+    var body: some View {
+        Color(.systemBackground)
+            .alert("Geht nicht", isPresented: .constant(true)) {
+                Button("Verstanden", role: .cancel) {}
+            } message: {
+                Text(meldung)
+            }
+    }
+}
+
+/// Eine kleine Baustelle mit vier Aufträgen; der Estrich wartet auf zwei davon.
+private enum SnapshotKette {
+    @MainActor
+    static func baue(in ctx: NSManagedObjectContext) -> Auftrag {
+        let baustelle = Event(context: ctx)
+        baustelle.title = "Aura 125 — Marktbreit"
+
+        func auftrag(_ name: String, _ kg: String, _ status: AuftragStatus) -> Auftrag {
+            let a = Auftrag(context: ctx)
+            a.processingDetails = name
+            a.kostenGruppeNummer = kg
+            a.status = status
+            a.storageNote = ""
+            a.event = baustelle
+            return a
+        }
+
+        let fundament = auftrag("Fundament betonieren", "322", .completed)
+        let waende    = auftrag("Wände EG mauern",      "331", .inProgress)
+        _             = auftrag("Dachstuhl richten",    "361", .pending)
+        let estrich   = auftrag("Estrich einbringen",   "352", .pending)
+
+        try? Kausalkette.verknuepfe(estrich, brauchtVorher: fundament, in: ctx)
+        try? Kausalkette.verknuepfe(estrich, brauchtVorher: waende, in: ctx)
+        return estrich
+    }
+}
+
 #endif
