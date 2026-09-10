@@ -348,6 +348,8 @@ private struct SnapshotBauerHorstHost: View {
         baustelle = (try? ctx.fetch(r))?.first ?? Event(context: ctx)
     }
     var body: some View { Grap8View(event: baustelle) }
+}
+
 // Was hinter einem „Verwaltung öffnen"-Knopf steckt: dieselbe Ansicht, die
 // `Grap8View.verwaltung(_:)` präsentiert — mit der Baustelle eines generierten
 // Hausprojekts, nicht mit gestellten Daten.
