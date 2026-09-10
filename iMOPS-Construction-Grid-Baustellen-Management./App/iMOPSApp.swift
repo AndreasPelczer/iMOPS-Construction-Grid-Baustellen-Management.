@@ -54,6 +54,8 @@ struct iMOPSApp: App {
                     // Demo-Baustelle mit beiden Sichten: 12 Arbeitsschritte als
                     // Grap8-Kette UND eine LV-Zeile mit Kosten. Idempotent.
                     BauerHorstSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    // Zweite Demo: früher Lebenszyklus (Lieferzeit, Fremdleistung).
+                    SandsteinstufenSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     NotificationService.shared.requestAuthorization()
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)
 

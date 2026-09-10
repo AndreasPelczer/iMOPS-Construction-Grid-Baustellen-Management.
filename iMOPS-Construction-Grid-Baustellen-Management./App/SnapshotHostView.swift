@@ -14,6 +14,7 @@ import CoreData
 //   --snapshot-mode --target=Grap8Kette          (die Leinwand mit einer echten Kante)
 //   --snapshot-mode --target=Grap8Generator      (echtes Hausprojekt: Symbole je Gewerk)
 //   --snapshot-mode --target=BauerHorst          (Demo: 12 Handgriffe mit Verzweigung)
+//   --snapshot-mode --target=Sandsteinstufen     (Demo 2: zwei Straenge, Zusammenfuehrung)
 //   --snapshot-mode --target=Grap8Kalkulation    (was der Knopf „Kalkulation" oeffnet)
 //   --snapshot-mode --target=Grap8Bestellung     (was der Knopf „Bestellung" oeffnet)
 // scripts/snapshot.sh fängt den Screen per simctl io ab. Roman Anhang C: VTP für die UI.
@@ -42,6 +43,7 @@ struct SnapshotHostView: View {
             case "Grap8Kette":         SnapshotGrap8Host(ctx: ctx)
             case "Grap8Generator":     SnapshotGeneratorHost(ctx: ctx)
             case "BauerHorst":         SnapshotBauerHorstHost(ctx: ctx)
+            case "Sandsteinstufen":    SnapshotStufenHost(ctx: ctx)
             case "Grap8Kalkulation":   SnapshotVerwaltungHost(ctx: ctx, ziel: .kalkulation)
             case "Grap8Bestellung":    SnapshotVerwaltungHost(ctx: ctx, ziel: .bestellung)
             case "NeuesAufmassSheet":  NeuesAufmassSheet(position: SnapshotData.position(in: ctx, state: state))
@@ -339,6 +341,18 @@ private struct SnapshotGeneratorHost: View {
 
 // Die Demo-Baustelle „Bauer Horst" auf der Leinwand — echte Seeder-Daten, damit
 // sichtbar wird, ob die Kette samt Verzweigung bei „Pfosten setzen" ankommt.
+// Demo 2 auf der Leinwand: zwei Stränge, die sich beim Versetzen treffen.
+private struct SnapshotStufenHost: View {
+    private let baustelle: Event
+    @MainActor init(ctx: NSManagedObjectContext) {
+        SandsteinstufenSeeder.seedIfNeeded(context: ctx)
+        let r: NSFetchRequest<Event> = Event.fetchRequest()
+        r.predicate = NSPredicate(format: "eventNumber == %@", "DEMO-STUFEN-001")
+        baustelle = (try? ctx.fetch(r))?.first ?? Event(context: ctx)
+    }
+    var body: some View { Grap8View(event: baustelle) }
+}
+
 private struct SnapshotBauerHorstHost: View {
     private let baustelle: Event
     @MainActor init(ctx: NSManagedObjectContext) {
