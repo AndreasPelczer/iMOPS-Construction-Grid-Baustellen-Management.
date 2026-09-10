@@ -2,6 +2,69 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 10.09.2026 — Grap8-Knoten: die Verwaltungs-Knöpfe führen irgendwohin
+
+**Branch `feature/grap8-knoten-verwaltung`.** Die „Verwaltung öffnen"-Knöpfe im
+Detailfenster der Leinwand öffnen jetzt die **bestehenden nativen Ansichten** mit der
+**Baustelle des Knotens**. Nichts Neues gebaut, nur verbunden. **Kein Core-Data-Delta**,
+read-only.
+
+### Der Kontrakt (Erweiterung der Brücke aus #145)
+```
+Web → App:  { action: 'verwaltung', ziel: 'mannschaft'|'maschinen'|'kalkulation'|'bestellung',
+              auftragId: <Core-Data-Objekt-URI> }
+```
+Die `ziel`-Kennungen sind der Vertrag — die **Beschriftung** drüben darf sich ändern, die
+Zeichenketten nicht. Swift löst die Kennung über den Store zurück in den `Auftrag`, nimmt
+`auftrag.event` und präsentiert.
+
+### Warum die Baustelle und nicht der Auftrag
+Zwischen `Auftrag` und den Ressourcen gibt es **keine Beziehung** — gemessen in der
+Inventur von heute früh: nur `Event.jobs` und die beiden `Voraussetzung`-Kanten zeigen auf
+`Auftrag`; die Kalkulation hängt an `LVPosition`, die an `Event`. Pro Auftrag zu filtern
+hieße, eine Zuordnung zu erfinden, die es nicht gibt. **Die `Auftrag ↔ LVPosition`-Frage
+bleibt die aufgeschobene Kapitel-Entscheidung.**
+
+### 🔴 Drei Messfehler im Auftrag — gegengeprüft
+| Auftrag sagte | tatsächlich |
+|---|---|
+| `LieferantenBestelllisteView(event:)` | **`(event:positionen:)`** — braucht die LV-Positionen dazu |
+| `GeraetHinzufuegenView()` global | **`let position: LVPosition`** — vom Auftrag aus unerreichbar, darum `StammdatenPflegeView()` für „Maschinen" |
+| „drei/vier Panel-Buttons" | **drei**, davon einer kombiniert („Bestellung / Kalkulation"). **Aufgeteilt**, weil es zwei verschiedene Bildschirme sind — ein Knopf für beide hieße raten |
+
+### Die Falle: eine Ansicht ohne Ausgang
+`LVKalkulationView` hat **weder `NavigationStack` noch `dismiss` noch Toolbar** — sie war
+für einen `NavigationLink` in `EventDetailView` gebaut. Als Blatt ohne Rahmen wäre sie eine
+Sackgasse. Sie bekommt hier einen `NavigationStack` mit „Fertig"; die anderen drei bringen
+ihren Rahmen selbst mit (nachgezählt: NavigationStack/dismiss/toolbar vorhanden).
+
+Ihren **Titel** setzt sie selbst („Kalkulation (Welle 6)") — ein eigener `navigationTitle`
+wäre wirkungslos gewesen und wurde nach dem ersten Screenshot wieder entfernt.
+
+### Coordinator → SwiftUI: warum ein ObservableObject
+Eine Closure im `UIViewRepresentable` veraltet, sobald die Ansicht neu gezeichnet wird —
+der Coordinator hielte die alte. `Grap8Steuerung` ist eine **Klasse**, ihre Referenz bleibt
+stabil. (`import Combine` nicht vergessen, sonst kennt `@Published` niemand.)
+
+### Nachgewiesen
+- Screenshots (`Grap8Kalkulation`, `Grap8Bestellung`): beide Ansichten öffnen, **„Fertig"
+  erreichbar**, und die Bestellliste zeigt **„Musterhaus — Generator"** — die Baustelle
+  kommt durch.
+- `** TEST SUCCEEDED **`, Exit 0, Modell bitgleich.
+
+### Nebenbefund
+**`HouseProjectGenerator` erzeugt keine `LVPosition`** (0 Treffer). Bei einem generierten
+Projekt ist die Bestellliste darum leer („0 Positionen"); bei einer Baustelle mit
+LV-Import ist sie gefüllt. Kein Fehler der Verdrahtung — aber wer mit Demo-Daten prüft,
+sieht eine leere Liste und hält sie für kaputt.
+
+### Offen
+- iPad-Test — Andreas: Knoten antippen → Knopf → richtige Ansicht, richtige Baustelle.
+- „Maschinen" öffnet die **Stammdatenpflege**, nicht einen echten Maschinenpark. Eine
+  Geräte-Übersicht je Baustelle gibt es nicht — wäre ein eigener Schritt.
+
+---
+
 ## Entscheidung 09.09.2026 — „Wo lebt der Graph?" ist beantwortet (vorerst)
 
 **Die App bleibt die Quelle. Die Box bekommt kein Graph-Gedächtnis — noch nicht.**
