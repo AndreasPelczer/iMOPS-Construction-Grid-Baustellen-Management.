@@ -51,6 +51,9 @@ struct iMOPSApp: App {
                     // NACH MarktbreitSeeder: rechnet dessen Dach-/Decken-Positionen durch
                     // und braucht sie deshalb schon in der Datenbank.
                     BeispielKalkulationSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    // Demo-Baustelle mit beiden Sichten: 12 Arbeitsschritte als
+                    // Grap8-Kette UND eine LV-Zeile mit Kosten. Idempotent.
+                    BauerHorstSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     NotificationService.shared.requestAuthorization()
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)
 

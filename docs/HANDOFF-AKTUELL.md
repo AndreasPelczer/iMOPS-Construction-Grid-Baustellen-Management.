@@ -2,6 +2,63 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 10.09.2026 — Demo „Bauer Horst": zwölf Handgriffe, eine LV-Zeile
+
+**Branch `feature/seeder-bauer-horst`.** Eine Demo-Baustelle mit **beiden Sichten**:
+12 Aufträge als Grap8-Kette **und** eine LV-Position mit durchgerechneten Einzelkosten.
+Am selben `Event`, aber **ungekoppelt** — das ist der Gegenstand, nicht ein Versäumnis.
+**Kein Core-Data-Delta**, idempotent, nichts wird gelöscht.
+
+### Warum die Lücke Absicht ist
+Wer den Pfosten setzt, arbeitet in zwölf Schritten. Wer ihn abrechnet, schreibt eine Zeile.
+Zwischen `Auftrag` und `LVPosition` gibt es **keine Beziehung** im Modell — die Demo führt
+genau diese Lücke vor. Sie hier heimlich zu schließen würde die Frage verstecken statt sie
+zu zeigen. Ein Test (`auftraegeUndLVZeileBleibenUngekoppelt`) hält das fest, damit niemand
+sie „nebenbei" zumacht.
+
+### Die Kette ist ein Graph, keine Perlenkette
+Zwölf Schritte, **12 Kanten**, und bei **„Pfosten setzen" laufen zwei Stränge zusammen**:
+er wartet auf das Kiesbett *und* auf den angemischten Beton. Das Anmischen hängt am
+Abladen, nicht am Ausheben — Beton rührt man an, während das Loch noch offen ist.
+
+### Alle Zahlen sind Schätzung
+`mengenQuelle = .schaetzung`, im Code als `[Schätzung — Raphi korrigiert]` vermerkt.
+~4,5 MA-h × 74 €/h, sechs Materialien, drei Geräte (der LKW mit **zwei kurzen Dorffahrten**,
+nicht mit einem Tagessatz). Die Werte zeigen die **Struktur** einer Kalkulation, nicht die
+Preise eines Angebots.
+
+### Vier Schritte ohne Kostengruppe — bewusst
+Anfahrt, Einmessen, Anmischen, Aushärten sind **Tätigkeiten, keine Bauteile**. DIN 276 gibt
+dafür nichts her, das nicht erfunden wäre. Auf der Leinwand tragen sie das Standardsymbol —
+ehrlicher als eine geratene Nummer.
+
+### Nachgewiesen
+- **Screenshot (`--target=BauerHorst`):** „Bauer Horst — Pfosten setzen", Zähler
+  **1 startklar · 11 wartet**. Bei zwölf unverbundenen Aufträgen wären es zwölf startklar
+  (so sah das Generator-Projekt gestern aus) — die Kette wirkt also.
+- **7 Tests grün**, u.a. die Verzweigung, die Idempotenz und das Nicht-Ziel.
+- `** TEST SUCCEEDED **`, Exit 0, Modell bitgleich.
+
+### 🔴 Zwei Dinge aus dem Auftrag, die nicht stimmten
+1. **Das Drehbuch `~/Documents/Grap8/Demo Bauer Horst - Pfosten.md` existiert nicht** —
+   der Ordner ist leer, systemweit kein Treffer. Gebaut nach den Angaben im Auftrag selbst;
+   die reichten, weil ohnehin alles Schätzung ist.
+2. **PR #152 (Verwaltungs-Knöpfe) war beim Bauen noch offen** — und wurde währenddessen
+   gemergt. Dieser Branch hat `main` darum nachträglich hereingemergt; die Konflikte in
+   `SnapshotHostView` und im HANDOFF waren rein additiv (beide Seiten ergänzen nur).
+   **Folge: der Weg „Knoten antippen → gefüllte Kalkulation" ist jetzt vollständig** —
+   die Knöpfe aus #152 und die Demo-Daten von hier treffen sich.
+
+### Falle beim Messen — wieder `tail`
+Der erste Snapshot zeigte die falsche Ansicht. Ursache: mein Patch war mit einem Anker aus
+**#152** geschrieben, den es auf `main` nicht gibt — der `assert` schlug fehl, und
+`| tail -3` schnitt die Fehlermeldung ab. Das Skript lief weiter und fotografierte den
+Default-Bildschirm. **Zum zweiten Mal dieselbe Falle:** die Ausgabe abschneiden, bis der
+Fehler nicht mehr sichtbar ist.
+
+### Offen
+- Andreas: Bauer Horst öffnen, Kette ansehen — und nach #152 den Knopfweg zur Kalkulation.
+- Raphi: die geschätzten Werte korrigieren.
 ## Delta 10.09.2026 — Grap8-Knoten: die Verwaltungs-Knöpfe führen irgendwohin
 
 **Branch `feature/grap8-knoten-verwaltung`.** Die „Verwaltung öffnen"-Knöpfe im
