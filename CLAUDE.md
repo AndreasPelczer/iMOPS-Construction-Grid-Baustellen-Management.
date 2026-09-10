@@ -15,6 +15,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Erst wenn diese vier Punkte durch sind, Vorschläge machen. **Warum:** jeder Mac-Neustart = frische Instanz ohne Erinnerung an gestern. Das Repo + `docs/` SIND die Kontinuität, die die Instanz selbst nicht hat.
 
+**📌 Doku für die Pflichtspur wird sofort in `main` gemergt, nicht auf einem Branch geparkt.**
+Am 10.09.2026 lagen in beiden Repos Doku-Branches vom 07.09. ohne PR — `main` behauptete
+derweil, gemergte Arbeit liege noch auf einem Branch. Ein HANDOFF, der auf einem Branch
+wartet, hilft niemandem: die nächste Instanz liest `main`.
+
 **⏹ Am Session-Ende (Pflicht):** `docs/HANDOFF-AKTUELL.md` auf einen Satz bringen — was ist *jetzt* der Stand, was offen? Sonst lügt der Zeiger die nächste Instanz an. Das ist der wichtigste Schritt der ganzen Spur.
 
 ## Was das ist
