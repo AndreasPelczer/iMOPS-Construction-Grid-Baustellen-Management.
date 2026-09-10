@@ -13,6 +13,8 @@ import CoreData
 //   --snapshot-mode --target=VoraussetzungZyklus (die Meldung bei einem Kreis)
 //   --snapshot-mode --target=Grap8Kette          (die Leinwand mit einer echten Kante)
 //   --snapshot-mode --target=Grap8Generator      (echtes Hausprojekt: Symbole je Gewerk)
+//   --snapshot-mode --target=Grap8Kalkulation    (was der Knopf „Kalkulation" oeffnet)
+//   --snapshot-mode --target=Grap8Bestellung     (was der Knopf „Bestellung" oeffnet)
 // scripts/snapshot.sh fängt den Screen per simctl io ab. Roman Anhang C: VTP für die UI.
 struct SnapshotHostView: View {
     @State private var controller = PersistenceController(inMemory: true)
@@ -38,6 +40,8 @@ struct SnapshotHostView: View {
             case "VoraussetzungZyklus": SnapshotZyklusHost(ctx: ctx)
             case "Grap8Kette":         SnapshotGrap8Host(ctx: ctx)
             case "Grap8Generator":     SnapshotGeneratorHost(ctx: ctx)
+            case "Grap8Kalkulation":   SnapshotVerwaltungHost(ctx: ctx, ziel: .kalkulation)
+            case "Grap8Bestellung":    SnapshotVerwaltungHost(ctx: ctx, ziel: .bestellung)
             case "NeuesAufmassSheet":  NeuesAufmassSheet(position: SnapshotData.position(in: ctx, state: state))
             default:                   AufmassSheet(position: SnapshotData.position(in: ctx, state: state))
             }
@@ -329,6 +333,50 @@ private struct SnapshotGeneratorHost: View {
         baustelle = HouseProjectGenerator.createEvent(from: ergebnis, into: ctx)
     }
     var body: some View { Grap8View(event: baustelle) }
+}
+
+// Was hinter einem „Verwaltung öffnen"-Knopf steckt: dieselbe Ansicht, die
+// `Grap8View.verwaltung(_:)` präsentiert — mit der Baustelle eines generierten
+// Hausprojekts, nicht mit gestellten Daten.
+private struct SnapshotVerwaltungHost: View {
+    private let baustelle: Event
+    private let ziel: Grap8Verwaltungsziel
+
+    @MainActor init(ctx: NSManagedObjectContext, ziel: Grap8Verwaltungsziel) {
+        var projekt = HouseProject()
+        projekt.projektName = "Musterhaus — Generator"
+        let ergebnis = HouseProjectGenerator.generate(from: projekt)
+        baustelle = HouseProjectGenerator.createEvent(from: ergebnis, into: ctx)
+        self.ziel = ziel
+    }
+
+    private var positionen: [LVPosition] {
+        ((baustelle.lvPositionen?.allObjects as? [LVPosition]) ?? [])
+            .sorted {
+                let a = $0.kostenGruppeNummer ?? "", b = $1.kostenGruppeNummer ?? ""
+                return a != b ? a < b : ($0.posNr ?? "") < ($1.posNr ?? "")
+            }
+    }
+
+    var body: some View {
+        switch ziel {
+        case .kalkulation:
+            // Mit Rahmen — genau wie in `Grap8View`, weil die Ansicht selbst keinen hat.
+            NavigationStack {
+                // Titel kommt aus der Ansicht selbst („Kalkulation (Welle 6)") —
+                // hier keinen eigenen setzen, der würde nur scheinbar wirken.
+                LVKalkulationView(event: baustelle)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button("Fertig") {} .tint(.orange) }
+                    }
+            }
+        case .bestellung:
+            LieferantenBestelllisteView(event: baustelle, positionen: positionen)
+        case .mannschaft:  CrewPlanningView()
+        case .maschinen:   StammdatenPflegeView()
+        }
+    }
 }
 
 // Die Zyklus-Meldung. Der Text ist NICHT gestellt: hier wird wirklich versucht,
