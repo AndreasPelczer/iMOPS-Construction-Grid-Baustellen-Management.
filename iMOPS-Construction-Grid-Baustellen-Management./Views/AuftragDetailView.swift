@@ -16,6 +16,10 @@ struct AuftragDetailView: View {
     @State private var importFehler: [String] = []
     @State private var zeigeImportFehler = false
 
+    // Voraussetzungen — welcher Auftrag muss vorher fertig sein?
+    @State private var zeigeVoraussetzungWahl = false
+    @State private var kettenFehler: String?
+
     private var doneCount: Int { extras.checklist.filter { $0.isDone }.count }
     private var totalCount: Int { extras.checklist.count }
     private var progress: Double { totalCount == 0 ? 0 : Double(doneCount) / Double(totalCount) }
@@ -38,6 +42,7 @@ struct AuftragDetailView: View {
                 headerCard
                 modeCard
                 checklistCard
+                voraussetzungenCard
                 LVDeleteButtonView(currentLV: job)
                     .padding(.horizontal, 4)
                 
@@ -58,6 +63,21 @@ struct AuftragDetailView: View {
         } message: {
             Text(importFehler.joined(separator: "\n"))
         }
+        .sheet(isPresented: $zeigeVoraussetzungWahl) {
+            VoraussetzungWaehlenView(auftrag: job) { gewaehlt in
+                verknuepfeMit(gewaehlt)
+            }
+        }
+        // Der Zyklus-Fehler MUSS sichtbar sein: ein stumm verworfener Versuch
+        // sähe für den Nutzer aus wie ein kaputter Knopf.
+        .alert("Geht nicht", isPresented: Binding(
+            get: { kettenFehler != nil },
+            set: { if !$0 { kettenFehler = nil } }
+        )) {
+            Button("Verstanden", role: .cancel) { kettenFehler = nil }
+        } message: {
+            Text(kettenFehler ?? "")
+        }
     }
 
     // MARK: - UI Cards
@@ -70,7 +90,7 @@ struct AuftragDetailView: View {
                 .font(.title2.weight(.bold)).lineLimit(3)
             if extras.trainingMode,
                let next = nextOpenStepTitle,
-               !job.isCompleted {
+               !job.istFertig {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.right.circle.fill")
                     Text(next)
@@ -129,7 +149,7 @@ struct AuftragDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
 
-            if extras.trainingMode, let next = nextOpenStepTitle, !job.isCompleted {
+            if extras.trainingMode, let next = nextOpenStepTitle, !job.istFertig {
                 Text("Jetzt: \(next)")
                     .font(.subheadline.weight(.semibold)).padding(.top, 2)
             }
@@ -225,7 +245,7 @@ struct AuftragDetailView: View {
                     Divider()
                     Button(role: .destructive) {
                         extras.checklist.removeAll()
-                        job.isCompleted = false
+                        job.setzeFertig(false)
                         saveExtras(extras)
                     } label: {
                         Label("Leeren", systemImage: "trash")
@@ -258,8 +278,8 @@ struct AuftragDetailView: View {
             } else {
                 HStack(spacing: 10) {
                     Button { markJobCompleted() } label: {
-                        Label(job.isCompleted ? "Auftrag ist fertig" : "Auftrag fertig",
-                              systemImage: job.isCompleted ? "checkmark.seal.fill" : "checkmark.circle.fill")
+                        Label(job.istFertig ? "Auftrag ist fertig" : "Auftrag fertig",
+                              systemImage: job.istFertig ? "checkmark.seal.fill" : "checkmark.circle.fill")
                             .font(.headline)
                     }
                     .buttonStyle(.borderedProminent)
@@ -268,7 +288,7 @@ struct AuftragDetailView: View {
                         Label("Reset", systemImage: "arrow.counterclockwise")
                     }
                     .buttonStyle(.bordered)
-                    .disabled(!job.isCompleted)
+                    .disabled(!job.istFertig)
                 }
 
                 if extras.checklist.isEmpty {
@@ -290,6 +310,111 @@ struct AuftragDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: - Voraussetzungen (Grap8-Kanten)
+
+    /// „Worauf wartet dieser Auftrag?" — die Aufträge, die vorher fertig sein müssen.
+    ///
+    /// Zeigt **nur** echte Graph-Kanten (`istKante`). Eine `Voraussetzung` ohne Quelle
+    /// ist ein manuelles Geschoss-Häkchen aus Welle 9 und gehört nicht hierher.
+    private var voraussetzungenCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Wartet auf").font(.headline)
+                Spacer()
+                Button { zeigeVoraussetzungWahl = true } label: {
+                    Label("Voraussetzung", systemImage: "plus.circle.fill")
+                        .labelStyle(.iconOnly)
+                        .font(.title3)
+                }
+                .disabled(moeglicheVorgaenger.isEmpty)
+            }
+
+            if kanten.isEmpty {
+                Text(job.event == nil
+                     ? "Dieser Auftrag hängt an keiner Baustelle — ohne Geschwister gibt es nichts zu verknüpfen."
+                     : "Keine — kann sofort starten.")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(kanten, id: \.objectID) { kante in
+                        vorgaengerZeile(kante)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func vorgaengerZeile(_ kante: Voraussetzung) -> some View {
+        HStack(spacing: 12) {
+            // Der Haken sagt, ob der Vorgänger fertig ist — live gerechnet,
+            // nicht gespeichert (siehe `Voraussetzung.istErfuellt`).
+            Image(systemName: kante.istErfuellt ? "checkmark.circle.fill" : "clock")
+                .foregroundStyle(kante.istErfuellt ? .green : .orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(kante.quelle.map(Kausalkette.bezeichnung) ?? "Unbekannter Auftrag")
+                Text(kante.istErfuellt ? "fertig" : "läuft noch")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(role: .destructive) {
+                loese(kante)
+            } label: {
+                Image(systemName: "minus.circle")
+            }
+            .buttonStyle(.borderless)
+        }
+    }
+
+    /// Die echten Kanten dieses Auftrags, in Reihenfolge.
+    private var kanten: [Voraussetzung] {
+        job.voraussetzungenArray.filter(\.istKante)
+    }
+
+    /// Wen kann man noch als Vorgänger wählen: Geschwister derselben Baustelle,
+    /// ohne sich selbst und ohne die schon verknüpften.
+    private var moeglicheVorgaenger: [Auftrag] {
+        AuftragDetailView.moeglicheVorgaenger(fuer: job)
+    }
+
+    /// Als `static`, damit das Auswahl-Blatt dieselbe Regel benutzt — eine Quelle
+    /// dafür, wer wählbar ist, statt zwei, die auseinanderlaufen können.
+    static func moeglicheVorgaenger(fuer job: Auftrag) -> [Auftrag] {
+        let geschwister = (job.event?.jobs?.allObjects as? [Auftrag]) ?? []
+        let schonVerknuepft = Set(job.voraussetzungenArray.compactMap { $0.quelle }.map(ObjectIdentifier.init))
+        return geschwister
+            .filter { $0 !== job && !schonVerknuepft.contains(ObjectIdentifier($0)) }
+            .sorted { Kausalkette.bezeichnung($0) < Kausalkette.bezeichnung($1) }
+    }
+
+    private func verknuepfeMit(_ vorgaenger: Auftrag) {
+        do {
+            try Kausalkette.verknuepfe(job, brauchtVorher: vorgaenger, in: ctx)
+            try ctx.save()
+        } catch let fehler as KausalketteFehler {
+            // Der Text aus `KausalketteFehler` erklärt den Kreis mit beiden Namen —
+            // besser als alles, was hier neu erfunden würde.
+            ctx.rollback()
+            kettenFehler = fehler.errorDescription
+        } catch {
+            ctx.rollback()
+            kettenFehler = "Die Voraussetzung ließ sich nicht sichern: \(error.localizedDescription)"
+        }
+    }
+
+    private func loese(_ kante: Voraussetzung) {
+        guard let quelle = kante.quelle else { return }
+        Kausalkette.entknuepfe(job, brauchtNichtMehr: quelle, in: ctx)
+        do {
+            try ctx.save()
+        } catch {
+            ctx.rollback()
+            kettenFehler = "Die Voraussetzung ließ sich nicht lösen: \(error.localizedDescription)"
+        }
     }
 
     private func trainingStepRow(_ item: AuftragChecklistItem) -> some View {
@@ -343,7 +468,7 @@ struct AuftragDetailView: View {
         guard !t.isEmpty else { return }
         extras.checklist.append(AuftragChecklistItem(title: t))
         newStepText = ""
-        job.isCompleted = false
+        job.setzeFertig(false)
         saveExtras(extras)
     }
 
@@ -351,26 +476,25 @@ struct AuftragDetailView: View {
         guard let idx = extras.checklist.firstIndex(where: { $0.id == id }) else { return }
         extras.checklist[idx].isDone.toggle()
         let allDone = !extras.checklist.isEmpty && extras.checklist.allSatisfy { $0.isDone }
-        job.isCompleted = allDone
+        job.setzeFertig(allDone)
         saveExtras(extras)
     }
 
     private func deleteStep(_ id: String) {
         extras.checklist.removeAll { $0.id == id }
         let allDone = !extras.checklist.isEmpty && extras.checklist.allSatisfy { $0.isDone }
-        job.isCompleted = allDone
+        job.setzeFertig(allDone)
         saveExtras(extras)
     }
 
     private func markJobCompleted() {
-        job.isCompleted = true
         job.status = .completed
         for i in extras.checklist.indices { extras.checklist[i].isDone = true }
         saveExtras(extras)
     }
 
     private func resetCompletion() {
-        job.isCompleted = false
+        job.setzeFertig(false)
         for i in extras.checklist.indices { extras.checklist[i].isDone = false }
         saveExtras(extras)
     }
@@ -385,7 +509,7 @@ struct AuftragDetailView: View {
         } else {
             extras.checklist.append(contentsOf: newItems)
         }
-        job.isCompleted = false
+        job.setzeFertig(false)
         saveExtras(extras)
     }
 

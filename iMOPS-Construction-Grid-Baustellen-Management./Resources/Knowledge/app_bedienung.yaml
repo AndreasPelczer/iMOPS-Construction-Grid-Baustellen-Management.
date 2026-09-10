@@ -1117,3 +1117,71 @@
     Die Ansicht sagt das und bietet "Planer oeffnen" an.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
+
+- id: "App_Grap8_Leinwand"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Grap8"
+    - "Leinwand"
+    - "Kausalkette ansehen"
+    - "Was ist Grap8"
+    - "Abhaengigkeiten sehen"
+    - "Wer wartet auf wen"
+  antwort: |
+    Grap8 zeigt die Auftraege einer Baustelle als Flaeche mit Kaesten und Pfeilen —
+    wer auf wen wartet.
+
+    So oeffnest du sie:
+    1. Tab "Baustellen"
+    2. Oben rechts das "..."-Menue antippen
+    3. "Grap8" waehlen
+    4. Baustelle aus der Liste antippen (die Zahl dahinter sagt, wie viele
+       Auftraege dranhaengen)
+    5. "Fertig" oben rechts schliesst die Leinwand, "Baustelle" oben links
+       wechselt zu einer anderen
+
+    Was du siehst: je ein Kasten pro Auftrag mit Name, Kostengruppe und Zustand
+    (offen / in Arbeit / erledigt). Ein Auftrag, dessen Vorgaenger alle fertig
+    sind, wird als "startklar" gezeigt; fehlt noch einer, steht "wartet".
+
+    WICHTIG — die Leinwand ist derzeit NUR ANSICHT. Sie liest die Auftraege aus
+    der App; was du dort anklickst oder verschiebst, wird NICHT gespeichert und
+    ist nach dem Schliessen weg. Aendern kannst du einen Auftrag nur in der
+    Baustelle selbst.
+
+    Pfeile erscheinen, sobald du Auftraege verknuepft hast. Das machst du im
+    Auftrag selbst unter "Wartet auf" — siehe "Voraussetzung setzen".
+
+- id: "App_Voraussetzung_setzen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Voraussetzung setzen"
+    - "Auftraege verknuepfen"
+    - "Wartet auf"
+    - "Reihenfolge festlegen"
+    - "Vorgewerk festlegen"
+    - "Auftrag haengt von anderem ab"
+  antwort: |
+    Festlegen, dass ein Auftrag auf einen anderen warten muss:
+    1. Baustelle oeffnen, den Auftrag antippen
+    2. Abschnitt "Wartet auf" (unten in der Auftragsansicht)
+    3. Auf "+" tippen
+    4. Aus der Liste den Auftrag waehlen, der VORHER fertig sein muss
+       (es erscheinen nur Auftraege derselben Baustelle, die noch nicht
+       verknuepft sind)
+
+    Wieder loesen: in der Zeile auf das rote Minus tippen.
+
+    Was du siehst: ein gruener Haken heisst, der Vorgaenger ist fertig; eine
+    orange Uhr heisst, er laeuft noch. Der Auftrag gilt als startklar, sobald
+    alle Vorgaenger fertig sind — das rechnet die App live, du musst nichts
+    abhaken.
+
+    Kreis nicht moeglich: Wenn A auf B wartet, kann B nicht auch auf A warten —
+    dann koennte keiner von beiden je anfangen. Die App lehnt das mit einer
+    Meldung ab und nennt beide Auftraege beim Namen. Das gilt auch ueber
+    Zwischenschritte (A wartet auf B, B auf C, C kann nicht auf A warten).
+
+    Die Verknuepfungen sind dasselbe, was Grap8 als Pfeile zeichnet.

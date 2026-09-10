@@ -2,6 +2,549 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Entscheidung 09.09.2026 — „Wo lebt der Graph?" ist beantwortet (vorerst)
+
+**Die App bleibt die Quelle. Die Box bekommt kein Graph-Gedächtnis — noch nicht.**
+Getroffen von Andreas und Falbe. Kein Code, nur Festhalten — damit die Frage nicht
+alle paar Wochen neu aufgemacht wird.
+
+### Was gegen den Box-Umbau sprach (gemessen, nicht vermutet)
+- **`mops-api` hat heute überhaupt kein Gedächtnis.** Alle Endpunkte sind POST: rein,
+  verarbeiten, raus (`extract`, `classify`, `wandleser`, `ifc`, `gelaendebruecke`). Keine
+  Datenbank für Vorgänge, nur qdrant für den RAG. „Die Box wird die Quelle" heißt darum
+  nicht „ein Endpunkt", sondern **Datenbank, Schema, Migrationen, Backup, Mehrbenutzer** —
+  ein neues Stockwerk, kein Kabel.
+- **Die Baustelle hat kein Netz.** Die App arbeitet draußen, die Box steht im Heim-LAN.
+  Wäre die Box die einzige Wahrheit, wäre die App auf der Baustelle tot. Also braucht die
+  App ohnehin eine lokale Kopie — „reines A" ist gar nicht baubar.
+- Das Argument „zwei Wahrheiten wie bei `isCompleted`/`status`" **trägt hier nicht**: das
+  waren zwei Felder im selben Datensatz, beide beschreibbar, ohne Schiedsrichter. Eine Kopie
+  mit klarer Schreibrichtung ist keine zweite Wahrheit.
+
+### Wann die Frage wieder aufgeht
+**Sobald ein Zweiter mitschauen soll** — Raphi, ein Polier. Solange nur ein Gerät auf den
+Graphen sieht, ist die App-Brücke (#145) genug. Vorher ist die Diskussion theoretisch.
+
+### Was daraus folgt
+- Zurückschreiben von der Leinwand und Positionen-Merken bleiben **liegen** — beide brauchen
+  einen Schreibweg, und der hinge an dieser Entscheidung.
+- Die Richtung „ein Kern, viele Sichten" bleibt richtig; nur der Zeitpunkt ist später.
+
+---
+
+## Offen & blockiert — Finger-Test auf echter Hardware
+
+**Blockiert, nicht vergessen: es ist kein iPad verfügbar** (Stand 09.09.2026). Der Punkt
+steht seit dem ersten Grap8-Branch und ist der einzige, den kein Simulator klären kann.
+
+**Prüfliste für den Tag, an dem ein Gerät da ist:**
+1. „⋯"-Menü → „Grap8" öffnet die Leinwand **im Vollbild**, „Fertig" oben rechts erreichbar.
+2. **Kneifgriff zoomt die Leinwand** — nicht die Seite. Der Seitenzoom ist per Viewport-Skript
+   abgeschaltet (`Grap8View.viewportSkript`), die Geste soll React Flow gehören. **Das ist die
+   eigentliche Wette hinter Grap8** und im Simulator nicht belastbar zu prüfen.
+3. Ein-Finger-Ziehen verschiebt die Fläche, Knoten lassen sich einzeln ziehen.
+4. Doppeltipp auf einen Knoten öffnet das Umbenennen (Tastatur verdeckt nichts Wichtiges).
+
+Hakt Punkt 2, ist das wichtiger als jedes Feature obendrauf — dann trägt der Web-Ansatz die
+Geste nicht, und das sollte man wissen, bevor mehr daran hängt.
+
+---
+
+## Delta 09.09.2026 — Kostengruppen im Generator: die Leinwand wird bunt
+
+**Branch `fix/generator-kostengruppe`.** Generierte Aufträge trugen keine
+`kostenGruppeNummer` → auf jedem Knoten stand „KG —", alle mit demselben Symbol.
+Jetzt setzt der Generator je Gewerk eine DIN-276-KG. **Kein Core-Data-Delta.**
+
+### 🔴 Der Befund, der den Auftrag umgestellt hat
+Der Auftrag schlug vor, die KG an `AuftragTemplate` zu hängen. **Geht nicht:**
+`templateFuerGewerk` kennt nur **6 der 13** Gewerke (nachgezählt) — die übrigen 7 bekämen
+keine Kostengruppe. Darum eine eigene `kostenGruppeFuerGewerk(_:)` neben dem Template.
+
+### 🔴 Und der zweite: meine eigenen Kommentare in `Grap8Graph.symbol()` waren falsch
+Die Liste stammte aus #145 — **von mir, aus dem Gedächtnis geschrieben statt gegen den
+Katalog geprüft**. Gegen `DIN276BaumKatalog` gemessen stimmten drei Bezeichnungen nicht:
+
+| Nummer | stand da | heißt im Katalog |
+|---|---|---|
+| 352 | „Deckenbeläge/Estrich" | **Deckenöffnungen** (Estrich ist 353) |
+| 336 | „Tragende Innenwände" | **Außenwandbekleidung innen** (tragende Innenwände sind 341) |
+| 534 | „Zäune/Pfosten" | **Stellplätze** |
+
+Genau der Fehler, den die Tao-Regel verbietet — plausibel geklungen, nie nachgesehen.
+Korrigiert, und die Datei **musste** entgegen dem Nicht-Ziel angefasst werden: sie kannte
+keine der Nummern, die der Generator jetzt setzt, alles wäre auf „Box" gefallen.
+
+### Die Zuordnung (jede Nummer gegen `DIN276BaumKatalog` geprüft)
+| Gewerk | KG | Katalog-Bezeichnung | Symbol |
+|---|---|---|---|
+| Erdarbeiten | 322 | Flachgründungen und Bodenplatten | Box |
+| Rohbau | 331 | Tragende Außenwände | Blocks |
+| Fenster & Tueren | 334 | Außenwandöffnungen | Blocks |
+| Malerarbeiten | 345 | Innenwandbekleidung | Layers |
+| Trockenbau | 346 | Elementierte Innenwände | Blocks |
+| Estrich & Boden | 353 | Deckenbeläge | Grid2x2 |
+| Ausbau | 353 | Deckenbeläge | Grid2x2 |
+| Dach | 361 | Dachkonstruktionen | Home |
+| Allgemein | 397 | Zusätzliche Maßnahmen | SquarePlus |
+| Sanitaer | 410 | Abwasser-, Wasser-, Gasanlagen | Route |
+| Heizung | 420 | Wärmeversorgungsanlagen | Route |
+| Elektro | 444 | Niederspannungsinstallationsanlagen | Zap |
+| Aussenanlagen | 531 | Wege | Fence |
+
+**Benannte Notlösungen:** Ausbau teilt sich 353 mit Estrich (Fliesen und Bodenbeläge sind
+beides Deckenbeläge). Allgemein (Endreinigung, Abnahme) ist kein Bauteil — 397 ist der
+ehrlichste Platz. Sanitär/Heizung bekommen die **Gruppen-KG** statt einer willkürlichen
+Unterposition und teilen sich `Route`: die Palette der Leinwand hat **neun** Icons und
+kein einziges für Haustechnik (nachgesehen in `ICONS`, `App.jsx`).
+
+### Nachgewiesen
+- **Screenshot iPad:** 10 Aufträge, **sechs verschiedene Symbole**, überall echte
+  KG-Labels, kein „KG —" mehr.
+- Drei neue Tests (`GeneratorKostengruppeTests`), `** TEST SUCCEEDED **`, Exit 0. Einer
+  hält die **konkrete** Gewerk→KG→Symbol-Zuordnung fest — ein Screenshot zeigt nur, *dass*
+  Symbole verschieden sind, der Test sagt *welches wohin gehört*.
+
+### Falle beim Screenshot — für die Nachwelt
+`scripts/snapshot.sh` installiert die App neu, und die Neuinstallation setzt die
+Mitteilungs-Berechtigung zurück → **der Systemdialog legt sich über den Screenshot**.
+`xcrun simctl privacy … deny` gibt es nicht (die Aktionen sind `grant`/`revoke`/`reset`).
+Weg: einmal installieren, `grant notifications`, dann starten — oder den Shot auf einem
+Simulator machen, auf dem die App schon lief.
+
+### Offen
+- iPad-Test — Andreas: Hausprojekt erzeugen → Grap8 öffnen → unterscheidbare Symbole.
+- Fachliche Gegenprobe der KGs — Falbe.
+
+---
+
+## Delta 09.09.2026 — Aufträge verknüpfen: die Ketten bekommen eine Bedienung
+
+**Branch `feature/auftrag-verknuepfen-ui`.** Schließt den Befund aus #145: die Kanten-
+Infrastruktur aus #140 stand, aber niemand konnte sie füllen — `Kausalkette.verknuepfe`
+wurde nur in Tests gerufen. Jetzt gibt es „Wartet auf" in `AuftragDetailView`.
+**Kein Core-Data-Delta**, keine Leinwand-Änderung.
+
+### Was neu ist
+| Stelle | |
+|---|---|
+| `AuftragDetailView` | Abschnitt **„Wartet auf"** — anzeigen, hinzufügen („+"), lösen (⊖) |
+| `Views/VoraussetzungWaehlenView.swift` | Auswahl der möglichen Vorgänger |
+| `Kausalkette.entknuepfe(_:brauchtNichtMehr:in:)` | Gegenstück zu `verknuepfe` |
+| `SnapshotHostView` | vier neue Ziele für „Codis Augen" (siehe unten) |
+
+### 🔴 Was die Tests gefunden haben — die `delete`-Falle
+`context.delete(kante)` **markiert nur**. Bis der Kontext seine Änderungen verarbeitet,
+steht die gelöschte Kante **weiterhin in `auftrag.voraussetzungen`**. Die erste Fassung
+von `entknuepfe` zählte sie deshalb beim Neu-Nummerieren mit und vergab die
+`reihenfolge` um eins verschoben; direkt nach dem Lösen sah der Auftrag seine Kante noch.
+**Drei Tests fielen durch, bevor eine Zeile Produktionscode falsch in Betrieb ging.**
+Behoben mit `context.processPendingChanges()` vor dem Neu-Nummerieren.
+
+**Merksatz:** in Core Data ist ein `delete` erst nach `processPendingChanges()` oder
+`save()` in den Beziehungen sichtbar. Wer direkt danach über eine Beziehung läuft,
+läuft über Leichen.
+
+### Warum die `reihenfolge` überhaupt nachgezogen wird
+`verknuepfe` zieht ihre Nummer aus `voraussetzungenArray.count`. Bliebe nach dem Lösen
+aus der Mitte eine Lücke (0, 2, 3 …), vergäbe die nächste Verknüpfung eine Nummer, die
+es schon gibt — zwei Kanten stritten um denselben Platz. Test: `reihenfolgeBleibtLueckenlos`.
+
+### Entscheidungen
+- **Zyklus:** wird **nicht** vorab aus der Auswahlliste gefiltert. `verknuepfe` prüft und
+  wirft mit einer Begründung, die **beide Auftragsnamen nennt** — die zeigt die Ansicht als
+  Meldung. Einen Auftrag stumm wegzulassen wäre die schlechtere Auskunft: der Nutzer wüsste
+  nicht, warum er fehlt.
+- **Bei Fehler `ctx.rollback()`**, damit keine halbe Kante im Kontext hängenbleibt.
+- **`istKante`-Filter** überall: manuelle Geschoss-Häkchen (Welle 9) tauchen im Abschnitt
+  nicht auf und werden von `entknuepfe` nicht angefasst. Heute hängt zwar keins an einem
+  Auftrag (`HierarchieHelfer` setzt nur `v.geschoss`) — der Filter hält es auch dann
+  richtig, wenn das jemand ändert. Test: `manuellesHaekchenBleibtUnberuehrt`.
+- **Eine Quelle für „wer ist wählbar":** `AuftragDetailView.moeglicheVorgaenger(fuer:)`
+  füttert Liste **und** „+"-Knopf (der ist aus, wenn niemand übrig ist).
+
+### Nachgewiesen — mit „Codis Augen", nicht mit Prüfmarkern
+`scripts/snapshot.sh <Ziel> <Name>`, vier neue Ziele in `SnapshotHostView`:
+| Ziel | zeigt |
+|---|---|
+| `Voraussetzungen` | „Wartet auf" mit zwei Vorgängern: grüner Haken (fertig) / orange Uhr (läuft) |
+| `VoraussetzungWahl` | die Auswahlliste |
+| `VoraussetzungZyklus` | die Kreis-Meldung — Text aus einem **echten** fehlgeschlagenen Versuch |
+| `Grap8Kette` | **die Leinwand mit der Kante**: grüner Pfeil vom fertigen Vorgänger, orange gestrichelt vom laufenden, Zähler „1 wartet" |
+
+`** TEST SUCCEEDED **`, `xcodebuild`-Exit 0, alle 15 `KausalketteTests` grün.
+
+> **Für die nächste Instanz:** UI-Nachweise gehören **nicht** in selbstgebaute Prüfmarker.
+> `scripts/snapshot.sh` + `App/SnapshotHostView.swift` („Codis Augen") ist der Weg —
+> Ziel eintragen, Skript rufen, PNG in `/tmp/imops-shots`. Ich habe das an einem Tag
+> zweimal von Hand nachgebaut, bevor ich es gefunden habe.
+
+### Offen
+- Kostengruppen beim Erzeugen setzen (`HouseProjectGenerator`) — auf der Leinwand steht
+  sonst „KG —" und alles trägt dasselbe Symbol.
+- iPad-Test — Andreas: zwei Aufträge verknüpfen, auf der Leinwand die Kante sehen.
+- Zurückschreiben *von* der Leinwand: weiterhin bewusst offen.
+
+---
+
+## Delta 09.09.2026 — Grap8 zeigt echte Aufträge (App-Brücke, nur lesen)
+
+**Branch `feature/grap8-echte-daten`.** Die Leinwand zeigt die Aufträge einer Baustelle
+aus Core Data statt der Beispieldaten. **App-intern über `WKScriptMessageHandler`** —
+kein Netz, keine Box, offline-fest. **Kein Core-Data-Delta** (`git diff main` auf die
+Modelldateien ist leer), **kein Zurückschreiben**.
+
+> Zweig-Hinweis: dieser Branch kommt von `main` und kennt darum den Vollbild-Umbau aus
+> PR #144 (`feature/grap8-vollbild`) noch nicht — dort wird aus dem Blatt ein Vollbild.
+> Andere Dateien, kein Konflikt zu erwarten; wer zuerst gemergt wird, ist egal.
+
+### Der Brücken-Kontrakt (beide Seiten müssen zusammenpassen)
+| Richtung | |
+|---|---|
+| Web → App | `postMessage({action:'ready'})`, sobald `window.grap8SetGraph` steht |
+| App → Web | `window.grap8SetGraph({baustelle, nodes, edges})` |
+
+**Warum die Leinwand fragt statt die App einfach zu schicken:** `didFinish` feuert, wenn
+das *Dokument* geladen ist — React kann dann noch nicht gemountet sein. Ein Aufruf zu früh
+liefe ins Leere, und zwar stillschweigend. Also klingelt die Seite, wenn sie bereit ist.
+Auf der Web-Seite steht darum das Aufhängen des Briefkastens **vor** dem Klingeln.
+
+### 🔴 Zwei Befunde, die größer sind als dieser Branch
+1. **Die App kann keine Kausalketten anlegen.** `Kausalkette.verknuepfe` wird
+   **ausschließlich in Tests** gerufen — `grep` über das ganze Repo. Die Kanten-
+   Infrastruktur aus #140 (`Voraussetzung.quelle`/`.auftrag`) steht, aber es gibt keine
+   Bedienung, um zwei Aufträge zu verknüpfen. **Folge:** die Leinwand zeigt heute Kästen
+   ohne Pfeile — im Simulator nachgemessen: 9 Aufträge, **0 Kanten**, alle „startklar".
+   Das ist kein Fehler der Brücke, das ist die Antwort auf die Frage, die dieser Branch
+   stellen sollte. **Der nächste sinnvolle Schritt ist die Verknüpfen-Bedienung, nicht
+   mehr Leinwand.**
+2. **`HouseProjectGenerator` setzt keine `kostenGruppeNummer`.** Darum steht auf jedem
+   Kasten „KG —" und alle tragen dasselbe Symbol. Die Symbol-Zuordnung nach KG ist
+   gebaut und wartet auf Daten.
+
+### v1-Notlösungen (bewusst, alle im Code vermerkt)
+| Stelle | Lösung | Warum |
+|---|---|---|
+| Auftragsname | `Kausalkette.bezeichnung()` → `processingDetails` | `Auftrag` hat **kein** Namensfeld; „Auftrag anlegen" schreibt `taskSummary` dorthin |
+| Kennung | Core-Data-Objekt-URI | `Auftrag` hat **keine** `id` (anders als `Voraussetzung`) |
+| `onHold` | → `inArbeit` | die Leinwand kennt nur offen/inArbeit/erledigt |
+| `anf` (Chips) | leer | im Modell steht nicht, welcher Auftrag Material/Mensch/Maschine braucht |
+| Anordnung | Ketten in Spalten nach Tiefe, **Freistehende im 4er-Raster** | erste Fassung setzte alles in Spalte 0 — neun Aufträge, neun Zeilen, endlose Kolonne (im Simulator gesehen und behoben) |
+| Baustelle | Auswahlliste beim Öffnen | Grap8 kommt aus dem „⋯"-Menü der **Liste**, es gibt keine Baustelle im Kontext. „Die erste nehmen" wäre Willkür; die Liste zeigt die Auftragszahl je Baustelle. `Grap8View(event:)` nimmt eine Baustelle entgegen, falls Grap8 später aus einer Baustelle heraus geöffnet wird |
+
+### Nur Ansicht — und das steht auch da
+Klicks auf der Leinwand ändern Core Data **nicht**. Damit das niemanden überrascht,
+schreibt die Leinwand im Brückenmodus „aus der App geladen · nur Ansicht" in ihre
+Kopfzeile; „Beispiel"/„Leeren" sind dort ausgeblendet (sie würden die echten Aufträge
+wegwerfen) und `localStorage` ist abgeschaltet — ein alter Browserstand darf die echten
+Daten nicht überschreiben. **Standalone im Browser bleibt alles wie vorher.**
+
+### Nachgewiesen
+- **Screenshot iPad Pro 13" (Simulator):** neun echte Aufträge („Rohbau – Neubau
+  Einfamilienhaus" usw.), echter Baustellenname in der Kopfzeile, „nur Ansicht"-Hinweis.
+- `** TEST SUCCEEDED **`, `xcodebuild`-Exit 0; iPad-Build `** BUILD SUCCEEDED **`.
+- Dafür standen zwei **Prüfmarker** im Code (Grap8 automatisch öffnen, größte Baustelle
+  vorwählen) — **beide zurückgenommen**, per `grep` gegengeprüft.
+- `app_bedienung.yaml`: Eintrag `App_Grap8_Leinwand` ergänzt (Drift-Regel aus CONTRIBUTING).
+
+### Offen
+- **Verknüpfen-Bedienung** — ohne sie bleibt Grap8 eine Kästchen-Sammlung. Siehe Befund 1.
+- Kostengruppen beim Erzeugen setzen. Siehe Befund 2.
+- Finger-Test auf echtem iPad — Andreas.
+- Zurückschreiben, Positionen merken, Anforderungs-Chips: alles bewusst nicht in diesem Branch.
+## Delta 09.09.2026 — Grap8 im Vollbild statt im Blatt
+
+**Branch `feature/grap8-vollbild`.** Eine Zeile Präsentation, sonst nichts.
+`Grap8View`, das `grap8://`-Schema und `Grap8Web/` sind **unangetastet**, kein Core-Data-Delta
+(`git diff main` auf die Modelldateien ist leer).
+
+### Was geändert ist
+`ContentView.swift`: `.sheet(isPresented: $showingGrap8)` → **`.fullScreenCover`**,
+`.presentationSizing(.page)` entfällt. Der Menüpunkt „Grap8" im „⋯"-Menü bleibt, wo er war.
+
+### Warum kein zweiter Schließen-Knopf nötig war
+`Grap8View` bringt seit Schritt 1 einen eigenen `NavigationStack` mit „Fertig" in
+`.confirmationAction` mit, der über `@Environment(\.dismiss)` schließt. Das wirkt bei
+`fullScreenCover` genauso wie beim Blatt, und die Navigationsleiste sitzt im sicheren Bereich.
+**Wichtig für später:** ein Vollbild lässt sich **nicht wegwischen** — dieser Knopf ist die
+einzige Tür zurück. Wer die Werkzeugleiste aus `Grap8View` entfernt, sperrt den Nutzer ein.
+
+### Nachgewiesen (nicht vermutet)
+- **Sicht-Nachweis auf dem iPad Pro 13" (Simulator):** Screenshot zeigt die Leinwand ganzflächig,
+  keinen Blatt-Rand, „Fertig" oben rechts unterhalb der Statusleiste. Dafür stand `showingGrap8`
+  vorübergehend auf `true` — **zurückgenommen**, per `rg` gegengeprüft.
+- `** TEST SUCCEEDED **`, `xcodebuild`-Exit **0**, iPad-Build `** BUILD SUCCEEDED **`.
+
+### Falle beim Messen — für die Nachwelt
+Der erste Testlauf lief durch `| tail -40`. Das meldete Exit 0 — aber das war der Exit-Code von
+`tail`, nicht von `xcodebuild`, und `** TEST SUCCEEDED **` stand weiter oben im Log und wurde
+vom `tail` abgeschnitten. **Ein grüner Exit-Code hinter einer Pipe ist kein Nachweis.**
+Zweiter Lauf ohne Pipe, Ausgabe in eine Datei, Exit-Code direkt gelesen.
+
+### Offen
+- **Finger-Test auf echtem iPad** (Kneifzoom + Ziehen) — Andreas. Unverändert offen.
+- Datenbrücke bleibt Nicht-Ziel bis zum Design-Gate „wo lebt der Graph".
+
+---
+
+## Delta 08.09.2026 — Grap8 als Fenster in der App (WKWebView, Schritt 1)
+
+**Branch `feature/grap8-webview`.** Die Web-Leinwand läuft **gebündelt** in der App.
+Kein SwiftUI-Nachbau, **keine** Datenbrücke, **kein** Core-Data-Delta. Die Leinwand zeigt
+ihre eigenen Beispieldaten.
+
+### Was neu ist
+| Stelle | |
+|---|---|
+| `Grap8Web/` (Repo-Wurzel) | gebaute Leinwand, als **Folder Reference** im Bundle |
+| `Views/Grap8View.swift` | `UIViewRepresentable` um eine `WKWebView` + Auslieferung aus dem Bundle |
+| `ContentView` | Toolbar-Knopf „Grap8" → Blatt, gleiches Muster wie der Hausplaner daneben |
+| `scripts/grap8-bauen.sh` | baut `~/Projekte/grap8-canvas` neu nach `Grap8Web/` |
+| `~/Projekte/grap8-canvas/vite.config.js` | `base: './'` (liegt außerhalb des Repos) |
+
+### Zwei Fallen — beide im Simulator nachgemessen, nicht vermutet
+**1. Die synchronisierte Xcode-Gruppe klopft Unterordner flach.** Belegt am bestehenden
+Bundle: `Resources/scharpegge_katalog.csv` liegt darin im Wurzelverzeichnis, es gibt kein
+`Resources/` und kein `Knowledge/`. `ExactMatchKnowledge.locateYAML` fängt das mit einem
+zweiten Versuch ab — für die Leinwand geht das nicht, `index.html` sucht `./assets/…` als
+echten Unterordner. Darum liegt `Grap8Web` **außerhalb** des Quellordners und ist von Hand
+als Folder Reference (`lastKnownFileType = folder`) in `project.pbxproj` eingetragen.
+
+**2. `loadFileURL` ergibt einen weißen Schirm — und meldet nichts.** Vite baut
+`<script type="module">`. Ein Modul hat über `file://` die Herkunft `null`, die CORS-Prüfung
+verwirft es **stillschweigend**: das Hauptdokument lädt sauber durch (im Log
+`ProgressTracker::progressCompleted … isMainLoad 1`), `didFail` feuert nie, die Seite bleibt
+leer. Der Auftrag sah `loadFileURL` vor — das trägt nicht.
+**Ersetzt durch ein eigenes Schema:** `Grap8BundleHandler` (`WKURLSchemeHandler`) liefert
+den Bundle-Ordner unter `grap8://leinwand/` aus. Damit hat die Leinwand eine echte Herkunft,
+Module laden normal, und es geht **kein Byte ins Netz** — geprüft: in `Grap8Web` stehen nur
+XML-Namensräume und ein Attributionslink, nichts wird nachgeladen.
+
+### Nachgewiesen
+- Bundle-Struktur erhalten: `…app/Grap8Web/assets/index-*.js` liegt als Unterordner drin.
+- Leinwand läuft im iPad-Simulator: Knoten, Kanten, Bausteine-Palette, Detail-Seitenleiste,
+  Zoom-Steuerung, Minikarte. Screenshot beim Auftrag.
+- `** TEST SUCCEEDED **` (Unit-Suite), Build grün.
+
+### Offen
+- **Fingertipp-Weg ungeprüft.** Der Simulator lief hier headless, der Menüpunkt wurde nicht
+  angetippt — das Blatt wurde zum Prüfen vorübergehend automatisch geöffnet (zurückgenommen).
+  Auf dem iPad rutscht „Grap8" wie Demo/Hausplaner/+ ins „⋯"-Überlaufmenü. **Andreas testet.**
+- **Kneifgriff auf echter Hardware.** Seitenzoom ist per Viewport-Skript abgeschaltet, die
+  Geste gehört React Flow. Im Simulator nicht belastbar zu prüfen.
+- **Datenbrücke** bleibt Nicht-Ziel: erst Design-Gate „wo lebt der Graph", dann entweder
+  `WKScriptMessageHandler` oder — bevorzugt — beide Seiten über die Box-Graph-API.
+- `Grap8Web/` ist **Bauergebnis im Repo**. Bewusst so: sonst baut die App nicht ohne das
+  Web-Projekt daneben. Nach jeder Änderung `scripts/grap8-bauen.sh` laufen lassen.
+
+---
+
+## Delta 08.09.2026 — eine Quelle für „fertig" (`status` schlägt `isCompleted`)
+
+**Branch `refactor/auftrag-status-eine-quelle`.** Löst die Grap8-Krücke ab.
+**Kein Schema-Delta** — `.xcdatamodel` bitgleich gegen `main` (belegt per `git diff`).
+
+### Was auseinanderlief — vollständig, nicht wie beim ersten Anlauf
+| Stelle | setzte |
+|---|---|
+| `addStep` · `toggleStep` · `deleteStep` · `applyTemplate` · Checkliste leeren | **nur `isCompleted`**, nie `status` |
+| `resetCompletion()` | `isCompleted = false`, **`status` blieb `.completed`** — „geöffnet" und gleichzeitig fertig |
+| `EditJobView` | Status **und** Häkchen als **getrennte Eingabefelder** — der Nutzer konnte sie widersprüchlich setzen |
+| `AuftragRowView.setStatus` | `isCompleted = true` **nur beim Fertigsetzen, nie zurück** — ein Auftrag, der wieder auf `.pending` ging, blieb im Flag „fertig" |
+| `markJobCompleted` · `JobViewModel` · `AddJobViewModel` · `DemoSeeder` | beide, konsistent |
+
+**`AuftragRowView` ist mir beim ersten Durchgang entgangen** — mein eigener `grep`-Filter
+(`grep -v "== "`) hat die Zeile weggeworfen, weil sie zufällig ein `==` enthielt. Gefunden
+erst bei der Abschluss-Gegenprobe **ohne** selbstgebauten Filter. Merksatz: der Filter, der
+die Suche übersichtlich macht, ist der, der den Fund versteckt.
+
+**`EditJobView` war die schlimmste Quelle:** zwei Bedienelemente für einen Zustand.
+
+### Wie es jetzt aussieht
+- **`Auftrag.istFertig`** (`status == .completed`) ist **die eine Stelle**, die die Frage
+  beantwortet. Alle Leser darauf umgestellt — 24 Fundstellen in 7 Dateien, plus Grap8.
+- **Der `status`-Setter zieht `isCompleted` mit.** `statusRawValue` wird nirgends sonst
+  geschrieben (geprüft) — damit ist der Setter die einzige Tür, und *jeder* bestehende
+  `job.status = …`-Pfad wird automatisch konsistent, ohne ihn anzufassen.
+- **`setzeFertig(_:)`** für Pfade, die „fertig/nicht fertig" ausdrücken. „Nicht fertig"
+  stuft **nur herab, was fertig war**: ein Auftrag auf `.pending` bleibt `.pending`, wenn
+  jemand einen Checklistenpunkt anlegt. Ziel beim Öffnen ist `.inProgress` — so hat es
+  `KausalbauketteView` beim Umschalten schon immer gemacht.
+- **`isCompleted` bleibt** als Legacy-Feld (Schema unverändert), wird aber von keinem Pfad
+  mehr direkt geschrieben. Rauswerfen braucht V3 → eigener Branch.
+- **Drei NSPredicates** (`EmployeeDetailView`, `CrewPlanningView` ×2) mussten auf
+  `statusRawValue` statt `isCompleted` — **ein Prädikat kann keine computed property sehen.**
+  Wer `istFertig` in einen Fetch schreibt, bekommt einen Laufzeitfehler.
+
+### Backfill
+`Models/AuftragFertigMigration.swift`, im Boot-Pfad neben `HierarchieMigration`.
+**Konfliktregel konservativ:** fertig ⇔ `status == .completed` **ODER** `isCompleted == true`.
+Nimmt also niemandem einen Haken weg.
+
+Kein `UserDefaults`-Flag wie bei `ZuschlagMigration`, mit Absicht: das **Prädikat holt nur
+die widersprüchlichen Datensätze** — im Normalfall werden gar keine Objekte geladen. Damit
+ist der Lauf billig, idempotent *by design* und selbstheilend, falls doch je wieder etwas
+auseinanderläuft. Anzahl wird geloggt.
+
+### Offen
+- **`isCompleted` wirklich entfernen** — braucht eine neue Modellversion (V3) und damit
+  PR #141 als Basis. Eigener Branch, ausdrücklich nicht hier.
+- **`EditJobView` zeigt weiter ein Fertig-Häkchen.** Es schreibt jetzt über `setzeFertig`
+  auf den Status, ist also nicht mehr widersprüchlich — aber ein zweites Bedienelement für
+  etwas, das der Status-Picker daneben schon sagt. UI-Frage, kein Datenproblem.
+
+---
+
+## Delta 08.09.2026 — Grap8 Branch 1: die Kausalkette bekommt einen Datenkern
+
+**PR #140, in `main`.** Reiner Datenkern + Logik + Tests. **Keine UI** — die Leinwand
+kommt in einem späteren Branch (Nicht-Ziel des Auftrags).
+
+> ⚠️ **Wer nach `Voraussetzung.quelle` im Modell sucht: die steht in `test25B 2.xcdatamodel`,
+> nicht in `test25B.xcdatamodel`.** Seit der Versionierung (nächster Abschnitt) ist V2 die
+> aktuelle Version; V1 ist bewusst der Stand davor.
+
+### Der Befund, der vorher stand
+`Views/KausalbauketteView.swift` **gibt es schon** — aber die Kette darin ist **fest
+verdrahtet**: drei Glieder, und die Zuordnung läuft über Textsuche in `processingDetails`
+(`"bauzaun"`, `"baustrom"`, `"bauwasser"`). Das ist keine Graph-Struktur, sondern eine
+Annahme über Auftragsnamen. Branch 1 legt darunter die echten Kanten — die View bleibt
+vorerst unangetastet.
+
+Ebenso vorher geprüft: **eine eigene `Schritt`-Entity gibt es nicht.** Der `Auftrag` *ist*
+der Schritt. Es wurde keine neue Entity erfunden.
+
+### Modell (additiv, in-place wie im Repo üblich)
+| Relation | | |
+|---|---|---|
+| `Voraussetzung.quelle -> Auftrag` | optional, maxCount 1 | der Schritt, der zuerst fertig sein muss |
+| `Voraussetzung.auftrag -> Auftrag` | optional, maxCount 1 | der abhängige Schritt |
+| `Auftrag.istVoraussetzungFuer` | to-many, **Cascade** | Kanten, in denen er die Quelle ist |
+| `Auftrag.voraussetzungen` | to-many, **Cascade** | Kanten, auf die er wartet |
+
+`geschoss -> Geschoss` **bleibt unberührt**: eine Voraussetzung ohne `quelle` ist weiter
+das manuelle Welle-9-Häkchen und richtet sich nach dem gespeicherten `erfuellt`.
+
+**Warum Cascade und nicht Nullify:** eine Kante, deren Auftrag gelöscht wurde, fiele auf
+`erfuellt` (Default NO) zurück und blockierte den Nachfolger **für immer** — ein Geist,
+den niemand mehr abhaken kann. Ein Test hält das fest.
+
+### Logik: `Service/Kausalkette.swift`
+Nichts davon wird persistiert — Startbarkeit ist immer live gerechnet, wie beim
+Welle-9-Rollup in `Hierarchie+Status.swift`. Kein zweiter Zustand, der veralten kann.
+
+- `Voraussetzung.istErfuellt` — mit `quelle`: ist der Vorgänger fertig? Ohne: `erfuellt`.
+- `Auftrag.istStartbar` / `.offeneVoraussetzungen` / `.vorgaenger`
+- `Kausalkette.verknuepfe(_:brauchtVorher:in:)` — legt die Kante an und **wirft**, wenn
+  ein Kreis entstünde (Tiefensuche rückwärts über die `quelle`-Kanten).
+
+### Die Entscheidung, die man kennen muss: was heißt „fertig"?
+`isCompleted` und `status` sind **zwei Felder für dieselbe Aussage** und liefen im Bestand
+auseinander. Darum zählte hier **jedes von beiden** als fertig — eine Krücke.
+
+> **✏️ Korrektur (08.09., beim Aufräumen).** Hier stand: „`JobViewModel` setzt beide,
+> `AuftragDetailView:367` setzt nur `status`". **Das war falsch herum.**
+> `markJobCompleted()` setzte sehr wohl beide. Die echte Divergenz saß in den
+> Checklisten-Aktionen (`addStep`, `toggleStep`, `deleteStep`, `applyTemplate`), die
+> **nur `isCompleted`** setzten und nie `status` — und in `resetCompletion()`, das den
+> Auftrag öffnete, `status` aber auf `.completed` stehen ließ. Dazu bot `EditJobView`
+> beides als **getrennte Eingabefelder** an.
+> Die Krücke war also nötig, nur die Begründung war vertauscht. Aufgefallen erst, als
+> für die Ablösung wirklich jede Fundstelle durchgegangen wurde.
+
+**Abgelöst am 08.09.** durch `Auftrag.istFertig` — siehe eigenen Eintrag unten.
+
+### Nachweis
+**11 Tests** in `KausalketteTests.swift`, alle namentlich grün (Nudel-Test, direkter und
+transitiver Zyklus, Selbstbezug, Kompatibilität der Geschoss-Voraussetzung, Löschregel).
+Build grün, ganze Unit-Suite `TEST SUCCEEDED`. Der gezielte Einzellauf war Absicht: die
+Sammelmeldung sagt nicht, ob ein Test **gelaufen** oder nur nicht fehlgeschlagen ist.
+
+### Offen / für den Statik-Blick
+- **Migration.** Das Modell hat weiterhin **nur eine Version** (kein `.xccurrentversion`),
+  wie bei allen bisherigen Modelländerungen im Repo (zuletzt Entity `Bautagesbericht`).
+  Lightweight Migration ist im `PersistenceController` eingeschaltet, aber für ein
+  *inferiertes* Mapping braucht Core Data das **Quellmodell** — das es ohne Versionierung
+  nicht mehr gibt. Auf einem Gerät mit Altbestand kann das erste Öffnen deshalb scheitern
+  (`fatalError` in `loadPersistentStores`). Im Simulator/Neubau fällt das nicht auf.
+  **Nicht eigenmächtig geändert** — eine zweite Modellversion einzuführen ist eine
+  strukturelle Entscheidung für Andreas, kein Nebenbei-Commit.
+- **Doppelte Kanten** werden nicht verhindert (zweimal dieselbe Verknüpfung ist erlaubt).
+  Harmlos für die Rechnung, unsauber in der Liste. Bewusst außerhalb des Auftrags gelassen.
+- **Keine Ableitung aus Statik/Geometrie** — nur der Kanten-Mechanismus, wie beauftragt.
+## Delta 08.09.2026 — Fundament: das Datenmodell ist jetzt versioniert
+
+**Branch `fix/coredata-model-versioning` (PR #141).** Aufgesetzt **nach** dem Merge von
+PR #140 — und dadurch schärfer geworden als geplant (siehe „Die Reihenfolge").
+
+### Warum das nötig war
+Core Data kann eine Migration nur **inferieren**, wenn das alte Modell noch als eigene
+Version im Bundle liegt. `test25B.xcdatamodeld` enthielt **genau eine** Version und keine
+`.xccurrentversion` — es gab kein „von-Modell". Auf einem Gerät mit Altdaten kann das erste
+Öffnen nach einem Update deshalb hart scheitern (`fatalError` in `loadPersistentStores`).
+**Im Simulator fällt das nie auf**, weil dort neu installiert wird. Das galt für *alle*
+bisherigen Modelländerungen, zuletzt Entity `Bautagesbericht` — kein Grap8-Problem.
+
+### Wie die zwei Versionen belegt sind
+| Version | Inhalt | |
+|---|---|---|
+| `test25B.xcdatamodel` (V1) | Stand **vor** Grap8 (`42f4e32`) | das Modell, das auf einem Gerät mit Altdaten liegt |
+| `test25B 2.xcdatamodel` (V2) | Stand **mit** Grap8 (= `main`) | **current** |
+
+Beides bitgleich gegen die jeweiligen git-Stände geprüft. **Kein Schema-Inhalt erfunden** —
+V2 ist exakt `main`, V1 exakt der Vorgänger.
+
+### Die Reihenfolge — was passiert ist und warum es besser wurde
+Geplant war: erst versionieren (V1 == V2 bitgleich), dann PR #140 mergen und dessen
+Relationen nach V2 schieben. Gemergt wurde **#140 zuerst**. Statt einer Nacharbeit ergibt
+das denselben Zielzustand in einem Zug — mit einem Gewinn: weil V1 und V2 sich jetzt **echt
+unterscheiden**, ist die Migration nicht nur strukturell vorbereitet, sondern **nachweisbar**.
+
+⚠️ **Die Falle dabei war real:** nach dem Merge von `main` in diesen Branch stand Grap8 in
+**V1**, während **V2** (current) es nicht hatte. Die App hätte ein Modell ohne die neuen
+Relationen geladen — `@NSManaged var quelle` ins Leere, bei grünem Build und grünem Merge.
+Genau dagegen steht jetzt ein Test.
+
+### Nachweis
+`ModellVersionierungTests.swift`:
+
+| Test | prüft |
+|---|---|
+| `momdEnthaeltMehrAlsEineVersion` | es gibt überhaupt ein von-Modell |
+| `geladenesModellIstDieAktuelleVersion` | `Persistence.swift` lädt per `.momd`-URL die *current*-Version |
+| `migrationVonDerAltenZurAktuellenVersionIstInferierbar` | **der eigentliche Nachweis:** `NSMappingModel.inferredMappingModel` von V1 nach V2 gelingt |
+| `aktuelleVersionTraegtDieKausalketteAusPR140` | die Grap8-Relationen stehen in der **current**-Version, nicht in der alten |
+
+**Der Migrationstest kommt ohne Store aus** — `inferredMappingModel` arbeitet rein auf
+Modellebene, kein Coordinator, keine Objekte.
+
+Alle vier namentlich grün, ganze Unit-Suite `TEST SUCCEEDED`. Der Migrationstest ist
+**scharf**, weil V1 und V2 sich echt unterscheiden — bei bitgleichen Versionen hätte er
+nichts geprüft.
+
+### Ein Test wurde gebaut und wieder entfernt
+Ein Test, der einen echten SQLite-Store mit V1 anlegt und mit dem aktuellen Modell öffnet,
+lief **isoliert grün** und hat in der vollen Suite **reihenweise fremde Tests umgeworfen**,
+mit wechselnden Opfern. Crash-Report:
+
+```
+-[NSManagedObject initWithEntity:insertIntoManagedObjectContext:]
+Event.init(entity:insertInto:)
+```
+
+Genau das, wovor `Persistence.swift` warnt: das Modell wird dort **absichtlich genau einmal**
+geladen, weil zwei Modelle im selben Prozess doppelte `NSEntityDescription`s für dieselbe
+Subklasse ergeben — und **Swift Testing fährt Suites parallel**. Die Entities der Kopien auf
+`NSManagedObject` umzubiegen hat **nicht** gereicht. Sauber ginge es nur in einem eigenen
+Test-Target. Begründung steht in der Testdatei, damit der Nächste nicht dieselbe Runde dreht.
+
+### Offen — ehrlich, kein stilles „erledigt"
+**Das Öffnen eines echten, gewachsenen Altbestands ist nicht getestet.** Der Test zeigt, dass
+die Migration *inferierbar* ist; ob sie auf einem Gerät mit Jahresdaten auch durchläuft, sagt
+er nicht. **Manuell zu prüfen:** App mit Datenbestand installieren, Update einspielen, prüfen
+dass sie **ohne Reset** startet.
+
+
 ## Delta 07.09.2026 (nachmittags) — IFC-Leser in der App (PR #138, in `main`)
 
 Gegenstück zu **mops-api #52**. Der Endpunkt `POST /ifc/analyse` lag auf der Box, die App wusste

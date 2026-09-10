@@ -5,6 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 🚧 ERST HIER LESEN — Pflichtspur für jede neue Instanz
 
 **Bevor du irgendetwas analysierst, vorschlägst oder änderst:**
+
+> **🧭 Tao — Erst messen, dann behaupten.** Keine Empfehlung, keine Architektur-Meinung, keine Analyse ohne vorher nachzusehen (`rg`, das echte Modell, die echten Dateien, den echten Stand). Gilt für **Vorschläge und Argumente**, nicht nur für Code. Eine Behauptung aus der Erinnerung ist ein Fehler — auch wenn sie plausibel klingt. *(Thermodynamik der Arbeit: ein Nachweis entsteht durch Messen, nicht durch Aussage.)*
+
 1. `git status` + `git branch -a` — wo stehst du, welche offenen Branches gibt es? (Oft läuft schon Arbeit am selben Thema.)
 2. **`docs/HANDOFF-AKTUELL.md`** lesen — der stabile Zeiger auf den aktuellen Stand. Nicht die Datumssuche raten.
 3. Bevor du etwas Neues entwirfst: `rg <begriff>` in Code **und** `docs/`. **Das Feature existiert wahrscheinlich schon** (View, Service, Branch, Handoff, Spec) — der Job ist meist *verbinden/reparieren*, nicht neu erfinden.

@@ -218,8 +218,8 @@ struct BautagesberichtPDFExporter {
             }
             let all = (event.jobs?.allObjects as? [Auftrag]) ?? []
             guard !all.isEmpty else { return }
-            let offen    = all.filter { !$0.isCompleted }
-            let erledigt = all.filter {  $0.isCompleted }
+            let offen    = all.filter { !$0.istFertig }
+            let erledigt = all.filter {  $0.istFertig }
 
             pageBreakIfNeeded(60)
             sectionHeader("Aufträge (\(all.count))")

@@ -75,7 +75,7 @@ enum DebugSeeder {
         for (details, steps) in jobs {
             let job = Auftrag(context: context)
             job.processingDetails = details
-            job.isCompleted = false
+            job.status = .pending
             job.event = event
 
             var payload = JobExtrasPayload()

@@ -30,6 +30,15 @@ extension Auftrag {
     @NSManaged var event: Event?
     @NSManaged var extras: String?
 
+    // Grap8 — Gegenstücke zu Voraussetzung.quelle / .auftrag.
+    // Löschregel Cascade in beide Richtungen: eine Kante, deren Auftrag gelöscht
+    // wurde, fiele sonst auf das gespeicherte `erfuellt` (Default NO) zurück und
+    // würde den abhängigen Schritt für immer blockieren.
+    /// Kanten, in denen DIESER Auftrag die Quelle ist (er blockiert andere).
+    @NSManaged var istVoraussetzungFuer: NSSet?
+    /// Kanten, die zu DIESEM Auftrag gehören (er wartet auf andere).
+    @NSManaged var voraussetzungen: NSSet?
+
 
 }
 
