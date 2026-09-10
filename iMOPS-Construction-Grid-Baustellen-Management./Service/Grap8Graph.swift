@@ -251,6 +251,8 @@ extension Grap8Graph {
         case "442": return "Zap"        // Eigenstromversorgungsanlagen
         case "444": return "Zap"        // Niederspannungsinstallationsanlagen
         // 500 — Außenanlagen und Freiflächen
+        case "541": return "Fence"      // Einfriedungen
+        case "544": return "Route"      // Rampen, Treppen, Tribünen
         case "523": return "Fence"      // Gründungsbeläge
         case "531": return "Fence"      // Wege
         case "533": return "Fence"      // Plätze, Höfe, Terrassen

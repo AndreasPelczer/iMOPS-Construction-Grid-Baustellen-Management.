@@ -2,6 +2,63 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 10.09.2026 — Demo 2 „Sandsteinstufen": zwei Stränge und zwei Modell-Lücken
+
+**Branch `feature/seeder-sandsteinstufen`.** Zweite Demo-Baustelle: zwei zerbrochene
+Sandsteinstufen austauschen. Zeigt, was Bauer Horst nicht zeigt — **Wartezeit auf
+Lieferung** und eine **Fremdleistung**. **Kein Core-Data-Delta**, idempotent.
+
+### 🔴 Die zwei Lücken — der eigentliche Fund
+**1. Es gibt keine Kostenart für Fremdleistung.** `LVPosition` kennt genau drei Töpfe:
+`kalkMaterialien`, `kalkLohn`, `kalkGeraete` (nachgemessen). Der Steinmetz (100 € fest)
+ist keins davon. Die 100 € stehen deshalb **nicht in der Kalkulation**, sondern im
+Klartext am Arbeitsschritt. Sie als Material oder Lohnstunde zu verbuchen wäre
+rechnerisch richtig und inhaltlich falsch. **Folge: die Angebotssumme dieser Position
+ist unvollständig — und das soll man sehen.** Test: `fremdleistungHatKeineKostenart`.
+
+**2. Der Termin liegt in JSON, nicht im Modell.** Hier ist die Auftragsannahme zu
+korrigieren: `Auftrag` hat zwar **kein Core-Data-Feld**, aber `AuftragExtrasPayload.deadline`
+existiert und wird von `HouseProjectGenerator` und `AuftragDetailView` benutzt. Der
+Unterschied ist praktisch: **man kann darauf nicht per `NSPredicate` suchen, nicht
+sortieren, nicht filtern.** Die Frage „welche Bestellung wird diese Woche fällig?" ist mit
+dem heutigen Modell nicht stellbar, nur von Hand durchblätterbar. Test:
+`terminIstNichtAbfragbar` (prüft beides: Feld fehlt, JSON-Wert ist da).
+
+**Kleine Schwester:** `PositionGeraet` rechnet `stunden × kostenProStunde`. Die
+Spedition ist eine **Pauschale** und steht als 1 × 100 € drin — rechnerisch richtig,
+begrifflich schief. Das Modell kennt Zeit, keine Pauschalen.
+
+### 🔴 Und eine falsche Kostengruppe im Auftrag
+Der Auftrag gab **535** vor. Im `DIN276BaumKatalog` ist das **„Sportplatzflächen"**.
+Eine Hauseingangstreppe ist **544 „Rampen, Treppen, Tribünen"** — korrigiert, und
+`Grap8Graph.symbol()` um 541/544 ergänzt, sonst trüge sie das Standardsymbol.
+
+### Der Graph
+Sechs Schritte, **5 Kanten**, zwei Stränge, die unabhängig starten: alte Stufen ausbauen
+**und** Stein bestellen. Wer erst bestellt, wenn die Treppe offen ist, wartet Wochen mit
+einem Loch vor der Haustür. Beide münden ins Versetzen.
+
+### Nachgewiesen
+- **Screenshot (`--target=Sandsteinstufen`): „2 startklar · 4 wartet"** — genau die zwei
+  Stränge.
+- 9 eigene Tests, u.a. der Termin über **alle zwölf Monate** geprüft (erster Freitag des
+  Folgemonats, 08:00), nicht nur für den aktuellen.
+- `** TEST SUCCEEDED **`, **212 Tests grün**, Modell bitgleich.
+
+### Falle: der hängende Simulator
+Ein Testlauf meldete **172 von 212 durchgefallen** — quer durch alle Suites, auch
+`DIN276KatalogTests`, die niemand angefasst hatte. Kein Codefehler: derselbe Test lief
+einzeln grün, und nach `xcrun simctl shutdown all` war alles grün. **Wenn plötzlich
+fremde Suites reihenweise fallen, ist es die Umgebung, nicht der Code** — Simulatoren
+herunterfahren und wiederholen, bevor man im eigenen Code sucht. (Freie Platte war dabei
+bei 10 GB — knapp, siehe die Warnung in CLAUDE.md.)
+
+### Offen
+- Andreas: Baustelle öffnen, die zwei Stränge ansehen.
+- Die zwei Lücken sind **Befund, keine Aufgabe** — was daraus folgt, entscheidet ihr.
+
+---
+
 ## Delta 10.09.2026 — Demo „Bauer Horst": zwölf Handgriffe, eine LV-Zeile
 
 **Branch `feature/seeder-bauer-horst`.** Eine Demo-Baustelle mit **beiden Sichten**:
