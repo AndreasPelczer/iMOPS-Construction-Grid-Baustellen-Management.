@@ -2,9 +2,58 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## 📋 Übergabe 10.09.2026, Feierabend — wo alles steht
+
+**Beide Repos sind sauber:** nur `main`, keine offenen PRs, keine Branch-Leichen,
+Arbeitsverzeichnisse leer, `.arbeitsplatz` frei.
+
+### Heute gemergt
+| | |
+|---|---|
+| **iMOPS** | #150 IFC-Nachtrag · #151 Pflichtspur-Regel · #152 Verwaltungs-Knöpfe · #153 Bauer Horst · #154 Sandsteinstufen |
+| **mops-api** | #59 Wächter im Netz · #60 Namensregel · #61 Pflichtspur-Regel |
+
+### Der rote Faden des Tages
+Grap8 ist von einer Leinwand mit Beispieldaten zu einem Werkzeug geworden: echte
+Aufträge, anlegbare Ketten, Knöpfe die zu den Verwaltungs-Ansichten führen, und zwei
+Demo-Baustellen, an denen man beides zusammen sieht.
+
+### 🔴 Was offen bleibt — vier Befunde, keine Aufgaben
+1. **Keine Kostenart für Fremdleistung.** `LVPosition` kennt nur Material/Lohn/Gerät.
+   Ein Nachunternehmer passt nirgends hinein; eine Angebotssumme mit Fremdleistung ist
+   heute unvollständig. (Demo: Sandsteinstufen, Test `fremdleistungHatKeineKostenart`.)
+2. **Termine sind nicht abfragbar.** `AuftragExtrasPayload.deadline` liegt als JSON in
+   `extras` — kein `NSPredicate`, kein Sortieren. „Welche Bestellung wird diese Woche
+   fällig?“ ist nicht stellbar. (Test `terminIstNichtAbfragbar`.)
+3. **`Auftrag` und `LVPosition` sind nicht verbunden.** Die bewusst aufgeschobene
+   Kapitel-Entscheidung. Zwölf Handgriffe, eine Abrechnungszeile, keine Brücke.
+   (Demo: Bauer Horst, Test `auftraegeUndLVZeileBleibenUngekoppelt`.)
+4. **Finger-Test auf echter Hardware** — weiterhin blockiert, kein iPad verfügbar.
+   Prüfliste steht weiter unten.
+
+### Drei Fallen, die heute Zeit gekostet haben
+- **`| tail -N` schneidet Fehlermeldungen ab.** Zweimal passiert: ein `assert` schlug fehl,
+  das Skript lief weiter, der Screenshot zeigte den falschen Bildschirm. Ausgaben
+  vollständig lesen oder gezielt nach `error`/`FAILED` filtern — nicht blind kürzen.
+- **Fremde Test-Suites, die reihenweise fallen, sind die Umgebung.** 172 von 212 Tests
+  fielen durch, auch `DIN276KatalogTests`. Einzeln grün; nach `xcrun simctl shutdown all`
+  alles grün. Erst Simulatoren neu, dann im eigenen Code suchen.
+- **„Beide Seiten behalten“ trägt bei Konflikten nur in Listen und Kommentaren.** Bei
+  Code-Blöcken, die sich eine schließende Klammer teilen, bricht der Build. Nach jedem
+  Konflikt compilieren, nicht nur Konfliktmarken zählen.
+
+### Zum Merken für morgen
+- **Die Platte ist bei ~10 GB frei.** CLAUDE.md warnt davor (Simulator-Crashes). Wird eng.
+- `git branch -r --merged` erkennt **keine Squash-Merges** — belastbar ist
+  `gh pr list --head <branch> --state all`.
+- Ein Doppel-Merge desselben Branches (#154/#155) hat keinen Schaden angerichtet; der
+  zweite Commit war leer. Geprüft: keine doppelten Definitionen.
+
+---
+
 ## Delta 10.09.2026 — Demo 2 „Sandsteinstufen": zwei Stränge und zwei Modell-Lücken
 
-**Branch `feature/seeder-sandsteinstufen`.** Zweite Demo-Baustelle: zwei zerbrochene
+**In `main` (PR #154).** Zweite Demo-Baustelle: zwei zerbrochene
 Sandsteinstufen austauschen. Zeigt, was Bauer Horst nicht zeigt — **Wartezeit auf
 Lieferung** und eine **Fremdleistung**. **Kein Core-Data-Delta**, idempotent.
 
@@ -61,7 +110,7 @@ bei 10 GB — knapp, siehe die Warnung in CLAUDE.md.)
 
 ## Delta 10.09.2026 — Demo „Bauer Horst": zwölf Handgriffe, eine LV-Zeile
 
-**Branch `feature/seeder-bauer-horst`.** Eine Demo-Baustelle mit **beiden Sichten**:
+**In `main` (PR #153).** Eine Demo-Baustelle mit **beiden Sichten**:
 12 Aufträge als Grap8-Kette **und** eine LV-Position mit durchgerechneten Einzelkosten.
 Am selben `Event`, aber **ungekoppelt** — das ist der Gegenstand, nicht ein Versäumnis.
 **Kein Core-Data-Delta**, idempotent, nichts wird gelöscht.
@@ -118,7 +167,7 @@ Fehler nicht mehr sichtbar ist.
 - Raphi: die geschätzten Werte korrigieren.
 ## Delta 10.09.2026 — Grap8-Knoten: die Verwaltungs-Knöpfe führen irgendwohin
 
-**Branch `feature/grap8-knoten-verwaltung`.** Die „Verwaltung öffnen"-Knöpfe im
+**In `main` (PR #152).** Die „Verwaltung öffnen"-Knöpfe im
 Detailfenster der Leinwand öffnen jetzt die **bestehenden nativen Ansichten** mit der
 **Baustelle des Knotens**. Nichts Neues gebaut, nur verbunden. **Kein Core-Data-Delta**,
 read-only.
