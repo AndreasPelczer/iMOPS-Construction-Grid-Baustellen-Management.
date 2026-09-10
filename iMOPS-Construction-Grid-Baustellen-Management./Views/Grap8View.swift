@@ -42,14 +42,47 @@
 import SwiftUI
 import WebKit
 import CoreData
+import Combine
 import os
 
 private let logger = Logger(subsystem: "com.deadrabbit.imops", category: "Grap8")
+
+// MARK: - Verwaltung öffnen
+
+/// Wohin ein „Verwaltung öffnen"-Knopf im Detailfenster der Leinwand führt.
+///
+/// Die Kennungen (`mannschaft`, `maschinen` …) sind der **Vertrag mit `App.jsx`** —
+/// die Beschriftung drüben darf sich ändern, diese Zeichenketten nicht.
+enum Grap8Verwaltungsziel: String, Identifiable {
+    case mannschaft, maschinen, kalkulation, bestellung
+    var id: String { rawValue }
+}
+
+/// Was die Leinwand geöffnet haben möchte, mit der Baustelle dazu.
+///
+/// **Warum die Baustelle und nicht der Auftrag:** Zwischen `Auftrag` und den
+/// Ressourcen (Mitarbeiter, Geräte, Material) gibt es im Modell **keine Beziehung** —
+/// nachgemessen: nur `Event.jobs` und die beiden `Voraussetzung`-Kanten zeigen auf
+/// `Auftrag`. Die Kalkulation hängt an `LVPosition`, die an `Event`. Pro Auftrag zu
+/// filtern hieße, eine Zuordnung zu erfinden, die es nicht gibt.
+struct Grap8Verwaltungswunsch: Identifiable {
+    let id = UUID()
+    let ziel: Grap8Verwaltungsziel
+    let baustelle: Event
+}
+
+/// Bindeglied zwischen dem Coordinator (Klasse, lebt lange) und der Ansicht (struct,
+/// wird ständig neu gebaut). Eine Closure würde beim Neuzeichnen veralten; diese
+/// Referenz bleibt stabil.
+final class Grap8Steuerung: ObservableObject {
+    @Published var wunsch: Grap8Verwaltungswunsch?
+}
 
 // MARK: - Bildschirm
 
 struct Grap8View: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.managedObjectContext) private var viewContext
     @State private var ladefehler: String?
 
     /// Die Baustelle, deren Kette gezeigt wird.
@@ -59,6 +92,7 @@ struct Grap8View: View {
     /// geöffnet, kommt sie hier herein und die Frage entfällt.
     private let vorgabe: Event?
     @State private var gewaehlt: Event?
+    @StateObject private var steuerung = Grap8Steuerung()
 
     init(event: Event? = nil) {
         self.vorgabe = event
@@ -71,11 +105,18 @@ struct Grap8View: View {
                 if let ladefehler {
                     fehlerbox(ladefehler)
                 } else if let event = gewaehlt {
-                    Grap8WebView(graph: Grap8Graph.aus(event), ladefehler: $ladefehler)
+                    Grap8WebView(graph: Grap8Graph.aus(event),
+                                 steuerung: steuerung,
+                                 kontext: viewContext,
+                                 ladefehler: $ladefehler)
                         .ignoresSafeArea(edges: .bottom)
                 } else {
                     Baustellenwahl(gewaehlt: $gewaehlt)
                 }
+            }
+            .sheet(item: $steuerung.wunsch) { wunsch in
+                verwaltung(wunsch)
+                    .environment(\.managedObjectContext, viewContext)
             }
             .navigationTitle(gewaehlt.flatMap { $0.title ?? $0.name } ?? "Grap8")
             .navigationBarTitleDisplayMode(.inline)
@@ -95,6 +136,53 @@ struct Grap8View: View {
                 }
             }
         }
+    }
+
+    /// Die bestehende Ansicht zum gewünschten Ziel — nichts Neues gebaut, nur geöffnet.
+    @ViewBuilder
+    private func verwaltung(_ wunsch: Grap8Verwaltungswunsch) -> some View {
+        switch wunsch.ziel {
+        case .mannschaft:
+            // Bringt NavigationStack, Toolbar und `dismiss` selbst mit.
+            CrewPlanningView()
+        case .maschinen:
+            // Stammdatenpflege statt `GeraetHinzufuegenView`: die verlangt eine
+            // `LVPosition`, und vom Auftrag aus führt kein Weg dorthin.
+            StammdatenPflegeView()
+        case .bestellung:
+            LieferantenBestelllisteView(event: wunsch.baustelle,
+                                        positionen: positionen(wunsch.baustelle))
+        case .kalkulation:
+            // **Diese eine braucht einen Rahmen.** `LVKalkulationView` hat weder
+            // `NavigationStack` noch `dismiss` noch Toolbar — sie war für einen
+            // `NavigationLink` in `EventDetailView` gebaut. Als Blatt ohne Rahmen
+            // wäre sie eine Sackgasse: kein Weg zurück außer Wischen, und das ist
+            // auf einem Blatt über einem Vollbild kein verlässlicher Ausgang.
+            NavigationStack {
+                // Titel kommt aus der Ansicht selbst („Kalkulation (Welle 6)") —
+                // hier keinen eigenen setzen, der würde nur scheinbar wirken.
+                LVKalkulationView(event: wunsch.baustelle)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Fertig") { steuerung.wunsch = nil }
+                                .tint(.orange)
+                        }
+                    }
+            }
+        }
+    }
+
+    /// Die LV-Positionen der Baustelle — **in derselben Reihenfolge wie `LVView`**
+    /// (Kostengruppe, dann Positionsnummer), damit die Bestellliste aus der Leinwand
+    /// dieselbe Sortierung zeigt wie die aus dem LV. Zwei Wege, ein Bild.
+    private func positionen(_ baustelle: Event) -> [LVPosition] {
+        ((baustelle.lvPositionen?.allObjects as? [LVPosition]) ?? [])
+            .sorted {
+                let kg0 = $0.kostenGruppeNummer ?? "", kg1 = $1.kostenGruppeNummer ?? ""
+                if kg0 != kg1 { return kg0 < kg1 }
+                return ($0.posNr ?? "") < ($1.posNr ?? "")
+            }
     }
 
     // Ein weißer Schirm sagt nichts. Wenn die Leinwand nicht lädt, soll dastehen warum.
@@ -173,6 +261,9 @@ private struct Grap8WebView: UIViewRepresentable {
     static let bruecke = "grap8"
 
     let graph: Grap8Graph
+    let steuerung: Grap8Steuerung
+    /// Zum Auflösen der Knoten-Kennungen zurück in `Auftrag`-Objekte.
+    let kontext: NSManagedObjectContext
     @Binding var ladefehler: String?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -225,6 +316,20 @@ private struct Grap8WebView: UIViewRepresentable {
             .deletingLastPathComponent()
     }
 
+    /// Der `Auftrag` hinter einer Knoten-Kennung.
+    ///
+    /// Die Kennung ist die Core-Data-Objekt-URI (siehe `Grap8Graph.kennungen`). Über den
+    /// Store zurück in ein Objekt — `existingObject` schlägt fehl, wenn der Auftrag
+    /// inzwischen gelöscht wurde, und das wird gemeldet statt verschluckt.
+    fileprivate func auftrag(zu kennung: String) -> Auftrag? {
+        guard let url = URL(string: kennung),
+              let koordinator = kontext.persistentStoreCoordinator,
+              let objektID = koordinator.managedObjectID(forURIRepresentation: url) else {
+            return nil
+        }
+        return (try? kontext.existingObject(with: objektID)) as? Auftrag
+    }
+
     fileprivate func melde(_ text: String) {
         logger.error("\(text, privacy: .public)")
         // Nicht während des Zeichnens in den Zustand schreiben.
@@ -266,8 +371,41 @@ private struct Grap8WebView: UIViewRepresentable {
                                    didReceive nachricht: WKScriptMessage) {
             guard nachricht.name == Grap8WebView.bruecke,
                   let inhalt = nachricht.body as? [String: Any],
-                  inhalt["action"] as? String == "ready" else { return }
-            schickeGraph()
+                  let aktion = inhalt["action"] as? String else { return }
+
+            switch aktion {
+            case "ready":       schickeGraph()
+            case "verwaltung":  oeffneVerwaltung(inhalt)
+            default:
+                logger.info("Grap8: unbekannte Aktion \(aktion, privacy: .public) — ignoriert.")
+            }
+        }
+
+        /// „Verwaltung öffnen" aus dem Detailfenster: Auftrag über seine Kennung
+        /// auflösen, dessen Baustelle nehmen, die passende Ansicht anfordern.
+        private func oeffneVerwaltung(_ inhalt: [String: Any]) {
+            guard let rohZiel = inhalt["ziel"] as? String,
+                  let ziel = Grap8Verwaltungsziel(rawValue: rohZiel) else {
+                logger.error("Grap8: unbekanntes Verwaltungsziel.")
+                return
+            }
+            guard let kennung = inhalt["auftragId"] as? String,
+                  let auftrag = eltern.auftrag(zu: kennung) else {
+                eltern.melde("Der Auftrag zu diesem Knoten ließ sich nicht finden.")
+                return
+            }
+            guard let baustelle = auftrag.event else {
+                // Ein Auftrag ohne Baustelle: dann gibt es nichts zu öffnen, und das
+                // muss dastehen statt still zu scheitern.
+                eltern.melde("Dieser Auftrag hängt an keiner Baustelle — ohne sie gibt es nichts zu verwalten.")
+                return
+            }
+
+            logger.info("Grap8: öffne \(ziel.rawValue, privacy: .public) für die Baustelle des Auftrags.")
+            let wunsch = Grap8Verwaltungswunsch(ziel: ziel, baustelle: baustelle)
+            let steuerung = eltern.steuerung
+            // Zustand gehört auf den Hauptstrang.
+            DispatchQueue.main.async { steuerung.wunsch = wunsch }
         }
 
         private func schickeGraph() {

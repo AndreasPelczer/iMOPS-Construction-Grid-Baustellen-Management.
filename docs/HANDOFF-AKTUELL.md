@@ -43,8 +43,11 @@ ehrlicher als eine geratene Nummer.
 1. **Das Drehbuch `~/Documents/Grap8/Demo Bauer Horst - Pfosten.md` existiert nicht** —
    der Ordner ist leer, systemweit kein Treffer. Gebaut nach den Angaben im Auftrag selbst;
    die reichten, weil ohnehin alles Schätzung ist.
-2. **PR #152 (Verwaltungs-Knöpfe) ist noch offen.** Der Weg „Knoten antippen → gefüllte
-   Kalkulation" braucht beide Branches. Andere Dateien, kein Konflikt zu erwarten.
+2. **PR #152 (Verwaltungs-Knöpfe) war beim Bauen noch offen** — und wurde währenddessen
+   gemergt. Dieser Branch hat `main` darum nachträglich hereingemergt; die Konflikte in
+   `SnapshotHostView` und im HANDOFF waren rein additiv (beide Seiten ergänzen nur).
+   **Folge: der Weg „Knoten antippen → gefüllte Kalkulation" ist jetzt vollständig** —
+   die Knöpfe aus #152 und die Demo-Daten von hier treffen sich.
 
 ### Falle beim Messen — wieder `tail`
 Der erste Snapshot zeigte die falsche Ansicht. Ursache: mein Patch war mit einem Anker aus
@@ -56,6 +59,66 @@ Fehler nicht mehr sichtbar ist.
 ### Offen
 - Andreas: Bauer Horst öffnen, Kette ansehen — und nach #152 den Knopfweg zur Kalkulation.
 - Raphi: die geschätzten Werte korrigieren.
+## Delta 10.09.2026 — Grap8-Knoten: die Verwaltungs-Knöpfe führen irgendwohin
+
+**Branch `feature/grap8-knoten-verwaltung`.** Die „Verwaltung öffnen"-Knöpfe im
+Detailfenster der Leinwand öffnen jetzt die **bestehenden nativen Ansichten** mit der
+**Baustelle des Knotens**. Nichts Neues gebaut, nur verbunden. **Kein Core-Data-Delta**,
+read-only.
+
+### Der Kontrakt (Erweiterung der Brücke aus #145)
+```
+Web → App:  { action: 'verwaltung', ziel: 'mannschaft'|'maschinen'|'kalkulation'|'bestellung',
+              auftragId: <Core-Data-Objekt-URI> }
+```
+Die `ziel`-Kennungen sind der Vertrag — die **Beschriftung** drüben darf sich ändern, die
+Zeichenketten nicht. Swift löst die Kennung über den Store zurück in den `Auftrag`, nimmt
+`auftrag.event` und präsentiert.
+
+### Warum die Baustelle und nicht der Auftrag
+Zwischen `Auftrag` und den Ressourcen gibt es **keine Beziehung** — gemessen in der
+Inventur von heute früh: nur `Event.jobs` und die beiden `Voraussetzung`-Kanten zeigen auf
+`Auftrag`; die Kalkulation hängt an `LVPosition`, die an `Event`. Pro Auftrag zu filtern
+hieße, eine Zuordnung zu erfinden, die es nicht gibt. **Die `Auftrag ↔ LVPosition`-Frage
+bleibt die aufgeschobene Kapitel-Entscheidung.**
+
+### 🔴 Drei Messfehler im Auftrag — gegengeprüft
+| Auftrag sagte | tatsächlich |
+|---|---|
+| `LieferantenBestelllisteView(event:)` | **`(event:positionen:)`** — braucht die LV-Positionen dazu |
+| `GeraetHinzufuegenView()` global | **`let position: LVPosition`** — vom Auftrag aus unerreichbar, darum `StammdatenPflegeView()` für „Maschinen" |
+| „drei/vier Panel-Buttons" | **drei**, davon einer kombiniert („Bestellung / Kalkulation"). **Aufgeteilt**, weil es zwei verschiedene Bildschirme sind — ein Knopf für beide hieße raten |
+
+### Die Falle: eine Ansicht ohne Ausgang
+`LVKalkulationView` hat **weder `NavigationStack` noch `dismiss` noch Toolbar** — sie war
+für einen `NavigationLink` in `EventDetailView` gebaut. Als Blatt ohne Rahmen wäre sie eine
+Sackgasse. Sie bekommt hier einen `NavigationStack` mit „Fertig"; die anderen drei bringen
+ihren Rahmen selbst mit (nachgezählt: NavigationStack/dismiss/toolbar vorhanden).
+
+Ihren **Titel** setzt sie selbst („Kalkulation (Welle 6)") — ein eigener `navigationTitle`
+wäre wirkungslos gewesen und wurde nach dem ersten Screenshot wieder entfernt.
+
+### Coordinator → SwiftUI: warum ein ObservableObject
+Eine Closure im `UIViewRepresentable` veraltet, sobald die Ansicht neu gezeichnet wird —
+der Coordinator hielte die alte. `Grap8Steuerung` ist eine **Klasse**, ihre Referenz bleibt
+stabil. (`import Combine` nicht vergessen, sonst kennt `@Published` niemand.)
+
+### Nachgewiesen
+- Screenshots (`Grap8Kalkulation`, `Grap8Bestellung`): beide Ansichten öffnen, **„Fertig"
+  erreichbar**, und die Bestellliste zeigt **„Musterhaus — Generator"** — die Baustelle
+  kommt durch.
+- `** TEST SUCCEEDED **`, Exit 0, Modell bitgleich.
+
+### Nebenbefund
+**`HouseProjectGenerator` erzeugt keine `LVPosition`** (0 Treffer). Bei einem generierten
+Projekt ist die Bestellliste darum leer („0 Positionen"); bei einer Baustelle mit
+LV-Import ist sie gefüllt. Kein Fehler der Verdrahtung — aber wer mit Demo-Daten prüft,
+sieht eine leere Liste und hält sie für kaputt.
+
+### Offen
+- iPad-Test — Andreas: Knoten antippen → Knopf → richtige Ansicht, richtige Baustelle.
+- „Maschinen" öffnet die **Stammdatenpflege**, nicht einen echten Maschinenpark. Eine
+  Geräte-Übersicht je Baustelle gibt es nicht — wäre ein eigener Schritt.
 
 ---
 
