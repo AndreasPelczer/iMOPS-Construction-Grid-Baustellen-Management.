@@ -2,6 +2,102 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 11.09.2026 — Demo 3 „Hofauffahrt": das Mengengerüst trägt, mit einer Falle
+
+**PR #157, offen.** Dritte Demo-Baustelle: befahrbare Hofauffahrt, vier Stellplätze,
+~100 qm. Neu gegenüber den Vorgängern sind **echte Mengen** statt „1 Psch" —
+57 t Schotter, 100 qm Pflaster, 30 lfm Randstein. **Kein Core-Data-Delta**,
+idempotent. Snapshot: **„2 startklar · 8 wartet"**.
+
+### 🔴 Der Fund, den die nächste Instanz kennen muss
+
+**`mengeProEinheit` ist die Menge JE POSITIONSEINHEIT, nicht die Gesamtmenge.**
+Nachgemessen in `PositionMaterial+CoreDataProperties.swift`:
+
+```swift
+kostenProEinheit = einzelpreis * mengeProEinheit * (1 + verschnittProzent)
+```
+
+und in `LVKalkulator.kalkuliere`: `gesamtpreis = einheitspreisVK * menge`.
+
+Gebraucht werden **57 t** Mineralgemisch. Im Modell steht **0,57** — nämlich
+57 t ÷ 100 qm. **Wer eine Menge aus einem Aufmaß direkt einträgt, rechnet das
+Hundertfache.** Gilt genauso für `PositionLohn.stunden` und `PositionGeraet.stunden`.
+
+Das ist gefährlich, weil die Summe plausibel *aussieht* — nur eben hundertmal zu
+groß. Deshalb steht im `HofauffahrtSeeder` bei jeder Zeile die Gesamtmenge als
+Kommentar daneben, und `mengenSindJeEinheitNichtGesamt` rechnet zurück.
+
+**Merksatz: eine Menge ohne Bezugsgröße ist keine Menge.**
+
+### 🔴 Verschnitt in `BauerHorstSeeder` ist um Faktor 100 zu hoch — nicht repariert
+
+`verschnittProzent` ist ein **Faktor**, kein Prozentwert. Gemessen an zwei Stellen:
+
+| Quelle | 5 % |
+|---|---|
+| `MaterialHinzufuegenView` (die UI) | `(Double(text) ?? 5) / 100.0` → **0.05** |
+| `StammdatenSeeder` | `0.05`, `0.03`, `0.10`, `0.15` |
+| **`BauerHorstSeeder`** | **`5`** und **`10`** |
+
+Bei `einzelpreis × menge × (1 + verschnittProzent)` ergibt das **500 % und 1000 %**:
+
+```
+Pflastersteine:  1,5 × 28 € × (1+10) = 462,00 €   statt  46,20 €
+Kies 0/32:      0,15 × 38 € × (1+5)  =  34,20 €   statt   5,99 €
+```
+
+Die Kalkulation von Bauer Horst ist damit um ein Vielfaches zu hoch.
+**Bewusst nicht nebenbei repariert** — Befund, keine Aufgabe. Der neue Seeder
+spiegelt den Fehler nicht mit; `verschnittIstEinFaktorKeinProzent` hält die
+richtige Konvention fest.
+
+### Kostengruppen: 520 heißt nicht, was der Auftrag dachte
+
+Der Auftrag nannte **520 „Befestigte Flächen"**. Im `DIN276BaumKatalog` heißt 520
+**„Gründung / Unterbau"** — den Namen aus dem Auftrag gibt es dort nicht. Die
+befestigten Flächen liegen in der 530er-Gruppe: 531 Wege · 532 Straßen ·
+533 Plätze, Höfe, Terrassen · **534 Stellplätze**.
+
+Daraus die Zweiteilung, die der Katalog selbst anlegt:
+- **520** für Trennvlies und Tragschicht (Unterbau, wörtlich)
+- **534** für Randsteine und Pflasterdecke (Oberbau; der Zweck ist das Abstellen
+  von vier Fahrzeugen)
+
+`Grap8Graph.symbol()` um die 520er ergänzt (→ „Layers"), sonst trügen sie das
+Standardsymbol — dieselbe Sache wie 541/544 in der Sandsteinstufen-Runde.
+**Zweite Runde in Folge, in der die Kostengruppe aus dem Auftrag falsch war.**
+
+### Die drei Lücken dieser Demo
+
+1. **Fremdleistung hat keine Kostenart** *(bestätigt Runde #2)* — die
+   Aushub-Entsorgung ist weder Material noch Lohn noch Gerät. Steht im Klartext
+   am Schritt, nicht getarnt in der Kalkulation. Test: `entsorgungHatKeineKostenart`.
+2. **NEU: kein Zustand „variabel / abhängig von".** Die Entsorgung ist nicht
+   bezifferbar, bevor die Bodenklasse feststeht (Z0 bis Z2 nach
+   Stammdatenblatt/Erzeugererklärung). Das Modell kennt nur feste Preise.
+   Vermerkt am Schritt, kein Test — es gibt nichts zu prüfen, nur etwas zu wissen.
+3. **Pauschale auf Gerät** *(bestätigt Runde #2)* — sechs Fuhren à 120 € stehen
+   als `0,06 Stunden × 120 €`. Test: `fuhrenRechnenImZeitModell`.
+
+### Nachgewiesen
+- **12 eigene Tests grün**, volle Suite **0 Fehler**, `** TEST SUCCEEDED **`
+- `git diff main -- '*.xcdatamodel*'` **leer**
+- Snapshot `--target=Hofauffahrt`: **2 startklar · 8 wartet**
+- Rechenkette von Hand gegengeprüft: Material 52,27 €/qm, Lohn 51,80 €/qm,
+  Gerät 13,60 €/qm — nicht gegen das, was das Programm ausspuckt
+
+### Falle, die hier Zeit gekostet hat
+**Exakte Gleichheit bei Fließkomma.** `0,57 × 100` ergibt in `Double`
+**56,99999999999999**, nicht 57 — ein `#expect(... == 57.0)` fällt dadurch durch.
+Mengenprüfungen brauchen eine Toleranz. (Kostete einen Testlauf.)
+
+Und noch einmal die bekannte: **`| grep` auf die Testausgabe verschluckt die
+Fehlermeldung.** Der erste Lauf meldete nur `** TEST FAILED **` ohne Grund. Volle
+Ausgabe in eine Datei schreiben, dann gezielt hineinschauen.
+
+---
+
 ## 📋 Übergabe 10.09.2026, Feierabend — wo alles steht
 
 **Beide Repos sind sauber:** nur `main`, keine offenen PRs, keine Branch-Leichen,
