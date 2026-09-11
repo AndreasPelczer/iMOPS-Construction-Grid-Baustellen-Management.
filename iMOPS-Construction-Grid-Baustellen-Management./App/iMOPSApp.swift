@@ -58,6 +58,10 @@ struct iMOPSApp: App {
                     SandsteinstufenSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     // Dritte Demo: echtes Mengengeruest (100 qm statt „1 Psch").
                     HofauffahrtSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    // Echte Preise aus Raphaels Kalkulations-Software — vertraulich.
+                    // Legt Lohn-/Material-/Geraete-Stammdaten an und setzt die drei
+                    // Firmen-Zuschlaege, die der Mops kennt.
+                    RaphaelStammdatenSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     NotificationService.shared.requestAuthorization()
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)
 
