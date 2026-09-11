@@ -68,6 +68,9 @@
         <attribute name="architekt" optional="YES" attributeType="String"/>
         <attribute name="baugenehmigungNr" optional="YES" attributeType="String"/>
         <attribute name="bauherr" optional="YES" attributeType="String"/>
+        <attribute name="bauherrOrt" optional="YES" attributeType="String"/>
+        <attribute name="bauherrPLZ" optional="YES" attributeType="String"/>
+        <attribute name="bauherrStrasse" optional="YES" attributeType="String"/>
         <attribute name="eventEndTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="eventNumber" optional="YES" attributeType="String"/>
         <attribute name="eventStartTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

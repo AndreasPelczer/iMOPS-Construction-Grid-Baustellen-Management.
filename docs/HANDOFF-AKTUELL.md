@@ -2,6 +2,105 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 11.09.2026 spät — Briefpapier + Rechnungsblatt: der Kreis endet auf Papier
+
+**Branch `feature/briefpapier-und-rechnung`.** Zwei Aufträge in einem: das
+Firmen-Briefpapier (Logo + Stammdaten aus `FirmenSettings`) und das lesbare
+**Rechnungs-PDF**, das es benutzt.
+
+### Was die Messung gegen den Auftrag ergeben hat
+
+| Auftrag nahm an | Gemessen |
+|---|---|
+| FirmenSettings = Core Data, ggf. Migration | **UserDefaults** — keine Migration nötig |
+| Bearbeiten-Ansicht fehlt | **Gibt es**: `SettingsView` mit `@AppStorage` |
+| XRechnung hat „iMOPS Bauleitung" hartkodiert | Seller kam **längst** aus FirmenSettings — nur der *Default* war das Problem |
+| `LVPDFExporter` rendert Kopf/Fuß | Er nutzt FirmenSettings **nur für den MwSt-Satz** |
+
+### 🔴 Der Fund: Dokumente trugen den Namen der Software
+
+Vier Exporter schrieben hart `"iMOPS Construction Grid"` in Kopf und Fuß:
+`LVPDFExporter`, `BautagesberichtPDFExporter`, `MangelPDFExporter` und
+`LieferantenAnfragePDFExporter`. **Der letzte geht nach draußen** — eine Anfrage
+beim Lieferanten mit dem Namen eines Programms statt der Firma.
+
+Deshalb **`Briefpapier.swift`**: ein Kopf, ein Fuß, für alle. Vier Stellen mit
+demselben Satz laufen auseinander, sobald eine angefasst wird.
+⚠️ **Umgestellt ist bisher nur das Rechnungsblatt.** Die drei anderen Exporter
+tragen den Softwarenamen weiter — offener Befund, bewusst nicht nebenbei erledigt.
+
+### 🔴 § 14 UStG: der Käufer war die Baustelle
+
+Die XRechnung trug als `<ram:BuyerTradeParty><ram:Name>` den **`event.title`** —
+„Privatkunde — Hofauffahrt pflastern (4 Stellplätze, ~100 qm)" — und als Adresse
+nur `<CountryID>DE</CountryID>`. Eine Rechnung braucht Namen **und** vollständige
+Anschrift des Leistungsempfängers; ohne sie zieht der Kunde keine Vorsteuer.
+
+Die Felder gab es im Modell nicht. `location` ist die **Baustelle**, nicht der
+Empfänger — meist dasselbe, aber wer für einen Bauträger baut, schickt die
+Rechnung ins Büro und nicht an die Grube. Neu: `Event.bauherrStrasse/PLZ/Ort`
+(optional, Version `test25B 2`, leichtgewichtig migrierbar — die vorhandenen
+`ModellVersionierungTests` prüfen das), Eingabe in **`AddEventView` und
+`EditEventView`**, Fallback auf den Titel bleibt (ein XML ohne Käufernamen wäre
+gar nicht gültig).
+
+### Grundsatz: keine Platzhalter auf Kundendokumenten
+
+Fehlende Angaben werden **weggelassen**, nie gedruckt. Kein „[fehlt]", kein „–".
+Ein Briefkopf ohne Faxnummer sieht normal aus; einer mit „Fax: –" sieht nach
+Software aus. Ebenso: **kein Default-Firmenname mehr** — wer nichts einträgt,
+bekommt nichts. Ein leerer Briefkopf fällt auf, ein falscher nicht.
+
+### Zwei Zusagen, die nicht auseinanderlaufen dürfen
+
+PDF und XRechnung teilen **dieselbe Rechnungsnummer**
+(`RechnungPDFExporter.rechnungsnummer`) und filtern Alternativpositionen gleich.
+Zwei Nummern oder zwei Beträge für einen Vorgang sind ein Buchhaltungsfehler, den
+niemand bemerkt, bis er weh tut. Test: `pdfUndXRechnungTragenDieselbeNummer`.
+
+### Logo: Datei, nicht UserDefaults
+
+Das Bild liegt im **App-Support**, in den UserDefaults steht nur der Dateiname.
+UserDefaults wird bei jedem Start vollständig in den Speicher gelesen — ein PNG
+gehört da nicht hinein. Fehlt die Datei (Gerätewechsel), liefert `logoURL` `nil`:
+lieber kein Logo als ein leerer Kasten.
+
+### ⏸️ ZUGFeRD: bewusst nicht angefangen
+
+PDF/A-3 verlangt eingebettete Schriften, XMP-Metadaten, Farbprofile und die
+Anhang-Relation `/AFRelationship /Alternative`. `UIGraphicsPDFRenderer` erzeugt
+kein PDF/A. **PDF und XML bleiben zwei Dateien** — der Auftrag lässt diese Tür
+ausdrücklich offen. Ein halb konformes PDF/A-3 wäre schlimmer als zwei saubere
+Dateien: Es sähe aus wie ZUGFeRD und fiele beim Empfänger durch.
+
+### ⚠️ Falle beim Einbauen: `newEvent` statt `event`
+
+In `AddEventView` heißt die Variable `newEvent`. Ein Muster-Patch setzte die
+Eingabefelder und übersprang den Speicher-Teil **stillschweigend** — drei Felder,
+die sich ausfüllen lassen und beim Sichern verschwinden. Gefunden durch
+Nachzählen in beiden Dateien, nicht durch Hinsehen.
+
+### Snapshot mit erfundenen Daten
+
+`--target=RechnungPDF` setzt **Test-Stammdaten** („Musterbau GmbH", IBAN
+`DE00 0000…`) und zeichnet ein Logo programmatisch. Kein echtes Logo, keine echte
+IBAN: Ein Snapshot landet im Repo, und das ist öffentlich — siehe die
+DSGVO-Fälle 06.06. und 31.07.
+
+**Nachweis:** Build grün · Unit-Tests **242 bestanden, 0 gefallen** (inkl.
+Migrationstests) · UITest-Snapshot grün · Modell-Diff = genau die drei bewussten
+Attribute.
+
+### 🔴 Für Andreas/Raphi, vor dem ersten echten Kunden
+
+Jede Zahl im Briefkopf gegen die **Firmenpapiere** prüfen: USt-IdNr., IBAN, HRB,
+Geschäftsführer, Anschrift. Das kann kein Programm — es sieht nur, ob ein Feld
+gefüllt ist, nie ob der Wert stimmt. Unter echtem Firmennamen gibt es kein
+„ungefähr". In den Einstellungen steht dazu eine Warnung, solange Name, Anschrift
+und USt-IdNr./Steuernummer unvollständig sind.
+
+---
+
 ## Delta 11.09.2026 spät — Der ƒ-Knopf im Deckel: ein Tipp statt Auflösen
 
 **Branch `feature/kalkulation-im-deckel`.** Jede Baustein-/Beleg-Zeile in einem

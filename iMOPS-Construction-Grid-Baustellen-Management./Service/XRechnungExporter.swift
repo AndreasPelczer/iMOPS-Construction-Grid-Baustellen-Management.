@@ -109,10 +109,33 @@ struct XRechnungExporter {
         out += "          <ram:CountryID>DE</ram:CountryID>\n"
         out += "        </ram:PostalTradeAddress>\n"
         out += "      </ram:SellerTradeParty>\n"
-        // BG-7 Buyer
+        // BG-7 Buyer — der **Kunde**, nicht die Baustelle.
+        //
+        // Hier stand `title`, also der Titel des Events („Privatkunde — Hofauffahrt
+        // pflastern (4 Stellplätze, ~100 qm)"), und als Adresse nur das Länder-
+        // kürzel. Eine Rechnung braucht nach § 14 UStG den vollständigen Namen UND
+        // die vollständige Anschrift des Leistungsempfängers; ohne sie kann der
+        // Kunde keine Vorsteuer ziehen. Die Felder dafür gab es im Modell nicht —
+        // `Event.bauherrStrasse/PLZ/Ort` sind mit dieser Runde dazugekommen.
+        //
+        // Fällt der Bauherr leer, bleibt der Titel als Notnagel: ein XML ohne
+        // Käufernamen wäre gar nicht erst gültig.
+        let kaeufer = (event.bauherr?.trimmingCharacters(in: .whitespaces))
+            .flatMap { $0.isEmpty ? nil : $0 } ?? title
         out += "      <ram:BuyerTradeParty>\n"
-        out += "        <ram:Name>\(esc(title))</ram:Name>\n"
-        out += "        <ram:PostalTradeAddress><ram:CountryID>DE</ram:CountryID></ram:PostalTradeAddress>\n"
+        out += "        <ram:Name>\(esc(kaeufer))</ram:Name>\n"
+        out += "        <ram:PostalTradeAddress>\n"
+        if let strasse = event.bauherrStrasse, !strasse.isEmpty {
+            out += "          <ram:LineOne>\(esc(strasse))</ram:LineOne>\n"
+        }
+        if let plz = event.bauherrPLZ, !plz.isEmpty {
+            out += "          <ram:PostcodeCode>\(esc(plz))</ram:PostcodeCode>\n"
+        }
+        if let ort = event.bauherrOrt, !ort.isEmpty {
+            out += "          <ram:CityName>\(esc(ort))</ram:CityName>\n"
+        }
+        out += "          <ram:CountryID>DE</ram:CountryID>\n"
+        out += "        </ram:PostalTradeAddress>\n"
         out += "      </ram:BuyerTradeParty>\n"
         out += "      <ram:BuyerOrderReferencedDocument>\n"
         out += "        <ram:IssuerAssignedID>\(esc(title))</ram:IssuerAssignedID>\n"
@@ -125,6 +148,29 @@ struct XRechnungExporter {
         // BG-22 totals + BG-23 VAT + payment terms
         out += "    <ram:ApplicableHeaderTradeSettlement>\n"
         out += "      <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>\n"
+
+        // BG-16 Zahlungsangaben. **Die Reihenfolge in CII ist verbindlich:**
+        // PaymentMeans steht zwischen InvoiceCurrencyCode und ApplicableTradeTax.
+        // An anderer Stelle ist das XML schema-ungültig, und das merkt man erst,
+        // wenn die Buchhaltung des Kunden es zurückweist.
+        // TypeCode 58 = SEPA-Überweisung. Ohne IBAN wird der Block weggelassen —
+        // ein leeres Konto-Element wäre schlimmer als keines.
+        if !FirmenSettings.iban.isEmpty {
+            out += "      <ram:SpecifiedTradeSettlementPaymentMeans>\n"
+            out += "        <ram:TypeCode>58</ram:TypeCode>\n"
+            out += "        <ram:PayeePartyCreditorFinancialAccount>\n"
+            out += "          <ram:IBANID>\(esc(FirmenSettings.iban))</ram:IBANID>\n"
+            if !FirmenSettings.bank.isEmpty {
+                out += "          <ram:AccountName>\(esc(FirmenSettings.bank))</ram:AccountName>\n"
+            }
+            out += "        </ram:PayeePartyCreditorFinancialAccount>\n"
+            if !FirmenSettings.bic.isEmpty {
+                out += "        <ram:PayeeSpecifiedCreditorFinancialInstitution>\n"
+                out += "          <ram:BICID>\(esc(FirmenSettings.bic))</ram:BICID>\n"
+                out += "        </ram:PayeeSpecifiedCreditorFinancialInstitution>\n"
+            }
+            out += "      </ram:SpecifiedTradeSettlementPaymentMeans>\n"
+        }
         out += "      <ram:ApplicableTradeTax>\n"
         out += "        <ram:CalculatedAmount>\(amt(vat))</ram:CalculatedAmount>\n"
         out += "        <ram:TypeCode>VAT</ram:TypeCode>\n"
