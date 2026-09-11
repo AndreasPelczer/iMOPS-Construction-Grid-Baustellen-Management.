@@ -2,11 +2,13 @@
 //  HofauffahrtSeeder.swift
 //  Demo-Baustelle Nr. 3 — das Mengengerüst.
 //
-//  Eine befahrbare Hofauffahrt pflastern, vier Stellplätze, rund 100 qm. Ein
-//  echter Job mit **echten Mengen** — und genau das ist der Unterschied zu den
+//  Eine befahrbare Hofauffahrt pflastern, vier Stellplätze, 100,31 m². Ein
+//  echter Job mit **gezählten Mengen** — und genau das ist der Unterschied zu den
 //  Vorgängern: Bauer Horst und die Sandsteinstufen tragen „1 Psch" als Deckel,
-//  hier steht `menge = 100 qm`, und darunter Tonnen, Quadratmeter und laufende
-//  Meter. Die Frage dieser Runde war, ob das Mengengerüst trägt.
+//  hier steht `menge = 100,31 m²`, und darunter Stückzahlen aus einer echten
+//  Zeichnung. Die erste Runde fragte, ob das Mengengerüst trägt; diese Runde
+//  ersetzt die geschätzten 100 qm durch die **1344 gezählten Steine**, aus denen
+//  die Fläche besteht — und zieht am Ende eine XRechnung daraus.
 //
 //  ── Es trägt. Aber mit einer Falle, die man kennen muss ──────────────────────
 //
@@ -60,6 +62,34 @@
 //  ⚠️ **`BauerHorstSeeder` trägt hier `5` und `10` ein** — das ergibt 500 % und
 //  1000 % Aufschlag. Dieser Seeder spiegelt den Fehler bewusst **nicht**.
 //
+//  ── Gezählte Mengen tragen KEINEN Verschnitt ─────────────────────────────────
+//
+//  Solange 100 qm Pflaster als Fläche dastanden, waren 5 % Verschnitt richtig:
+//  eine Fläche muss man zuschneiden. Gezählte Steine nicht — der Zuschnitt an
+//  den Rändern ist im DXF bereits als **50 Halbsteine** ausgewiesen. Wer auf
+//  1294 gezählte Steine noch 5 % aufschlägt, zählt den Rand zweimal.
+//
+//  **Was damit fehlt, ist der Bruch.** Steine gehen beim Transport und beim
+//  Verlegen kaputt, und dafür steht hier jetzt nichts. Das Modell hat für diesen
+//  Unterschied auch keinen Platz: `verschnittProzent` ist eine Spalte für zwei
+//  verschiedene Dinge — Zuschnitt (aus der Geometrie herleitbar) und Bruch
+//  (Erfahrungswert). **Befund, nicht Aufgabe.** Wer eine Bruchreserve will,
+//  trägt sie bewusst ein, statt sie im Verschnitt mitlaufen zu lassen.
+//
+//  ── Woher die Zahlen kommen ──────────────────────────────────────────────────
+//
+//  `Testhofeinfahrt.dxf` aus Raphaels SketchUp, 1386 Block-Instanzen über vier
+//  Material-Layer. Ausgezählt, nicht überschlagen:
+//
+//      Pflaster          1294 Vollsteine + 50 Halbsteine  → 100,31 m²
+//      Leistensteine       40 Stück à 1,00 m              →  40 lfm
+//      Splittbett 8/16     Bettung 4 cm                   →   6,52 t
+//      Schotter 0/32       Tragschicht 30 cm              →  57,18 t
+//
+//  Damit ist dies die erste Demo, deren Bezugsmenge **nicht geschätzt** ist. Die
+//  Fläche ist keine eigene Angabe, sondern die Summe der gezählten Steine — der
+//  Test `flaecheIstDieSummeDerSteine` rechnet sie nach.
+//
 
 import Foundation
 import CoreData
@@ -68,10 +98,40 @@ enum HofauffahrtSeeder {
 
     private static let eventNummer = "DEMO-AUFFAHRT-001"
 
-    /// Die Bezugsmenge der Position. Steht hier einmal, damit die Mengen je
-    /// Einheit unten als `gesamt / flaecheQm` lesbar bleiben statt als rohe
-    /// Kommazahl.
-    private static let flaecheQm: Double = 100
+    // MARK: - Was im DXF gezaehlt wurde
+
+    /// Gezaehlte Block-Instanzen aus Raphaels `Testhofeinfahrt.dxf`, Layer
+    /// „Pflaster". **Gezaehlt, nicht geschaetzt** — das ist der Unterschied zu
+    /// jeder Zahl, die vorher in diesem Seeder stand.
+    private static let vollsteine:    Double = 1294
+    private static let halbsteine:    Double = 50
+
+    /// Layer „Leistensteine", je 1,00 m Laenge. 40 Stueck sind damit zugleich
+    /// 40 lfm Randeinfassung — eine Stueckzahl, die man als Laenge lesen kann.
+    private static let leistensteine: Double = 40
+
+    /// **Die Bezugsmenge — hergeleitet aus der Zaehlung, nicht gerundet geraten.**
+    ///
+    ///     1294 x 0,076050  =  98,4087
+    ///       50 x 0,038025  =   1,9013
+    ///                        ─────────
+    ///                         100,3100 m²
+    ///
+    /// Die 100,31 sind also keine dritte Angabe neben den Stueckzahlen, sondern
+    /// deren Summe. `flaecheGegenprobe` rechnet das im Test nach — wenn jemand
+    /// eine Stueckzahl aendert und die Flaeche vergisst, faellt es auf.
+    ///
+    /// Vorher stand hier `100` als Schaetzung. Der Unterschied ist klein, der
+    /// Unterschied im Zustand ist es nicht: geschaetzt → gezaehlt.
+    private static let flaecheQm: Double = 100.31
+
+    /// Tragschicht 30 cm, verdichtet. Die Dichte steckte bisher unausgesprochen
+    /// in „57 t auf 100 qm" (= 1,9 t/m³) — hier steht sie hin, damit die Zahl
+    /// bei geaenderter Flaeche mitwandert statt stehenzubleiben.
+    private static let tragschichtT: Double = flaecheQm * 0.30 * 1.9    // 57,18 t
+
+    /// Bettung 4 cm. Dieselbe Rueckrechnung aus „6,5 t auf 100 qm" (1,625 t/m³).
+    private static let bettungT: Double = flaecheQm * 0.04 * 1.625      //  6,52 t
 
     /// Legt die Demo an, falls sie fehlt. Idempotent über die `eventNumber`.
     static func seedIfNeeded(context: NSManagedObjectContext) {
@@ -108,20 +168,22 @@ enum HofauffahrtSeeder {
         event.location = "Hofeinfahrt, Privatgrundstück"
         event.bauherr = "Privatkunde"
         event.notes = """
-            Befahrbare Hofauffahrt pflastern, Platz für vier Fahrzeuge, rund 100 qm.
+            Befahrbare Hofauffahrt pflastern, Platz für vier Fahrzeuge, 100,31 m².
 
-            Richtangebot, verbindlich nach Aufmaß.
+            Mengen aus der Zeichnung gezählt (Testhofeinfahrt.dxf): 1294 \
+            Vollsteine + 50 Halbsteine ergeben 100,31 m², dazu 40 Leistensteine \
+            à 1,00 m als Randeinfassung.
 
-            Diese Demo zeigt, was die beiden Vorgänger nicht zeigen: ein echtes \
-            Mengengerüst. Statt „1 Pauschal" steht hier 100 qm, darunter Tonnen, \
-            Quadratmeter und laufende Meter.
+            Richtangebot. Die MENGEN stehen — was noch nicht steht, sind die \
+            PREISE: die Steinpreise sind aus einem Quadratmeter-Marktanker auf \
+            Stück umgerechnet, nicht bei Pasand angefragt. Verbindlich wird das \
+            Angebot mit einem Lieferantenpreis, nicht mit einem Aufmaß — das \
+            Aufmaß liegt bereits vor.
 
             Drei Modell-Lücken sind absichtlich sichtbar: die Entsorgung des \
             Aushubs hat keine Kostenart, ihre Kosten sind bodenklassenabhängig \
             und damit gar nicht bezifferbar, und die Fuhren rechnen im \
             Zeit-Modell statt pro Fahrt.
-
-            Alle Zahlen sind geschätzt.
             """
         event.timeStamp = jetzt
         event.setupTime = jetzt
@@ -247,12 +309,33 @@ enum HofauffahrtSeeder {
         let pos = LVPosition(context: context)
         pos.event = baustelle
         pos.posNr = "1.20.1"
-        pos.bezeichnung = "Hofauffahrt pflastern, befahrbar, ~100 qm, "
+        pos.bezeichnung = "Hofauffahrt pflastern, befahrbar, 100,31 m², "
                         + "inkl. Unterbau/Randeinfassung/Gefälle"
         pos.menge = flaecheQm
-        pos.einheit = "qm"
+        // `m²`, nicht `qm`: Der `XRechnungExporter` bildet Einheiten auf
+        // UN/ECE Rec 20 ab und kennt `m²` → **MTK**. „qm" faellt dort in den
+        // Default **C62 (Stueck)** — die Rechnung haette „100,31 Stueck
+        // Hofauffahrt" gelesen. „qm" kam im ganzen Repo genau einmal vor,
+        // naemlich hier; alle 16 anderen Stellen schreiben `m²`.
+        pos.einheit = "m²"
         pos.kostenGruppeNummer = "534"      // Stellplätze (DIN276BaumKatalog)
+
+        // **Gezaehlt, nicht geschaetzt — und trotzdem `.schaetzung`.**
+        // `MengenQuelle` kennt vier Faelle: statik · bplan · schaetzung · manuell.
+        // Einen Fall „aus der Zeichnung gezaehlt" gibt es nicht, und `istGeschaetzt`
+        // ist `self != .statik` — eine DXF-Zaehlung wuerde also ohnehin als
+        // Schaetzwert gelten. Der rawValue ist zudem das Wire-Format der Box
+        // (`ExtractLVPosition.quelle`); ein neuer Fall waere eine Schnittstellen-
+        // aenderung, kein Beiwerk. Deshalb: `.schaetzung` + Herkunft im Stempel.
+        // **Befund, nicht Aufgabe** — notiert in HANDOFF-AKTUELL.
         pos.mengenQuelle = .schaetzung
+        // `deckelNotiz` ist im Modell der Pruefstempel „warum/woher" —
+        // `MateriallisteView` schreibt dort „N Einzel-Bauteile aus DATEI".
+        // Dieselbe Verwendung, nur eine Ebene frueher: hier steht, dass die
+        // Menge aus einer gezaehlten Zeichnung stammt und nicht aus dem Gefuehl.
+        pos.deckelNotiz = "dxf-gezählt: \(Int(vollsteine + halbsteine)) Pflastersteine "
+                        + "+ \(Int(leistensteine)) Leistensteine aus Testhofeinfahrt.dxf "
+                        + "(Layer Pflaster · Leistensteine · Splittbett 8/16 · Schotter 0/32)"
 
         // --- Material ---
         //
@@ -261,20 +344,43 @@ enum HofauffahrtSeeder {
         // (0.05 = 5 %), siehe Dateikopf.
         let material: [(name: String, menge: Double, einheit: String,
                         preis: Double, verschnitt: Double)] = [
-            // 57 t auf 100 qm — 30 cm Tragschicht, verdichtet    [Werbach, ab Werk]
-            ("Mineralgemisch 0/32 (Tragschicht)", 57.0 / flaecheQm,  "t",   7.90, 0),
-            // 6,5 t auf 100 qm — 4 cm Bettung                    [Werbach, ab Werk]
-            ("Splitt 2/8 (Bettung)",               6.5 / flaecheQm,  "t",   8.50, 0),
-            // 100 qm auf 100 qm — 1:1, plus 5 % Verschnitt       [Netz-Anker]
-            ("Betonpflaster grau, befahrbar 8 cm", 1.0,              "qm", 40.00, 0.05),
-            // 30 lfm auf 100 qm — Einfassung ringsum             [Netz-Anker]
-            ("Tiefbordstein grau",                30.0 / flaecheQm, "lfm",  8.00, 0),
-            // 2 t auf 100 qm — Fugen einkehren                   [Werbach, ab Werk]
-            ("Abdecksand/Fugensand 0/2",           2.0 / flaecheQm,  "t",   3.00, 0),
-            // 110 qm auf 100 qm — mit Überlappung an den Stößen  [Schätzung]
-            ("Trennvlies (Geotextil)",           110.0 / flaecheQm,  "qm",  1.50, 0),
-            // 1 cbm auf 100 qm — Rückenstütze der Randsteine     [Schätzung]
-            ("Beton C16/20 (Randstein-Rückenstütze)", 1.0 / flaecheQm, "cbm", 110.00, 0),
+            // ── Gezaehlt aus dem DXF ─────────────────────────────────────────
+            //
+            // 1294 Stueck, Layer „Pflaster".      [Netz-Anker, auf Stueck umgerechnet]
+            // Preis: der qm-Anker dieser Demo lag bei 40,00 €/m². Ein Vollstein
+            // misst 0,07605 m² → 3,04 €/Stueck. **Das ist eine Folgerung aus dem
+            // qm-Preis, kein Haendlerpreis fuer genau diesen Stein** — wer einen
+            // Angebotspreis von Pasand hat, traegt ihn hier ein.
+            ("Pasand Pflaster Vollstein Nr. 59, Fine-dunkelgrau, 39×19,5×8cm",
+                                        vollsteine / flaecheQm,    "Stk",   3.04, 0),
+            // 50 Stueck, dieselbe Reihe, halbe Laenge → halbe Flaeche, halber Preis.
+            ("Pasand Pflaster Halbstein Nr. 59, 19,5×19,5×8cm",
+                                        halbsteine / flaecheQm,    "Stk",   1.52, 0),
+            // 40 Stueck a 1,00 m, Layer „Leistensteine" = 40 lfm Randeinfassung.
+            // Preis vom bisherigen Tiefbordstein uebernommen.       [Netz-Anker]
+            ("Leistensteine (Randeinfassung, je 1,00 m)",
+                                     leistensteine / flaecheQm,    "Stk",   8.00, 0),
+            //
+            // ── Aus der Flaeche gerechnet ────────────────────────────────────
+            //
+            // 57,18 t, Layer „Schotter 0/32", 30 cm verdichtet.
+            // Preis 10,00 €/to ist der **Li-Preis (EK)** aus Raphaels Stammdaten
+            // (`RaphaelStammdatenSeeder`); die 15 % Materialzuschlag kommen erst
+            // im `LVKalkulator` obendrauf → 11,50. Vorher standen hier 7,90
+            // [Werbach] — der belegte Firmenwert schlaegt den Marktanker.
+            ("Schotter 0/32 (Tragschicht)",  tragschichtT / flaecheQm,  "to", 10.00, 0),
+            // 6,52 t, Layer „Splittbett 8/16", 4 cm Bettung.       [Werbach, ab Werk]
+            // ⚠️ Raphaels Stammdaten fuehren **Splitt 2/8 zu 2,90 €/to** — eine
+            // andere Koernung, also nicht uebertragbar. Fuer 8/16 gibt es dort
+            // keinen Satz; der bisherige Wert bleibt stehen und ist damit der
+            // unsicherste Preis dieser Position.
+            ("Splitt 8/16 (Bettung)",            bettungT / flaecheQm,  "to",  8.50, 0),
+            // 2,01 t — Fugen einkehren                           [Werbach, ab Werk]
+            ("Abdecksand/Fugensand 0/2",                        0.02,   "to",  3.00, 0),
+            // 110,34 m² — 10 % Ueberlappung an den Stoessen          [Schätzung]
+            ("Trennvlies (Geotextil)",                          1.10,   "m²",  1.50, 0),
+            // 1,00 m³ — Rueckenstuetze der Leistensteine             [Schätzung]
+            ("Beton C16/20 (Randstein-Rückenstütze)", 1.0 / flaecheQm,  "m³", 110.00, 0),
         ]
         for m in material {
             let pm = PositionMaterial(context: context)
