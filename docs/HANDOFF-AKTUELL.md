@@ -2,6 +2,106 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 11.09.2026 abends — Der Kreis ist zu: Zeichnung → Rechnung
+
+**PR gegen main, Branch `feature/seeder-hofauffahrt`.** Die Hofauffahrt-Demo trägt
+jetzt **gezählte** Mengen aus Raphis `Testhofeinfahrt.dxf` statt geschätzter, und
+aus derselben Baustelle fällt am Ende eine **XRechnung** über den bestehenden
+`XRechnungExporter` — ohne eine Zeile neues Feature.
+
+    Gespräch → Angebot → Baustelle/Kausalkette → Kalkulation → Rechnung
+
+### Was sich geändert hat
+
+| | vorher | jetzt |
+|---|---|---|
+| Bezugsmenge | `100 qm` (geschätzt) | **`100,31 m²`** (Summe der gezählten Steine) |
+| Pflaster | „Betonpflaster grau", 1,0 m²/m² | **1294 Vollsteine + 50 Halbsteine** (Pasand Nr. 59) |
+| Randeinfassung | „Tiefbordstein", 30 lfm | **40 Leistensteine** à 1,00 m |
+| Tragschicht | „Mineralgemisch 0/32", 57 t @ 7,90 | **„Schotter 0/32"**, 57,18 t @ **10,00 (Li, Raphael)** |
+| Bettung | „Splitt 2/8", 6,5 t | **„Splitt 8/16"**, 6,52 t (DXF-Layer) |
+| Verschnitt Pflaster | 5 % | **0 %** — siehe unten |
+
+### 🔴 Die Falle, die diese Runde fast verschluckt hätte: `qm` ≠ `m²`
+
+`XRechnungExporter.xrUnit` bildet auf UN/ECE Rec 20 ab und kennt **`m²` → MTK**.
+**`qm` kennt er nicht** — das fällt in den Default **`C62` (Stück)**. Die Rechnung
+hätte „100,31 **Stück** Hofauffahrt" gelesen, und **dem XML sieht man das nicht an**.
+
+Gemessen: `qm` kam im **ganzen Repo genau einmal** vor — in diesem Seeder. Alle 16
+anderen Stellen schreiben `m²`. Der Ausreißer war die Position, nicht der Exporter,
+deshalb ist die Position umgestellt und der Exporter unangetastet.
+Test `ausDerBaustelleFaelltEineXRechnung` prüft `unitCode="MTK"` **und** dass
+`C62` *nicht* vorkommt.
+
+⚠️ **Offen, nicht behoben:** `xrUnit` kennt auch **`Pau`** nicht (4 Fundstellen im
+Repo) — Pauschalen fallen dort ebenfalls auf `C62` statt `LS`. Befund, keine Aufgabe.
+
+### Gezählte Mengen tragen keinen Verschnitt
+
+Solange 100 qm als *Fläche* dastanden, waren 5 % Verschnitt richtig — eine Fläche
+schneidet man zu. **Gezählte Steine nicht:** der Zuschnitt am Rand steht im DXF
+bereits als **50 Halbsteine**. Wer auf 1294 gezählte Steine noch 5 % aufschlägt,
+zählt den Rand zweimal.
+
+**Was damit fehlt, ist der Bruch.** `verschnittProzent` ist eine Spalte für zwei
+verschiedene Dinge: Zuschnitt (aus der Geometrie herleitbar) und Bruch
+(Erfahrungswert). **Befund, nicht Aufgabe.**
+
+### `MengenQuelle` kennt kein „gezählt"
+
+Vier Fälle: `statik · bplan · schaetzung · manuell`. Eine DXF-Zählung ist keiner
+davon, und `istGeschaetzt` ist `self != .statik` — sie gälte ohnehin als Schätzwert.
+Der rawValue ist zudem das **Wire-Format der Box** (`ExtractLVPosition.quelle`); ein
+neuer Fall wäre eine Schnittstellenänderung, kein Beiwerk.
+
+Deshalb: `mengenQuelle = .schaetzung` **plus Herkunft in `deckelNotiz`** — dem Feld,
+das im Modell schon der Prüfstempel „woher" ist (`MateriallisteView` schreibt dort
+„N Einzel-Bauteile aus DATEI"). Dieselbe Verwendung, eine Ebene früher.
+**Befund: dem Modell fehlt der Zustand „gezählt".**
+
+### Was die Zahlen NICHT sind
+
+Die **Mengen** sind gezählt. Die **Preise** sind es nicht:
+- Stückpreise der Pasand-Steine sind aus dem qm-Marktanker (40,00 €/m²)
+  **umgerechnet** — 0,07605 m² je Vollstein → 3,04 €/Stk. Eine Folgerung, kein
+  Händlerpreis. Wer ein Pasand-Angebot hat, trägt es ein.
+- **Splitt 8/16 ist der unsicherste Preis der Position.** Raphaels Stammdaten führen
+  *Splitt 2/8 zu 2,90 €/to* — andere Körnung, nicht übertragbar. Für 8/16 gibt es
+  dort keinen Satz, der alte Werbach-Wert (8,50) bleibt stehen.
+- Schotter 0/32 **ist** belegt: 10,00 €/to Li aus `RaphaelStammdatenSeeder`; die
+  15 % Materialzuschlag kommen erst im `LVKalkulator` → 11,50.
+
+### 🔴 Unabhängiger Fund: das Repo ist öffentlich
+
+`RaphaelStammdatenSeeder.swift` (Commit `884b2fb`) trägt Raphaels reale Lohn-,
+Material- und Gerätesätze. Das Repo ist **PUBLIC** (`gh repo view --json visibility`
+— ⚠️ der Repo-Name endet auf einen **Punkt**, ohne ihn findet `gh` nichts). Die
+Commit-Message warnt selbst („VERTRAULICH … nirgendwo sonst hin"), nur liegt das
+Werkzeug offen. Dritter Seeder-Fall nach mops-api (6.6.) und iMOPS (31.7.).
+**Andreas hat entschieden: erstmal notieren, Entscheidung später.** Offen.
+
+### Ein Test hat seinen Namen verloren: `keinTerminOhneAufmass` → `keinTerminZugesagt`
+
+Er prüfte, dass in der Notiz „verbindlich nach Aufmaß" steht. Das stimmt nicht
+mehr — **das Aufmaß liegt vor**, 1294 gezählte Steine *sind* eins. Ein Termin
+steht weiterhin nicht, aber aus einem anderen Grund: es hat nie jemand einen
+zugesagt. Was jetzt aussteht, ist der **Lieferantenpreis**, nicht das Maß.
+
+Zwei weitere Tests rechneten gegen eine **hart notierte `100`** statt gegen
+`pos.menge` und fielen bei der Mengenkorrektur um, ohne dass an ihrer Sache
+etwas falsch war. Beide rechnen jetzt gegen die Bezugsmenge.
+
+**Testlauf: 15 von 15 grün** (`iPhone 17 Pro Max`, iOS 26.2).
+
+⚠️ **Falle beim Testen:** `-destination 'platform=iOS Simulator,name=iPhone 16 Pro'`
+gibt es hier nicht. xcodebuild greift dann nach dem **angeschlossenen iPhone**
+(iOS 16.7 gegen Deployment-Target 26.2), bricht ab — **und liefert Exit-Code 0**.
+Es sah aus wie ein grüner Lauf, in dem kein einziger Test lief. Der einzige
+passende Simulator ist `id=56C7C83E-44FF-4607-AA85-B3D2E4F5D2D7`.
+
+---
+
 ## Delta 11.09.2026 — Demo 3 „Hofauffahrt": das Mengengerüst trägt, mit einer Falle
 
 **PR #157, offen.** Dritte Demo-Baustelle: befahrbare Hofauffahrt, vier Stellplätze,

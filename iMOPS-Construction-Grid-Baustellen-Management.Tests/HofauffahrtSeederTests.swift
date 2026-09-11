@@ -50,12 +50,27 @@ struct HofauffahrtSeederTests {
     /// Ohne Aufmaß kein Termin. Ein Datum hier wäre eine Zusage, die niemand
     /// gegeben hat — anders als bei den Sandsteinstufen, wo der Kunde einen
     /// Wunschtermin genannt hatte.
-    @Test @MainActor func keinTerminOhneAufmass() throws {
+    /// **Dieser Test hiess bis zur DXF-Runde `keinTerminOhneAufmass`.**
+    ///
+    /// Der alte Name traf eine Begruendung, die nicht mehr gilt: Es stand kein
+    /// Termin, *weil das Aufmass fehlte*. Das Aufmass fehlt jetzt nicht mehr —
+    /// 1294 Steine sind gezaehlt, die Flaeche ist deren Summe. Trotzdem steht
+    /// weiter kein Termin, und zwar aus einem anderen Grund: **es wurde keiner
+    /// zugesagt.** Ein Datum im Kalender waere eine Zusage, die niemand gegeben
+    /// hat — unabhaengig davon, wie genau die Mengen sind.
+    ///
+    /// Was jetzt noch fehlt, ist nicht das Mass, sondern der **Preis**: die
+    /// Steinpreise sind aus einem Quadratmeter-Anker umgerechnet, nicht bei
+    /// Pasand angefragt.
+    @Test @MainActor func keinTerminZugesagt() throws {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
         let event = try baustelle()
 
         #expect(event.eventStartTime == nil)
-        #expect(event.notes?.contains("verbindlich nach Aufmaß") == true)
+        let notes = event.notes ?? ""
+        // Die Notiz sagt jetzt, was wirklich aussteht.
+        #expect(notes.contains("Lieferantenpreis"), "Notiz: \(notes)")
+        #expect(notes.contains("Aufmaß liegt bereits vor"))
     }
 
     // MARK: - Die Kette
@@ -136,11 +151,12 @@ struct HofauffahrtSeederTests {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
         let pos = try position()
 
-        #expect(pos.menge == 100)
-        #expect(pos.einheit == "qm")
+        #expect(abs(pos.menge - 100.31) < 0.0001)
+        // `m²`, nicht `qm` — sonst wird daraus in der XRechnung C62 (Stück).
+        #expect(pos.einheit == "m²")
 
         let material = (pos.kalkMaterialien?.allObjects as? [PositionMaterial]) ?? []
-        #expect(material.count == 7)
+        #expect(material.count == 8)
 
         // Toleranz statt Gleichheit: 0,57 × 100 ergibt in Double 56,99999999999999,
         // nicht 57. Ein `==` hier wäre ein Test, der aus Rundung fehlschlägt.
@@ -153,12 +169,17 @@ struct HofauffahrtSeederTests {
             #expect(abs(ist - erwartet) < 0.0001, "\(teil): \(ist) statt \(erwartet)")
         }
 
-        try pruefe("Mineralgemisch", 57.0)    // t
-        try pruefe("Splitt",          6.5)    // t
-        try pruefe("Betonpflaster", 100.0)    // qm
-        try pruefe("Tiefbordstein",  30.0)    // lfm
-        try pruefe("Fugensand",       2.0)    // t
-        try pruefe("Trennvlies",    110.0)    // qm, mit Überlappung an den Stößen
+        // Die gezählten Stückzahlen müssen exakt zurückkommen — das ist der Kern
+        // dieser Runde. Wer `mengeProEinheit` mit der Gesamtmenge verwechselt,
+        // fällt hier auf: 1294 statt 12,9 ergäbe 129.794 Steine.
+        try pruefe("Vollstein",    1294.0)    // Stk, Layer „Pflaster"
+        try pruefe("Halbstein",      50.0)    // Stk, Layer „Pflaster"
+        try pruefe("Leistensteine",  40.0)    // Stk à 1,00 m = 40 lfm
+
+        try pruefe("Schotter 0/32",  57.1767) // t  — 100,31 × 0,30 m × 1,9 t/m³
+        try pruefe("Splitt 8/16",     6.5202) // t  — 100,31 × 0,04 m × 1,625 t/m³
+        try pruefe("Fugensand",       2.0062) // t
+        try pruefe("Trennvlies",    110.3410) // m², 10 % Überlappung an den Stößen
 
         // Lohn und Gerät rechnen genauso je Einheit.
         let lohn = try #require((pos.kalkLohn?.allObjects as? [PositionLohn])?.first)
@@ -175,24 +196,32 @@ struct HofauffahrtSeederTests {
         let pos = try position()
         let k = LVKalkulator.kalkuliere(position: pos)
 
-        // Material je qm, von Hand: 0,57×7,90 + 0,065×8,50 + 1,0×40×1,05
-        //                         + 0,30×8,00 + 0,02×3,00 + 1,10×1,50 + 0,01×110
-        //                         = 4,503 + 0,5525 + 42,00 + 2,40 + 0,06 + 1,65 + 1,10
-        #expect(abs(k.materialKosten - 52.2655) < 0.01,
-                "Material je qm: \(k.materialKosten)")
+        // Material je m², von Hand gegen 100,31 gerechnet:
+        //   Vollstein  1294/100,31 = 12,90001 × 3,04 = 39,21603
+        //   Halbstein    50/100,31 =  0,49845 × 1,52 =  0,75765
+        //   Leisten      40/100,31 =  0,39876 × 8,00 =  3,19011
+        //   Schotter               =  0,57000 ×10,00 =  5,70000
+        //   Splitt                 =  0,06500 × 8,50 =  0,55250
+        //   Fugensand              =  0,02000 × 3,00 =  0,06000
+        //   Trennvlies             =  1,10000 × 1,50 =  1,65000
+        //   Beton         1/100,31 =  0,00997 ×110,00=  1,09660
+        //                                            ──────────
+        //                                              52,22289
+        #expect(abs(k.materialKosten - 52.22289) < 0.01,
+                "Material je m²: \(k.materialKosten)")
 
-        // Lohn je qm: 0,7 h × 74 €
-        #expect(abs(k.lohnKosten - 51.80) < 0.01, "Lohn je qm: \(k.lohnKosten)")
+        // Lohn je m²: 70 h / 100,31 × 74 €
+        #expect(abs(k.lohnKosten - 51.63996) < 0.01, "Lohn je m²: \(k.lohnKosten)")
 
-        // Gerät je qm: 0,08×65 + 0,10×12 + 0,06×120 = 5,20 + 1,20 + 7,20
-        #expect(abs(k.geraeteKosten - 13.60) < 0.01, "Gerät je qm: \(k.geraeteKosten)")
+        // Gerät je m²: (8×65 + 10×12 + 6×120) / 100,31 = 1360 / 100,31
+        #expect(abs(k.geraeteKosten - 13.55797) < 0.01, "Gerät je m²: \(k.geraeteKosten)")
 
         // Der Einheitspreis ist die Summe der drei Töpfe.
-        #expect(abs(k.einheitspreisEK - (52.2655 + 51.80 + 13.60)) < 0.01)
+        #expect(abs(k.einheitspreisEK - (52.22289 + 51.63996 + 13.55797)) < 0.01)
 
         // Und der Gesamtpreis skaliert mit der Menge — das ist der Punkt.
-        #expect(k.menge == 100)
-        #expect(abs(k.gesamtpreis - k.einheitspreisVK * 100) < 0.01)
+        #expect(abs(k.menge - 100.31) < 0.0001)
+        #expect(abs(k.gesamtpreis - k.einheitspreisVK * 100.31) < 0.01)
 
         // Größenordnung: eine 100-qm-Auffahrt liegt im niedrigen fünfstelligen
         // Bereich. Diese Schranke fängt einen Faktor-100-Fehler, ohne den Preis
@@ -215,12 +244,16 @@ struct HofauffahrtSeederTests {
                     "\(m.materialName ?? "?") hat \(m.verschnittProzent) — das wären \(Int(m.verschnittProzent * 100)) %")
         }
 
-        let pflaster = try #require(material.first {
-            ($0.materialName ?? "").contains("Betonpflaster")
+        // **Gezählte Steine tragen 0 % Verschnitt.** Solange 100 qm Pflaster als
+        // Fläche dastanden, waren 5 % richtig — eine Fläche muss man zuschneiden.
+        // Der Zuschnitt am Rand ist im DXF aber bereits als 50 Halbsteine
+        // ausgewiesen; wer jetzt noch aufschlägt, zählt den Rand zweimal.
+        let vollstein = try #require(material.first {
+            ($0.materialName ?? "").contains("Vollstein")
         })
-        #expect(abs(pflaster.verschnittProzent - 0.05) < 0.0001)
-        // 1,0 qm × 40 € × 1,05 = 42,00 — nicht 240 € wie bei verschnitt = 5.
-        #expect(abs(pflaster.kostenProEinheit - 42.00) < 0.01)
+        #expect(vollstein.verschnittProzent == 0)
+        // 12,90001 Stk × 3,04 € × 1,0 = 39,216 je m² — ohne stillen Aufschlag.
+        #expect(abs(vollstein.kostenProEinheit - 39.21603) < 0.01)
     }
 
     // MARK: - Die Lücken
@@ -273,12 +306,114 @@ struct HofauffahrtSeederTests {
         let geraete = (try position().kalkGeraete?.allObjects as? [PositionGeraet]) ?? []
         let fuhren = try #require(geraete.first { ($0.geraetName ?? "").contains("Fuhren") })
 
-        // Sechs Fahrten à 120 € = 720 € gesamt, hier als 0,06 „Stunden" je qm.
-        #expect(abs(fuhren.stunden * 100 - 6.0) < 0.0001)
-        #expect(abs(fuhren.kostenProEinheit * 100 - 720.00) < 0.01)
+        // Sechs Fahrten à 120 € = 720 € gesamt, hier als „Stunden" je m².
+        // Gegen `pos.menge` gerechnet, nicht gegen eine hart notierte 100 —
+        // sonst bricht der Test bei jeder Mengenkorrektur, ohne dass an den
+        // Fuhren etwas falsch waere. (Genau das ist in der DXF-Runde passiert.)
+        let menge = try position().menge
+        #expect(abs(fuhren.stunden * menge - 6.0) < 0.0001)
+        #expect(abs(fuhren.kostenProEinheit * menge - 720.00) < 0.01)
     }
 
     // MARK: - Idempotenz
+
+    // MARK: - Die gezählten Mengen
+
+    /// **Die Fläche ist keine eigene Angabe, sondern die Summe der Steine.**
+    ///
+    /// 1294 × (0,39 × 0,195) + 50 × (0,195 × 0,195) = 98,4087 + 1,9013 = 100,31 m².
+    ///
+    /// Der Test hält die drei Zahlen aneinander fest. Ändert jemand eine
+    /// Stückzahl und vergisst die Fläche, fällt es hier auf — und nicht erst in
+    /// einem Angebot, das über eine Fläche lautet, die es nicht gibt.
+    @Test @MainActor func flaecheIstDieSummeDerSteine() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let pos = try position()
+
+        let ausSteinen = 1294.0 * (0.39 * 0.195) + 50.0 * (0.195 * 0.195)
+        #expect(abs(ausSteinen - 100.31) < 0.001,
+                "Steine ergeben \(ausSteinen) m², die Position trägt \(pos.menge)")
+        #expect(abs(pos.menge - ausSteinen) < 0.001)
+    }
+
+    /// **Gezählt, nicht geschätzt — 1344 Pflastersteine und 40 Leistensteine.**
+    ///
+    /// Die Summenprobe über beide Pflaster-Zeilen ist der eigentliche Nachweis
+    /// dieser Runde: Voll- und Halbsteine sind zwei Artikel, aber eine Zählung.
+    @Test @MainActor func gezaehlteSteineStehenAlsStueckzahl() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let pos = try position()
+        let material = (pos.kalkMaterialien?.allObjects as? [PositionMaterial]) ?? []
+
+        func stueck(_ teil: String) throws -> Double {
+            let m = try #require(material.first { ($0.materialName ?? "").contains(teil) })
+            #expect(m.einheit == "Stk", "\(teil) ist in \(m.einheit ?? "?") statt Stk")
+            return m.mengeProEinheit * pos.menge
+        }
+
+        let voll  = try stueck("Vollstein")
+        let halb  = try stueck("Halbstein")
+        let leist = try stueck("Leistensteine")
+
+        #expect(abs(voll  - 1294) < 0.0001)
+        #expect(abs(halb  -   50) < 0.0001)
+        #expect(abs(leist -   40) < 0.0001)
+        // Die Summenprobe: 1294 + 50 = 1344 Pflastersteine.
+        #expect(abs((voll + halb) - 1344) < 0.0001,
+                "Pflastersteine gesamt: \(voll + halb)")
+
+        // Der Herkunftsstempel sagt, woher die Zahlen kommen. `mengenQuelle`
+        // kann es nicht sagen — sie kennt keinen Fall „gezählt".
+        let stempel = pos.deckelNotiz ?? ""
+        #expect(stempel.contains("dxf-gezählt"), "Stempel: \(stempel)")
+        #expect(stempel.contains("Testhofeinfahrt.dxf"))
+        #expect(pos.mengenQuelle == .schaetzung)   // Befund, siehe Seeder-Kopf
+    }
+
+    // MARK: - Der geschlossene Kreis
+
+    /// **Gespräch → Angebot → Baustelle → Kalkulation → Rechnung.**
+    ///
+    /// Das ist der Punkt, an dem sich zeigt, ob die Kette trägt: Aus derselben
+    /// Baustelle, die der Seeder anlegt, fällt am Ende eine XRechnung — über den
+    /// **bestehenden** `XRechnungExporter`, genau wie bei Bauer Horst. Kein neues
+    /// Feature, nur das Ende eines Weges, der vorne mit einer Zeichnung anfängt.
+    ///
+    /// Geprüft wird die Stelle, an der die gezählte Menge im Rechnungsformat
+    /// ankommt: `<ram:BilledQuantity unitCode="MTK">100.310</ram:BilledQuantity>`.
+    /// **MTK ist der UN/ECE-Code für Quadratmeter.** Stünde in der Position „qm"
+    /// statt „m²", fiele der Exporter auf **C62 (Stück)** zurück — die Rechnung
+    /// läse sich als „100,31 Stück Hofauffahrt", und niemand sähe es dem XML an.
+    @Test @MainActor func ausDerBaustelleFaelltEineXRechnung() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let event = try baustelle()
+        let pos   = try position()
+
+        let daten = XRechnungExporter.export(event: event, positionen: [pos])
+        let xml = try #require(String(data: daten, encoding: .utf8))
+
+        // Es ist überhaupt eine XRechnung.
+        #expect(xml.contains("<rsm:CrossIndustryInvoice"))
+        #expect(xml.contains("xrechnung_2.2"))
+        #expect(xml.contains("<ram:TypeCode>380</ram:TypeCode>"))   // Handelsrechnung
+
+        // Die gezählte Menge kommt als Quadratmeter an, nicht als Stück.
+        #expect(xml.contains("unitCode=\"MTK\""),
+                "Einheit kam nicht als MTK an — Position trägt \(pos.einheit ?? "?")")
+        #expect(xml.contains(">100.310<"), "Menge fehlt im XML")
+        #expect(!xml.contains("unitCode=\"C62\""),
+                "Fallback C62 aufgetaucht — die Einheit wurde nicht erkannt")
+
+        // Die Position steht mit Nummer und Bezeichnung drin.
+        #expect(xml.contains("1.20.1"))
+        #expect(xml.contains("Hofauffahrt pflastern"))
+
+        // Und sie trägt einen Betrag, der zur Kalkulation passt.
+        let k = LVKalkulator.kalkuliere(position: pos)
+        #expect(k.gesamtpreis > 8_000 && k.gesamtpreis < 30_000,
+                "Rechnungsbetrag: \(k.gesamtpreis)")
+        #expect(xml.contains("<ram:LineTotalAmount>"))
+    }
 
     @Test @MainActor func zweiterLaufLegtNichtsDoppeltAn() throws {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
@@ -288,6 +423,8 @@ struct HofauffahrtSeederTests {
         r.predicate = NSPredicate(format: "eventNumber == %@", "DEMO-AUFFAHRT-001")
         #expect(try ctx.count(for: r) == 1)
         #expect((try baustelle().jobs?.count ?? 0) == 10)
-        #expect((try position().kalkMaterialien?.count ?? 0) == 7)
+        // Acht seit der DXF-Runde: Voll- und Halbstein sind zwei Artikel,
+        // wo vorher eine Pflaster-Flaeche stand.
+        #expect((try position().kalkMaterialien?.count ?? 0) == 8)
     }
 }
