@@ -257,6 +257,10 @@ extension Grap8Graph {
         case "531": return "Fence"      // Wege
         case "533": return "Fence"      // Plätze, Höfe, Terrassen
         case "534": return "Fence"      // Stellplätze
+        // Unterbau: Trennvlies und Tragschicht sind Schichten, keine Flächen.
+        // Ohne diesen Eintrag trügen sie das Standardsymbol (siehe 541/544 in
+        // der Sandsteinstufen-Runde).
+        case "520", "521", "522": return "Layers"   // Gründung / Unterbau
         default:    return "Box"
         }
     }
