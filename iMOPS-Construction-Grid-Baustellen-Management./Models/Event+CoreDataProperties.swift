@@ -29,6 +29,35 @@ extension Event {
     @NSManaged var timeStamp: Date?
     @NSManaged var title: String?
     @NSManaged var bauherr: String?
+
+    // MARK: - Anschrift des Rechnungsempfaengers
+    //
+    // **Eine Rechnung braucht die vollstaendige Anschrift des Leistungsempfaengers**
+    // (§ 14 UStG) — ohne sie kann der Kunde keine Vorsteuer ziehen und schickt sie
+    // zurueck. Bis hierher kannte das Modell nur `bauherr` (einen Namen) und
+    // `location` (die Baustelle — nicht der Empfaenger). Die XRechnung trug darum
+    // als Kaeufer den `title` der Baustelle.
+    //
+    // Optional, weil ein Angebot noch ohne auskommt: erst die Rechnung braucht sie.
+    @NSManaged var bauherrStrasse: String?
+    @NSManaged var bauherrPLZ: String?
+    @NSManaged var bauherrOrt: String?
+
+    /// Anschrift als Block, leere Zeilen fallen weg — fuer Briefkopf und Rechnung.
+    var bauherrAnschrift: [String] {
+        [bauherr, bauherrStrasse, [bauherrPLZ, bauherrOrt].compactMap { $0 }
+            .filter { !$0.isEmpty }.joined(separator: " ")]
+            .compactMap { $0 }
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// Reicht die Anschrift fuer eine ordnungsgemaesse Rechnung?
+    /// Name + Strasse + Ort — die Pruefung, die vor dem Versand steht.
+    var anschriftIstVollstaendig: Bool {
+        [bauherr, bauherrStrasse, bauherrOrt]
+            .allSatisfy { !($0 ?? "").trimmingCharacters(in: .whitespaces).isEmpty }
+    }
     @NSManaged var architekt: String?
     @NSManaged var baugenehmigungNr: String?
     @NSManaged var jobs: NSSet?

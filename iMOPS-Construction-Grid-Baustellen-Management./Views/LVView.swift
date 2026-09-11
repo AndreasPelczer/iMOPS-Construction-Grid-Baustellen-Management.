@@ -803,6 +803,11 @@ struct LVView: View {
                     }
                     .disabled(positionen.isEmpty)
 
+                    Button { generateRechnungPDF() } label: {
+                        Label("Rechnung als PDF", systemImage: "doc.richtext")
+                    }
+                    .disabled(positionen.isEmpty)
+
                     Button { triggerXRechnungExport() } label: {
                         Label("XRechnung exportieren", systemImage: "eurosign.circle")
                     }
@@ -1068,6 +1073,20 @@ struct LVView: View {
         let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
         let name = "LV-\(event.title ?? "Baustelle")"
             .replacingOccurrences(of: " ", with: "-").appending(".pdf")
+        writeAndShare(data: data, filename: name)
+    }
+
+    /// Das lesbare Rechnungsblatt — Gegenstück zur XRechnung.
+    ///
+    /// Beide tragen **dieselbe Rechnungsnummer** (`RechnungPDFExporter.rechnungsnummer`)
+    /// und filtern Alternativpositionen gleich. Liefen sie auseinander, hätte der
+    /// Kunde zwei Rechnungen über verschiedene Beträge.
+    private func generateRechnungPDF() {
+        let data = RechnungPDFExporter.generate(event: event, positionen: Array(positionen))
+        let name = "\(RechnungPDFExporter.rechnungsnummer())-\(event.title ?? "Baustelle")"
+            .replacingOccurrences(of: " ", with: "-")
+            .replacingOccurrences(of: "/", with: "-")      // sonst ein Pfadtrenner im Dateinamen
+            .appending(".pdf")
         writeAndShare(data: data, filename: name)
     }
 

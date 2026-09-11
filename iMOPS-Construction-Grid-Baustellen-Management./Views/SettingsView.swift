@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import Combine
 
 struct SettingsView: View {
@@ -19,6 +20,25 @@ struct SettingsView: View {
     @AppStorage(FirmenSettings.Keys.plz)      private var plz          = ""
     @AppStorage(FirmenSettings.Keys.ort)      private var ort          = ""
     @AppStorage(FirmenSettings.Keys.ustIdNr)  private var ustIdNr      = ""
+    // Briefpapier — was auf jedem Dokument steht, das das Haus verlaesst.
+    @AppStorage(FirmenSettings.Keys.steuernummer)      private var steuernummer = ""
+    @AppStorage(FirmenSettings.Keys.telefon)           private var telefon      = ""
+    @AppStorage(FirmenSettings.Keys.fax)               private var fax          = ""
+    @AppStorage(FirmenSettings.Keys.email)             private var email        = ""
+    @AppStorage(FirmenSettings.Keys.web)               private var web          = ""
+    @AppStorage(FirmenSettings.Keys.bank)              private var bank         = ""
+    @AppStorage(FirmenSettings.Keys.iban)              private var iban         = ""
+    @AppStorage(FirmenSettings.Keys.bic)               private var bic          = ""
+    @AppStorage(FirmenSettings.Keys.bank2)             private var bank2        = ""
+    @AppStorage(FirmenSettings.Keys.iban2)             private var iban2        = ""
+    @AppStorage(FirmenSettings.Keys.bic2)              private var bic2         = ""
+    @AppStorage(FirmenSettings.Keys.handelsregister)   private var handelsregister = ""
+    @AppStorage(FirmenSettings.Keys.geschaeftsfuehrer) private var geschaeftsfuehrer = ""
+    @AppStorage(FirmenSettings.Keys.rechtstextFuss)    private var rechtstextFuss = ""
+    @AppStorage(FirmenSettings.Keys.zahlungszielTage)  private var zahlungszielTage = 14
+    @AppStorage(FirmenSettings.Keys.logoDatei)         private var logoDatei    = ""
+
+    @State private var logoAuswahl: PhotosPickerItem?
     @AppStorage(FirmenSettings.Keys.mwstSatz) private var mwstSatz     = 19.0
 
     // Kalkulations-Zuschläge. Vorgaben identisch zu FirmenSettings — beide lesen
@@ -48,6 +68,58 @@ struct SettingsView: View {
         ("3 Tage vorher", 3),
         ("7 Tage vorher", 7)
     ]
+
+    /// Logo wählen, ansehen, entfernen.
+    ///
+    /// Das Bild landet als **Datei im App-Support**, in den UserDefaults steht nur
+    /// der Dateiname (`FirmenSettings.setzeLogo`). UserDefaults wird bei jedem
+    /// Start vollständig gelesen — ein PNG gehört da nicht hinein.
+    @ViewBuilder
+    private var logoZeile: some View {
+        HStack(spacing: 12) {
+            if let daten = FirmenSettings.logoDaten, let bild = UIImage(data: daten) {
+                Image(uiImage: bild)
+                    .resizable().scaledToFit()
+                    .frame(width: 90, height: 44)
+            } else {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 90, height: 44)
+                    .overlay(Text("kein Logo").font(.caption2).foregroundStyle(.secondary))
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                PhotosPicker(selection: $logoAuswahl, matching: .images) {
+                    Label(logoDatei.isEmpty ? "Logo wählen" : "Logo ersetzen",
+                          systemImage: "photo")
+                        .font(.subheadline)
+                }
+                if !logoDatei.isEmpty {
+                    Button(role: .destructive) {
+                        FirmenSettings.setzeLogo(nil)
+                        logoDatei = ""
+                    } label: {
+                        Label("Entfernen", systemImage: "trash").font(.caption)
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+        }
+        .onChange(of: logoAuswahl) { _, neu in
+            guard let neu else { return }
+            Task {
+                // PNG-Daten anfordern; scheitert das, bleibt das alte Logo stehen.
+                if let daten = try? await neu.loadTransferable(type: Data.self) {
+                    FirmenSettings.setzeLogo(daten)
+                    // Erzwingt das Neuzeichnen der Vorschau — der Dateiname ist
+                    // derselbe, also merkt SwiftUI die Änderung sonst nicht.
+                    logoDatei = ""
+                    logoDatei = "firmenlogo.png"
+                }
+            }
+        }
+    }
 
     var body: some View {
         @Bindable var session = session
@@ -83,8 +155,103 @@ struct SettingsView: View {
             } header: {
                 Text("Firmendaten")
             } footer: {
-                Text("Werden für XRechnung-Export (Rechnungsaussteller) und Bautagesbericht verwendet.")
+                Text("Stehen im Briefkopf jedes Dokuments und als Rechnungsaussteller in der XRechnung.")
                     .font(.caption)
+            }
+
+            // --- Briefpapier ---
+            //
+            // Alles optional. Was leer bleibt, wird im Dokument WEGGELASSEN —
+            // nie als Platzhalter gedruckt. Ein Briefkopf ohne Faxnummer sieht
+            // normal aus, einer mit „Fax: –" sieht nach Software aus.
+            Section {
+                logoZeile
+
+                TextField("Steuernummer", text: $steuernummer)
+                TextField("Telefon", text: $telefon)
+                    .keyboardType(.phonePad)
+                TextField("Fax", text: $fax)
+                    .keyboardType(.phonePad)
+                TextField("E-Mail", text: $email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                TextField("Web", text: $web)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            } header: {
+                Text("Briefpapier — Logo & Kontakt")
+            } footer: {
+                Text("Leere Felder werden auf dem Dokument weggelassen.")
+                    .font(.caption)
+            }
+
+            Section {
+                TextField("Bank", text: $bank)
+                TextField("IBAN", text: $iban)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                TextField("BIC", text: $bic)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+            } header: {
+                Text("Bankverbindung")
+            } footer: {
+                Text("Die IBAN steht im Rechnungsfuß und als Zahlungsangabe in der XRechnung.")
+                    .font(.caption)
+            }
+
+            Section("Zweite Bankverbindung (optional)") {
+                TextField("Bank", text: $bank2)
+                TextField("IBAN", text: $iban2)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                TextField("BIC", text: $bic2)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+            }
+
+            Section {
+                TextField("Handelsregister (z. B. HRB 1234, AG Würzburg)",
+                          text: $handelsregister)
+                TextField("Geschäftsführer", text: $geschaeftsfuehrer)
+                HStack {
+                    Text("Zahlungsziel").foregroundStyle(.secondary)
+                    Spacer()
+                    TextField("14", value: $zahlungszielTage, format: .number)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: 60)
+                        .keyboardType(.numberPad)
+                    Text("Tage").foregroundStyle(.secondary)
+                }
+                TextField("Rechtstext im Fuß (z. B. VOB/B, Gerichtsstand)",
+                          text: $rechtstextFuss, axis: .vertical)
+                    .lineLimit(1...3)
+            } header: {
+                Text("Register & Zahlung")
+            } footer: {
+                Text("Zahlungsziel 0 = keine Angabe auf der Rechnung.")
+                    .font(.caption)
+            }
+
+            // Die Prüfung, die vor dem ersten echten Versand steht.
+            if !FirmenSettings.briefkopfIstVollstaendig {
+                Section {
+                    Label {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Briefkopf noch unvollständig")
+                                .font(.subheadline.weight(.semibold))
+                            Text("Für eine ordnungsgemäße Rechnung fehlen noch "
+                                 + "Firmenname, Anschrift und USt-IdNr. oder Steuernummer. "
+                                 + "Dokumente lassen sich erzeugen, sind aber Demo — "
+                                 + "nicht für echte Kunden.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                    }
+                }
             }
 
             // --- Kalkulations-Zuschläge (Firmenwerte) ---

@@ -8,6 +8,7 @@ import CoreData
 //   --snapshot-mode --target=LVFortschrittSheet  (5.2.1 — R3-Override-Hinweis)
 //   --snapshot-mode --target=LVElement           (B-Element: Deckel summiert Bausteine)
 //   --snapshot-mode --target=LVElementRezept     (B-Element: Rezept-Maß am Baustein)
+//   --snapshot-mode --target=RechnungPDF         (das fertige Rechnungsblatt)
 //   --snapshot-mode --target=LVDeckelKalk        (f-Knopf im aufgeklappten Deckel)
 //   --snapshot-mode --target=Voraussetzungen     (Auftrag wartet auf zwei Vorgänger)
 //   --snapshot-mode --target=VoraussetzungWahl   (Auswahl der möglichen Vorgänger)
@@ -37,6 +38,7 @@ struct SnapshotHostView: View {
             case "LVElement":          SnapshotElementHost(ctx: ctx)
             case "LVDeckelKalk":       SnapshotDeckelKalkHost(ctx: ctx)
             case "LVElementRezept":    SnapshotRezeptHost(ctx: ctx)
+            case "RechnungPDF":        SnapshotRechnungHost(ctx: ctx)
             case "LVZuschlag":         SnapshotZuschlagHost(ctx: ctx, eigen: arg("--state=", "eigen") == "eigen")
             case "LVRowGallery":       SnapshotRowGallery(ctx: ctx)
             case "LVFortschrittSheet": SnapshotFortschrittHost(ctx: ctx)
@@ -144,6 +146,114 @@ private struct SnapshotRezeptHost: View {
     }
     var body: some View {
         AddLVPositionView(event: event, editPosition: baustein)
+    }
+}
+
+// Das fertige Rechnungsblatt — Briefkopf, Positionen, Summen, Fuss.
+//
+// Setzt fuer die Dauer des Snapshots **Test-Stammdaten** in die UserDefaults und
+// erzeugt ein **gezeichnetes Test-Logo**. Bewusst kein echtes Firmenlogo und keine
+// echten Bankdaten: Ein Snapshot landet im Repo, und dorthin gehoeren weder
+// Raphaels IBAN noch sein Logo (siehe die DSGVO-Faelle vom 06.06. und 31.07.).
+private struct SnapshotRechnungHost: View {
+    private let url: URL?
+
+    @MainActor init(ctx: NSManagedObjectContext) {
+        SnapshotRechnungHost.setzeTestStammdaten()
+
+        let e = Event(context: ctx)
+        e.eventNumber = "SNAP-RE-001"
+        e.title = "Hofauffahrt pflastern, 4 Stellplaetze"
+        e.location = "Hofeinfahrt, Musterweg 1"
+        e.bauherr = "Familie Mustermann"
+        e.bauherrStrasse = "Musterweg 1"
+        e.bauherrPLZ = "97340"
+        e.bauherrOrt = "Marktbreit"
+        e.timeStamp = Date()
+
+        let zeilen: [(String, String, Double, String, Double)] = [
+            ("1.10.1", "Baustelle einrichten, Flaeche abstecken und sichern", 1, "psch", 480.00),
+            ("1.20.1", "Hofauffahrt pflastern, befahrbar, inkl. Unterbau, "
+                     + "Randeinfassung und Gefaelle", 100.31, "m²", 117.42),
+            ("1.20.2", "Randeinfassung aus Leistensteinen in Beton", 40, "lfm", 28.50),
+            ("1.90.1", "Reinigen, raeumen, Reste abfahren", 1, "psch", 240.00),
+        ]
+        var positionen: [LVPosition] = []
+        for (nr, text, menge, einheit, ep) in zeilen {
+            let p = LVPosition(context: ctx)
+            p.event = e
+            p.posNr = nr
+            p.bezeichnung = text
+            p.menge = menge
+            p.einheit = einheit
+            // Ueber eine Material-Zeile, damit der Kalkulator einen EP findet.
+            let m = PositionMaterial(context: ctx)
+            m.id = UUID()
+            m.materialName = "Leistung"
+            m.mengeProEinheit = 1
+            m.einzelpreis = ep
+            m.verschnittProzent = 0
+            m.position = p
+            p.zuschlagEigen = true
+            p.zuschlagJeKostenart = false
+            p.bgkProzent = 0
+            p.wagnisGewinnProzent = 0
+            p.zuschlagMaterialProzent = 0
+            positionen.append(p)
+        }
+        try? ctx.save()
+
+        let daten = RechnungPDFExporter.generate(event: e, positionen: positionen)
+        let ziel = FileManager.default.temporaryDirectory
+            .appendingPathComponent("snapshot-rechnung.pdf")
+        url = (try? daten.write(to: ziel, options: .atomic)) == nil ? ziel : ziel
+    }
+
+    /// Erfundene Werte — sie zeigen die Form, nicht die Firma.
+    @MainActor private static func setzeTestStammdaten() {
+        let d = UserDefaults.standard
+        let werte: [(String, String)] = [
+            (FirmenSettings.Keys.name, "Musterbau GmbH"),
+            (FirmenSettings.Keys.strasse, "Handwerkerstrasse 7"),
+            (FirmenSettings.Keys.plz, "97070"),
+            (FirmenSettings.Keys.ort, "Wuerzburg"),
+            (FirmenSettings.Keys.ustIdNr, "DE000000000"),
+            (FirmenSettings.Keys.telefon, "0931 000000"),
+            (FirmenSettings.Keys.email, "info@musterbau.example"),
+            (FirmenSettings.Keys.web, "www.musterbau.example"),
+            (FirmenSettings.Keys.bank, "Musterbank"),
+            (FirmenSettings.Keys.iban, "DE00 0000 0000 0000 0000 00"),
+            (FirmenSettings.Keys.bic, "MUSTDEXXX"),
+            (FirmenSettings.Keys.handelsregister, "HRB 00000, AG Wuerzburg"),
+            (FirmenSettings.Keys.geschaeftsfuehrer, "Max Mustermann"),
+            (FirmenSettings.Keys.rechtstextFuss,
+             "Es gilt die VOB/B. Gerichtsstand ist der Sitz des Auftragnehmers."),
+        ]
+        for (k, v) in werte { d.set(v, forKey: k) }
+        d.set(14, forKey: FirmenSettings.Keys.zahlungszielTage)
+        FirmenSettings.setzeLogo(testLogo())
+    }
+
+    /// Ein gezeichnetes Logo — kein echtes.
+    @MainActor private static func testLogo() -> Data? {
+        let groesse = CGSize(width: 320, height: 100)
+        return UIGraphicsImageRenderer(size: groesse).pngData { _ in
+            UIColor(red: 0.85, green: 0.45, blue: 0.05, alpha: 1).setFill()
+            UIBezierPath(roundedRect: CGRect(x: 0, y: 18, width: 64, height: 64),
+                         cornerRadius: 12).fill()
+            ("MUSTERBAU" as NSString).draw(
+                at: CGPoint(x: 78, y: 28),
+                withAttributes: [.font: UIFont.systemFont(ofSize: 26, weight: .heavy),
+                                 .foregroundColor: UIColor.black])
+            ("GmbH · Hoch- und Tiefbau" as NSString).draw(
+                at: CGPoint(x: 80, y: 60),
+                withAttributes: [.font: UIFont.systemFont(ofSize: 13),
+                                 .foregroundColor: UIColor.darkGray])
+        }
+    }
+
+    var body: some View {
+        if let url { PDFKitView(url: url) } else { Text("kein PDF") }
     }
 }
 

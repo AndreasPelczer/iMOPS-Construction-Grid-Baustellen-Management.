@@ -9,6 +9,24 @@ enum FirmenSettings {
         static let ort      = "firma_ort"
         static let ustIdNr  = "firma_ust_id_nr"
         static let mwstSatz = "firma_mwst_satz"
+        // Briefpapier — was auf jedem Dokument steht, das das Haus verlaesst.
+        static let steuernummer     = "firma_steuernummer"
+        static let iban             = "firma_iban"
+        static let bic              = "firma_bic"
+        static let bank             = "firma_bank"
+        static let iban2            = "firma_iban2"
+        static let bic2             = "firma_bic2"
+        static let bank2            = "firma_bank2"
+        static let handelsregister  = "firma_handelsregister"
+        static let geschaeftsfuehrer = "firma_geschaeftsfuehrer"
+        static let telefon          = "firma_telefon"
+        static let fax              = "firma_fax"
+        static let email            = "firma_email"
+        static let web              = "firma_web"
+        static let rechtstextFuss   = "firma_rechtstext_fuss"
+        static let zahlungszielTage = "firma_zahlungsziel_tage"
+        /// Dateiname des Logos im App-Support — **nicht** die Bilddaten selbst.
+        static let logoDatei        = "firma_logo_datei"
         // Kalkulations-Zuschlaege — Firmenwerte, gelten fuer jede Position, die
         // nicht ausdruecklich abweicht (LVPosition.zuschlagEigen).
         static let zuschlagJeKostenart = "firma_zuschlag_je_kostenart"
@@ -23,7 +41,10 @@ enum FirmenSettings {
         static let kennwertGehoben     = "firma_kennwert_gehoben"
     }
 
-    static var name:    String { UserDefaults.standard.string(forKey: Keys.name)    ?? "iMOPS Bauleitung" }
+    // ⚠️ **Kein Default-Firmenname mehr.** Hier stand „iMOPS Bauleitung" — der Name
+    // der Software auf der Rechnung eines Bauunternehmens. Wer nichts eintraegt,
+    // bekommt jetzt nichts: ein leerer Briefkopf faellt auf, ein falscher nicht.
+    static var name:    String { UserDefaults.standard.string(forKey: Keys.name)    ?? "" }
     static var strasse: String { UserDefaults.standard.string(forKey: Keys.strasse) ?? "" }
     static var plz:     String { UserDefaults.standard.string(forKey: Keys.plz)     ?? "" }
     static var ort:     String { UserDefaults.standard.string(forKey: Keys.ort)     ?? "" }
@@ -33,6 +54,96 @@ enum FirmenSettings {
         let v = UserDefaults.standard.double(forKey: Keys.mwstSatz)
         return v == 0 ? 19.0 : v
     }
+    // MARK: - Briefpapier
+    //
+    // Alles leer voreingestellt und optional. Der Grundsatz fuer jedes Dokument:
+    // **eine fehlende Angabe wird weggelassen, nie als Platzhalter gedruckt.**
+    // „[fehlt]" auf einem Kundendokument ist schlimmer als eine Zeile weniger.
+
+    static var steuernummer:      String { txt(Keys.steuernummer) }
+    static var iban:              String { txt(Keys.iban) }
+    static var bic:               String { txt(Keys.bic) }
+    static var bank:              String { txt(Keys.bank) }
+    static var iban2:             String { txt(Keys.iban2) }
+    static var bic2:              String { txt(Keys.bic2) }
+    static var bank2:             String { txt(Keys.bank2) }
+    static var handelsregister:   String { txt(Keys.handelsregister) }
+    static var geschaeftsfuehrer: String { txt(Keys.geschaeftsfuehrer) }
+    static var telefon:           String { txt(Keys.telefon) }
+    static var fax:               String { txt(Keys.fax) }
+    static var email:             String { txt(Keys.email) }
+    static var web:               String { txt(Keys.web) }
+    static var rechtstextFuss:    String { txt(Keys.rechtstextFuss) }
+
+    /// Zahlungsziel in Tagen. 0 = keine Angabe → im Dokument steht dann nichts.
+    static var zahlungszielTage: Int {
+        UserDefaults.standard.integer(forKey: Keys.zahlungszielTage)
+    }
+
+    private static func txt(_ key: String) -> String {
+        (UserDefaults.standard.string(forKey: key) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Anschrift der Firma als Block, leere Zeilen fallen weg.
+    static var anschrift: [String] {
+        [name, strasse, [plz, ort].filter { !$0.isEmpty }.joined(separator: " ")]
+            .filter { !$0.isEmpty }
+    }
+
+    /// Steht genug da, damit ein Dokument aus dem Haus darf?
+    /// **Keine Rechtsberatung** — nur die Felder, die § 14 UStG ausdruecklich nennt.
+    /// Die Werte selbst kann kein Programm pruefen; das geht nur gegen die
+    /// Firmenpapiere.
+    static var briefkopfIstVollstaendig: Bool {
+        !name.isEmpty && !strasse.isEmpty && !ort.isEmpty
+            && !(ustIdNr.isEmpty && steuernummer.isEmpty)   // eines von beiden reicht
+    }
+
+    // MARK: - Logo
+    //
+    // **Die Datei liegt im App-Support, in den UserDefaults steht nur ihr Name.**
+    // UserDefaults wird bei jedem Start vollstaendig in den Speicher gelesen — ein
+    // PNG gehoert da nicht hinein. Apple nennt als Richtwert wenige Kilobyte.
+
+    static var logoOrdner: URL {
+        let fm = FileManager.default
+        let ordner = (try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                  appropriateFor: nil, create: true))
+            ?? fm.temporaryDirectory
+        return ordner
+    }
+
+    static var logoURL: URL? {
+        let datei = txt(Keys.logoDatei)
+        guard !datei.isEmpty else { return nil }
+        let url = logoOrdner.appendingPathComponent(datei)
+        // Die Datei kann fehlen, obwohl der Name gesetzt ist (Geraetewechsel,
+        // geloeschte Daten). Dann lieber kein Logo als ein leerer Kasten.
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    static var logoDaten: Data? { logoURL.flatMap { try? Data(contentsOf: $0) } }
+
+    /// Legt das Logo ab und merkt sich den Dateinamen. `nil` entfernt es.
+    @discardableResult
+    static func setzeLogo(_ daten: Data?, endung: String = "png") -> Bool {
+        let fm = FileManager.default
+        if let alt = logoURL { try? fm.removeItem(at: alt) }
+        guard let daten else {
+            UserDefaults.standard.removeObject(forKey: Keys.logoDatei)
+            return true
+        }
+        let name = "firmenlogo.\(endung)"
+        do {
+            try daten.write(to: logoOrdner.appendingPathComponent(name), options: .atomic)
+            UserDefaults.standard.set(name, forKey: Keys.logoDatei)
+            return true
+        } catch {
+            return false
+        }
+    }
+
     // EN 16931 VAT category code
     static var vatCategory: String { mwstSatz == 0 ? "Z" : "S" }
 
