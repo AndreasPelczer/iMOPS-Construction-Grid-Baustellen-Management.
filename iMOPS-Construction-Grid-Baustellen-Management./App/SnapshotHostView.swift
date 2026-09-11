@@ -8,6 +8,7 @@ import CoreData
 //   --snapshot-mode --target=LVFortschrittSheet  (5.2.1 — R3-Override-Hinweis)
 //   --snapshot-mode --target=LVElement           (B-Element: Deckel summiert Bausteine)
 //   --snapshot-mode --target=LVElementRezept     (B-Element: Rezept-Maß am Baustein)
+//   --snapshot-mode --target=LVDeckelKalk        (f-Knopf im aufgeklappten Deckel)
 //   --snapshot-mode --target=Voraussetzungen     (Auftrag wartet auf zwei Vorgänger)
 //   --snapshot-mode --target=VoraussetzungWahl   (Auswahl der möglichen Vorgänger)
 //   --snapshot-mode --target=VoraussetzungZyklus (die Meldung bei einem Kreis)
@@ -34,6 +35,7 @@ struct SnapshotHostView: View {
         return Group {
             switch arg("--target=", "AufmassSheet") {
             case "LVElement":          SnapshotElementHost(ctx: ctx)
+            case "LVDeckelKalk":       SnapshotDeckelKalkHost(ctx: ctx)
             case "LVElementRezept":    SnapshotRezeptHost(ctx: ctx)
             case "LVZuschlag":         SnapshotZuschlagHost(ctx: ctx, eigen: arg("--state=", "eigen") == "eigen")
             case "LVRowGallery":       SnapshotRowGallery(ctx: ctx)
@@ -105,6 +107,28 @@ private struct SnapshotElementHost: View {
     var body: some View {
         LVView(event: event)
             .environment(ImportedFileHandler())
+    }
+}
+
+// Der f-Knopf im aufgeklappten Deckel (siehe LVView.kalkKnopf).
+//
+// Anders als `SnapshotElementHost` liegt hier ein **NavigationStack** drum. Ohne
+// ihn laeuft `.navigationDestination(item: $kalkPosition)` ins Leere: LVView
+// bringt keinen eigenen Stack mit, in der App stellt ihn `EventDetailView`.
+// Ein Snapshot ohne Stack wuerde den Knopf zeigen und doch nichts beweisen —
+// er koennte nirgendwohin fuehren.
+//
+// `SnapshotElementHost` bleibt absichtlich unveraendert: ein Stack brächte eine
+// Navigationsleiste ins Bild und wuerde die bestehenden LVElement-Snapshots
+// veraendern, ohne dass sich an ihrer Sache etwas geaendert haette.
+private struct SnapshotDeckelKalkHost: View {
+    private let event: Event
+    @MainActor init(ctx: NSManagedObjectContext) { event = SnapshotData.pflasterBaustelle(in: ctx) }
+    var body: some View {
+        NavigationStack {
+            LVView(event: event)
+                .environment(ImportedFileHandler())
+        }
     }
 }
 

@@ -2,9 +2,72 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 11.09.2026 spät — Der ƒ-Knopf im Deckel: ein Tipp statt Auflösen
+
+**Branch `feature/kalkulation-im-deckel`.** Jede Baustein-/Beleg-Zeile in einem
+aufgeklappten Deckel trägt jetzt ein sichtbares **ƒ(x)**, das mit einem Tipp die
+Tiefenkalkulation genau dieses Bausteins öffnet.
+
+**Warum das kein Schönheitsfehler war:** Der einzige Weg dorthin führte über
+*lang drücken → Kontextmenü → „Kalkulation"*. Wer den nicht kennt, **löst den
+Deckel auf** — und muss danach jede Position von Hand neu zusammenführen. Ein
+verstecktes Menü hat also echte Zusammenführungen gekostet. Das Kontextmenü
+bleibt, wer den Weg kennt, behält ihn.
+
+`kalkKnopf(fuer:)` steht direkt neben `pdfKnopf` und ist bewusst genauso gebaut.
+**`.buttonStyle(.borderless)` ist dabei keine Kosmetik:** In einer `List` färbt
+der Standardstil die ganze Zeile zum Tap-Ziel — der Tipp würde die
+`DisclosureGroup` zuklappen oder den `actionPosition`-Dialog öffnen.
+
+### 🔴 Ein Snapshot allein hätte hier nichts bewiesen
+
+**`LVView` bringt keinen eigenen `NavigationStack` mit** — den stellt in der App
+`EventDetailView`. Der bestehende Snapshot-Host `LVElement` zeigt `LVView` ohne
+Stack; dort läuft `.navigationDestination(item: $kalkPosition)` ins Leere. Ein
+Screenshot hätte den Knopf gezeigt, und er hätte trotzdem nirgendwohin geführt.
+
+Deshalb ein **eigenes** Ziel `--target=LVDeckelKalk` **mit** Stack.
+`SnapshotElementHost` bleibt unverändert: ein Stack brächte eine Navigationsleiste
+ins Bild und würde die bestehenden LVElement-Snapshots ändern, ohne dass sich an
+ihrer Sache etwas geändert hätte.
+
+Statt eines Bildes prüft **`KalkKnopfImDeckelUITests`** das eigentliche
+Versprechen: Deckel aufklappen → ƒ antippen → Navigationsleiste „Kalkulation"
+steht da, **kein Sheet**. Genau das, was `.borderless` leisten soll und was man
+einem Bild nicht ansieht. Zwei Screenshots hängen als Anhang im Testergebnis.
+
+### ⚠️ Falle: `@ViewBuilder` gehört zur Funktion, nicht zur Zeile davor
+
+`pdfKnopf` trägt ein `@ViewBuilder` (es hat ein `if` ohne `else`). Ein Einschub
+vor `private func pdfKnopf` landet **zwischen Attribut und Funktion** — das
+Attribut klebt dann an der neuen Funktion und `pdfKnopf` bricht mit
+*„opaque return type, but has no return statements"*. Beim Einfügen vor einer
+Swift-Funktion immer eine Zeile höher schauen.
+
+### Bonus war schon da
+
+Die Beiträge je Baustein stehen bereits lesbar in der Zeile (`rezeptText` +
+`bausteinBeitrag`): 17,50 · 25,00 · 27,50 · 2,50 €/m². Nichts zu tun.
+
+**Nachweis:** Build grün · UITest 1/1 · kein Core-Data-Delta · nur `LVView.swift`
+(Produktionscode), dazu DEBUG-Snapshot-Host und ein neuer UITest.
+
+ℹ️ Randnotiz aus dem Snapshot: Der Baustein zeigt im Kalkulations-Kopf **„0 m³"**.
+Das sind die Snapshot-Testdaten (`SnapshotData.pflasterBaustelle` setzt am
+Baustein nur das Rezept-Maß, keine Menge) — kein Fehler der Ansicht.
+
+---
+
 ## Delta 11.09.2026 abends — Der Kreis ist zu: Zeichnung → Rechnung
 
-**PR gegen main, Branch `feature/seeder-hofauffahrt`.** Die Hofauffahrt-Demo trägt
+**PR #158 — gemergt am 11.09.2026 (Squash `0f99891`).**
+
+⚠️ **Zweimal an einem Abend dieselbe Falle:** Hier stand erst „PR #157, offen“
+(war gemergt), dann der Branchname eines Astes, der inzwischen ebenfalls gemergt
+ist. **Der HANDOFF kann einen Merge nicht kennen — der passiert auf GitHub.**
+Vor jedem PR `gh pr list --head <branch> --state all` prüfen; bei Squash-Merges
+sagt `git merge-base --is-ancestor` „nein“, obwohl der Inhalt oben ist — der
+verlässliche Test ist `git diff origin/main HEAD --stat` (leer = drin). Die Hofauffahrt-Demo trägt
 jetzt **gezählte** Mengen aus Raphis `Testhofeinfahrt.dxf` statt geschätzter, und
 aus derselben Baustelle fällt am Ende eine **XRechnung** über den bestehenden
 `XRechnungExporter` — ohne eine Zeile neues Feature.

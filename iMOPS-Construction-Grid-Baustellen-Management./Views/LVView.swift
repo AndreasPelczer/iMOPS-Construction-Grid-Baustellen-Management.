@@ -300,6 +300,29 @@ struct LVView: View {
                               titel: pos.bezeichnung ?? "Quell-PDF")
     }
 
+    /// **Die Kalkulation eines Bausteins, ohne den Deckel zu opfern.**
+    ///
+    /// Bis hierher fuehrte der einzige Weg zur Tiefenkalkulation eines einzelnen
+    /// Bausteins ueber *lang druecken → Kontextmenue → „Kalkulation"*. Wer das
+    /// nicht kennt, loest stattdessen den Deckel auf — und muss danach jede
+    /// Position von Hand neu zusammenfuehren. Ein verstecktes Menue hat so eine
+    /// Zusammenfuehrung gekostet, nicht ein fehlendes Feature.
+    ///
+    /// `.buttonStyle(.borderless)` ist hier **nicht Kosmetik**: In einer `List`
+    /// faerbt der Standardstil die ganze Zeile zum Tap-Ziel. Der Tipp wuerde dann
+    /// die `DisclosureGroup` auf- und zuklappen oder den `actionPosition`-Dialog
+    /// oeffnen, statt die Kalkulation zu zeigen. Gleiche Begruendung wie bei
+    /// `pdfKnopf` — deshalb steht er direkt daneben und sieht genauso aus.
+    ///
+    /// Das Kontextmenue bleibt: wer den Weg kennt, soll ihn behalten.
+    private func kalkKnopf(fuer pos: LVPosition) -> some View {
+        Button { kalkPosition = pos } label: {
+            Image(systemName: "function").foregroundStyle(.indigo)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel("Kalkulation \(pos.bezeichnung ?? "")")
+    }
+
     /// Lupen-Knopf „im PDF ansehen", nur wenn die Position eine Quelle hat.
     @ViewBuilder
     private func pdfKnopf(fuer pos: LVPosition) -> some View {
@@ -333,6 +356,7 @@ struct LVView: View {
                             .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                         Text("zählt nicht").font(.caption2).foregroundStyle(.tertiary)
                     }
+                    kalkKnopf(fuer: kind)
                     pdfKnopf(fuer: kind)
                 }
                 // Auch die einzelnen Belege sind bearbeit-/kalkulierbar (Tippen öffnet den Dialog).
