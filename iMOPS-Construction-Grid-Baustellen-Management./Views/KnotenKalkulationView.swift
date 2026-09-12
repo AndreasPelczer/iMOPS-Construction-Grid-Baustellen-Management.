@@ -39,6 +39,9 @@ struct KnotenKalkulationView: View {
     @State private var meldung: String?
     @State private var uebernommen = false
 
+    // Katalog-Treffer (Bogen 1): gibt es diese Leistung schon als Baustein?
+    @State private var katalogTreffer: Leistungsbaustein?
+
     /// Der Knoten-Text — genau das Feld, das die Leinwand als Titel zeigt.
     private var leistung: String { Kausalkette.bezeichnung(auftrag) }
 
@@ -47,6 +50,9 @@ struct KnotenKalkulationView: View {
             kopfSection
             positionSection
             if auftrag.lvPosition != nil {
+                if let treffer = katalogTreffer {
+                    katalogSection(treffer)
+                }
                 vorschlagSection
                 if let pos = auftrag.lvPosition, pos.hatKalkulation {
                     kalkulationSection(pos)
@@ -60,7 +66,14 @@ struct KnotenKalkulationView: View {
                 mengeText = Self.zahl(pos.menge)
                 einheit = pos.einheit ?? "psch"
             }
+            katalogTrefferAktualisieren()
         }
+    }
+
+    /// Sucht den passenden Katalog-Baustein zu Leistung + aktueller Einheit.
+    private func katalogTrefferAktualisieren() {
+        katalogTreffer = LeistungskatalogService.finde(
+            leistung: leistung, einheit: einheit, in: viewContext)
     }
 
     // MARK: - Kopf
@@ -100,6 +113,7 @@ struct KnotenKalkulationView: View {
             }
             .onChange(of: einheit) { _, neu in
                 pos.einheit = neu.trimmingCharacters(in: .whitespaces)
+                katalogTrefferAktualisieren()
             }
         } else {
             Section {
@@ -130,6 +144,37 @@ struct KnotenKalkulationView: View {
                 .multilineTextAlignment(.trailing)
                 .frame(width: 60)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Aus dem Katalog (Bogen 1: nachschlagen statt neu ableiten)
+
+    private func katalogSection(_ baustein: Leistungsbaustein) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Schon im Katalog:")
+                    .font(.caption).foregroundStyle(.secondary)
+                Text(baustein.aufwandAnzeige)
+                    .font(.subheadline)
+                if baustein.verwendungen > 0 {
+                    Text("\(baustein.verwendungen)× verwendet")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            Button {
+                ausKatalogUebernehmen(baustein)
+            } label: {
+                Label(uebernommen ? "Übernommen" : "Aus Katalog übernehmen",
+                      systemImage: uebernommen ? "checkmark.circle.fill" : "tray.and.arrow.down")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(uebernommen ? .green : .orange)
+            .disabled(uebernommen)
+        } header: {
+            Text("Katalog")
+        } footer: {
+            Text("Diese Leistung wurde schon einmal abgeleitet. Übernehmen spart die Prof-Frage — Werte trotzdem prüfen.")
         }
     }
 
@@ -247,6 +292,7 @@ struct KnotenKalkulationView: View {
         pos.event = auftrag.event      // Position lebt an der Baustelle wie jede andere
         auftrag.lvPosition = pos       // … und ist zugleich die des Knotens
         speichern()
+        katalogTrefferAktualisieren()  // gibt's die Leistung schon im Katalog?
     }
 
     /// Draht 2: den Prof mit dem Knoten-Text fragen.
@@ -271,19 +317,41 @@ struct KnotenKalkulationView: View {
     }
 
     /// Draht 3: die Stunden als PositionLohn schreiben (Maurer + Helfer).
+    /// Zugleich ERNTEN (Bogen 1): die Leistung wandert in den Katalog — einmal fragen,
+    /// für immer picken.
     private func inKalkulationUebernehmen(_ v: (maurer: Double, helfer: Double)) {
         guard let pos = auftrag.lvPosition else { return }
+        stundenSchreiben(maurer: v.maurer, helfer: v.helfer, in: pos)
+        LeistungskatalogService.merke(
+            leistung: leistung,
+            einheit: pos.einheit ?? "",
+            maurer: v.maurer, helfer: v.helfer,
+            kostenGruppeNummer: auftrag.kostenGruppeNummer,
+            quelle: "prof",
+            in: viewContext)
+        speichern()
+        katalogTrefferAktualisieren()
+        uebernommen = true
+    }
 
-        // Idempotent: einen früheren Prof-Vorschlag desselben Knotens ersetzen, statt
-        // ihn zu stapeln. Nur die beiden Zeilen, die dieser Weg selbst anlegt.
+    /// Bogen 1: den Aufwandswert aus einem bestehenden Katalog-Baustein übernehmen,
+    /// ohne den Prof zu fragen. Der Baustein zählt eine Verwendung.
+    private func ausKatalogUebernehmen(_ baustein: Leistungsbaustein) {
+        guard let pos = auftrag.lvPosition else { return }
+        stundenSchreiben(maurer: baustein.maurerStunden, helfer: baustein.helferStunden, in: pos)
+        LeistungskatalogService.benutzt(baustein)
+        speichern()
+        uebernommen = true
+    }
+
+    /// Die beiden Lohnzeilen (Maurer/Helfer) schreiben. Idempotent: ein früherer
+    /// Vorschlag desselben Knotens wird ersetzt, nicht gestapelt.
+    private func stundenSchreiben(maurer: Double, helfer: Double, in pos: LVPosition) {
         for pl in pos.lohnArray where pl.qualifikation == "Maurer" || pl.qualifikation == "Helfer" {
             viewContext.delete(pl)
         }
-
-        lohnEintrag(qualifikation: "Maurer", stunden: v.maurer, in: pos)
-        lohnEintrag(qualifikation: "Helfer", stunden: v.helfer, in: pos)
-        speichern()
-        uebernommen = true
+        lohnEintrag(qualifikation: "Maurer", stunden: maurer, in: pos)
+        lohnEintrag(qualifikation: "Helfer", stunden: helfer, in: pos)
     }
 
     /// Ein PositionLohn nach dem Muster von `LohnHinzufuegenView` — Lohnsatz aus den

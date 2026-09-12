@@ -141,6 +141,17 @@
         <attribute name="stundenlohn" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="zuschlagFaktor" optional="YES" attributeType="Double" defaultValueString="1.65" usesScalarValueType="YES"/>
     </entity>
+    <entity name="Leistungsbaustein" representedClassName="Leistungsbaustein" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="leistung" optional="YES" attributeType="String"/>
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <attribute name="maurerStunden" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="helferStunden" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
+        <attribute name="quelle" optional="YES" attributeType="String"/>
+        <attribute name="erstelltAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="verwendungen" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+    </entity>
     <entity name="LVPosition" representedClassName="LVPosition" syncable="YES">
         <attribute name="artikelNummer" optional="YES" attributeType="String"/>
         <attribute name="bezeichnung" optional="YES" attributeType="String"/>
