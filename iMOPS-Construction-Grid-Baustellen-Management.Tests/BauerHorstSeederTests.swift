@@ -92,21 +92,27 @@ struct BauerHorstSeederTests {
         #expect(auftraege.contains { $0.istStartbar })
     }
 
-    // MARK: - Das Nicht-Ziel
+    // MARK: - Das (frühere) Nicht-Ziel — jetzt: Kopplung möglich, Seeder nutzt sie nicht
 
-    /// **Absicht, kein Versehen:** Die zwölf Aufträge und die eine LV-Zeile sind
-    /// NICHT gekoppelt. Es gibt im Modell keine Beziehung zwischen `Auftrag` und
-    /// `LVPosition`, und diese Demo führt genau diese Lücke vor. Der Test hält das
-    /// fest, damit niemand sie „nebenbei" schließt.
+    /// **Geändert mit Bogen 0 (Draht 1, 12.09.):** Früher gab es im Modell GAR KEINE
+    /// Beziehung zwischen `Auftrag` und `LVPosition`, und dieser Test hielt das fest,
+    /// „damit niemand sie nebenbei schließt". Sie wurde jetzt **nicht nebenbei**,
+    /// sondern als bewusste Ast-2-Entscheidung geöffnet (`Auftrag.lvPosition`): ein
+    /// Grap8-Knoten kann seine eigene kalkulierte Position tragen.
+    ///
+    /// Der SEEDER zieht diese Kopplung aber weiterhin NICHT — seine zwölf Aufträge und
+    /// die eine LV-Zeile hängen nur über die gemeinsame Baustelle zusammen. Genau das
+    /// prüft der Test jetzt: die Kopplung ist im Modell möglich, in dieser Demo aber
+    /// nicht gezogen.
     @Test @MainActor func auftraegeUndLVZeileBleibenUngekoppelt() throws {
         BauerHorstSeeder.seedIfNeeded(context: ctx)
         let event = try baustelle()
 
         let auftrag = try #require((event.jobs?.allObjects as? [Auftrag])?.first)
-        let beziehungen = auftrag.entity.relationshipsByName.keys.sorted()
 
-        #expect(!beziehungen.contains { $0.lowercased().contains("lvposition") },
-                "Auftrag hat plötzlich eine LV-Beziehung: \(beziehungen)")
+        // Kein Seeder-Auftrag trägt eine eigene Position.
+        #expect(auftrag.lvPosition == nil,
+                "Der Seeder koppelt Auftrag und LVPosition — das soll er nicht.")
         // Beide hängen nur über die gemeinsame Baustelle zusammen.
         #expect(auftrag.event == event)
     }

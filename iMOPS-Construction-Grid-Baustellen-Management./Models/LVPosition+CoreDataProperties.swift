@@ -40,6 +40,10 @@ extension LVPosition {
     @NSManaged var zuschlagGeraetProzent: Double
     @NSManaged var mengenQuelleRaw: String?
     @NSManaged var event: Event?
+    // Grap8 — Draht 1 (Ast 2): der Grap8-Knoten (Auftrag), dessen eigene Kalkulation
+    // diese Position trägt. nil = normale, importierte/manuelle Position wie bisher.
+    // Inverse zu Auftrag.lvPosition.
+    @NSManaged var auftrag: Auftrag?
     // Welle 9 — Bau-Hierarchie: Position hängt (zusätzlich zu event) an einem Geschoss.
     // Relation + Inverse (Geschoss.lvPositionen) sind im Modell schon definiert; hier nur
     // der getypte Accessor freigelegt (bisher nur per KVC in HierarchieMigration gesetzt).

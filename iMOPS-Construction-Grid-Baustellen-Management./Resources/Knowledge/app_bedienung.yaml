@@ -388,6 +388,35 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Grap8_Knoten_Kalkulation"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Aufwandswert vom Knoten"
+    - "Knoten kalkulieren"
+    - "Grap8 Kalkulation"
+    - "Aufwandswert Vorschlag"
+    - "Prof Aufwandswert Grap8"
+  antwort: |
+    In der Grap8-Leinwand einen Knoten (Auftrag) antippen und im Detailfenster
+    "Kalkulation" waehlen. Der Knoten fuehrt jetzt zu seiner EIGENEN LV-Position,
+    nicht mehr zur ganzen Baustelle.
+
+    Ablauf: 1) Menge (und Einheit) von Hand eintragen. 2) "Position anlegen" -
+    legt die eigene LV-Position dieses Knotens an der Baustelle an, mit dem
+    Knoten-Text als Bezeichnung. 3) "Aufwandswert vom Prof holen" - fragt den Prof
+    mit dem Knoten-Text nach REFA-Stunden (Maurer/Helfer je Einheit). 4) "In
+    Kalkulation uebernehmen" - schreibt die Stunden als Lohnanteile (× Menge ×
+    Lohnsatz aus den Stammdaten), NICHT nur als Text. Der Lohn erscheint sofort in
+    der Kalkulation; "Tiefenkalkulation oeffnen" zeigt/erweitert sie.
+
+    Der Vorschlag ist ein Richtwert - du entscheidest. Bekommt der Prof keine klare
+    Antwort (offline), wird nichts eingetragen und das steht dann da.
+
+    Die "ganze Baustelle" bleibt vom selben Fenster aus erreichbar.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Ebenen_Freigabe"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

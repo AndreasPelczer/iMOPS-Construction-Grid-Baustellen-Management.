@@ -2,6 +2,80 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 12.09.2026 nachts — Aufwandswert an den Grap8-Knoten (Bogen 0, 3 Drähte)
+
+**Branch `feature/grap8-aufwandswert`** (abgezweigt von `feature/briefpapier-und-rechnung`,
+**nicht** main — Andreas: „entscheide du, aber nicht auf main"). Build grün, neue Unit-Tests
+grün. **Noch nicht gepusht, kein PR** (Bestätigung von Andreas steht aus).
+
+**Ziel (Andreas' Nachtauftrag):** In Grap8 einen Knoten antippen → Aufwandswert vom Prof →
+fließt als ZAHL in die Kalkulation, nicht als Text. Test-Erfolg = aus dem Knoten „Baustelle
+absichern" fällt eine kalkulierte LV-Position mit Maurer-/Helfer-Stunden.
+
+### Gemessener Ausgangsstand (Fundus + Code, bestätigt)
+- Ein Grap8-Knoten **IST ein `Auftrag`** (`Grap8Graph.aus`); sein Titel = `Auftrag.processingDetails`
+  (via `Kausalkette.bezeichnung`).
+- Zwischen `Auftrag` und `LVPosition` gab es **keine** Beziehung — die Kalkulation hing nur an
+  `Event` (Ast 1, #155: Knoten → `LVKalkulationView(event:)`, ganze Baustelle). Das war die
+  geparkte **Ast-2**-Entscheidung.
+- `MopsKalkulationsHelper.aufwandswertVorschlag(leistung:)` → `(maurer, helfer)` h/Einheit war
+  fertig, aber nur aus `LVTiefenkalkulationView:111` (`MopsVorschlagSheet`) erreichbar, und das
+  Ergebnis wurde nur als **Text** gezeigt (`mopsText`/`antwort`), nie als `kalkLohn` geschrieben.
+- **Grap8Web ist ein kompiliertes Vite/React-Bundle** (`Grap8Web/assets/index-*.js`) — ein neuer
+  Knopf in der Leinwand ginge nur mit der React-Quelle. Der Knoten-Tap sendet aber schon
+  `{action:'verwaltung', ziel:'kalkulation', auftragId}`.
+
+### Was gebaut wurde (minimal-invasiv, drei Drähte)
+1. **Draht 1 — Modell:** neue 1:1-Relation `Auftrag.lvPosition ⇄ LVPosition.auftrag` (beide optional,
+   Nullify) in **`test25B 2.xcdatamodel`** (die AKTIVE Version, nicht die schlichte `test25B`) +
+   getypte Accessoren in `Auftrag`/`LVPosition+CoreDataProperties.swift`. Additiv → leichte Migration,
+   kein Mapping-Modell. Der Knoten hat jetzt seine eigene Position.
+2. **Draht 2 — Auslöser vom Knoten, OHNE das Bundle anzufassen:** `Grap8Verwaltungswunsch` trägt jetzt
+   den `auftrag` mit; für `ziel == .kalkulation` führt der Knoten-Tap zur neuen
+   **`KnotenKalkulationView(auftrag:)`** statt zur ganzen Baustelle. Der alte Baustellen-Weg bleibt
+   von dort per „Ganze Baustelle" erreichbar (und als Fallback, wenn kein Auftrag mitkommt).
+3. **Draht 3 — Zahl statt Text:** `KnotenKalkulationView` legt (Knopf) die eigene Position an, fragt
+   den Prof mit dem Knoten-Text, und schreibt `(maurer, helfer)` als zwei `PositionLohn`
+   (Muster aus `LohnHinzufuegenView`): `stunden` (h/E) × `stundenBruttoEK`. Der Lohnsatz kommt aus
+   den **Stammdaten** (`Lohnsatz` „Maurer"/„Helfer", vom `StammdatenSeeder` geseedet; Rückfall auf die
+   Seeder-Werte, falls die Vorlage fehlt). Menge von Hand. Lohnsumme × Menge ist in der Ansicht sichtbar.
+   Ehrlich: kein Prof-Wert → nichts eingetragen, das steht dann da.
+
+### Nachweis
+- Unit-Test `KnotenAufwandswertTests` (2 Tests, grün): (a) Relation trägt in beide Richtungen;
+  (b) `(0,5 Maurer + 1,5 Helfer) × Satz × Menge 4` rechnet zur erwarteten Lohnsumme (> 0, keine Null).
+- App-Build + volle Unit-Suite grün (zwei Sachen unterwegs gemessen, nicht behauptet):
+  - Mein Test war zuerst rot — **Test-Fehler, kein Feature-Fehler**: `Auftrag` hat Pflichtfelder ohne
+    Default (`statusRawValue` + `storageNote`); der Test legte einen nackten Auftrag an. Das Feature legt
+    NIE einen Auftrag an — es hängt eine Position an einen bestehenden. Helfer `neuerAuftrag` setzt die
+    Felder jetzt wie die App.
+  - **Ein bestehender Test fiel durch und musste angepasst werden:**
+    `BauerHorstSeederTests.auftraegeUndLVZeileBleibenUngekoppelt` prüfte per Modell-Introspektion, dass
+    `Auftrag` GAR KEINE LVPosition-Beziehung hat — die alte Ast-1-Regel „keine Modell-Kopplung". Draht 1
+    kehrt das bewusst um. Der Test prüft jetzt den echten, weiter gültigen Sinn: der **Seeder** koppelt
+    die Daten nicht (`auftrag.lvPosition == nil`). Docstring entsprechend umgeschrieben — die Umkehr ist
+    beabsichtigt, nicht „nebenbei".
+- **Draht 2 (Prof-Aufruf) ist Netzwerk → manuell zu prüfen:** in Grap8 Knoten „Baustelle absichern"
+  antippen → „Kalkulation" → Menge setzen → „Position anlegen" → „Aufwandswert vom Prof holen" →
+  „In Kalkulation übernehmen" → der Lohn steht in der Ansicht und in der Tiefenkalkulation.
+
+### Bewusst NICHT gebaut (nächster Bogen)
+- Auto-Ableitung der Menge (Standort → Anfahrt, Größe → Menge). Voraussetzung: `Event` müsste Standort +
+  Geometrie tragen — nicht geprüft, nicht gebaut. Menge bleibt von Hand.
+- Der wiederverwendbare **Leistungskatalog** (`~/Documents/Grap8/Fahrplan - Leistungskatalog und
+  Auto-Ableitung.md`). Katalog-KOMPATIBEL vorbereitet: Leistung (bezeichnung) + Einheit + Maurer/Helfer-h
+  liegen an EINEM Ort (der Position), aufgreifbar.
+- Zweiter Nachtauftrag von Andreas: kommt noch, wird auf demselben/eigenem Branch abgearbeitet.
+
+### Dateien
+`Models/test25B.xcdatamodeld/test25B 2.xcdatamodel/contents`, `Models/Auftrag+CoreDataProperties.swift`,
+`Models/LVPosition+CoreDataProperties.swift`, `Views/Grap8View.swift`,
+**neu** `Views/KnotenKalkulationView.swift`, `Resources/Knowledge/app_bedienung.yaml`
+(Eintrag `App_Grap8_Knoten_Kalkulation` — Drift-Regel), **neu**
+`iMOPS-…Tests/KnotenAufwandswertTests.swift`. Backups in `_backups/grap8-aufwandswert_*`.
+
+---
+
 ## Delta 11.09.2026 spät — Briefpapier + Rechnungsblatt: der Kreis endet auf Papier
 
 **Branch `feature/briefpapier-und-rechnung`.** Zwei Aufträge in einem: das

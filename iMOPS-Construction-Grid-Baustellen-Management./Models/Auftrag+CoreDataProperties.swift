@@ -39,6 +39,13 @@ extension Auftrag {
     /// Kanten, die zu DIESEM Auftrag gehören (er wartet auf andere).
     @NSManaged var voraussetzungen: NSSet?
 
+    // Grap8 — Draht 1 (Ast 2): der Knoten (Auftrag) bekommt eine EIGENE Kalkulations-
+    // Position. Bisher gab es zwischen Auftrag und LVPosition keine Beziehung
+    // (Grap8Graph.swift: „vom Auftrag aus führt kein Weg zur LVPosition"); die
+    // Kalkulation hing nur an Event. Optional + Nullify: ein Auftrag ohne Position
+    // verhält sich wie bisher, und wird die Position gelöscht, bleibt der Auftrag.
+    @NSManaged var lvPosition: LVPosition?
+
 
 }
 

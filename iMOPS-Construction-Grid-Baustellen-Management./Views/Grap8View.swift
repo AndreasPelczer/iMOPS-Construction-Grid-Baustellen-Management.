@@ -69,6 +69,11 @@ struct Grap8Verwaltungswunsch: Identifiable {
     let id = UUID()
     let ziel: Grap8Verwaltungsziel
     let baustelle: Event
+    // Draht 2: der angetippte Knoten selbst. Für `.kalkulation` führt der Weg jetzt
+    // zur EIGENEN Position dieses Auftrags (Draht 1/3), nicht mehr nur zur Baustelle.
+    // Die übrigen Ziele (Mannschaft/Maschinen/Bestellung) brauchen ihn nicht — sie
+    // hängen am Event, nicht am Auftrag (siehe Kommentar oben).
+    let auftrag: Auftrag?
 }
 
 /// Bindeglied zwischen dem Coordinator (Klasse, lebt lange) und der Ansicht (struct,
@@ -153,22 +158,35 @@ struct Grap8View: View {
             LieferantenBestelllisteView(event: wunsch.baustelle,
                                         positionen: positionen(wunsch.baustelle))
         case .kalkulation:
-            // **Diese eine braucht einen Rahmen.** `LVKalkulationView` hat weder
-            // `NavigationStack` noch `dismiss` noch Toolbar — sie war für einen
-            // `NavigationLink` in `EventDetailView` gebaut. Als Blatt ohne Rahmen
-            // wäre sie eine Sackgasse: kein Weg zurück außer Wischen, und das ist
-            // auf einem Blatt über einem Vollbild kein verlässlicher Ausgang.
+            // **Diese eine braucht einen Rahmen.** Weder `KnotenKalkulationView` noch
+            // `LVKalkulationView` bringen `NavigationStack`/`dismiss`/Toolbar mit — sie
+            // waren für einen `NavigationLink` gebaut. Als Blatt ohne Rahmen wären sie
+            // eine Sackgasse: kein Weg zurück außer Wischen, auf einem Blatt über einem
+            // Vollbild kein verlässlicher Ausgang.
             NavigationStack {
-                // Titel kommt aus der Ansicht selbst („Kalkulation (Welle 6)") —
-                // hier keinen eigenen setzen, der würde nur scheinbar wirken.
-                LVKalkulationView(event: wunsch.baustelle)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Fertig") { steuerung.wunsch = nil }
-                                .tint(.orange)
+                if let auftrag = wunsch.auftrag {
+                    // Draht 2: vom Knoten aus zur EIGENEN Kalkulation dieses Auftrags.
+                    // Der Weg zur ganzen Baustelle bleibt von dort aus erreichbar.
+                    KnotenKalkulationView(auftrag: auftrag)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Fertig") { steuerung.wunsch = nil }
+                                    .tint(.orange)
+                            }
                         }
-                    }
+                } else {
+                    // Ohne Knoten (Altpfad): die ganze Baustelle wie bisher.
+                    // Titel kommt aus der Ansicht selbst („Kalkulation (Welle 6)").
+                    LVKalkulationView(event: wunsch.baustelle)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Fertig") { steuerung.wunsch = nil }
+                                    .tint(.orange)
+                            }
+                        }
+                }
             }
         }
     }
@@ -402,7 +420,7 @@ private struct Grap8WebView: UIViewRepresentable {
             }
 
             logger.info("Grap8: öffne \(ziel.rawValue, privacy: .public) für die Baustelle des Auftrags.")
-            let wunsch = Grap8Verwaltungswunsch(ziel: ziel, baustelle: baustelle)
+            let wunsch = Grap8Verwaltungswunsch(ziel: ziel, baustelle: baustelle, auftrag: auftrag)
             let steuerung = eltern.steuerung
             // Zustand gehört auf den Hauptstrang.
             DispatchQueue.main.async { steuerung.wunsch = wunsch }
