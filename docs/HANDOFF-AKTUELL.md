@@ -2,6 +2,67 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 12.09.2026 Nachtschicht — Leistungskatalog Bogen 1: „einmal fragen, für immer picken"
+
+**Branch `feature/leistungskatalog-aufwandswert`** (abgezweigt von `feature/grap8-aufwandswert`,
+das wiederum von `feature/briefpapier-und-rechnung` — **nicht** main). Build grün, neue Tests grün.
+**Nicht gepusht, kein PR.** Autonome Nachtschicht am Nordstern (Andreas schlief; „zieh die
+Nachtschicht durch"). Grundlage: `~/Documents/Grap8/Fahrplan - Leistungskatalog und Auto-Ableitung.md`.
+
+### Kühlhaus-Check zuerst (gemessen, nicht geraten)
+- **`LVBausteinKatalog` existiert schon** (`Models/LVBausteinKatalog.swift`) — aber ein **statischer,
+  hartkodierter enum** aus Goldschmitts echtem Angebot (Titel 01/02 gefüllt, 03–99 leer), mit
+  **Einzelpreis, OHNE Aufwandswert, nicht wachsend**. `Views/LV/LVBausteinAuswahlView.swift` pickt
+  daraus in ein Event-LV (schreibt `einkaufspreis`, keinen Lohn).
+- Es gab **keinen** persistierten Aufwandswert-Katalog. Genau das ist Bogen 1: selbst-wachsend +
+  Aufwandswert. (Fundus/qwen war hier unscharf — direkter Code-Blick war die Wahrheit.)
+
+### Was gebaut wurde (minimal-invasiv)
+- **Modell:** neue Stammdaten-Entity **`Leistungsbaustein`** (Muster wie `Lohnsatz`) in `test25B 2`:
+  `leistung, einheit, maurerStunden, helferStunden, kostenGruppeNummer, quelle, erstelltAm,
+  verwendungen`. Neue Entity = leichte Migration, kein Mapping. + Class/Properties-Dateien.
+- **`Service/LeistungskatalogService.swift`:** `merke` (ernten: anlegen ODER aktualisieren, Dedup über
+  normalisierte Leistung+Einheit), `finde` (case/diakritik-tolerant), `benutzt` (Zähler hoch),
+  `alle` (häufigste zuerst).
+- **`KnotenKalkulationView` erweitert:**
+  - **Ernten:** „In Kalkulation übernehmen" (Prof) schreibt jetzt zusätzlich einen `Leistungsbaustein`
+    in den Katalog. Einmal ableiten → liegt im Katalog.
+  - **Picken:** Gibt es die Leistung schon (gleiche Bezeichnung+Einheit), erscheint oben eine
+    **Katalog-Sektion** — „Aus Katalog übernehmen" füllt den Lohn OHNE Prof-Frage und zählt eine
+    Verwendung. Die Kühlhaus-Regel als Feature: nachschlagen statt neu ableiten.
+
+### Nachweis
+- `LeistungskatalogTests` (3, grün): Ernten+Finden (tolerant), zweites Ernten aktualisiert statt zu
+  verdoppeln (Zähler bleibt), `benutzt` zählt hoch + Sortierung häufigste zuerst.
+- App-Build + volle Unit-Suite grün.
+- **Manuell morgen (mit dem Grap8-Bogen-0-Test zusammen):** Knoten „Baustelle absichern" → Kalkulation
+  → Position anlegen → „Aufwandswert vom Prof holen" → „In Kalkulation übernehmen" (jetzt wächst der
+  Katalog). Danach ein **zweiter** Knoten mit demselben Text → dort erscheint die **Katalog-Sektion**
+  und füllt den Lohn ohne Prof.
+
+### Bewusst NICHT gebaut (nächste Bögen)
+- **Zusammenführung mit `LVBausteinAuswahlView`:** dort läuft der statische Preis-Katalog; der neue
+  Aufwandswert-Katalog lebt vorerst nur im Knoten-Fluss. Zwei Achsen (Preis-Vorlage vs.
+  Aufwandswert-Baustein) — Konvergenz ist ein eigener Schritt, absichtlich nicht nachts nebenbei.
+- **Bogen 2 (Auto-Menge): gemessen, bewusst NICHT nachts gebaut — braucht deine Entscheidung.**
+  - *Größe → Menge:* die Logik **existiert schon** in `Service/HouseProjectGenerator.swift`
+    (`umfang = √grundfläche × 4`, Wandfläche = Umfang × Höhe, Dach-/Wohnflächen-Ableitungen). Aber
+    parametergetrieben (eigener Parameter-Struct), NICHT aus `Event` gespeist.
+  - *Standort → Anfahrt:* **kein Code** (kein CLLocation/CLGeocoder/Distanz irgendwo). `Event` trägt
+    Adressfelder (`bauherrStrasse/PLZ/Ort`) + freien Text `location`, aber **keine Koordinaten**.
+  - *`Event` speichert keine Baustellen-Größe/Geometrie.* → Bogen 2 verlangt zwei Design-Entscheidungen:
+    (a) wo „Größe/Umfang" wohnt (Event-Feld? HouseProjectGenerator-Params anzapfen?), (b) ob Anfahrt
+    per Geocoding der Adresse gebaut wird. Beides gehört zu dir, nicht in eine Nachtschicht.
+- **Bogen 3 (Arbeitsabläufe je Baustein):** später.
+
+### Dateien
+**neu** `Models/Leistungsbaustein+CoreDataClass.swift` + `…+CoreDataProperties.swift`,
+`Service/LeistungskatalogService.swift`, `…Tests/LeistungskatalogTests.swift`; geändert
+`Models/test25B.xcdatamodeld/test25B 2.xcdatamodel/contents`, `Views/KnotenKalkulationView.swift`.
+Backups in `_backups/leistungskatalog_*`.
+
+---
+
 ## Delta 12.09.2026 nachts — Aufwandswert an den Grap8-Knoten (Bogen 0, 3 Drähte)
 
 **Branch `feature/grap8-aufwandswert`** (abgezweigt von `feature/briefpapier-und-rechnung`,
