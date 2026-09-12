@@ -2,6 +2,62 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 13.09.2026 — Katalog-Sichten zusammenführen + Größe ans Event
+
+**Branch `feature/katalog-sichten-und-event-masse`** (abgezweigt von
+`feature/leistungskatalog-aufwandswert`). Build grün, neue Tests grün. **Nicht gepusht, kein PR.**
+Fortsetzung der Nachtschicht (Andreas' Auftrag 13.09. mit getroffenen Entscheidungen).
+
+**Entscheidungen (Andreas):** Katalog = die *Ansicht* zusammenführen, NICHT die Daten (zwei Quellen,
+ein Picker). Größe gehört ans **Event**, nicht an den Knoten. **Anfahrt/Standort-Distanz gestrichen.**
+
+### Gemessen zuerst
+- `HouseProject` ist ein **reiner Struct** (`Service/HouseProject.swift`), NICHT am Event, keine
+  Core-Data-Entity — nichts zum Anzapfen. Also Maße als Event-Felder direkt. (Fundus/qwen unscharf;
+  direkter Code-Blick war die Wahrheit.)
+- Event-Bearbeitung: `EditEventView` + `AddEventView`. Picker `LVBausteinAuswahlView` wird aus `LVView`
+  geöffnet. `LVBausteinKatalog` = statischer Preis-Katalog; `Leistungsbaustein`/`LeistungskatalogService`
+  = der gelernte Aufwandswert-Katalog (aus Bogen 1).
+
+### Teil A — zwei Sektionen in EINEM Picker
+`LVBausteinAuswahlView` zeigt jetzt zusätzlich die Sektion **„Aus deinen Baustellen"** — die gelernten
+`Leistungsbaustein` (via `@FetchRequest`, häufigste zuerst). Ein Tipp legt die LV-Position an UND trägt
+den Aufwandswert als Lohn ein; der Baustein zählt eine Verwendung. Menge = 1, im LV von Hand zu stellen.
+Der statische „Standard"-Katalog bleibt unverändert daneben. **Keine Entity-Fusion, keine Migration** —
+nur die View zeigt beide Quellen.
+- **Refactor:** die Lohn-Schreib-Logik (Maurer/Helfer × Stammdaten-Satz, idempotent) liegt jetzt
+  gemeinsam in `LeistungskatalogService.schreibeAufwandAlsLohn(...)`. `KnotenKalkulationView` nutzt sie
+  auch (vorher privat dupliziert) — eine Wahrheit für beide Wege.
+
+### Teil B — Größe ans Event (nur speichern, NICHT auto-rechnen)
+Event hat drei neue optionale Felder: `grundflaeche` (m²), `umfang` (m, laufende Meter), `geschosse`.
+Neue Attribute = leichte Migration. Eingabe als **„Maße der Baustelle"**-Sektion in `EditEventView`
+UND `AddEventView`. Default 0 = „nicht gesetzt"; Kleinaufträge füllen nur ein Maß.
+**Scope-Grenze eingehalten:** nur gespeichert. Die Auto-Ableitung Größe→Menge ist der NÄCHSTE Schritt,
+hier NICHT gebaut. Anfahrt bleibt gestrichen.
+
+### Nachweis
+- `KatalogSichtenUndMasseTests` (3, grün): gemeinsamer Lohn-Schreiber schreibt mit Stammdaten-Satz +
+  ist idempotent; Event speichert die Maße (round-trip); frisches Event trägt keine Maße (Default 0).
+- App-Build + volle Unit-Suite grün — inkl. der geerbten Bogen-0/1-Tests NACH dem Refactor (kein Rückfall).
+- **Manuell:** Baustelle bearbeiten → „Maße der Baustelle" eintragen/speichern. LV → „LV-Bausteine" öffnen
+  → zwei Sektionen sichtbar; einen Baustein aus „Aus deinen Baustellen" tippen → Position + Lohn im LV.
+  (Setzt voraus, dass vorher am Knoten ein Aufwandswert übernommen wurde — der füttert den Katalog.)
+
+### Dateien
+geändert: `Models/test25B.xcdatamodeld/test25B 2.xcdatamodel/contents` (+3 Event-Attribute),
+`Models/Event+CoreDataProperties.swift`, `Service/LeistungskatalogService.swift` (+Lohn-Schreiber),
+`Views/KnotenKalkulationView.swift` (nutzt Schreiber), `Views/LV/LVBausteinAuswahlView.swift`
+(zweite Sektion), `Views/EditEventView.swift` + `Views/AddEventView.swift` (Maße-Block);
+**neu** `…Tests/KatalogSichtenUndMasseTests.swift`. Backups in `_backups/katalog-masse_*`.
+
+### Bewusst offen / für Andreas
+- **Auto-Menge (Größe→Menge):** jetzt möglich, da die Größe einen Ort hat. `HouseProjectGenerator` hat
+  die Rechenlogik (parameterbasiert) — anzapfen statt neu bauen.
+- **Amts-Sicht** (EFB/Urkalkulation), **Kleinauftrags-Baustellenart**.
+
+---
+
 ## Delta 12.09.2026 Nachtschicht — Leistungskatalog Bogen 1: „einmal fragen, für immer picken"
 
 **Branch `feature/leistungskatalog-aufwandswert`** (abgezweigt von `feature/grap8-aufwandswert`,

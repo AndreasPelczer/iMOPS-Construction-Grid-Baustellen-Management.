@@ -65,6 +65,45 @@ enum LeistungskatalogService {
         baustein.verwendungen += 1
     }
 
+    // MARK: - Aufwandswert als Lohn schreiben (gemeinsam für Knoten & Picker)
+
+    /// Schreibt den Aufwandswert (Maurer/Helfer h je Einheit) als zwei Lohnzeilen auf eine
+    /// Position. Idempotent: vorhandene Maurer/Helfer-Zeilen werden ersetzt, nicht gestapelt.
+    /// Lohnsatz kommt aus den Stammdaten (`Lohnsatz`), mit Rückfall auf die Seeder-Werte —
+    /// so trägt die Kalkulation immer eine Zahl, nie 0. Genutzt von `KnotenKalkulationView`
+    /// (Prof/Katalog) UND `LVBausteinAuswahlView` (Auswahl aus dem gelernten Katalog).
+    static func schreibeAufwandAlsLohn(maurer: Double, helfer: Double,
+                                       auf pos: LVPosition, in ctx: NSManagedObjectContext) {
+        for pl in pos.lohnArray where pl.qualifikation == "Maurer" || pl.qualifikation == "Helfer" {
+            ctx.delete(pl)
+        }
+        lohnEintrag("Maurer", maurer, pos, ctx)
+        lohnEintrag("Helfer", helfer, pos, ctx)
+    }
+
+    private static func lohnEintrag(_ qualifikation: String, _ stunden: Double,
+                                    _ pos: LVPosition, _ ctx: NSManagedObjectContext) {
+        let pl = PositionLohn(context: ctx)
+        pl.id = UUID()
+        pl.qualifikation = qualifikation
+        pl.stunden = stunden
+        pl.stundenBruttoEK = bruttoEK(fuer: qualifikation, in: ctx)
+        pl.position = pos
+    }
+
+    /// Brutto-EK-Stundensatz aus den Stammdaten (`Lohnsatz`), Rückfall = Seeder-Werte.
+    static func bruttoEK(fuer qualifikation: String, in ctx: NSManagedObjectContext) -> Double {
+        let req: NSFetchRequest<Lohnsatz> = Lohnsatz.fetchRequest()
+        req.predicate = NSPredicate(format: "qualifikation ==[c] %@", qualifikation)
+        req.fetchLimit = 1
+        if let satz = (try? ctx.fetch(req))?.first { return satz.berechnungBruttoEK }
+        switch qualifikation {
+        case "Maurer": return 28.50 * 1.65
+        case "Helfer": return 18.50 * 1.55
+        default:       return 0
+        }
+    }
+
     /// Alle Bausteine, häufigste zuerst, dann alphabetisch.
     static func alle(in ctx: NSManagedObjectContext) -> [Leistungsbaustein] {
         let req: NSFetchRequest<Leistungsbaustein> = Leistungsbaustein.fetchRequest()

@@ -7,6 +7,15 @@ struct LVBausteinAuswahlView: View {
 
     let event: Event
 
+    // Die gelernten Bausteine (aus früheren Baustellen), häufigste zuerst — dieselbe
+    // Sortierung wie `LeistungskatalogService.alle`. Zweite Quelle desselben Pickers.
+    @FetchRequest(
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \Leistungsbaustein.verwendungen, ascending: false),
+            NSSortDescriptor(keyPath: \Leistungsbaustein.leistung, ascending: true),
+        ]
+    ) private var gelernteBausteine: FetchedResults<Leistungsbaustein>
+
     @State private var selectedTitelID = LVBausteinKatalog.titel.first?.id ?? ""
     @State private var selectedPositionIDs: Set<String> = []
     @State private var eigenePosNr = ""
@@ -54,6 +63,15 @@ struct LVBausteinAuswahlView: View {
 
         return titel.positionen.filter { baustein in
             normalisiere("\(baustein.posNr) \(baustein.bezeichnung) \(baustein.einheit)").contains(query)
+        }
+    }
+
+    /// Die gelernten Bausteine, nach dem Suchfeld gefiltert (Leistung + Einheit).
+    private var gefilterteGelernte: [Leistungsbaustein] {
+        let query = normalisiere(suchtext)
+        guard !query.isEmpty else { return Array(gelernteBausteine) }
+        return gelernteBausteine.filter { baustein in
+            normalisiere("\(baustein.leistung ?? "") \(baustein.einheit ?? "")").contains(query)
         }
     }
 
@@ -284,6 +302,23 @@ struct LVBausteinAuswahlView: View {
                         Text("Vorlagen sind vorbereitete LV-/GAEB-Texte. Mengen, Preise und KG bitte nach dem Übernehmen prüfen.")
                     }
                 }
+
+                if !gefilterteGelernte.isEmpty {
+                    Section {
+                        ForEach(gefilterteGelernte, id: \.objectID) { baustein in
+                            Button {
+                                gelerntenUebernehmen(baustein)
+                            } label: {
+                                gelernterRow(baustein)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } header: {
+                        Text("Aus deinen Baustellen")
+                    } footer: {
+                        Text("Leistungen, die der Mops schon einmal abgeleitet hat — mit Aufwandswert (Maurer/Helfer-Stunden). Übernehmen legt die Position an und trägt den Lohn ein; die Menge stellst du danach im LV ein.")
+                    }
+                }
             }
             .navigationTitle("LV-Bausteine")
             .navigationBarTitleDisplayMode(.inline)
@@ -353,6 +388,50 @@ struct LVBausteinAuswahlView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private func gelernterRow(_ baustein: Leistungsbaustein) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "tray.and.arrow.down")
+                .foregroundStyle(.orange)
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(baustein.leistung ?? "–")
+                HStack(spacing: 8) {
+                    Text(baustein.aufwandAnzeige)
+                    if let kg = baustein.kostenGruppeNummer, !kg.isEmpty { Text("KG \(kg)") }
+                    if baustein.verwendungen > 0 { Text("\(baustein.verwendungen)×") }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    /// Einen gelernten Baustein ins LV übernehmen: Position anlegen + Aufwandswert als
+    /// Lohn eintragen (gemeinsamer Service, wie am Grap8-Knoten). Menge = 1, wird im LV
+    /// von Hand gestellt. Der Baustein zählt eine Verwendung.
+    private func gelerntenUebernehmen(_ baustein: Leistungsbaustein) {
+        let pos = LVPosition(context: viewContext)
+        pos.posNr = naechstePositionsnummer()
+        pos.bezeichnung = baustein.leistung
+        pos.menge = 1
+        pos.einheit = baustein.einheit
+        pos.kostenGruppeNummer = (baustein.kostenGruppeNummer?.isEmpty == false)
+            ? baustein.kostenGruppeNummer
+            : aktiveDINZuordnung?.nummer
+        pos.mengenQuelleRaw = "manuell"
+        pos.quellDatei = "Katalog (deine Baustellen)"
+        pos.event = event
+
+        LeistungskatalogService.schreibeAufwandAlsLohn(
+            maurer: baustein.maurerStunden, helfer: baustein.helferStunden,
+            auf: pos, in: viewContext)
+        LeistungskatalogService.benutzt(baustein)
+
+        try? viewContext.save()
+        dismiss()
     }
 
     private func toggle(_ baustein: LVBausteinPosition) {

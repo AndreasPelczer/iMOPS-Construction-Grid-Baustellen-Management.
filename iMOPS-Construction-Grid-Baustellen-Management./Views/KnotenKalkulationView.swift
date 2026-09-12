@@ -344,43 +344,12 @@ struct KnotenKalkulationView: View {
         uebernommen = true
     }
 
-    /// Die beiden Lohnzeilen (Maurer/Helfer) schreiben. Idempotent: ein früherer
-    /// Vorschlag desselben Knotens wird ersetzt, nicht gestapelt.
+    /// Die beiden Lohnzeilen (Maurer/Helfer) schreiben — über den gemeinsamen Service, damit
+    /// Knoten und Katalog-Picker (`LVBausteinAuswahlView`) exakt dieselbe Logik nutzen.
+    /// Idempotent: ein früherer Vorschlag wird ersetzt, nicht gestapelt.
     private func stundenSchreiben(maurer: Double, helfer: Double, in pos: LVPosition) {
-        for pl in pos.lohnArray where pl.qualifikation == "Maurer" || pl.qualifikation == "Helfer" {
-            viewContext.delete(pl)
-        }
-        lohnEintrag(qualifikation: "Maurer", stunden: maurer, in: pos)
-        lohnEintrag(qualifikation: "Helfer", stunden: helfer, in: pos)
-    }
-
-    /// Ein PositionLohn nach dem Muster von `LohnHinzufuegenView` — Lohnsatz aus den
-    /// Stammdaten (Brutto-EK), Stunden je Einheit vom Prof.
-    private func lohnEintrag(qualifikation: String, stunden: Double, in pos: LVPosition) {
-        let pl = PositionLohn(context: viewContext)
-        pl.id = UUID()
-        pl.qualifikation = qualifikation
-        pl.stunden = stunden
-        pl.stundenBruttoEK = bruttoEK(fuer: qualifikation)
-        pl.position = pos
-    }
-
-    /// Der Brutto-EK-Stundensatz aus den Stammdaten (`Lohnsatz`), nach Qualifikation.
-    /// Fällt auf die Werte des `StammdatenSeeder` zurück, falls die Vorlage fehlt —
-    /// so trägt die Kalkulation immer eine Zahl, nie eine 0.
-    private func bruttoEK(fuer qualifikation: String) -> Double {
-        let req: NSFetchRequest<Lohnsatz> = Lohnsatz.fetchRequest()
-        req.predicate = NSPredicate(format: "qualifikation ==[c] %@", qualifikation)
-        req.fetchLimit = 1
-        if let satz = (try? viewContext.fetch(req))?.first {
-            return satz.berechnungBruttoEK
-        }
-        // Rückfall = Seeder-Werte (Stundenlohn × Zuschlagfaktor).
-        switch qualifikation {
-        case "Maurer": return 28.50 * 1.65
-        case "Helfer": return 18.50 * 1.55
-        default:       return 0
-        }
+        LeistungskatalogService.schreibeAufwandAlsLohn(
+            maurer: maurer, helfer: helfer, auf: pos, in: viewContext)
     }
 
     private func speichern() {
