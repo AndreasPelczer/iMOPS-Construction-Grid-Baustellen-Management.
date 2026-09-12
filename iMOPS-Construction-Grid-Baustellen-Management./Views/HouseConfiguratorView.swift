@@ -15,6 +15,9 @@ struct HouseConfiguratorView: View {
     var onCreated: ((Event) -> Void)? = nil
 
     @State private var project = HouseProject()
+    // Projekt-Typ: Haus (bestehender Generator) ODER kleine Vorlage (Hofeinfahrt).
+    @State private var projektTyp: ProjektTyp = .einfamilienhaus
+    @State private var hofFlaeche = "100"   // m² Pflasterfläche für die Hofeinfahrt
     @State private var result: HouseProjectResult?
     @State private var selectedTab = 0
     @State private var showingSaveConfirmation = false
@@ -43,14 +46,33 @@ struct HouseConfiguratorView: View {
 
     private var configuratorForm: some View {
         Form {
-            grunddatenSection
-            raeumeSection
-            technikSection
-            ausstattungSection
+            Section {
+                Picker("Projekt-Typ", selection: $projektTyp) {
+                    ForEach(ProjektTyp.allCases) { typ in
+                        Text(typ.anzeige).tag(typ)
+                    }
+                }
+            } header: {
+                Text("Projekt-Typ")
+            } footer: {
+                Text("Häuser laufen über den vollen Konfigurator; kleine Baustellen (z.B. Hofeinfahrt) brauchen nur ein Maß.")
+            }
+
+            if projektTyp.istHaus {
+                grunddatenSection
+                raeumeSection
+                technikSection
+                ausstattungSection
+            } else {
+                hofeinfahrtSection
+            }
 
             Section {
                 Button {
-                    result = HouseProjectGenerator.generate(from: project)
+                    result = ProjektGenerator.generate(
+                        typ: projektTyp,
+                        haus: project,
+                        flaeche: Double(hofFlaeche.replacingOccurrences(of: ",", with: ".")) ?? 100)
                 } label: {
                     HStack {
                         Spacer()
@@ -329,6 +351,26 @@ struct HouseConfiguratorView: View {
                 }
             }
             .frame(height: 6)
+        }
+    }
+
+    // Kleine Vorlage: es reicht ein Maß. Die Menge wird daraus in der Vorlage skaliert
+    // (Massen + Phasen), NICHT automatisch aus der Baustellen-Größe — das ist der nächste Bogen.
+    private var hofeinfahrtSection: some View {
+        Section {
+            HStack {
+                Text("Pflasterfläche").foregroundStyle(.secondary)
+                Spacer()
+                TextField("100", text: $hofFlaeche)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 90)
+                Text("m²").foregroundStyle(.secondary)
+            }
+        } header: {
+            Label("Hofeinfahrt", systemImage: "square.grid.3x3.fill")
+        } footer: {
+            Text("Aus der Fläche entstehen Massen (Unterbau, Randeinfassung, Pflaster) und ein kleiner Bauphasen-Plan — Richtwerte, kein Aufmaß.")
         }
     }
 
