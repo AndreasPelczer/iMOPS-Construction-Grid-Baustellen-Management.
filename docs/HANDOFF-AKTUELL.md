@@ -2,6 +2,54 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 13.09.2026 — Vom Haus-Generator zum Projekt-Generator (kleiner erster Schritt)
+
+**Branch `feature/projekt-generator`** (abgezweigt von `feature/katalog-sichten-und-event-masse`).
+Build grün, neue Tests grün. **Nicht gepusht, kein PR.**
+
+### 🧭 STRUKTUR-VORSCHLAG (bitte nicken, bevor der nächste Bogen groß wird)
+`ProjektTyp` sitzt **über** `Haustyp` als oberste Kategorie: ein Projekt ist entweder ein Haus (trägt
+einen `Haustyp`, läuft **1:1 unverändert** über den bestehenden `HouseProjectGenerator`) oder eine kleine,
+firm-typische Baustelle (erste: Hofeinfahrt). Das Dach ist `ProjektGenerator.generate(typ:haus:flaeche:)`,
+das für **jeden** Typ denselben `HouseProjectResult` zurückgibt — dadurch bleiben die vier Reiter
+(Kosten/Material/Massen/Zeitplan) und der Bauphasen-Plan **komplett unverändert**, nur der Inhalt skaliert.
+Ein Typ „trägt seine Vorlage", indem sein Zweig Massen+Phasen(+Material+Kosten) erzeugt (heute: als Code
+in `HofeinfahrtVorlage`; **nächster Bogen**: als Bündel echter `Leistungsbaustein` aus dem Katalog, plus
+Maß-Herkunft je Leistung für die Auto-Menge). **Eine bewusste Schuld:** `HouseProjectResult.project` ist
+noch ein `HouseProject` — die Hofeinfahrt füllt davon nur `projektName` (Rest ungenutzt, im Header/`createEvent`
+unsichtbar). Ein späterer Schritt ersetzt das durch einen schlanken Projekt-Deskriptor. **Kein Abriss:**
+der Haus-Generator ist unangetastet, die kleine Vorlage kam daneben.
+
+### Gebaut (kleiner Schritt, wie beauftragt)
+- **`Service/ProjektTyp.swift`** — Enum über Haus-Familie (4) + `hofeinfahrt`; `istHaus`/`hausTyp`/`anzeige`.
+- **`Service/ProjektGenerator.swift`** — das Dach: Haus-Typen → `HouseProjectGenerator` (unverändert);
+  `hofeinfahrt` → `HofeinfahrtVorlage`. Letztere erzeugt aus der Pflasterfläche Massen (Baustelleneinrichtung ·
+  Erdarbeiten · Unterbau · Randeinfassung · Pflaster — Goldschmitts echte Titel), 4 Bauphasen, Material und
+  Kosten (in `aussenanlagen`). Zahlen = Richtwerte, kein Aufmaß.
+- **`Views/HouseConfiguratorView.swift`** — Projekt-Typ-Picker oben; für Häuser das volle Formular, für die
+  Hofeinfahrt nur ein Flächen-Feld; „berechnen" routet über `ProjektGenerator`. Die 4 Reiter unverändert.
+
+### Nachweis
+- `ProjektGeneratorTests` (4, grün): Typ-Unterscheidung (Haus vs. Vorlage, keine erfundene Taxonomie);
+  Haus läuft unverändert über den Haus-Generator (>10 Massen, Haustyp getragen); Hofeinfahrt liefert
+  6 Massen / 4 Phasen / 4 Material / Kosten>0 und skaliert mit der Fläche.
+- App-Build + volle Unit-Suite grün.
+- **Manuell:** Haus-Konfigurator öffnen → Projekt-Typ „Hofeinfahrt pflastern" → Fläche → „berechnen" →
+  alle 4 Reiter zeigen Inhalt (wenig, aber echt); Bauphasen-Plan mit 4 Phasen. Haus-Typen wie bisher.
+
+### NICHT gebaut (bewusst, nächste Bögen — so strukturiert, dass sie leicht andocken)
+- Vorlage = Bündel aus `Leistungsbaustein` (Katalog-Integration).
+- Auto-Menge (Maß-Herkunft je Leistung; „Größe ans Event" ist schon da → andockbar).
+- Wachsende Vorlagen (aus echten Baustellen ernten).
+- Schlanker Projekt-Deskriptor statt `HouseProjectResult.project: HouseProject`.
+
+### Dateien
+**neu** `Service/ProjektTyp.swift`, `Service/ProjektGenerator.swift`,
+`…Tests/ProjektGeneratorTests.swift`; geändert `Views/HouseConfiguratorView.swift`.
+Backup in `_backups/projekt-generator_*`.
+
+---
+
 ## Delta 13.09.2026 — Katalog-Sichten zusammenführen + Größe ans Event
 
 **Branch `feature/katalog-sichten-und-event-masse`** (abgezweigt von
