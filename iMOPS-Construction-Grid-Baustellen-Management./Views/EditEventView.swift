@@ -26,6 +26,10 @@ struct EditEventView: View {
     @State private var setupTime: Date
     @State private var eventStartTime: Date
     @State private var eventEndTime: Date
+    // Maße der Baustelle — als Text, damit deutsches Komma sauber durchgeht.
+    @State private var grundflaeche: String
+    @State private var umfang: String
+    @State private var geschosse: String
 
     init(event: Event) {
         self.event = event
@@ -42,6 +46,9 @@ struct EditEventView: View {
         _setupTime = State(initialValue: event.setupTime ?? Date())
         _eventStartTime = State(initialValue: event.eventStartTime ?? Date())
         _eventEndTime = State(initialValue: event.eventEndTime ?? Date())
+        _grundflaeche = State(initialValue: event.grundflaeche > 0 ? Self.zahl(event.grundflaeche) : "")
+        _umfang = State(initialValue: event.umfang > 0 ? Self.zahl(event.umfang) : "")
+        _geschosse = State(initialValue: event.geschosse > 0 ? String(event.geschosse) : "")
     }
 
     var body: some View {
@@ -68,6 +75,39 @@ struct EditEventView: View {
                     TextField("Architekt / Planungsbuero", text: $architekt)
                     TextField("Baugenehmigungsnummer", text: $baugenehmigungNr)
                         .textInputAutocapitalization(.never)
+                }
+
+                Section {
+                    HStack {
+                        Text("Grundfläche").foregroundStyle(.secondary)
+                        Spacer()
+                        TextField("0", text: $grundflaeche)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 90)
+                        Text("m²").foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("Umfang").foregroundStyle(.secondary)
+                        Spacer()
+                        TextField("0", text: $umfang)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 90)
+                        Text("m").foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("Geschosse").foregroundStyle(.secondary)
+                        Spacer()
+                        TextField("0", text: $geschosse)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 90)
+                    }
+                } header: {
+                    Text("Maße der Baustelle")
+                } footer: {
+                    Text("Optional. Grundfläche/Umfang/Geschosse für größere Bauten; für Kleinaufträge reicht ein Maß (z.B. Umfang für laufende Meter). Die Menge wird daraus vorerst NICHT automatisch gerechnet — das ist der nächste Schritt.")
                 }
 
                 Section(header: Text("Notizen")) {
@@ -110,6 +150,9 @@ struct EditEventView: View {
         event.setupTime = setupTime
         event.eventStartTime = eventStartTime
         event.eventEndTime = eventEndTime
+        event.grundflaeche = Self.parse(grundflaeche) ?? 0
+        event.umfang = Self.parse(umfang) ?? 0
+        event.geschosse = Int16(geschosse.trimmingCharacters(in: .whitespaces)) ?? 0
 
         do {
             try viewContext.save()
@@ -128,5 +171,15 @@ struct EditEventView: View {
     private func leerAlsNil(_ s: String) -> String? {
         let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
         return t.isEmpty ? nil : t
+    }
+
+    // MARK: - Maße-Zahlen (deutsches Komma)
+
+    private static func parse(_ text: String) -> Double? {
+        Double(text.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
+    }
+
+    private static func zahl(_ d: Double) -> String {
+        d.formatted(.number.precision(.fractionLength(0...2)).grouping(.never))
     }
 } // Ende struct

@@ -30,6 +30,16 @@ extension Event {
     @NSManaged var title: String?
     @NSManaged var bauherr: String?
 
+    // MARK: - Maße der Baustelle (Geometrie)
+    // Die Größe gehört an die Baustelle, nicht an den einzelnen Knoten (Entscheidung
+    // 13.09.). Sie ist die Grundlage für die spätere Auto-Ableitung Größe→Menge
+    // (NÄCHSTER Schritt, hier nur gespeichert). Vokabular passt zu `HouseProject`
+    // (grundflaeche/geschosse); `umfang` trägt die laufenden Meter (z.B. Absperrung).
+    // Alle optional, Default 0 = „nicht gesetzt" — Kleinaufträge füllen nur, was sie brauchen.
+    @NSManaged var grundflaeche: Double   // m² Grundfläche der Baustelle/des Baukörpers
+    @NSManaged var umfang: Double         // m Umfang / laufende Meter (Absperrung, Zaun …)
+    @NSManaged var geschosse: Int16       // Anzahl Geschosse (0 = nicht gesetzt)
+
     // MARK: - Anschrift des Rechnungsempfaengers
     //
     // **Eine Rechnung braucht die vollstaendige Anschrift des Leistungsempfaengers**

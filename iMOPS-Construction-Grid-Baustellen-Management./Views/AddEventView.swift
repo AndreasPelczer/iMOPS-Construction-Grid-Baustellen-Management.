@@ -32,6 +32,10 @@ struct AddEventView: View {
     @State private var bauherrOrt: String = ""
     @State private var architekt: String = ""
     @State private var baugenehmigungNr: String = ""
+    // Maße der Baustelle (optional) — als Text wegen deutschem Komma.
+    @State private var grundflaeche: String = ""
+    @State private var umfang: String = ""
+    @State private var geschosse: String = ""
     @State private var eventStartTime: Date = nextFullHour()
     @State private var setupTime: Date = nextFullHour().addingTimeInterval(-3600)
     @State private var eventEndTime: Date = nextFullHour().addingTimeInterval(3600 * 3)
@@ -60,6 +64,33 @@ struct AddEventView: View {
                     TextField("Architekt / Planungsbuero", text: $architekt)
                     TextField("Baugenehmigungsnummer", text: $baugenehmigungNr)
                         .textInputAutocapitalization(.never)
+                }
+
+                Section {
+                    HStack {
+                        Text("Grundfläche").foregroundStyle(.secondary)
+                        Spacer()
+                        TextField("0", text: $grundflaeche)
+                            .keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(maxWidth: 90)
+                        Text("m²").foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("Umfang").foregroundStyle(.secondary)
+                        Spacer()
+                        TextField("0", text: $umfang)
+                            .keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(maxWidth: 90)
+                        Text("m").foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("Geschosse").foregroundStyle(.secondary)
+                        Spacer()
+                        TextField("0", text: $geschosse)
+                            .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 90)
+                    }
+                } header: {
+                    Text("Maße der Baustelle")
+                } footer: {
+                    Text("Optional. Für Kleinaufträge reicht ein Maß. Die Menge wird daraus vorerst nicht automatisch gerechnet.")
                 }
 
                 Section(header: Text("Notizen")) {
@@ -105,6 +136,9 @@ struct AddEventView: View {
         newEvent.eventStartTime = eventStartTime
         newEvent.setupTime = setupTime
         newEvent.eventEndTime = eventEndTime
+        newEvent.grundflaeche = Double(grundflaeche.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)) ?? 0
+        newEvent.umfang = Double(umfang.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)) ?? 0
+        newEvent.geschosse = Int16(geschosse.trimmingCharacters(in: .whitespaces)) ?? 0
         newEvent.timeStamp = Date()
 
         do {
