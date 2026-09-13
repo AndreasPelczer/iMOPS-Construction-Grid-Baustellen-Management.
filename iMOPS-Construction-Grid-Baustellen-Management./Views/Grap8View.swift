@@ -89,6 +89,10 @@ struct Grap8View: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var viewContext
     @State private var ladefehler: String?
+    // Nativer „+"-Weg: einen echten Auftrag anlegen, ohne die (nur lesende) Leinwand.
+    @State private var zeigeNeuerAuftrag = false
+    // Steigt bei jedem neu angelegten Auftrag → die Leinwand bekommt den Graphen neu.
+    @State private var aktualisierung = 0
 
     /// Die Baustelle, deren Kette gezeigt wird.
     ///
@@ -113,7 +117,8 @@ struct Grap8View: View {
                     Grap8WebView(graph: Grap8Graph.aus(event),
                                  steuerung: steuerung,
                                  kontext: viewContext,
-                                 ladefehler: $ladefehler)
+                                 ladefehler: $ladefehler,
+                                 aktualisierung: aktualisierung)
                         .ignoresSafeArea(edges: .bottom)
                 } else {
                     Baustellenwahl(gewaehlt: $gewaehlt)
@@ -123,12 +128,30 @@ struct Grap8View: View {
                 verwaltung(wunsch)
                     .environment(\.managedObjectContext, viewContext)
             }
+            // Nativer „+": legt einen echten Auftrag an der aktuellen Baustelle an.
+            // `onDismiss` erhöht `aktualisierung` → die Leinwand bekommt den Graphen neu.
+            .sheet(isPresented: $zeigeNeuerAuftrag, onDismiss: { aktualisierung += 1 }) {
+                if let event = gewaehlt {
+                    AddJobView(event: event, viewContext: viewContext)
+                        .environment(\.managedObjectContext, viewContext)
+                }
+            }
             .navigationTitle(gewaehlt.flatMap { $0.title ?? $0.name } ?? "Grap8")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }
                         .tint(.orange)
+                }
+                // Neuer Auftrag = neuer Knoten. Nativ, weil die Leinwand nur liest;
+                // nach dem Sichern wird der Graph neu geschickt und der Knoten erscheint.
+                if gewaehlt != nil {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { zeigeNeuerAuftrag = true } label: {
+                            Label("Auftrag", systemImage: "plus")
+                        }
+                        .tint(.orange)
+                    }
                 }
                 // Zurück zur Auswahl — nur, wenn hier gewählt wurde. Kam die
                 // Baustelle von außen, wäre „andere Baustelle" ein falsches
@@ -283,6 +306,9 @@ private struct Grap8WebView: UIViewRepresentable {
     /// Zum Auflösen der Knoten-Kennungen zurück in `Auftrag`-Objekte.
     let kontext: NSManagedObjectContext
     @Binding var ladefehler: String?
+    /// Zähler, der bei jedem neu angelegten Auftrag steigt — Signal zum Nachschicken
+    /// des Graphen an die schon geladene Leinwand.
+    let aktualisierung: Int
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -314,18 +340,30 @@ private struct Grap8WebView: UIViewRepresentable {
     }
 
     func updateUIView(_ web: WKWebView, context: Context) {
-        // Nur einmal laden — `updateUIView` läuft bei jedem Neuzeichnen.
-        guard !context.coordinator.hatGeladen else { return }
+        // Den Coordinator mit dem aktuellen Graphen versorgen (er kann sich seit dem
+        // Anlegen eines Auftrags geändert haben).
+        context.coordinator.eltern = self
 
-        guard let wurzel = Self.bundleWurzel() else {
-            melde("\(Self.ordner)/index.html liegt nicht im App-Bundle. "
-                  + "Der Ordner muss als Folder Reference in „Copy Bundle Resources“ stehen.")
+        // Nur einmal laden — `updateUIView` läuft bei jedem Neuzeichnen.
+        guard context.coordinator.hatGeladen else {
+            guard let wurzel = Self.bundleWurzel() else {
+                melde("\(Self.ordner)/index.html liegt nicht im App-Bundle. "
+                      + "Der Ordner muss als Folder Reference in „Copy Bundle Resources“ stehen.")
+                return
+            }
+            context.coordinator.hatGeladen = true
+            context.coordinator.letzteAktualisierung = aktualisierung
+            logger.info("Grap8 lädt aus dem Bundle: \(wurzel.path, privacy: .public)")
+            web.load(URLRequest(url: Self.startseite))
             return
         }
 
-        context.coordinator.hatGeladen = true
-        logger.info("Grap8 lädt aus dem Bundle: \(wurzel.path, privacy: .public)")
-        web.load(URLRequest(url: Self.startseite))
+        // Schon geladen: kam ein neuer Auftrag dazu (Zähler gestiegen), den Graphen
+        // neu schicken — die Leinwand ersetzt ihre Knoten, der Zoom bleibt.
+        if context.coordinator.letzteAktualisierung != aktualisierung {
+            context.coordinator.letzteAktualisierung = aktualisierung
+            context.coordinator.schickeGraph()
+        }
     }
 
     /// Der `Grap8Web`-Ordner im Bundle — oder `nil`, wenn er nicht mitkopiert wurde.
@@ -377,8 +415,13 @@ private struct Grap8WebView: UIViewRepresentable {
     // MARK: Coordinator
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
-        private let eltern: Grap8WebView
+        // `var`, damit `updateUIView` den Coordinator mit dem frischen Graphen versorgen
+        // kann, wenn ein neuer Auftrag dazukam (nativer „+"-Weg).
+        fileprivate var eltern: Grap8WebView
         var hatGeladen = false
+        // Der zuletzt an die Leinwand geschickte Aktualisierungs-Stand. Steigt der Wert
+        // in `updateUIView`, wird der Graph neu geschickt (ohne Vollreload → Zoom bleibt).
+        var letzteAktualisierung = 0
         weak var web: WKWebView?
 
         init(_ eltern: Grap8WebView) { self.eltern = eltern }
@@ -432,7 +475,7 @@ private struct Grap8WebView: UIViewRepresentable {
             DispatchQueue.main.async { steuerung.wunsch = wunsch }
         }
 
-        private func schickeGraph() {
+        fileprivate func schickeGraph() {
             guard let web else { return }
             let graph = eltern.graph
             guard let daten = try? JSONEncoder().encode(graph),

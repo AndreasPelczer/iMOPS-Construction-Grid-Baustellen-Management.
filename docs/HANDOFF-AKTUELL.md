@@ -30,6 +30,34 @@ mit Lohn ist Mannschaft erfüllt, Material/Maschine offen. Build + volle Suite g
 übernehmen → der Mannschaft-Chip des Knotens wird voll.
 
 Dateien: `Service/Grap8Graph.swift`, `…Tests/Grap8PermanentIdTests.swift`. Backup in `_backups/grap8-knoten-zustand_*`.
+## Delta 13.09.2026 — Nativer „+ Auftrag" im Grap8-Fenster (neuer Knoten = echter Auftrag)
+
+**Branch `feature/grap8-neuer-auftrag-nativ`** (von `main`). Build + Suite grün. **Nicht gepusht.**
+
+**Warum:** Ein Knoten, den man IN der Leinwand zeichnet, ist nur React — er wird nie in Core Data
+gespeichert (gemessen: das Bundle sendet an Swift nur `ready` + `verwaltung`, KEINE „angelegt"-Nachricht;
+die Swift-Brücke behandelt auch nur diese zwei). „Im Canvas zeichnen = Auftrag" bräuchte die React-Quelle
+(Andreas sucht sie). Bis dahin: **nativ daneben** — ein echter Auftrag aus demselben Fenster.
+
+**Gebaut:** In `Grap8View` ein Werkzeugleisten-Knopf **„+ Auftrag"** (erscheint, sobald eine Baustelle
+gewählt ist). Tipp → die bestehende `AddJobView` (Name/Vorlage/Sichern) an der aktuellen Baustelle →
+speichert einen echten `Auftrag`. Beim Schließen des Blatts steigt ein Zähler `aktualisierung` →
+`updateUIView` schickt der schon geladenen Leinwand den Graphen **neu** (`grap8SetGraph`, kein Vollreload
+→ Zoom bleibt) → der neue Knoten erscheint, mit permanenter ID, sofort kalkulierbar.
+
+**Plumbing (klein):** `Coordinator.eltern` `let`→`var` (damit `updateUIView` den frischen Graphen
+einspeist), `schickeGraph()` `private`→`fileprivate`, neuer `aktualisierung: Int` an `Grap8WebView`,
+`updateUIView` schickt bei gestiegenem Zähler neu.
+
+**Nachweis:** Build + volle Unit-Suite grün (inkl. `Grap8PermanentIdTests` — keine Regression an der Naht).
+**Manuell:** Grap8 öffnen → Baustelle wählen → oben rechts **„+"** → Auftrag anlegen + „Sichern" → der
+Knoten erscheint auf der Leinwand → antippen → „Kalkulation" (kein Crash) → Vorschlagsliste/Prof.
+
+**Offen:** echtes „im Canvas zeichnen = Auftrag" (Rückkanal Leinwand→Core Data) braucht die `Grap8Web`-
+React-Quelle. Der Refresh schickt den GANZEN Graphen neu — falls React Flow dabei die Ansicht zurücksetzt,
+wäre ein gezielteres Nachschieben (nur neue Knoten) der nächste Feinschliff.
+
+Dateien: `Views/Grap8View.swift`. Backup in `_backups/grap8-neuer-auftrag_*`.
 
 ---
 
