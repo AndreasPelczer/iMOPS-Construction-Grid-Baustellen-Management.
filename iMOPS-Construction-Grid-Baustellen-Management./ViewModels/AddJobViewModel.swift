@@ -41,7 +41,9 @@ final class AddJobViewModel {
     ]
 
     // MARK: - SOP Template
-    var trainingMode: Bool = false
+    // Default Schrittweise: die (auto-vorausgefuellte) Anleitung steht sofort sichtbar
+    // und abhakbar da, statt im Schnellmodus eingeklappt hinter "Schritte anzeigen".
+    var trainingMode: Bool = true
     var selectedTemplate: AuftragTemplate? = nil
 
     // MARK: - Fehlerzustand
