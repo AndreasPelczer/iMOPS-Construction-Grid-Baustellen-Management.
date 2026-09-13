@@ -5,6 +5,12 @@ struct AuftragChecklistItem: Codable, Identifiable, Equatable {
     var id: String = UUID().uuidString
     var title: String
     var isDone: Bool = false
+
+    // Übergabe-Nachweis: wer (Rolle des eingeloggten Nutzers) hat diesen Schritt
+    // bewusst übernommen/abgeschlossen, und wann. Optional → alte Daten bleiben lesbar.
+    // Der Beleg ist so gut wie die Anmeldung (geteilter Login verwischt ihn).
+    var uebernommenVon: String? = nil
+    var uebernommenAm: Date? = nil
 }
 
 // MARK: - Auftragspositionen (Material / Arbeitspakete)

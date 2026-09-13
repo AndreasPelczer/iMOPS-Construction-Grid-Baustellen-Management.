@@ -8,6 +8,7 @@ typealias JobExtrasPayload = AuftragExtrasPayload
 // MARK: - AuftragDetailView
 struct AuftragDetailView: View {
     @Environment(\.managedObjectContext) private var ctx
+    @Environment(AppSession.self) private var session   // wer ist angemeldet (der "wer" der Übergabe)
     @ObservedObject var job: Auftrag
 
     @State private var extras = JobExtrasPayload()
@@ -422,16 +423,23 @@ struct AuftragDetailView: View {
     }
 
     private func trainingStepRow(_ item: AuftragChecklistItem) -> some View {
-        HStack(spacing: 12) {
-            Button { toggleStep(item.id) } label: {
-                Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle").font(.title2)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 12) {
+                Button { toggleStep(item.id) } label: {
+                    Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle").font(.title2)
+                }
+                Text(item.title)
+                    .strikethrough(item.isDone)
+                    .foregroundStyle(item.isDone ? .secondary : .primary)
+                Spacer()
+                Button(role: .destructive) { deleteStep(item.id) } label: {
+                    Image(systemName: "trash").foregroundStyle(.secondary)
+                }
             }
-            Text(item.title)
-                .strikethrough(item.isDone)
-                .foregroundStyle(item.isDone ? .secondary : .primary)
-            Spacer()
-            Button(role: .destructive) { deleteStep(item.id) } label: {
-                Image(systemName: "trash").foregroundStyle(.secondary)
+            if let beleg = uebergabeBeleg(item) {
+                Label(beleg, systemImage: "signature")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .padding(.leading, 34)
             }
         }
         .padding(.vertical, 12).padding(.horizontal, 10)
@@ -440,14 +448,28 @@ struct AuftragDetailView: View {
     }
 
     private func proStepRow(_ item: AuftragChecklistItem) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "text.badge.checkmark").foregroundStyle(.secondary)
-            Text(item.title)
-            Spacer()
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 10) {
+                Image(systemName: "text.badge.checkmark").foregroundStyle(.secondary)
+                Text(item.title)
+                Spacer()
+            }
+            if let beleg = uebergabeBeleg(item) {
+                Label(beleg, systemImage: "signature")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .padding(.leading, 26)
+            }
         }
         .padding(.vertical, 6).padding(.horizontal, 8)
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// Der Übergabe-Nachweis eines Schritts als Text („übernommen von … · …"), oder nil.
+    private func uebergabeBeleg(_ item: AuftragChecklistItem) -> String? {
+        guard let von = item.uebernommenVon else { return nil }
+        guard let am = item.uebernommenAm else { return "übernommen von \(von)" }
+        return "übernommen von \(von) · \(am.formatted(.dateTime.day().month().hour().minute()))"
     }
 
     // MARK: - Data: load/save extras
@@ -478,7 +500,17 @@ struct AuftragDetailView: View {
 
     private func toggleStep(_ id: String) {
         guard let idx = extras.checklist.firstIndex(where: { $0.id == id }) else { return }
-        extras.checklist[idx].isDone.toggle()
+        let jetztErledigt = !extras.checklist[idx].isDone
+        extras.checklist[idx].isDone = jetztErledigt
+        if jetztErledigt {
+            // Bewusste Übergabe: der eingeloggte Nutzer übernimmt diesen Schritt.
+            extras.checklist[idx].uebernommenVon = session.role.title
+            extras.checklist[idx].uebernommenAm = Date()
+        } else {
+            // Zurückgenommen → der Beleg gilt nicht mehr.
+            extras.checklist[idx].uebernommenVon = nil
+            extras.checklist[idx].uebernommenAm = nil
+        }
         let allDone = !extras.checklist.isEmpty && extras.checklist.allSatisfy { $0.isDone }
         job.setzeFertig(allDone)
         saveExtras(extras)
@@ -492,8 +524,18 @@ struct AuftragDetailView: View {
     }
 
     private func markJobCompleted() {
+        // Der "Ich bestätige …"-Knopf ist eine Sammel-Übergabe: der angemeldete Nutzer
+        // übernimmt hiermit alle Schritte auf einmal — mit Beleg (wer/wann), auch die,
+        // die vorher noch keinen hatten.
+        let jetzt = Date()
+        for i in extras.checklist.indices {
+            extras.checklist[i].isDone = true
+            if extras.checklist[i].uebernommenVon == nil {
+                extras.checklist[i].uebernommenVon = session.role.title
+                extras.checklist[i].uebernommenAm = jetzt
+            }
+        }
         job.status = .completed
-        for i in extras.checklist.indices { extras.checklist[i].isDone = true }
         saveExtras(extras)
     }
 
