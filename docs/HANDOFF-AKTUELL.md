@@ -2,6 +2,38 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 13.09.2026 — FIX: Grap8-Absturz auf temporärer Core-Data-ID (blockte den Test)
+
+**Branch `fix/grap8-temp-objectid`** (von `main`, das jetzt die 5 gemergten Stücke trägt). Build +
+Tests grün. **Nicht gepusht** (Freigabe abwarten).
+
+**Symptom (am Objekt gefunden):** neuen Grap8-Knoten „Baustelle absichern" anlegen → Verwaltung/
+Kalkulation öffnen → Absturz: `NSInvalidArgumentException: The specified URI is not a valid Core Data
+URI: n-…`.
+
+**Wurzel (gemessen):** `obtainPermanentIDs` wurde NIRGENDS gerufen. Ein frisch angelegter, noch nicht
+gespeicherter `Auftrag` hat eine **temporäre** objectID (`n-…`); `Grap8Graph.kennungen` schickte deren
+`uriRepresentation()` an die WebView, und beim Zurück-Auflösen wirft
+`managedObjectID(forURIRepresentation:)` eine **ObjC-Exception**, die `guard let`/`try?` NICHT fangen →
+Crash. Latenter Bug in der bestehenden JS↔Swift↔Core-Data-Brücke, nicht in Bogen 0.
+
+**Fix (zwei Schichten):**
+- **Schicht 1 — Wurzel** (`Grap8Graph.aus`): bevor die objectID-URIs zu Knoten-Kennungen werden,
+  `ctx.obtainPermanentIDs(for: auftraege)`. Damit ist jede Kennung ein `x-coredata://…`-URI, kein `n-…`
+  — heilt ALLE Round-Trips über die Kennung an einer Stelle.
+- **Schicht 2 — Sicherheitsnetz** (`Grap8View.auftrag(zu:)`): vor dem werfenden Aufruf `url.scheme ==
+  "x-coredata"` prüfen. Eine temporäre/kaputte URI gibt jetzt `nil` statt zu werfen.
+
+**Nachweis:** `Grap8PermanentIdTests` (grün): ungespeicherter Auftrag hat temporäre ID → nach
+`Grap8Graph.aus` permanent, und die Knoten-Kennung beginnt mit `x-coredata://`. Build + volle Suite grün.
+**Manuell (Andreas):** neuen Knoten → Verwaltung/Kalkulation → kein Absturz; Aufwandswert-Test läuft
+weiter bis zum Lohnsatz-Check.
+
+Dateien: `Service/Grap8Graph.swift`, `Views/Grap8View.swift`, **neu** `…Tests/Grap8PermanentIdTests.swift`.
+Backups in `_backups/grap8-temp-objectid_*`.
+
+---
+
 ## Delta 13.09.2026 — Vom Haus-Generator zum Projekt-Generator (kleiner erster Schritt)
 
 **Branch `feature/projekt-generator`** (abgezweigt von `feature/katalog-sichten-und-event-masse`).

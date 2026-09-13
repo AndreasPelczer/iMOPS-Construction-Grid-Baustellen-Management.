@@ -70,6 +70,17 @@ extension Grap8Graph {
             // Stabile Reihenfolge, damit ein zweites Öffnen dasselbe Bild ergibt.
             .sorted { Kausalkette.bezeichnung($0) < Kausalkette.bezeichnung($1) }
 
+        // WURZEL-FIX: Ein frisch angelegter, noch nicht gespeicherter Auftrag hat eine
+        // TEMPORÄRE objectID (`n-…`). Deren `uriRepresentation()` ist keine gültige
+        // Core-Data-URI — beim Zurück-Auflösen in der Web-Brücke (`auftrag(zu:)`) wirft
+        // `managedObjectID(forURIRepresentation:)` eine ObjC-Exception und die App stürzt
+        // ab. `obtainPermanentIDs` wurde nirgends gerufen. Hier, bevor die URIs zu
+        // Kennungen werden, permanente IDs holen: dann ist JEDE Kennung ein
+        // `x-coredata://…`-URI, kein `n-…` mehr — heilt alle Round-Trips über die Kennung.
+        if let ctx = event.managedObjectContext, !auftraege.isEmpty {
+            try? ctx.obtainPermanentIDs(for: auftraege)
+        }
+
         let kennung = kennungen(fuer: auftraege)
         let spalten = spaltenAufteilung(auftraege)
 

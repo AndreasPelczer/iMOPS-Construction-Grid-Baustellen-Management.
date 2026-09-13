@@ -340,7 +340,13 @@ private struct Grap8WebView: UIViewRepresentable {
     /// Store zurück in ein Objekt — `existingObject` schlägt fehl, wenn der Auftrag
     /// inzwischen gelöscht wurde, und das wird gemeldet statt verschluckt.
     fileprivate func auftrag(zu kennung: String) -> Auftrag? {
+        // SICHERHEITSNETZ: `managedObjectID(forURIRepresentation:)` WIRFT eine ObjC-Exception
+        // (kein Swift-Fehler, den `guard`/`try?` fangen könnte), wenn die URI keine gültige
+        // Core-Data-URI ist — z.B. eine temporäre `n-…`-ID. Darum das Schema hier prüfen,
+        // BEVOR die werfende Methode überhaupt gefüttert wird. Schicht 1 (permanente IDs)
+        // verhindert temporäre URIs an der Wurzel; dieses Netz fängt zusätzlich alles Kaputte.
         guard let url = URL(string: kennung),
+              url.scheme == "x-coredata",
               let koordinator = kontext.persistentStoreCoordinator,
               let objektID = koordinator.managedObjectID(forURIRepresentation: url) else {
             return nil
