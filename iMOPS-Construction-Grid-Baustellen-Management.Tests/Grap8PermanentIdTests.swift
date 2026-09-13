@@ -43,4 +43,44 @@ struct Grap8PermanentIdTests {
                 "Kennung ist keine permanente URI: \(knoten.id)")
         #expect(!knoten.id.hasPrefix("n-"))
     }
+
+    // MARK: - Leitstand: die Chips spiegeln die Kalkulation
+
+    @Test @MainActor func chipsSpiegelnDieKalkulation() throws {
+        let event = Event(context: ctx)
+        event.name = "Testbaustelle"
+        let auftrag = Auftrag(context: ctx)
+        auftrag.processingDetails = "Baustelle absichern"
+        auftrag.status = .pending
+        auftrag.storageNote = ""
+        auftrag.event = event
+
+        func chip(_ typ: String, _ nodes: [Grap8Graph.Knoten]) -> Bool? {
+            nodes.first?.data.anf.first { $0.typ == typ }?.erfuellt
+        }
+
+        // Ohne eigene Position: alle drei Chips offen.
+        let leer = Grap8Graph.aus(event).nodes
+        #expect(chip("material", leer) == false)
+        #expect(chip("mensch", leer) == false)
+        #expect(chip("maschine", leer) == false)
+
+        // Position mit Lohn → „Mannschaft" erfüllt, Material/Maschine bleiben offen.
+        let pos = LVPosition(context: ctx)
+        pos.bezeichnung = "Baustelle absichern"
+        pos.menge = 1
+        pos.einheit = "psch"
+        pos.event = event
+        auftrag.lvPosition = pos
+        let pl = PositionLohn(context: ctx)
+        pl.id = UUID()
+        pl.qualifikation = "Maurer"
+        pl.stunden = 0.5
+        pl.position = pos
+
+        let mit = Grap8Graph.aus(event).nodes
+        #expect(chip("mensch", mit) == true, "Lohn ist da → Mannschaft-Chip muss erfüllt sein.")
+        #expect(chip("material", mit) == false)
+        #expect(chip("maschine", mit) == false)
+    }
 }

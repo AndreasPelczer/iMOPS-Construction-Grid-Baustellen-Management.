@@ -97,7 +97,7 @@ extension Grap8Graph {
                     kg: kostengruppe(auftrag),
                     icon: symbol(auftrag),
                     base: zustand(auftrag),
-                    anf: []
+                    anf: anforderungen(auftrag)
                 )
             )
         }
@@ -201,6 +201,24 @@ extension Grap8Graph {
     }
 
     // MARK: Felder
+
+    /// Die Anforderungs-Chips des Knotens — abgeleitet aus seiner EIGENEN Position:
+    /// „erfüllt" = diese Kostenart ist schon kalkuliert. So zeigt die Leinwand auf einen
+    /// Blick, was an einem Knoten schon steht und was fehlt (Leitstand).
+    ///
+    /// Contract mit `App.jsx` (React `REQ_TYPES`): `typ` ∈ {material, mensch, maschine},
+    /// `erfuellt` true = geplant (voller Chip), false = offen (gestrichelt). „mensch" ist
+    /// der Lohnanteil — mit dem Aufwandswert-Fluss (Maurer/Helfer → `kalkLohn`) füllt er sich.
+    /// Hat ein Knoten (noch) keine eigene Position, sind alle drei offen.
+    private static func anforderungen(_ auftrag: Auftrag) -> [Anforderung] {
+        let pos = auftrag.lvPosition
+        func hat(_ menge: NSSet?) -> Bool { (menge?.count ?? 0) > 0 }
+        return [
+            Anforderung(typ: "material", erfuellt: hat(pos?.kalkMaterialien)),
+            Anforderung(typ: "mensch",   erfuellt: hat(pos?.kalkLohn)),
+            Anforderung(typ: "maschine", erfuellt: hat(pos?.kalkGeraete)),
+        ]
+    }
 
     /// Der rohe Zustand für die Leinwand.
     ///
