@@ -246,9 +246,42 @@ enum HofauffahrtSeeder {
             if nummer == 1 {                               // Schritt 2: bestellen
                 extras.orderNumber = "AUFFAHRT-\(String(UUID().uuidString.prefix(4)))"
             }
+            extras.lineItems = materialFuer(nummer)        // damit die Materialliste gefüllt ist
             // Bewusst KEIN `extras.deadline`: ohne Aufmaß kein Termin.
             auftrag.extras = extras.toJSONString()
             return auftrag
+        }
+    }
+
+    /// Beispiel-Material je Schritt (Mengen aus den LV-Richtwerten der Testhofeinfahrt),
+    /// damit die Materialliste gefüllt ist und der Polier sehen kann, was gebraucht wird.
+    private static func materialFuer(_ nummer: Int) -> [AuftragLineItem] {
+        switch nummer {
+        case 1:   // Material bestellen — die ganze Lieferung
+            return [
+                AuftragLineItem(title: "Mineralgemisch 0/32 (Tragschicht)", amount: "30", unit: "m³", note: "Unterbau"),
+                AuftragLineItem(title: "Pflastersteine Pasand Vollstein", amount: "100", unit: "m²"),
+                AuftragLineItem(title: "Randsteine grau", amount: "40", unit: "Stk"),
+                AuftragLineItem(title: "Splitt 2/5 (Bettung)", amount: "5", unit: "m³"),
+                AuftragLineItem(title: "Trennvlies (Geotextil)", amount: "105", unit: "m²"),
+            ]
+        case 4:   // Trennvlies verlegen
+            return [AuftragLineItem(title: "Trennvlies (Geotextil)", amount: "105", unit: "m²", note: "inkl. Überlappung")]
+        case 5:   // Tragschicht
+            return [AuftragLineItem(title: "Mineralgemisch 0/32", amount: "30", unit: "m³", note: "30 cm, verdichtet 95 %")]
+        case 6:   // Randsteine
+            return [
+                AuftragLineItem(title: "Randsteine grau", amount: "40", unit: "Stk"),
+                AuftragLineItem(title: "Beton C12/15 (Fundament)", amount: "1,5", unit: "m³"),
+            ]
+        case 7:   // Bettung + Pflaster
+            return [
+                AuftragLineItem(title: "Pflastersteine Pasand Vollstein", amount: "100", unit: "m²"),
+                AuftragLineItem(title: "Splitt 2/5 (Bettung)", amount: "5", unit: "m³"),
+                AuftragLineItem(title: "Fugensplitt", amount: "1", unit: "m³"),
+            ]
+        default:
+            return []
         }
     }
 
