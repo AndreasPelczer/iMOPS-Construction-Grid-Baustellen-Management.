@@ -55,8 +55,32 @@ struct SchichtUebergabeTests {
         let (pc, ev) = baustelle(2, gesternAbgegeben: true)
         withExtendedLifetime(pc) {
             #expect(ev.offeneAuftraege.allSatisfy { $0.uebergabeOffen })   // Lücke offen
+            #expect(ev.hatOffeneUebergabe)
             ev.schichtUebernehmen(rolle: "Leitung", ergebnis: .ok)
             #expect(ev.offeneAuftraege.allSatisfy { !$0.uebergabeOffen })  // Lücke zu
+            #expect(!ev.hatOffeneUebergabe)
+        }
+    }
+
+    @Test @MainActor func feierabendAbgebenOeffnetDieUebergabe() {
+        let (pc, ev) = baustelle(2)
+        withExtendedLifetime(pc) {
+            #expect(!ev.hatOffeneUebergabe)             // noch nichts abgegeben
+            ev.schichtAbgeben(rolle: "Mitarbeiter")
+            #expect(ev.offeneAuftraege.allSatisfy { $0.istAbgegeben })
+            #expect(ev.hatOffeneUebergabe)              // abgegeben, wartet auf Übernahme
+            #expect(!ev.schichtHeuteUebernommen)
+        }
+    }
+
+    @Test @MainActor func feierabendDannUebernehmen_rundeSchleife() {
+        let (pc, ev) = baustelle(2)
+        withExtendedLifetime(pc) {
+            ev.schichtAbgeben(rolle: "Mitarbeiter")     // Feierabend
+            #expect(ev.hatOffeneUebergabe)
+            ev.schichtUebernehmen(rolle: "Leitung", ergebnis: .ok)  // nächster Morgen
+            #expect(!ev.hatOffeneUebergabe)             // Kette hält wieder
+            #expect(ev.schichtHeuteUebernommen)
         }
     }
 }
