@@ -29,6 +29,41 @@ struct AmpelCard: View {
         // -----------------------------------------------------------------
         let auftraege = event.jobs?.allObjects as? [Auftrag] ?? []
 
+        // -----------------------------------------------------------------
+        // DIE ÜBERGABE-LÜCKE — das Einzige, wo der Mops von sich aus spricht.
+        // Buch: „Gute Systeme sind still" (Kap 10). Solange die Kette hält, sagt er
+        // nichts. Abgegeben, aber keiner hat übernommen = die Lücke:
+        //   über Nacht offen  → 🔴 keiner hat den Staffelstab aufgehoben.
+        //   heute abgegeben    → 🟠 wartet auf den Nächsten (noch okay).
+        // -----------------------------------------------------------------
+        let offeneUebergaben = auftraege.filter { $0.uebergabeOffen }
+        let ueberNacht = offeneUebergaben.first {
+            guard let am = AuftragExtrasPayload.from($0.extras).abgegebenAm else { return false }
+            return !Calendar.current.isDateInToday(am)
+        }
+        if let job = ueberNacht {
+            return (
+                .red,
+                "Übergabe offen",
+                "\(job.processingDetails ?? "Ein Auftrag") wurde abgegeben, aber niemand hat übernommen."
+            )
+        }
+        if !offeneUebergaben.isEmpty {
+            return (
+                .orange,
+                "Wartet auf Übernahme",
+                "Ein Auftrag ist abgegeben und wartet auf den Nächsten."
+            )
+        }
+        // Bei der Annahme ein Befund gemeldet (Problem / geht nicht) → sichtbar machen.
+        if let befund = auftraege.first(where: { $0.annahmeMitBefund }) {
+            return (
+                .orange,
+                "Problem bei Übernahme",
+                "\(befund.processingDetails ?? "Ein Auftrag"): \(befund.annahmeErgebnis?.titel ?? "gemeldet")."
+            )
+        }
+
         // Baustelleneinrichtung am ECHTEN Gewerk erkennen (nicht am Titel raten), und
         // ehrlich unterscheiden: existiert sie und läuft (🟠) — oder ist sie gar nicht da?
         let infraJobs = auftraege.filter { $0.istBaustelleneinrichtung }
