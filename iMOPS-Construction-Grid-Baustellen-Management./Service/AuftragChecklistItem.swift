@@ -48,6 +48,43 @@ struct AuftragExtrasPayload: Codable {
     // Baustellen-spezifisch
     var gewerk: String = ""          // z.B. "Elektro", "Sanitaer"
     var planReferenz: String = ""    // Verweis auf CAD-Datei / Plannummer
+
+    // Übergabe (Buch „Thermodynamik der Arbeit": zweiseitig — Abgabe ohne Annahme
+    // ist keine Übergabe). Abgabe = Feierabend/„bin fertig"; Annahme = der Nächste
+    // übernimmt am Morgen und meldet ein Ergebnis. Alles optional → alte Daten lesbar.
+    var abgegebenVon: String? = nil     // Rolle des eingeloggten Nutzers
+    var abgegebenAm: Date? = nil
+    var angenommenVon: String? = nil
+    var angenommenAm: Date? = nil
+    var annahmeErgebnis: String? = nil  // Annahmeergebnis.rawValue: ok | problem | gehtNicht
+}
+
+// MARK: - Annahme-Ergebnis (was der Übernehmende meldet)
+enum Annahmeergebnis: String, CaseIterable, Identifiable {
+    case ok
+    case problem
+    case gehtNicht
+
+    var id: String { rawValue }
+
+    var titel: String {
+        switch self {
+        case .ok:       return "Übernommen — alles ok"
+        case .problem:  return "Übernommen — mit Problem"
+        case .gehtNicht: return "Geht nicht"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .ok:       return "checkmark.seal.fill"
+        case .problem:  return "exclamationmark.triangle.fill"
+        case .gehtNicht: return "xmark.octagon.fill"
+        }
+    }
+
+    /// Hält die Kette (nur „ok" gibt sie sauber weiter; Problem/Geht-nicht sind Befunde).
+    var haeltDieKette: Bool { self == .ok }
 }
 
 // MARK: - JSON Helfer fuer Auftrag.extras (String?)
