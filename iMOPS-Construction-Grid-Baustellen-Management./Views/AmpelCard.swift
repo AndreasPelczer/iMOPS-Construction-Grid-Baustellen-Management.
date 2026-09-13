@@ -31,7 +31,7 @@ struct AmpelCard: View {
 
         // Baustelleneinrichtung am ECHTEN Gewerk erkennen (nicht am Titel raten), und
         // ehrlich unterscheiden: existiert sie und läuft (🟠) — oder ist sie gar nicht da?
-        let infraJobs = auftraege.filter { istBaustelleneinrichtung($0) }
+        let infraJobs = auftraege.filter { $0.istBaustelleneinrichtung }
         let infraOffen = infraJobs.filter { !$0.istFertig }
         if !infraOffen.isEmpty {
             // Sie ist im Graph eingerichtet, nur noch nicht ganz übernommen → „läuft",
@@ -88,14 +88,8 @@ struct AmpelCard: View {
         )
     }
 
-    // Baustelleneinrichtung: zuerst am echten Gewerk (aus den extras), dann als
-    // Rückfall am Titel-Stichwort (alte Aufträge ohne Gewerk-Feld).
-    private func istBaustelleneinrichtung(_ job: Auftrag) -> Bool {
-        if AuftragExtrasPayload.from(job.extras).gewerk == "Baustelleneinrichtung" { return true }
-        let d = job.processingDetails?.lowercased() ?? ""
-        return d.contains("bauzaun") || d.contains("baustrom")
-            || d.contains("bauwasser") || d.contains("einrichtung")
-    }
+    // (istBaustelleneinrichtung liegt jetzt als geteilte Auftrag-Erweiterung vor —
+    //  dieselbe Wahrheit für Ampel und Kausalbaukette.)
 
     // Wie weit ist die Einrichtung? Summe der übernommenen vs. aller Schritte über die
     // offenen Einrichtungs-Aufträge — der echte Stand aus dem Graph, nicht geraten.
