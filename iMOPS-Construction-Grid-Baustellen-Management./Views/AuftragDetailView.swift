@@ -179,6 +179,7 @@ struct AuftragDetailView: View {
                 Text("Keine Positionen hinterlegt.")
                     .font(.subheadline).foregroundStyle(.secondary)
             } else {
+                materialStand   // „X/Y geprüft · Z fehlt" — der Ist-da-Überblick
                 VStack(spacing: 10) {
                     ForEach(extras.lineItems) { item in
                         VStack(alignment: .leading, spacing: 6) {
@@ -201,6 +202,17 @@ struct AuftragDetailView: View {
                             if !item.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 Text(item.note).font(.caption).foregroundStyle(.secondary).padding(.top, 2)
                             }
+                            // Polier-Check: ist das auf der Baustelle? (Zustand + Nachweis)
+                            HStack(spacing: 8) {
+                                materialKnopf(item, da: true)
+                                materialKnopf(item, da: false)
+                                Spacer()
+                                if let von = item.geprueftVon, let am = item.geprueftAm {
+                                    Text("\(von) · \(am.formatted(.dateTime.day().month().hour().minute()))")
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.top, 4)
                         }
                         .padding(10)
                         .background(.thinMaterial)
@@ -212,6 +224,49 @@ struct AuftragDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    // „X/Y geprüft · Z fehlt" — der Ist-da-Überblick fürs Material.
+    private var materialStand: some View {
+        let geprueft = extras.lineItems.filter { $0.vorhanden != nil }.count
+        let fehlt = extras.lineItems.filter { $0.vorhanden == false }.count
+        return HStack(spacing: 6) {
+            Text("\(geprueft)/\(extras.lineItems.count) geprüft")
+                .font(.caption).foregroundStyle(.secondary)
+            if fehlt > 0 {
+                Text("· \(fehlt) fehlt").font(.caption.weight(.semibold)).foregroundStyle(.orange)
+            }
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func materialKnopf(_ item: AuftragLineItem, da: Bool) -> some View {
+        let label = Label(da ? "Da" : "Fehlt",
+                          systemImage: da ? "checkmark.circle.fill" : "xmark.circle").font(.caption)
+        if item.vorhanden == da {
+            Button { pruefeMaterial(item.id, vorhanden: da) } label: { label }
+                .buttonStyle(.borderedProminent).tint(da ? .green : .orange).controlSize(.small)
+        } else {
+            Button { pruefeMaterial(item.id, vorhanden: da) } label: { label }
+                .buttonStyle(.bordered).tint(da ? .green : .orange).controlSize(.small)
+        }
+    }
+
+    /// Polier-Check: Material da/fehlt setzen — mit Nachweis (wer/wann). Nochmal tippen
+    /// auf denselben Zustand → zurück auf „ungeprüft".
+    private func pruefeMaterial(_ id: String, vorhanden: Bool) {
+        guard let idx = extras.lineItems.firstIndex(where: { $0.id == id }) else { return }
+        if extras.lineItems[idx].vorhanden == vorhanden {
+            extras.lineItems[idx].vorhanden = nil
+            extras.lineItems[idx].geprueftVon = nil
+            extras.lineItems[idx].geprueftAm = nil
+        } else {
+            extras.lineItems[idx].vorhanden = vorhanden
+            extras.lineItems[idx].geprueftVon = session.role.title
+            extras.lineItems[idx].geprueftAm = Date()
+        }
+        saveExtras(extras)
     }
 
     // (Die Übergabe lebt jetzt an EINER Stelle: der Baustelle — SchichtUebergabeCard.

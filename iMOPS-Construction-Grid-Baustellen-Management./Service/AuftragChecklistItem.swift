@@ -21,6 +21,12 @@ struct AuftragLineItem: Codable, Identifiable, Equatable {
     var unit: String = ""        // z.B. "m2" / "Stueck" / "lfm"
     var note: String = ""        // z.B. "Knauf 12,5mm, Brandschutz"
     var kostenGruppeNummer: String = ""  // DIN 276 KG, z.B. "334"
+
+    // Polier-Check „ist das auf der Baustelle?" — ein Zustand (Buch): da / fehlt /
+    // ungeprüft. Mit wer+wann wird's ein Nachweis. Optional → alte Daten lesbar.
+    var vorhanden: Bool? = nil   // nil = ungeprüft, true = da, false = fehlt
+    var geprueftVon: String? = nil
+    var geprueftAm: Date? = nil
 }
 
 // MARK: - Extras Payload (MASTER fuer Auftrag.extras)
