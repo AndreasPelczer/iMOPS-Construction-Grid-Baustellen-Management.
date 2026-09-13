@@ -1042,6 +1042,13 @@ enum HouseProjectGenerator {
             var jobExtras = AuftragExtrasPayload()
             jobExtras.gewerk = gewerk
 
+            // Checkliste aus der passenden Vorlage vorausfuellen (schrittweiser Modus):
+            // z. B. Gewerk "Pflaster"/"Unterbau"/"Randeinfassung" -> die Arbeitsschritte
+            // stehen sofort im Auftrag, ohne dass man die Vorlage von Hand waehlen muss.
+            if let tpl = AuftragTemplate.passend(zu: "\(gewerk) \(job.processingDetails ?? "")") {
+                jobExtras.checklist = tpl.steps.map { AuftragChecklistItem(title: $0) }
+            }
+
             // Materialien als LineItems
             jobExtras.lineItems = materialien.map { mat in
                 AuftragLineItem(
