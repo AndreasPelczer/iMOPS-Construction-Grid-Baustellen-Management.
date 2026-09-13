@@ -72,6 +72,14 @@ struct KausalbauketteView: View {
                     if infraJobs.isEmpty {
                         Text("Keine Infrastruktur-Aufträge im System definiert.").font(.caption).foregroundStyle(.secondary)
                     } else {
+                        // Gesamtstatus: grün, sobald alle Einrichtungs-Aufträge übernommen sind.
+                        let alleFertig = infraJobs.allSatisfy { $0.istFertig }
+                        HStack(spacing: 8) {
+                            Circle().fill(alleFertig ? Color.green : Color.orange).frame(width: 9, height: 9)
+                            Text(alleFertig ? "Baustelle eingerichtet" : "Einrichtung läuft")
+                                .font(.subheadline).bold()
+                            Spacer()
+                        }
                         ForEach(infraJobs, id: \.objectID) { job in
                             HStack {
                                 Image(systemName: job.istFertig ? "checkmark.circle.fill" : "circle")
@@ -99,10 +107,10 @@ struct KausalbauketteView: View {
                 // GLIED 3: OPERATIVE GEWERKE
                 // -----------------------------------------------------------------
                 Section(header: Label("Glied 3: Laufende Handwerker", systemImage: "person.2.fill")) {
-                    let handwerkJobs = (event.jobs?.allObjects as? [Auftrag] ?? []).filter { job in
-                        let details = job.processingDetails?.lowercased() ?? ""
-                        return !details.contains("bauzaun") && !details.contains("baustrom") && !details.contains("bauwasser")
-                    }
+                    // Handwerker = alles, was NICHT Baustelleneinrichtung ist (sonst
+                    // stünde „Baustelle einrichten … absichern" doppelt in Glied 2 und 3).
+                    let handwerkJobs = (event.jobs?.allObjects as? [Auftrag] ?? [])
+                        .filter { !$0.istBaustelleneinrichtung }
                     
                     if event.baugenehmigungNr?.isEmpty ?? true {
                         Text("🔒 Gesperrt – Wartet auf Glied 1 (Baugenehmigung)")
@@ -135,12 +143,11 @@ struct KausalbauketteView: View {
         }
     }
     
-    // Hilfsfunktion zum Filtern der Infrastruktur-Glieder
+    // Filtert die Baustelleneinrichtungs-Aufträge — am echten Gewerk + Wortstamm
+    // (geteilt mit der Ampel), damit „Baustelle einrichten … absichern" auch trifft.
     private func holeInfrastrukturJobs() -> [Auftrag] {
         let all = event.jobs?.allObjects as? [Auftrag] ?? []
-        return all.filter { job in
-            let details = job.processingDetails?.lowercased() ?? ""
-            return details.contains("bauzaun") || details.contains("baustrom") || details.contains("bauwasser") || details.contains("einrichtung")
-        }.sorted { ($0.processingDetails ?? "") < ($1.processingDetails ?? "") }
+        return all.filter { $0.istBaustelleneinrichtung }
+            .sorted { ($0.processingDetails ?? "") < ($1.processingDetails ?? "") }
     }
 }
