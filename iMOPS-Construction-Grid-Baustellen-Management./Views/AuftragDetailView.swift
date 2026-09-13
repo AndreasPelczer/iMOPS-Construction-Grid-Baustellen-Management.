@@ -38,9 +38,8 @@ struct AuftragDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                jetztCard
-                productionListCard
                 headerCard
+                productionListCard
                 modeCard
                 uebergabeCard
                 checklistCard
@@ -84,29 +83,9 @@ struct AuftragDetailView: View {
 
     // MARK: - UI Cards
 
-    private var jetztCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("JETZT")
-                .font(.caption).foregroundStyle(.secondary)
-            Text(whatToDoText)
-                .font(.title2.weight(.bold)).lineLimit(3)
-            if extras.trainingMode,
-               let next = nextOpenStepTitle,
-               !job.istFertig {
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.right.circle.fill")
-                    Text(next)
-                }
-                .font(.subheadline).foregroundStyle(.secondary).padding(.top, 4)
-            }
-        }
-        .padding(16)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 10) {
+            Text("JETZT").font(.caption).foregroundStyle(.secondary)
             Text(whatToDoText).font(.title2.bold()).lineLimit(3)
 
             HStack(spacing: 10) {
@@ -152,8 +131,11 @@ struct AuftragDetailView: View {
             }
 
             if extras.trainingMode, let next = nextOpenStepTitle, !job.istFertig {
-                Text("Jetzt: \(next)")
-                    .font(.subheadline.weight(.semibold)).padding(.top, 2)
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.right.circle.fill")
+                    Text("Jetzt: \(next)").font(.subheadline.weight(.semibold))
+                }
+                .foregroundStyle(.secondary).padding(.top, 2)
             }
         }
         .padding()
