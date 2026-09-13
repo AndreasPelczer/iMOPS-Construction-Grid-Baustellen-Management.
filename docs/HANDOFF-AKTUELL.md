@@ -2,6 +2,37 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 13.09.2026 — Leitstand Schritt 1: Knoten-Chips zeigen, was kalkuliert ist
+
+**Branch `feature/grap8-knoten-zustand`** (von `main`). Build + Suite grün. **Nicht gepusht.**
+Erster von drei Leitstand-Schritten (Chips → Auto-Menge → Rückkanal).
+
+**Idee:** Die Leinwand soll auf einen Blick zeigen, was an einem Knoten schon steht und was fehlt.
+Rein Swift, ohne die React-Quelle anzufassen — nur der Inhalt, den `Grap8Graph` schon durchreicht.
+
+**Gemessen (aus dem React-Quelltext `~/Projekte/grap8-canvas/src/App.jsx`, nur GELESEN):** die Leinwand
+rendert pro Knoten `base` (Status; startklar/wartet leitet sie selbst aus den Kanten ab — das lief schon)
+und `anf` (Chips). `anf`-Contract: `{typ, erfuellt}`, `typ` ∈ {material, mensch, maschine, bestellung,
+freigabe}, `erfuellt:true`=geplant (voll), `false`=offen (gestrichelt). Bisher schickte Swift `anf: []`.
+
+**Gebaut:** `Grap8Graph.anforderungen(auftrag)` füllt jetzt drei Chips aus der EIGENEN Position des
+Knotens (`Auftrag.lvPosition`): **Material** = hat `kalkMaterialien`, **Mannschaft** = hat `kalkLohn`
+(der Aufwandswert!), **Maschine** = hat `kalkGeraete`. Kein eigener LVPosition → alle drei offen.
+→ Auf der Leinwand sieht man: welcher Knoten schon Lohn/Material/Gerät trägt (voller Chip) und welcher
+noch leer ist (gestrichelt). Der Aufwandswert-Fluss lässt den Mannschaft-Chip zugehen.
+
+**Bewusst NICHT gefüllt:** `bestellung` + `freigabe` — dafür gibt es (noch) kein sauberes Signal am
+Auftrag; lieber weglassen als raten. Andockbar, sobald Bestellliste/Abnahme am Knoten hängen.
+
+**Nachweis:** `Grap8PermanentIdTests.chipsSpiegelnDieKalkulation` (grün): ohne Position alle Chips offen;
+mit Lohn ist Mannschaft erfüllt, Material/Maschine offen. Build + volle Suite grün.
+**Manuell:** Grap8 → Baustelle mit kalkulierten Aufträgen → die Knoten tragen die Chips; einen Aufwandswert
+übernehmen → der Mannschaft-Chip des Knotens wird voll.
+
+Dateien: `Service/Grap8Graph.swift`, `…Tests/Grap8PermanentIdTests.swift`. Backup in `_backups/grap8-knoten-zustand_*`.
+
+---
+
 ## Delta 13.09.2026 — Katalog-Vorschlagsliste am Knoten (nativ, ohne die React-Leinwand)
 
 **Branch `feature/knoten-katalog-vorschlaege`** (stapelt auf `fix/grap8-temp-objectid`, damit der
