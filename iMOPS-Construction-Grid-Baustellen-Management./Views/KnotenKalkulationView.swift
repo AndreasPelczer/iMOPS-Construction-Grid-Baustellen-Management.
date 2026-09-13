@@ -32,6 +32,8 @@ struct KnotenKalkulationView: View {
     // Menge von Hand — als Text, damit deutsches Komma sauber durchgeht.
     @State private var mengeText: String = "1"
     @State private var einheit: String = "psch"
+    // Woher ein Mengen-Vorschlag aus der Baustellengröße kam (z.B. „Umfang 44 m") — nil = keiner.
+    @State private var mengeHinweis: String?
 
     // Prof-Vorschlag
     @State private var isLoading = false
@@ -68,9 +70,25 @@ struct KnotenKalkulationView: View {
             if let pos = auftrag.lvPosition {
                 mengeText = Self.zahl(pos.menge)
                 einheit = pos.einheit ?? "psch"
+            } else {
+                mengeAbleiten()   // Menge aus der Baustellengröße vorschlagen (falls möglich)
             }
             katalogVorschlaegeAktualisieren()
         }
+    }
+
+    /// Schlägt die Menge aus der Baustellengröße vor (m²→Grundfläche, m/lfm→Umfang) und
+    /// füllt das Feld vor — nur solange die Position NOCH NICHT existiert (Anlege-Zweig),
+    /// damit eine echte, schon eingetragene Menge nie überschrieben wird. Der Wert bleibt
+    /// anpassbar; der Hinweis sagt, woher er kommt.
+    private func mengeAbleiten() {
+        guard auftrag.lvPosition == nil,
+              let v = MengenAbleitung.ausGroesse(einheit: einheit, event: auftrag.event) else {
+            mengeHinweis = nil
+            return
+        }
+        mengeText = Self.zahl(v.menge)
+        mengeHinweis = "aus \(v.quelle) (\(Self.zahl(v.menge)) \(einheit.trimmingCharacters(in: .whitespaces)))"
     }
 
     /// Baut die Vorschlagsliste: Bausteine, die zum Knoten-Text passen, zuerst — dann die
@@ -109,7 +127,7 @@ struct KnotenKalkulationView: View {
             } header: {
                 Text("Eigene LV-Position")
             } footer: {
-                Text("Menge von Hand. Die Auto-Ableitung (Standort → Menge) ist ein späterer Bogen.")
+                Text("Menge von Hand. Beim Anlegen schlägt der Mops sie aus der Baustellengröße vor (m²→Grundfläche, m/lfm→Umfang), wo möglich.")
             }
             .onChange(of: mengeText) { _, neu in
                 pos.menge = Self.parse(neu) ?? pos.menge
@@ -121,6 +139,11 @@ struct KnotenKalkulationView: View {
         } else {
             Section {
                 mengeFeld
+                if let mengeHinweis {
+                    Label("Menge \(mengeHinweis) — geschätzt, anpassbar", systemImage: "ruler")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
                 Button {
                     positionAnlegen()
                 } label: {
@@ -132,6 +155,7 @@ struct KnotenKalkulationView: View {
             } footer: {
                 Text("Dieser Knoten hat noch keine Kalkulations-Position. Sie wird an der Baustelle „\(auftrag.event?.title ?? auftrag.event?.name ?? "—")“ angelegt und trägt den Knoten-Text.")
             }
+            .onChange(of: einheit) { _, _ in mengeAbleiten() }
         }
     }
 
@@ -290,9 +314,13 @@ struct KnotenKalkulationView: View {
         guard auftrag.lvPosition == nil else { return }
         let pos = LVPosition(context: viewContext)
         pos.bezeichnung = leistung
-        pos.menge = Self.parse(mengeText) ?? 1
+        let menge = Self.parse(mengeText) ?? 1
+        pos.menge = menge
         pos.einheit = einheit.trimmingCharacters(in: .whitespaces)
-        pos.mengenQuelle = .manuell
+        // Stammt die Menge aus dem Baustellengrößen-Vorschlag (unverändert übernommen),
+        // ist sie eine SCHÄTZUNG — sonst von Hand. Ehrlich markiert (istGeschaetzt).
+        let vorschlag = MengenAbleitung.ausGroesse(einheit: einheit, event: auftrag.event)
+        pos.mengenQuelle = (vorschlag.map { abs($0.menge - menge) < 0.001 } == true) ? .schaetzung : .manuell
         // Die Kostengruppe des Knotens mitnehmen — die DIN-276-KG steht schon am Auftrag.
         pos.kostenGruppeNummer = auftrag.kostenGruppeNummer
         pos.event = auftrag.event      // Position lebt an der Baustelle wie jede andere
@@ -344,14 +372,22 @@ struct KnotenKalkulationView: View {
     /// ohne den Prof zu fragen. Der Baustein zählt eine Verwendung.
     private func ausKatalogUebernehmen(_ baustein: Leistungsbaustein) {
         // Tippen aus der Liste soll in einem Schritt gehen: fehlt die Position noch,
-        // wird sie hier angelegt (Menge aus dem Feld, Default 1).
-        if auftrag.lvPosition == nil { positionAnlegen() }
+        // wird sie hier angelegt.
+        let warNeu = auftrag.lvPosition == nil
+        if warNeu { positionAnlegen() }
         guard let pos = auftrag.lvPosition else { return }
 
         // Einheit vom Baustein übernehmen, damit die h/Einheit-Stunden dazu passen.
         if let e = baustein.einheit, !e.isEmpty {
             pos.einheit = e
             einheit = e
+            // Frisch angelegt + ableitbare Einheit → Menge aus der Baustellengröße nachziehen
+            // (Schätzung). Bei einer schon bestehenden Position wird nichts überschrieben.
+            if warNeu, let v = MengenAbleitung.ausGroesse(einheit: e, event: auftrag.event) {
+                pos.menge = v.menge
+                pos.mengenQuelle = .schaetzung
+                mengeText = Self.zahl(v.menge)
+            }
         }
         stundenSchreiben(maurer: baustein.maurerStunden, helfer: baustein.helferStunden, in: pos)
         LeistungskatalogService.benutzt(baustein)
