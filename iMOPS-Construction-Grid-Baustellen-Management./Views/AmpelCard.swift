@@ -28,22 +28,20 @@ struct AmpelCard: View {
         // GLIED 3: INFRASTRUCTUR (Baustrom, Bauwasser, Bauzaun)
         // -----------------------------------------------------------------
         let auftraege = event.jobs?.allObjects as? [Auftrag] ?? []
-        
-        // Wir suchen nach Infrastruktur-Aufträgen, die noch nicht fertig sind
-        let infraOffen = auftraege.contains { job in
-            let details = job.processingDetails?.lowercased() ?? ""
-            let istInfra = details.contains("bauzaun") ||
-                           details.contains("baustrom") ||
-                           details.contains("bauwasser") ||
-                           details.contains("einrichtung")
-            return istInfra && !job.istFertig
-        }
-        
-        if infraOffen {
+
+        // Baustelleneinrichtung am ECHTEN Gewerk erkennen (nicht am Titel raten), und
+        // ehrlich unterscheiden: existiert sie und läuft (🟠) — oder ist sie gar nicht da?
+        let infraJobs = auftraege.filter { istBaustelleneinrichtung($0) }
+        let infraOffen = infraJobs.filter { !$0.istFertig }
+        if !infraOffen.isEmpty {
+            // Sie ist im Graph eingerichtet, nur noch nicht ganz übernommen → „läuft",
+            // NICHT „fehlt". Wir zeigen den echten Stand aus der Checkliste.
+            let (uebernommen, gesamt) = einrichtungsFortschritt(infraOffen)
+            let stand = gesamt > 0 ? " (\(uebernommen)/\(gesamt) Schritte übernommen)" : ""
             return (
                 .orange,
-                "Infrastruktur unvollständig",
-                "Baustelleneinrichtung, Strom oder Zaun fehlen. Teilweise Baufreiheit."
+                "Baustelleneinrichtung läuft",
+                "Eingerichtet, aber noch nicht abgeschlossen\(stand). Teilweise Baufreiheit."
             )
         }
         
@@ -88,6 +86,27 @@ struct AmpelCard: View {
             "Wartet auf Start",
             "Projekt angelegt. Kausalbaukette bereit zur Validierung."
         )
+    }
+
+    // Baustelleneinrichtung: zuerst am echten Gewerk (aus den extras), dann als
+    // Rückfall am Titel-Stichwort (alte Aufträge ohne Gewerk-Feld).
+    private func istBaustelleneinrichtung(_ job: Auftrag) -> Bool {
+        if AuftragExtrasPayload.from(job.extras).gewerk == "Baustelleneinrichtung" { return true }
+        let d = job.processingDetails?.lowercased() ?? ""
+        return d.contains("bauzaun") || d.contains("baustrom")
+            || d.contains("bauwasser") || d.contains("einrichtung")
+    }
+
+    // Wie weit ist die Einrichtung? Summe der übernommenen vs. aller Schritte über die
+    // offenen Einrichtungs-Aufträge — der echte Stand aus dem Graph, nicht geraten.
+    private func einrichtungsFortschritt(_ jobs: [Auftrag]) -> (uebernommen: Int, gesamt: Int) {
+        var done = 0, total = 0
+        for job in jobs {
+            let liste = AuftragExtrasPayload.from(job.extras).checklist
+            done += liste.filter { $0.isDone }.count
+            total += liste.count
+        }
+        return (done, total)
     }
 
     // Faden gemessen/geschätzt (Welle-9-Ziel „Schätzwerte andersfarbig bis gemessen"):
