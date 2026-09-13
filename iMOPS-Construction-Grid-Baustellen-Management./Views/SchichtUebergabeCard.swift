@@ -39,9 +39,9 @@ struct SchichtUebergabeCard: View {
                         .font(.subheadline)
                     Spacer()
                 }
-                // Feierabend: die Verantwortung für alle offenen Aufträge hinlegen.
+                // Feierabend: „ich hab's gemacht" — die Verantwortung hinlegen.
                 Button { abgeben() } label: {
-                    Label("Feierabend – Baustelle abgeben", systemImage: "figure.walk.departure")
+                    Label("Ich hab's gemacht – Feierabend", systemImage: "figure.walk.departure")
                         .font(.subheadline)
                 }
                 .buttonStyle(.bordered)
@@ -63,9 +63,9 @@ struct SchichtUebergabeCard: View {
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
 
-                // Der eine Klick: alle Aufgaben verstanden, ich übernehme die Verantwortung.
+                // Der eine Klick: „ich hab's gesehen" — ich übernehme die Verantwortung.
                 Button { uebernehmen(.ok) } label: {
-                    Label("Alle Aufgaben verstanden – ich übernehme die Verantwortung",
+                    Label("Ich hab's gesehen – ich übernehme die Verantwortung",
                           systemImage: "hand.raised.fill")
                         .font(.headline)
                         .multilineTextAlignment(.leading)
