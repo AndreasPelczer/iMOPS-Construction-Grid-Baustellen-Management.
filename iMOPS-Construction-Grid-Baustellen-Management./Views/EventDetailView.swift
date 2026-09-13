@@ -348,6 +348,7 @@ struct EventDetailView: View {
                 }
 
                 kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
+                    SchichtUebergabeCard(event: event)
                     jobsCard
                     checklistCard
                 }
