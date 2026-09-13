@@ -104,6 +104,23 @@ enum LeistungskatalogService {
         }
     }
 
+    /// Vorschlagsliste zu einem Knoten-/Leistungstext: Bausteine, die zum Text passen
+    /// (Leistung enthält ihn oder umgekehrt), zuerst — dann die häufigsten. Gekappt.
+    /// Ohne Text: schlicht die häufigsten. So sieht Andreas beim Öffnen gleich die Auswahl.
+    static func vorschlaege(fuer leistung: String, limit: Int = 12,
+                            in ctx: NSManagedObjectContext) -> [Leistungsbaustein] {
+        let sortiert = alle(in: ctx)
+        let q = normalisiere(leistung)
+        guard !q.isEmpty else { return Array(sortiert.prefix(limit)) }
+        let treffer = sortiert.filter { baustein in
+            let l = normalisiere(baustein.leistung)
+            return !l.isEmpty && (l.contains(q) || q.contains(l))
+        }
+        let trefferIDs = Set(treffer.map { $0.objectID })
+        let rest = sortiert.filter { !trefferIDs.contains($0.objectID) }
+        return Array((treffer + rest).prefix(limit))
+    }
+
     /// Alle Bausteine, häufigste zuerst, dann alphabetisch.
     static func alle(in ctx: NSManagedObjectContext) -> [Leistungsbaustein] {
         let req: NSFetchRequest<Leistungsbaustein> = Leistungsbaustein.fetchRequest()

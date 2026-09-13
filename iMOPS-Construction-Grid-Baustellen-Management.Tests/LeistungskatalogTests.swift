@@ -78,4 +78,31 @@ struct LeistungskatalogTests {
         #expect(alle.first?.leistung == "Oft", "Häufig genutzte Bausteine sollen oben stehen.")
         #expect(alle.first?.verwendungen == 2)
     }
+
+    // MARK: - Vorschlagsliste (die native Auswahl am Knoten)
+
+    @Test @MainActor func vorschlaegeStellenPassendeNachVorn() throws {
+        // Ein häufig genutzter, aber UNpassender Baustein …
+        let bauzaun = LeistungskatalogService.merke(leistung: "Bauzaun stellen", einheit: "m",
+                                                    maurer: 0.1, helfer: 0.2, in: ctx)
+        LeistungskatalogService.benutzt(bauzaun)
+        LeistungskatalogService.benutzt(bauzaun)   // 2× — stünde sonst oben
+        // … und ein passender, nie genutzter.
+        LeistungskatalogService.merke(leistung: "Baustelle absichern", einheit: "psch",
+                                      maurer: 0.5, helfer: 1.5, in: ctx)
+        try ctx.save()
+
+        // Zum Knoten-Text „Baustelle absichern" muss der passende Baustein zuerst kommen,
+        // trotz weniger Verwendungen — sonst ist die Liste keine Hilfe.
+        let liste = LeistungskatalogService.vorschlaege(fuer: "Baustelle absichern", in: ctx)
+        #expect(liste.first?.leistung == "Baustelle absichern")
+        #expect(liste.count == 2)
+
+        // Ohne Text: schlicht die häufigsten zuerst.
+        let ohne = LeistungskatalogService.vorschlaege(fuer: "", in: ctx)
+        #expect(ohne.first?.leistung == "Bauzaun stellen")
+
+        // Das Limit wird eingehalten.
+        #expect(LeistungskatalogService.vorschlaege(fuer: "", limit: 1, in: ctx).count == 1)
+    }
 }

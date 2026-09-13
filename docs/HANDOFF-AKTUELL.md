@@ -2,6 +2,35 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 13.09.2026 — Katalog-Vorschlagsliste am Knoten (nativ, ohne die React-Leinwand)
+
+**Branch `feature/knoten-katalog-vorschlaege`** (stapelt auf `fix/grap8-temp-objectid`, damit der
+Flow ohne Crash testbar ist). Build + Tests grün. **Nicht gepusht.**
+
+**Warum:** Andreas erwartete beim Tippen eines Knoten-Namens („Baustelle einrichten") eine Auswahlliste.
+Die Leinwand ist ein kompiliertes React-Bundle — dort geht kein Autocomplete ohne die Web-Quelle.
+Entscheidung (Andreas): **nativ daneben** bauen (er sucht die Web-Quelle separat).
+
+**Gebaut:** In `KnotenKalkulationView` (öffnet sich vom Knoten-Tap → „Kalkulation") steht jetzt oben eine
+**Auswahl-Liste „Aus dem Katalog wählen"** — die gelernten `Leistungsbaustein`, passende zum Knoten-Text
+zuerst, dann die häufigsten. Ein Tipp legt die Position an (falls nötig), übernimmt Einheit + Aufwandswert
+(Maurer/Helfer-Stunden) und zählt eine Verwendung — ohne Prof-Frage. Ersetzt den früheren Einzel-Treffer.
+- Ranking liegt jetzt im Service (`LeistungskatalogService.vorschlaege(fuer:limit:in:)`), nicht in der View.
+
+**Nachweis:** `LeistungskatalogTests.vorschlaegeStellenPassendeNachVorn` (grün): passender Baustein steht
+vor dem häufigeren-aber-unpassenden; ohne Text häufigste zuerst; Limit greift. Build + volle Suite grün.
+**Manuell:** (setzt den Crash-Fix voraus) Knoten anlegen → Kalkulation → wenn der Katalog schon Einträge
+hat, steht die Liste da → tippen füllt die Kalkulation. Beim allerersten Mal ist der Katalog leer → Prof
+fragen (füttert ihn).
+
+**Grenze/offen:** Autocomplete DIREKT im Canvas-Textfeld braucht die React-Quelle von `Grap8Web`
+(Andreas sucht sie). Auch die Standard-Bausteine (`LVBausteinKatalog`) könnten hier später mit rein.
+
+Dateien: `Views/KnotenKalkulationView.swift`, `Service/LeistungskatalogService.swift`,
+`…Tests/LeistungskatalogTests.swift`. Backup in `_backups/knoten-vorschlaege_*`.
+
+---
+
 ## Delta 13.09.2026 — FIX: Grap8-Absturz auf temporärer Core-Data-ID (blockte den Test)
 
 **Branch `fix/grap8-temp-objectid`** (von `main`, das jetzt die 5 gemergten Stücke trägt). Build +
