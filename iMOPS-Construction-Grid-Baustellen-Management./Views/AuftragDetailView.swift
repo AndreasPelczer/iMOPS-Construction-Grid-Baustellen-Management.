@@ -278,9 +278,13 @@ struct AuftragDetailView: View {
             } else {
                 HStack(spacing: 10) {
                     Button { markJobCompleted() } label: {
-                        Label(job.istFertig ? "Auftrag ist fertig" : "Auftrag fertig",
+                        Label(job.istFertig
+                                ? "Auftrag ist fertig"
+                                : "Ich bestätige, dass jeder einzelne Schritt erledigt ist",
                               systemImage: job.istFertig ? "checkmark.seal.fill" : "checkmark.circle.fill")
                             .font(.headline)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .buttonStyle(.borderedProminent)
 
