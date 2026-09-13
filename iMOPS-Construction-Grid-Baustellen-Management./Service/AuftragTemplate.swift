@@ -20,6 +20,7 @@ enum AuftragTemplate: String, CaseIterable, Identifiable {
     case pflasterbett = "Splittbettung"
     case pflasterverlegen = "Pflaster verlegen"
     case randeinfassung = "Randeinfassung / Leistensteine"
+    case trennvlies = "Trennvlies verlegen"
 
     var id: String { rawValue }
 
@@ -152,6 +153,48 @@ enum AuftragTemplate: String, CaseIterable, Identifiable {
                 "Fugen schliessen",
                 "Aushaertezeit einhalten (vor Belastung)"
             ]
+
+        // Keine genormte Vorlage — hier selbst beschrieben (gute Praxis).
+        // Trennvlies (Geotextil) trennt Boden von Tragschicht: laesst Wasser
+        // durch, verhindert Vermischung und Absacken.
+        case .trennvlies:
+            return [
+                "Planum saeubern (scharfe Steine, Wurzeln entfernen)",
+                "Hoehe + Gefaelle des Planums pruefen",
+                "Vliesbahnen laengs ausrollen",
+                "Stoesse mind. 30 cm ueberlappen",
+                "An Raendern hochfuehren (Wannenprinzip)",
+                "Gegen Verrutschen sichern (Erdnaegel / Auflast)",
+                "Sofort mit Tragschicht ueberschuetten (nicht offen liegen lassen)",
+                "Vlies beim Verfuellen nicht direkt befahren"
+            ]
         }
+    }
+
+    /// Stichwoerter, mit denen sich eine Auftrags-Aufgabe automatisch dieser
+    /// Vorlage zuordnen laesst (z. B. "Tragschicht 0/32 einbauen" -> .tragschicht).
+    var keywords: [String] {
+        switch self {
+        case .rohbau:              return ["rohbau", "beton", "bewehr", "schalung", "mauer", "fundament"]
+        case .elektro:             return ["elektro", "kabel", "leerrohr", "verteiler", "steckdose"]
+        case .sanitaer:            return ["sanitaer", "sanitär", "heizung", "abwasser", "wasserleitung"]
+        case .trockenbau:          return ["trockenbau", "gipskarton", "rigips", "staenderwand", "beplank"]
+        case .estrich:             return ["estrich"]
+        case .maler:               return ["maler", "anstrich", "streichen", "lackier"]
+        case .baustelleneinrichtung: return ["baustelleneinrichtung", "einrichten", "absperr", "verkehrssicher"]
+        case .tragschicht:         return ["tragschicht", "schotter", "mineralgemisch", "frostschutz", "unterbau", "planum"]
+        case .pflasterbett:        return ["splittbett", "bettung", "pflasterbett"]
+        case .pflasterverlegen:    return ["pflaster", "verbund", "steinbelag"]
+        case .randeinfassung:      return ["randeinfassung", "leistenstein", "bordstein", "kantenstein", "einfassung"]
+        case .trennvlies:          return ["trennvlies", "vlies", "geotextil", "trenngewebe", "geogitter"]
+        }
+    }
+
+    /// Findet die passende Vorlage zu einer Aufgaben-Beschreibung (Stichwort-Treffer),
+    /// oder nil, wenn nichts passt. Fuer das automatische Vorausfuellen.
+    static func passend(zu text: String) -> AuftragTemplate? {
+        let t = text.lowercased()
+        guard !t.isEmpty else { return nil }
+        return allCases.first { tpl in tpl.keywords.contains { t.contains($0) } }
     }
 }
