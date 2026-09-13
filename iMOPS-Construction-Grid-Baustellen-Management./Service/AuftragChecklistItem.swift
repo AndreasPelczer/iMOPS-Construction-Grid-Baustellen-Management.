@@ -5,6 +5,12 @@ struct AuftragChecklistItem: Codable, Identifiable, Equatable {
     var id: String = UUID().uuidString
     var title: String
     var isDone: Bool = false
+
+    // Übergabe-Nachweis: wer (Rolle des eingeloggten Nutzers) hat diesen Schritt
+    // bewusst übernommen/abgeschlossen, und wann. Optional → alte Daten bleiben lesbar.
+    // Der Beleg ist so gut wie die Anmeldung (geteilter Login verwischt ihn).
+    var uebernommenVon: String? = nil
+    var uebernommenAm: Date? = nil
 }
 
 // MARK: - Auftragspositionen (Material / Arbeitspakete)
@@ -15,6 +21,12 @@ struct AuftragLineItem: Codable, Identifiable, Equatable {
     var unit: String = ""        // z.B. "m2" / "Stueck" / "lfm"
     var note: String = ""        // z.B. "Knauf 12,5mm, Brandschutz"
     var kostenGruppeNummer: String = ""  // DIN 276 KG, z.B. "334"
+
+    // Polier-Check „ist das auf der Baustelle?" — ein Zustand (Buch): da / fehlt /
+    // ungeprüft. Mit wer+wann wird's ein Nachweis. Optional → alte Daten lesbar.
+    var vorhanden: Bool? = nil   // nil = ungeprüft, true = da, false = fehlt
+    var geprueftVon: String? = nil
+    var geprueftAm: Date? = nil
 }
 
 // MARK: - Extras Payload (MASTER fuer Auftrag.extras)
@@ -42,6 +54,47 @@ struct AuftragExtrasPayload: Codable {
     // Baustellen-spezifisch
     var gewerk: String = ""          // z.B. "Elektro", "Sanitaer"
     var planReferenz: String = ""    // Verweis auf CAD-Datei / Plannummer
+
+    // Übergabe (Buch „Thermodynamik der Arbeit": zweiseitig — Abgabe ohne Annahme
+    // ist keine Übergabe). Abgabe = Feierabend/„bin fertig"; Annahme = der Nächste
+    // übernimmt am Morgen und meldet ein Ergebnis. Alles optional → alte Daten lesbar.
+    var abgegebenVon: String? = nil     // Rolle des eingeloggten Nutzers
+    var abgegebenAm: Date? = nil
+    var angenommenVon: String? = nil
+    var angenommenAm: Date? = nil
+    var annahmeErgebnis: String? = nil  // Annahmeergebnis.rawValue: ok | problem | gehtNicht
+    // „Haben wir besprochen": die Übergabe wurde mündlich geklärt (Telefon, vor Ort).
+    // Schließt die Lücke ohne formales Quittieren — der Mops weiß, dass sie geredet haben.
+    var besprochenVon: String? = nil
+    var besprochenAm: Date? = nil
+}
+
+// MARK: - Annahme-Ergebnis (was der Übernehmende meldet)
+enum Annahmeergebnis: String, CaseIterable, Identifiable {
+    case ok
+    case problem
+    case gehtNicht
+
+    var id: String { rawValue }
+
+    var titel: String {
+        switch self {
+        case .ok:       return "Übernommen — alles ok"
+        case .problem:  return "Übernommen — mit Problem"
+        case .gehtNicht: return "Geht nicht"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .ok:       return "checkmark.seal.fill"
+        case .problem:  return "exclamationmark.triangle.fill"
+        case .gehtNicht: return "xmark.octagon.fill"
+        }
+    }
+
+    /// Hält die Kette (nur „ok" gibt sie sauber weiter; Problem/Geht-nicht sind Befunde).
+    var haeltDieKette: Bool { self == .ok }
 }
 
 // MARK: - JSON Helfer fuer Auftrag.extras (String?)

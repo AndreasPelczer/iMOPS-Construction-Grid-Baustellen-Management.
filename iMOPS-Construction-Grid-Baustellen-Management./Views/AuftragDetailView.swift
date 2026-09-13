@@ -8,6 +8,7 @@ typealias JobExtrasPayload = AuftragExtrasPayload
 // MARK: - AuftragDetailView
 struct AuftragDetailView: View {
     @Environment(\.managedObjectContext) private var ctx
+    @Environment(AppSession.self) private var session   // wer ist angemeldet (der "wer" der Übergabe)
     @ObservedObject var job: Auftrag
 
     @State private var extras = JobExtrasPayload()
@@ -37,9 +38,8 @@ struct AuftragDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                jetztCard
-                productionListCard
                 headerCard
+                productionListCard
                 modeCard
                 checklistCard
                 voraussetzungenCard
@@ -82,29 +82,9 @@ struct AuftragDetailView: View {
 
     // MARK: - UI Cards
 
-    private var jetztCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("JETZT")
-                .font(.caption).foregroundStyle(.secondary)
-            Text(whatToDoText)
-                .font(.title2.weight(.bold)).lineLimit(3)
-            if extras.trainingMode,
-               let next = nextOpenStepTitle,
-               !job.istFertig {
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.right.circle.fill")
-                    Text(next)
-                }
-                .font(.subheadline).foregroundStyle(.secondary).padding(.top, 4)
-            }
-        }
-        .padding(16)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 10) {
+            Text("JETZT").font(.caption).foregroundStyle(.secondary)
             Text(whatToDoText).font(.title2.bold()).lineLimit(3)
 
             HStack(spacing: 10) {
@@ -150,8 +130,11 @@ struct AuftragDetailView: View {
             }
 
             if extras.trainingMode, let next = nextOpenStepTitle, !job.istFertig {
-                Text("Jetzt: \(next)")
-                    .font(.subheadline.weight(.semibold)).padding(.top, 2)
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.right.circle.fill")
+                    Text("Jetzt: \(next)").font(.subheadline.weight(.semibold))
+                }
+                .foregroundStyle(.secondary).padding(.top, 2)
             }
         }
         .padding()
@@ -196,6 +179,7 @@ struct AuftragDetailView: View {
                 Text("Keine Positionen hinterlegt.")
                     .font(.subheadline).foregroundStyle(.secondary)
             } else {
+                materialStand   // „X/Y geprüft · Z fehlt" — der Ist-da-Überblick
                 VStack(spacing: 10) {
                     ForEach(extras.lineItems) { item in
                         VStack(alignment: .leading, spacing: 6) {
@@ -218,6 +202,17 @@ struct AuftragDetailView: View {
                             if !item.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 Text(item.note).font(.caption).foregroundStyle(.secondary).padding(.top, 2)
                             }
+                            // Polier-Check: ist das auf der Baustelle? (Zustand + Nachweis)
+                            HStack(spacing: 8) {
+                                materialKnopf(item, da: true)
+                                materialKnopf(item, da: false)
+                                Spacer()
+                                if let von = item.geprueftVon, let am = item.geprueftAm {
+                                    Text("\(von) · \(am.formatted(.dateTime.day().month().hour().minute()))")
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.top, 4)
                         }
                         .padding(10)
                         .background(.thinMaterial)
@@ -230,6 +225,52 @@ struct AuftragDetailView: View {
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
+
+    // „X/Y geprüft · Z fehlt" — der Ist-da-Überblick fürs Material.
+    private var materialStand: some View {
+        let geprueft = extras.lineItems.filter { $0.vorhanden != nil }.count
+        let fehlt = extras.lineItems.filter { $0.vorhanden == false }.count
+        return HStack(spacing: 6) {
+            Text("\(geprueft)/\(extras.lineItems.count) geprüft")
+                .font(.caption).foregroundStyle(.secondary)
+            if fehlt > 0 {
+                Text("· \(fehlt) fehlt").font(.caption.weight(.semibold)).foregroundStyle(.orange)
+            }
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func materialKnopf(_ item: AuftragLineItem, da: Bool) -> some View {
+        let label = Label(da ? "Da" : "Fehlt",
+                          systemImage: da ? "checkmark.circle.fill" : "xmark.circle").font(.caption)
+        if item.vorhanden == da {
+            Button { pruefeMaterial(item.id, vorhanden: da) } label: { label }
+                .buttonStyle(.borderedProminent).tint(da ? .green : .orange).controlSize(.small)
+        } else {
+            Button { pruefeMaterial(item.id, vorhanden: da) } label: { label }
+                .buttonStyle(.bordered).tint(da ? .green : .orange).controlSize(.small)
+        }
+    }
+
+    /// Polier-Check: Material da/fehlt setzen — mit Nachweis (wer/wann). Nochmal tippen
+    /// auf denselben Zustand → zurück auf „ungeprüft".
+    private func pruefeMaterial(_ id: String, vorhanden: Bool) {
+        guard let idx = extras.lineItems.firstIndex(where: { $0.id == id }) else { return }
+        if extras.lineItems[idx].vorhanden == vorhanden {
+            extras.lineItems[idx].vorhanden = nil
+            extras.lineItems[idx].geprueftVon = nil
+            extras.lineItems[idx].geprueftAm = nil
+        } else {
+            extras.lineItems[idx].vorhanden = vorhanden
+            extras.lineItems[idx].geprueftVon = session.role.title
+            extras.lineItems[idx].geprueftAm = Date()
+        }
+        saveExtras(extras)
+    }
+
+    // (Die Übergabe lebt jetzt an EINER Stelle: der Baustelle — SchichtUebergabeCard.
+    //  Der einzelne Auftrag ist zum Tun da: JETZT → Schritte → Material.)
 
     private var checklistCard: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -278,9 +319,13 @@ struct AuftragDetailView: View {
             } else {
                 HStack(spacing: 10) {
                     Button { markJobCompleted() } label: {
-                        Label(job.istFertig ? "Auftrag ist fertig" : "Auftrag fertig",
+                        Label(job.istFertig
+                                ? "Auftrag ist fertig"
+                                : "Ich bestätige, dass jeder einzelne Schritt erledigt ist",
                               systemImage: job.istFertig ? "checkmark.seal.fill" : "checkmark.circle.fill")
                             .font(.headline)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .buttonStyle(.borderedProminent)
 
@@ -418,16 +463,23 @@ struct AuftragDetailView: View {
     }
 
     private func trainingStepRow(_ item: AuftragChecklistItem) -> some View {
-        HStack(spacing: 12) {
-            Button { toggleStep(item.id) } label: {
-                Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle").font(.title2)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 12) {
+                Button { toggleStep(item.id) } label: {
+                    Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle").font(.title2)
+                }
+                Text(item.title)
+                    .strikethrough(item.isDone)
+                    .foregroundStyle(item.isDone ? .secondary : .primary)
+                Spacer()
+                Button(role: .destructive) { deleteStep(item.id) } label: {
+                    Image(systemName: "trash").foregroundStyle(.secondary)
+                }
             }
-            Text(item.title)
-                .strikethrough(item.isDone)
-                .foregroundStyle(item.isDone ? .secondary : .primary)
-            Spacer()
-            Button(role: .destructive) { deleteStep(item.id) } label: {
-                Image(systemName: "trash").foregroundStyle(.secondary)
+            if let beleg = uebergabeBeleg(item) {
+                Label(beleg, systemImage: "signature")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .padding(.leading, 34)
             }
         }
         .padding(.vertical, 12).padding(.horizontal, 10)
@@ -436,14 +488,28 @@ struct AuftragDetailView: View {
     }
 
     private func proStepRow(_ item: AuftragChecklistItem) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "text.badge.checkmark").foregroundStyle(.secondary)
-            Text(item.title)
-            Spacer()
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 10) {
+                Image(systemName: "text.badge.checkmark").foregroundStyle(.secondary)
+                Text(item.title)
+                Spacer()
+            }
+            if let beleg = uebergabeBeleg(item) {
+                Label(beleg, systemImage: "signature")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .padding(.leading, 26)
+            }
         }
         .padding(.vertical, 6).padding(.horizontal, 8)
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// Der Übergabe-Nachweis eines Schritts als Text („übernommen von … · …"), oder nil.
+    private func uebergabeBeleg(_ item: AuftragChecklistItem) -> String? {
+        guard let von = item.uebernommenVon else { return nil }
+        guard let am = item.uebernommenAm else { return "übernommen von \(von)" }
+        return "übernommen von \(von) · \(am.formatted(.dateTime.day().month().hour().minute()))"
     }
 
     // MARK: - Data: load/save extras
@@ -474,7 +540,17 @@ struct AuftragDetailView: View {
 
     private func toggleStep(_ id: String) {
         guard let idx = extras.checklist.firstIndex(where: { $0.id == id }) else { return }
-        extras.checklist[idx].isDone.toggle()
+        let jetztErledigt = !extras.checklist[idx].isDone
+        extras.checklist[idx].isDone = jetztErledigt
+        if jetztErledigt {
+            // Bewusste Übergabe: der eingeloggte Nutzer übernimmt diesen Schritt.
+            extras.checklist[idx].uebernommenVon = session.role.title
+            extras.checklist[idx].uebernommenAm = Date()
+        } else {
+            // Zurückgenommen → der Beleg gilt nicht mehr.
+            extras.checklist[idx].uebernommenVon = nil
+            extras.checklist[idx].uebernommenAm = nil
+        }
         let allDone = !extras.checklist.isEmpty && extras.checklist.allSatisfy { $0.isDone }
         job.setzeFertig(allDone)
         saveExtras(extras)
@@ -488,8 +564,18 @@ struct AuftragDetailView: View {
     }
 
     private func markJobCompleted() {
+        // Der "Ich bestätige …"-Knopf ist eine Sammel-Übergabe: der angemeldete Nutzer
+        // übernimmt hiermit alle Schritte auf einmal — mit Beleg (wer/wann), auch die,
+        // die vorher noch keinen hatten.
+        let jetzt = Date()
+        for i in extras.checklist.indices {
+            extras.checklist[i].isDone = true
+            if extras.checklist[i].uebernommenVon == nil {
+                extras.checklist[i].uebernommenVon = session.role.title
+                extras.checklist[i].uebernommenAm = jetzt
+            }
+        }
         job.status = .completed
-        for i in extras.checklist.indices { extras.checklist[i].isDone = true }
         saveExtras(extras)
     }
 

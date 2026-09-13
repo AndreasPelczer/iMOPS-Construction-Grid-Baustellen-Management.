@@ -28,22 +28,56 @@ struct AmpelCard: View {
         // GLIED 3: INFRASTRUCTUR (Baustrom, Bauwasser, Bauzaun)
         // -----------------------------------------------------------------
         let auftraege = event.jobs?.allObjects as? [Auftrag] ?? []
-        
-        // Wir suchen nach Infrastruktur-Aufträgen, die noch nicht fertig sind
-        let infraOffen = auftraege.contains { job in
-            let details = job.processingDetails?.lowercased() ?? ""
-            let istInfra = details.contains("bauzaun") ||
-                           details.contains("baustrom") ||
-                           details.contains("bauwasser") ||
-                           details.contains("einrichtung")
-            return istInfra && !job.istFertig
+
+        // -----------------------------------------------------------------
+        // DIE ÜBERGABE-LÜCKE — das Einzige, wo der Mops von sich aus spricht.
+        // Buch: „Gute Systeme sind still" (Kap 10). Solange die Kette hält, sagt er
+        // nichts. Abgegeben, aber keiner hat übernommen = die Lücke:
+        //   über Nacht offen  → 🔴 keiner hat den Staffelstab aufgehoben.
+        //   heute abgegeben    → 🟠 wartet auf den Nächsten (noch okay).
+        // -----------------------------------------------------------------
+        let offeneUebergaben = auftraege.filter { $0.uebergabeOffen }
+        let ueberNacht = offeneUebergaben.first {
+            guard let am = AuftragExtrasPayload.from($0.extras).abgegebenAm else { return false }
+            return !Calendar.current.isDateInToday(am)
         }
-        
-        if infraOffen {
+        if let job = ueberNacht {
+            // Freundlicher Hinweis, kein Alarm: vielleicht haben sie's besprochen.
             return (
                 .orange,
-                "Infrastruktur unvollständig",
-                "Baustelleneinrichtung, Strom oder Zaun fehlen. Teilweise Baufreiheit."
+                "Übergabe erinnern",
+                "\(job.processingDetails ?? "Ein Auftrag") wurde abgegeben — schon besprochen? Dann kurz quittieren."
+            )
+        }
+        if !offeneUebergaben.isEmpty {
+            return (
+                .orange,
+                "Wartet auf Übernahme",
+                "Ein Auftrag ist abgegeben und wartet auf den Nächsten."
+            )
+        }
+        // Bei der Annahme ein Befund gemeldet (Problem / geht nicht) → sichtbar machen.
+        if let befund = auftraege.first(where: { $0.annahmeMitBefund }) {
+            return (
+                .orange,
+                "Problem bei Übernahme",
+                "\(befund.processingDetails ?? "Ein Auftrag"): \(befund.annahmeErgebnis?.titel ?? "gemeldet")."
+            )
+        }
+
+        // Baustelleneinrichtung am ECHTEN Gewerk erkennen (nicht am Titel raten), und
+        // ehrlich unterscheiden: existiert sie und läuft (🟠) — oder ist sie gar nicht da?
+        let infraJobs = auftraege.filter { $0.istBaustelleneinrichtung }
+        let infraOffen = infraJobs.filter { !$0.istFertig }
+        if !infraOffen.isEmpty {
+            // Sie ist im Graph eingerichtet, nur noch nicht ganz übernommen → „läuft",
+            // NICHT „fehlt". Wir zeigen den echten Stand aus der Checkliste.
+            let (uebernommen, gesamt) = einrichtungsFortschritt(infraOffen)
+            let stand = gesamt > 0 ? " (\(uebernommen)/\(gesamt) Schritte übernommen)" : ""
+            return (
+                .orange,
+                "Baustelleneinrichtung läuft",
+                "Eingerichtet, aber noch nicht abgeschlossen\(stand). Teilweise Baufreiheit."
             )
         }
         
@@ -88,6 +122,21 @@ struct AmpelCard: View {
             "Wartet auf Start",
             "Projekt angelegt. Kausalbaukette bereit zur Validierung."
         )
+    }
+
+    // (istBaustelleneinrichtung liegt jetzt als geteilte Auftrag-Erweiterung vor —
+    //  dieselbe Wahrheit für Ampel und Kausalbaukette.)
+
+    // Wie weit ist die Einrichtung? Summe der übernommenen vs. aller Schritte über die
+    // offenen Einrichtungs-Aufträge — der echte Stand aus dem Graph, nicht geraten.
+    private func einrichtungsFortschritt(_ jobs: [Auftrag]) -> (uebernommen: Int, gesamt: Int) {
+        var done = 0, total = 0
+        for job in jobs {
+            let liste = AuftragExtrasPayload.from(job.extras).checklist
+            done += liste.filter { $0.isDone }.count
+            total += liste.count
+        }
+        return (done, total)
     }
 
     // Faden gemessen/geschätzt (Welle-9-Ziel „Schätzwerte andersfarbig bis gemessen"):

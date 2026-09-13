@@ -41,7 +41,9 @@ final class AddJobViewModel {
     ]
 
     // MARK: - SOP Template
-    var trainingMode: Bool = false
+    // Default Schrittweise: die (auto-vorausgefuellte) Anleitung steht sofort sichtbar
+    // und abhakbar da, statt im Schnellmodus eingeklappt hinter "Schritte anzeigen".
+    var trainingMode: Bool = true
     var selectedTemplate: AuftragTemplate? = nil
 
     // MARK: - Fehlerzustand
@@ -108,7 +110,9 @@ final class AddJobViewModel {
         extras.lineItems = lineItems.filter {
             !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
-        if let tpl = selectedTemplate {
+        // Gewaehlte Vorlage hat Vorrang; sonst automatisch aus der Aufgabe erkennen
+        // (z. B. "Tragschicht 0/32 einbauen" -> Tragschicht-Schritte vorausgefuellt).
+        if let tpl = selectedTemplate ?? AuftragTemplate.passend(zu: taskSummary) {
             extras.checklist = tpl.steps.map { AuftragChecklistItem(title: $0) }
         }
         newJob.extras = extras.toJSONString()
