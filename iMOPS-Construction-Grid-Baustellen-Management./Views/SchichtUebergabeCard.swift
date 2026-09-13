@@ -39,10 +39,24 @@ struct SchichtUebergabeCard: View {
                         .font(.subheadline)
                     Spacer()
                 }
+                // Feierabend: die Verantwortung für alle offenen Aufträge hinlegen.
+                Button { abgeben() } label: {
+                    Label("Feierabend – Baustelle abgeben", systemImage: "figure.walk.departure")
+                        .font(.subheadline)
+                }
+                .buttonStyle(.bordered)
 
             } else {
-                Text("\(offeneAuftraege.count) offene Aufgaben. Durchsehen und übernehmen:")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                if event.hatOffeneUebergabe {
+                    // Freundlicher Hinweis, kein Alarm: vielleicht haben sie's besprochen.
+                    Label("Noch keine Übergabe eingetragen — schon besprochen? Dann kurz quittieren.",
+                          systemImage: "hand.wave")
+                        .font(.subheadline).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("\(offeneAuftraege.count) offene Aufgaben. Durchsehen und übernehmen:")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
 
                 // Der eine Klick: alle Aufgaben verstanden, ich übernehme die Verantwortung.
                 Button { uebernehmen(.ok) } label: {
@@ -78,6 +92,12 @@ struct SchichtUebergabeCard: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// Feierabend: legt die Verantwortung für alle offenen Aufträge hin.
+    private func abgeben() {
+        event.schichtAbgeben(rolle: session.role.title)
+        try? ctx.save()
     }
 
     /// Übernimmt in EINEM Akt die Verantwortung für alle offenen Aufträge der Baustelle.

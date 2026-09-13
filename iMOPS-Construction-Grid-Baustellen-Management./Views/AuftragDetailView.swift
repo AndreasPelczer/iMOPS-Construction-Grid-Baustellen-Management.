@@ -41,7 +41,6 @@ struct AuftragDetailView: View {
                 headerCard
                 productionListCard
                 modeCard
-                uebergabeCard
                 checklistCard
                 voraussetzungenCard
                 LVDeleteButtonView(currentLV: job)
@@ -215,69 +214,8 @@ struct AuftragDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    // MARK: - Übergabe (zweiseitig: Abgabe → Annahme mit Ergebnis)
-    private var uebergabeCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Übergabe", systemImage: "arrow.left.arrow.right").font(.headline)
-
-            if !job.istAbgegeben {
-                // Verantwortung liegt hier. Der Feierabend-Knopf legt sie hin.
-                Text("Die Verantwortung für diesen Auftrag liegt bei dir.")
-                    .font(.subheadline).foregroundStyle(.secondary)
-                Button { abgeben() } label: {
-                    Label("Feierabend – Auftrag abgeben", systemImage: "figure.walk.departure")
-                        .font(.headline)
-                }
-                .buttonStyle(.borderedProminent)
-
-            } else if job.uebergabeOffen {
-                // Abgegeben, wartet auf Annahme — die Lücke. Hier übernimmt der Nächste.
-                belegZeile("Abgegeben", extras.abgegebenVon, extras.abgegebenAm, "figure.walk.departure", .orange)
-                Text("Wartet auf Übernahme. Wer übernimmt, meldet den Stand:")
-                    .font(.subheadline).foregroundStyle(.secondary)
-                VStack(spacing: 8) {
-                    ForEach(Annahmeergebnis.allCases) { erg in
-                        Button { annehmen(erg) } label: {
-                            Label(erg.titel, systemImage: erg.symbol)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(erg.haeltDieKette ? .green : .orange)
-                    }
-                }
-
-            } else {
-                // Übernommen — die Kette hält (oder trägt einen Befund).
-                belegZeile("Abgegeben", extras.abgegebenVon, extras.abgegebenAm, "figure.walk.departure", .secondary)
-                let erg = job.annahmeErgebnis
-                belegZeile("Übernommen", extras.angenommenVon, extras.angenommenAm,
-                           erg?.symbol ?? "checkmark.seal.fill",
-                           (erg?.haeltDieKette ?? true) ? .green : .orange)
-                if let erg, !erg.haeltDieKette {
-                    Text(erg.titel).font(.subheadline.bold()).foregroundStyle(.orange)
-                }
-                Button(role: .destructive) { uebergabeZuruecksetzen() } label: {
-                    Label("Übergabe zurücksetzen", systemImage: "arrow.counterclockwise").font(.caption)
-                }
-                .buttonStyle(.bordered).controlSize(.small)
-            }
-        }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func belegZeile(_ was: String, _ von: String?, _ am: Date?,
-                            _ symbol: String, _ farbe: Color) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: symbol).foregroundStyle(farbe)
-            (Text(was).bold()
-             + Text(von.map { " von \($0)" } ?? "")
-             + Text(am.map { " · \($0.formatted(.dateTime.day().month().hour().minute()))" } ?? ""))
-                .font(.subheadline)
-            Spacer()
-        }
-    }
+    // (Die Übergabe lebt jetzt an EINER Stelle: der Baustelle — SchichtUebergabeCard.
+    //  Der einzelne Auftrag ist zum Tun da: JETZT → Schritte → Material.)
 
     private var checklistCard: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -583,33 +521,6 @@ struct AuftragDetailView: View {
             }
         }
         job.status = .completed
-        saveExtras(extras)
-    }
-
-    // MARK: - Übergabe-Aktionen (Identität automatisch aus der Anmeldung)
-    private func abgeben() {
-        extras.abgegebenVon = session.role.title
-        extras.abgegebenAm = Date()
-        // Neue Abgabe → eine alte Annahme gilt nicht mehr (frische Übergabe).
-        extras.angenommenVon = nil
-        extras.angenommenAm = nil
-        extras.annahmeErgebnis = nil
-        saveExtras(extras)
-    }
-
-    private func annehmen(_ ergebnis: Annahmeergebnis) {
-        extras.angenommenVon = session.role.title
-        extras.angenommenAm = Date()
-        extras.annahmeErgebnis = ergebnis.rawValue
-        saveExtras(extras)
-    }
-
-    private func uebergabeZuruecksetzen() {
-        extras.abgegebenVon = nil
-        extras.abgegebenAm = nil
-        extras.angenommenVon = nil
-        extras.angenommenAm = nil
-        extras.annahmeErgebnis = nil
         saveExtras(extras)
     }
 

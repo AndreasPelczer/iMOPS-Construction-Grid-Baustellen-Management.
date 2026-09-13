@@ -32,7 +32,7 @@ extension Event {
     }
 
     /// Übernimmt in EINEM Akt die Verantwortung für alle offenen Aufträge — der Moment
-    /// der Schichtübergabe. Speichert NICHT (der Aufrufer macht ctx.save()).
+    /// der Schichtübergabe (morgens). Speichert NICHT (der Aufrufer macht ctx.save()).
     func schichtUebernehmen(rolle: String, ergebnis: Annahmeergebnis, am: Date = Date()) {
         for job in offeneAuftraege {
             var e = AuftragExtrasPayload.from(job.extras)
@@ -41,5 +41,25 @@ extension Event {
             e.annahmeErgebnis = ergebnis.rawValue
             job.extras = e.toJSONString()
         }
+    }
+
+    /// Feierabend: legt in EINEM Akt die Verantwortung für alle offenen Aufträge hin
+    /// (Abgabe). Eine alte Annahme gilt danach nicht mehr — frische Übergabe. Speichert NICHT.
+    func schichtAbgeben(rolle: String, am: Date = Date()) {
+        for job in offeneAuftraege {
+            var e = AuftragExtrasPayload.from(job.extras)
+            e.abgegebenVon = rolle
+            e.abgegebenAm = am
+            e.angenommenVon = nil
+            e.angenommenAm = nil
+            e.annahmeErgebnis = nil
+            job.extras = e.toJSONString()
+        }
+    }
+
+    /// Es liegt eine offene Übergabe an: mindestens ein offener Auftrag ist abgegeben,
+    /// aber noch nicht angenommen. Der Mops erinnert daran — freundlich, kein Alarm.
+    var hatOffeneUebergabe: Bool {
+        offeneAuftraege.contains { $0.uebergabeOffen }
     }
 }

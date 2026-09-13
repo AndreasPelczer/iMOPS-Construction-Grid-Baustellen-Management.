@@ -42,10 +42,11 @@ struct AmpelCard: View {
             return !Calendar.current.isDateInToday(am)
         }
         if let job = ueberNacht {
+            // Freundlicher Hinweis, kein Alarm: vielleicht haben sie's besprochen.
             return (
-                .red,
-                "Übergabe offen",
-                "\(job.processingDetails ?? "Ein Auftrag") wurde abgegeben, aber niemand hat übernommen."
+                .orange,
+                "Übergabe erinnern",
+                "\(job.processingDetails ?? "Ein Auftrag") wurde abgegeben — schon besprochen? Dann kurz quittieren."
             )
         }
         if !offeneUebergaben.isEmpty {
