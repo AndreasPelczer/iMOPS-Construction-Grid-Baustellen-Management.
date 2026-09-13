@@ -58,8 +58,29 @@ extension Event {
     }
 
     /// Es liegt eine offene Übergabe an: mindestens ein offener Auftrag ist abgegeben,
-    /// aber noch nicht angenommen. Der Mops erinnert daran — freundlich, kein Alarm.
+    /// aber weder angenommen noch besprochen. Der Mops erinnert daran — freundlich, kein
+    /// Alarm, und immer nur als Angebot: übernehmen ODER „haben wir besprochen" ODER
+    /// nichts tun (die Wahl bleibt beim Menschen — vielleicht mögen sie sich nicht).
     var hatOffeneUebergabe: Bool {
         offeneAuftraege.contains { $0.uebergabeOffen }
+    }
+
+    /// „Haben wir besprochen": klärt die offene Übergabe mündlich, ohne formales
+    /// Quittieren. Schließt die Lücke, hinterlässt aber die Spur (wer/wann). Speichert NICHT.
+    func schichtBesprochen(rolle: String, am: Date = Date()) {
+        for job in offeneAuftraege where job.uebergabeOffen {
+            var e = AuftragExtrasPayload.from(job.extras)
+            e.besprochenVon = rolle
+            e.besprochenAm = am
+            job.extras = e.toJSONString()
+        }
+    }
+
+    /// Wurde die Übergabe mündlich geklärt (statt formal übernommen)?
+    var hatBesprocheneUebergabe: Bool {
+        let offen = offeneAuftraege
+        guard offen.contains(where: { $0.istBesprochen }) else { return false }
+        // Alle abgegebenen sind entweder angenommen oder besprochen (nichts mehr offen).
+        return !offen.contains { $0.uebergabeOffen }
     }
 }

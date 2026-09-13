@@ -47,9 +47,14 @@ struct SchichtUebergabeCard: View {
                 .buttonStyle(.bordered)
 
             } else {
-                if event.hatOffeneUebergabe {
-                    // Freundlicher Hinweis, kein Alarm: vielleicht haben sie's besprochen.
-                    Label("Noch keine Übergabe eingetragen — schon besprochen? Dann kurz quittieren.",
+                if event.hatBesprocheneUebergabe {
+                    // Mündlich geklärt — der Mops ist still, zeigt nur die Spur.
+                    Label("Übergabe besprochen — mündlich geklärt.",
+                          systemImage: "bubble.left.and.bubble.right")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                } else if event.hatOffeneUebergabe {
+                    // Freundlicher Hinweis + die zweite Wahl. Nichts wird erzwungen.
+                    Label("Noch keine Übergabe eingetragen. Eintragen — oder habt ihr's besprochen?",
                           systemImage: "hand.wave")
                         .font(.subheadline).foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
@@ -69,6 +74,15 @@ struct SchichtUebergabeCard: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.green)
+
+                // Zweite Wahl bei offener Übergabe: mündlich geklärt (nie erzwungen).
+                if event.hatOffeneUebergabe {
+                    Button { besprochen() } label: {
+                        Label("Haben wir besprochen", systemImage: "bubble.left.and.bubble.right")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.bordered)
+                }
 
                 // Nicht alles ok? Der Befund-Weg daneben.
                 Button { zeigeBefund.toggle() } label: {
@@ -97,6 +111,12 @@ struct SchichtUebergabeCard: View {
     /// Feierabend: legt die Verantwortung für alle offenen Aufträge hin.
     private func abgeben() {
         event.schichtAbgeben(rolle: session.role.title)
+        try? ctx.save()
+    }
+
+    /// „Haben wir besprochen": klärt die offene Übergabe mündlich (Mops wird still).
+    private func besprochen() {
+        event.schichtBesprochen(rolle: session.role.title)
         try? ctx.save()
     }
 

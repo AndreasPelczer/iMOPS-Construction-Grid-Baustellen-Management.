@@ -18,9 +18,12 @@ extension Auftrag {
     /// Angenommen (der Nächste hat die Verantwortung aufgenommen).
     var istAngenommen: Bool { uebergabeExtras.angenommenAm != nil }
 
-    /// DIE LÜCKE: abgegeben, aber (noch) nicht angenommen. Genau das — und nur das —
-    /// macht der Mops sichtbar; sonst bleibt er still (Kap 10 „Gute Systeme sind still").
-    var uebergabeOffen: Bool { istAbgegeben && !istAngenommen }
+    /// Besprochen: die Übergabe wurde mündlich geklärt (kein formales Quittieren nötig).
+    var istBesprochen: Bool { uebergabeExtras.besprochenAm != nil }
+
+    /// DIE LÜCKE: abgegeben, aber weder angenommen NOCH besprochen. Genau das — und nur
+    /// das — macht der Mops sichtbar; sonst bleibt er still (Kap 10 „Gute Systeme sind still").
+    var uebergabeOffen: Bool { istAbgegeben && !istAngenommen && !istBesprochen }
 
     /// Ergebnis der Annahme, falls angenommen (ok / problem / geht nicht).
     var annahmeErgebnis: Annahmeergebnis? {

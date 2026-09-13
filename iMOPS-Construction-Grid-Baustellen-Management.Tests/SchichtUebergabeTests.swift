@@ -83,4 +83,15 @@ struct SchichtUebergabeTests {
             #expect(ev.schichtHeuteUebernommen)
         }
     }
+
+    @Test @MainActor func besprochenSchliesstDieLueckeOhneUebernahme() {
+        let (pc, ev) = baustelle(2, gesternAbgegeben: true)
+        withExtendedLifetime(pc) {
+            #expect(ev.hatOffeneUebergabe)
+            ev.schichtBesprochen(rolle: "Mitarbeiter")   // „haben wir besprochen"
+            #expect(!ev.hatOffeneUebergabe)              // Lücke zu, Mops still
+            #expect(ev.hatBesprocheneUebergabe)          // aber die Spur bleibt
+            #expect(!ev.schichtHeuteUebernommen)         // NICHT formal übernommen
+        }
+    }
 }
