@@ -2,6 +2,40 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 13.09.2026 — Leitstand Schritt 2: Auto-Menge (Größe → Menge)
+
+**Branch `feature/auto-menge`** (von `main`). Build + Suite grün. **Nicht gepusht.**
+Zweiter Leitstand-Schritt: der Katalog liefert den Aufwandswert (h/Einheit), die **Menge** kommt jetzt
+aus der Baustellengröße (seit „Größe ans Event").
+
+**Zuordnung über die EINHEIT** (nicht den Leistungsnamen): `m²/qm` → `Event.grundflaeche`, `m/lfm` →
+`Event.umfang`. Alles andere (Pauschal, m³, Stück, kg …) ist nicht ableitbar → bleibt Handeingabe.
+**Ehrlich:** eine so abgeleitete Menge ist eine **Schätzung** aus der groben Größe, kein Aufmaß — sie
+wird als `mengenQuelle = .schaetzung` markiert (`istGeschaetzt` → in der App andersfarbig), damit sie
+nie wie ein gemessener Wert aussieht.
+
+**Gebaut:**
+- `Service/MengenAbleitung.swift` — `ausGroesse(einheit:event:) -> Vorschlag?` (Menge + menschenlesbare
+  Herkunft „Grundfläche"/„Umfang"). nil, wenn nicht ableitbar oder Größe fehlt.
+- `KnotenKalkulationView`: beim Anlegen einer Position wird die Menge aus der Größe **vorgeschlagen**
+  (Feld vorgefüllt + Hinweis „Menge aus Umfang (44 m) — geschätzt, anpassbar"); bei Einheit-Wechsel neu.
+  Übernimmt man den Vorschlag unverändert → `.schaetzung`, sonst `.manuell`. Bei **Katalog-Pick** zieht
+  sie die Menge zur Einheit des Bausteins nach → **Leistung + Einheit + Aufwandswert + Menge in einem
+  Tipp** (der Fahrplan-Kern), für ableitbare Einheiten. Bestehende Positionen werden NICHT überschrieben.
+
+**Nachweis:** `MengenAbleitungTests` (2, grün): Einheit bestimmt Herkunft (m²→Grundfläche, m/lfm→Umfang),
+nicht-ableitbare Einheiten und fehlende Größe → nil. Build + volle Suite grün.
+**Manuell:** Baustelle mit Maßen (Grundfläche/Umfang) → Grap8 → Knoten → Kalkulation → beim Anlegen steht
+die Menge schon da (mit Herkunfts-Hinweis); Katalog-Baustein picken → Menge + Aufwandswert sitzen.
+
+**Bewusst offen:** dieselbe Ableitung in `LVBausteinAuswahlView` (LV-Picker) — andockbar mit demselben
+Helfer. Und m³ (Fläche × Tiefe) bräuchte ein weiteres Maß am Event.
+
+Dateien: **neu** `Service/MengenAbleitung.swift`, `…Tests/MengenAbleitungTests.swift`; geändert
+`Views/KnotenKalkulationView.swift`. Backup: keins nötig (nur additive Neu-Dateien + eine View).
+
+---
+
 ## Delta 13.09.2026 — Leitstand Schritt 1: Knoten-Chips zeigen, was kalkuliert ist
 
 **Branch `feature/grap8-knoten-zustand`** (von `main`). Build + Suite grün. **Nicht gepusht.**
