@@ -14,6 +14,13 @@ enum AuftragTemplate: String, CaseIterable, Identifiable {
     case estrich = "Estrich & Boden"
     case maler = "Malerarbeiten"
 
+    // Tiefbau / Pflaster (Aussenanlagen) — z. B. fuer eine Hofeinfahrt.
+    case baustelleneinrichtung = "Baustelleneinrichtung"
+    case tragschicht = "Tragschicht / Schotter"
+    case pflasterbett = "Splittbettung"
+    case pflasterverlegen = "Pflaster verlegen"
+    case randeinfassung = "Randeinfassung / Leistensteine"
+
     var id: String { rawValue }
 
     var steps: [String] {
@@ -89,6 +96,61 @@ enum AuftragTemplate: String, CaseIterable, Identifiable {
                 "2. Anstrich (nach Trocknungszeit)",
                 "Abkleben entfernen / Nacharbeiten",
                 "Endkontrolle + Freigabe"
+            ]
+
+        case .baustelleneinrichtung:
+            return [
+                "Verkehrssicherung / Absperrung stellen",
+                "Lagerflaeche + Container einrichten",
+                "Maschinen + Geraete antransportieren",
+                "Hoehenbolzen / Vermessung pruefen",
+                "Ver- und Entsorgung klaeren",
+                "Bestand + Nachbargrenzen fotografieren"
+            ]
+
+        case .tragschicht:
+            return [
+                "Erdplanum abziehen + auf Hoehe bringen",
+                "Planum verdichten + Tragfaehigkeit pruefen",
+                "Mineralgemisch 0/32 antransportieren",
+                "Schotter lagenweise einbauen",
+                "Hoehen + Gefaelle pruefen (Nivellier)",
+                "Verdichten bis 95 % (Ev2 / Plattendruck pruefen)",
+                "Oberflaeche feinplanieren + abziehen",
+                "Freigabe fuer Bettung"
+            ]
+
+        case .pflasterbett:
+            return [
+                "Randeinfassung als Hoehenbezug pruefen",
+                "Abziehlehren nach Gefaelle setzen",
+                "Splitt 2/5 bzw. 8/16 auftragen",
+                "Bettung gleichmaessig abziehen (ca. 3-5 cm)",
+                "Ebenheit pruefen (Richtscheit)",
+                "Fertige Bettung nicht mehr betreten"
+            ]
+
+        case .pflasterverlegen:
+            return [
+                "Verlegemuster / Verband festlegen",
+                "Steine aus mehreren Paletten mischen (Farbspiel)",
+                "Vom festen Rand her verlegen",
+                "Fugenbreite 3-5 mm einhalten",
+                "Passsteine / Halbsteine einpassen (nass schneiden)",
+                "Hoehe + Flucht laufend pruefen (Schnur)",
+                "Fugen mit Fugensplitt einfegen",
+                "Abruetteln (mit Gummimatte) + nachfegen"
+            ]
+
+        case .randeinfassung:
+            return [
+                "Schnur: Hoehe, Flucht + Gefaelle abstecken",
+                "Betonbett (Fundament) herstellen",
+                "Leistensteine / Bordsteine setzen",
+                "Ausrichten (Hoehe, Flucht, Radien)",
+                "Rueckenstuetze aus Beton anlegen",
+                "Fugen schliessen",
+                "Aushaertezeit einhalten (vor Belastung)"
             ]
         }
     }
