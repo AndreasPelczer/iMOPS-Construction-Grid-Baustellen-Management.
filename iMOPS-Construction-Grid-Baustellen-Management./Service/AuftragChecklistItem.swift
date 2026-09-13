@@ -57,6 +57,10 @@ struct AuftragExtrasPayload: Codable {
     var angenommenVon: String? = nil
     var angenommenAm: Date? = nil
     var annahmeErgebnis: String? = nil  // Annahmeergebnis.rawValue: ok | problem | gehtNicht
+    // „Haben wir besprochen": die Übergabe wurde mündlich geklärt (Telefon, vor Ort).
+    // Schließt die Lücke ohne formales Quittieren — der Mops weiß, dass sie geredet haben.
+    var besprochenVon: String? = nil
+    var besprochenAm: Date? = nil
 }
 
 // MARK: - Annahme-Ergebnis (was der Übernehmende meldet)
