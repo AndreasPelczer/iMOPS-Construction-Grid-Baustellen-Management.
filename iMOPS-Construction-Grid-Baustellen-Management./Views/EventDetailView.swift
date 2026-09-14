@@ -1475,7 +1475,7 @@ struct EventDetailView: View {
         let katalog = Dictionary(pinnedMaterials.map { ($0.code ?? "", $0) }, uniquingKeysWith: { a, _ in a })
         let bedarfCodes = Set(bedarf.map { $0.code })
         let zusatz = pinnedMaterials.filter { !bedarfCodes.contains($0.code ?? "") }
-        let gepruefte = gepruefteMaterialNamen()
+        let pruef = pruefStatusNamen()
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -1484,6 +1484,19 @@ struct EventDetailView: View {
                 Button { showingMaterialPicker = true } label: {
                     Label("Zuordnen", systemImage: "plus.circle").font(.subheadline)
                 }
+            }
+
+            // Soll/Ist-Widerspruch auf einen Blick: Lager sagt „da", vor Ort „fehlt".
+            let widersprueche = bedarf.filter { b in
+                pruef.fehlt.contains(katalog[b.code]?.name ?? b.code)
+                    && lagerStore.gesamtbestand(artikelCode: b.code) > 0.0001
+            }
+            if !widersprueche.isEmpty {
+                Label("\(widersprueche.count)× Lager sagt „vorhanden“, vor Ort als fehlend gemeldet — klären.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.red)
+                    .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.red.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
             }
 
             if bedarf.isEmpty && pinnedMaterials.isEmpty {
@@ -1495,7 +1508,9 @@ struct EventDetailView: View {
                     VStack(spacing: 8) {
                         ForEach(bedarf, id: \.code) { b in
                             let name = katalog[b.code]?.name ?? b.code
-                            bedarfRow(b, entry: katalog[b.code], geprueft: gepruefte.contains(name))
+                            bedarfRow(b, entry: katalog[b.code],
+                                      geprueft: pruef.da.contains(name),
+                                      gemeldetFehlt: pruef.fehlt.contains(name))
                         }
                     }
                 }
@@ -1522,37 +1537,63 @@ struct EventDetailView: View {
         }.padding(.top, 4)
     }
 
-    /// Eine geplante Material-Zeile: Name · geplant · Lager-Status · und ob im
-    /// Prüf-Auftrag als „da" abgehakt (nur Anzeige — geprüft wird im Auftrag).
-    private func bedarfRow(_ b: MaterialBedarf, entry: CDLexikonEntry?, geprueft: Bool) -> some View {
+    /// Eine geplante Material-Zeile: Name · geplant · Lager-Status · WO es liegt
+    /// (Lagerort) · Prüf-Status. Plus der Soll/Ist-Widerspruch: sagt das Lager „da",
+    /// wurde es aber vor Ort als fehlend gemeldet → rote Warnung „klären".
+    private func bedarfRow(_ b: MaterialBedarf, entry: CDLexikonEntry?,
+                           geprueft: Bool, gemeldetFehlt: Bool) -> some View {
         let name = entry?.name ?? b.code
         let mengeText = b.menge.formatted(.number.precision(.fractionLength(0...2)))
+        let orte = lagerStore.bestandJeOrt(artikelCode: b.code)     // WO liegt es
+        let widerspruch = gemeldetFehlt && !orte.isEmpty            // Lager sagt da, vor Ort fehlt
         return HStack(spacing: 12) {
             Image(systemName: iconForKategorie(entry?.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
             VStack(alignment: .leading, spacing: 4) {
                 Text(name).font(.body)
                 Text("geplant \(mengeText) \(b.einheit)").font(.caption).foregroundStyle(.secondary)
                 materialStatusChip(code: b.code)
+                // WO liegt es — der fehlende Bezug zum Lagerort.
+                if !orte.isEmpty {
+                    Label(orte.map { "\($0.ort.name) (\($0.menge.formatted(.number.precision(.fractionLength(0...2)))))" }
+                            .joined(separator: " · "),
+                          systemImage: "mappin.and.ellipse")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                // Soll/Ist-Widerspruch: der Mops erkennt „da stimmt was nicht".
+                if widerspruch {
+                    Label("Laut Lager vorhanden, aber vor Ort als fehlend gemeldet — bitte klären.",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.red)
+                }
             }
             Spacer()
             VStack(spacing: 2) {
-                Image(systemName: geprueft ? "checkmark.circle.fill" : "circle.dashed")
-                    .font(.title2).foregroundStyle(geprueft ? .green : .secondary)
-                Text(geprueft ? "geprüft" : "offen").font(.caption2).foregroundStyle(geprueft ? .green : .secondary)
+                let icon = widerspruch ? "exclamationmark.triangle.fill"
+                         : (geprueft ? "checkmark.circle.fill" : "circle.dashed")
+                let farbe: Color = widerspruch ? .red : (geprueft ? .green : .secondary)
+                Image(systemName: icon).font(.title2).foregroundStyle(farbe)
+                Text(widerspruch ? "klären" : (geprueft ? "geprüft" : "offen"))
+                    .font(.caption2).foregroundStyle(farbe)
             }
         }
         .padding(.vertical, 8).padding(.horizontal, 10)
-        .background(.thinMaterial)
+        .background(widerspruch ? Color.red.opacity(0.06) : Color(.tertiarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(widerspruch ? Color.red.opacity(0.5) : .clear, lineWidth: 1)
+        )
     }
 
-    /// Namen der Materialien, die im Auftrag „Material prüfen" als „da" (vorhanden==true)
-    /// abgehakt sind — die eine Prüf-Wahrheit, hier nur gespiegelt.
-    private func gepruefteMaterialNamen() -> Set<String> {
+    /// Aus dem Auftrag „Material prüfen": welche Materialien als „da" (vorhanden==true)
+    /// und welche als „fehlt" (vorhanden==false) gemeldet sind. Die eine Prüf-Wahrheit,
+    /// hier gespiegelt. „fehlt" trotz Lagerbestand = ein Widerspruch (siehe bedarfRow).
+    private func pruefStatusNamen() -> (da: Set<String>, fehlt: Set<String>) {
         let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
-        guard let pruef = jobs.first(where: { ($0.processingDetails ?? "").contains("Material prüfen") }) else { return [] }
+        guard let pruef = jobs.first(where: { ($0.processingDetails ?? "").contains("Material prüfen") }) else { return ([], []) }
         let items = AuftragExtrasPayload.from(pruef.extras).lineItems
-        return Set(items.filter { $0.vorhanden == true }.map { $0.title })
+        return (Set(items.filter { $0.vorhanden == true }.map { $0.title }),
+                Set(items.filter { $0.vorhanden == false }.map { $0.title }))
     }
 
     /// Manuell zugeordnetes Material ohne geplante Menge (nur „auf Lager?"-Status).
