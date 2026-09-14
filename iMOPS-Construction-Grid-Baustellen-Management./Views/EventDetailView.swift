@@ -310,6 +310,16 @@ struct EventDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
+    /// Die berührten DIN-Normen dieser Baustelle — blass, ambient (siehe NormenSpurView).
+    /// Speist sich aus den LV-Positionen UND den Checklisten-Aufgaben: legt der Nutzer
+    /// eine Leistung an, die eine Norm berührt, taucht sie hier ausgegraut auf.
+    private var normenSpurCard: some View {
+        let positionen = (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
+        let texte = positionen.compactMap { $0.bezeichnung } + extras.checklist.map { $0.title }
+        let normen = Baunormen.berührt(vonLeistungen: texte, hatLV: !positionen.isEmpty)
+        return NormenSpurView(normen: normen)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -350,6 +360,7 @@ struct EventDetailView: View {
                 kartenGruppe("Leistungsverzeichnis", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
                     lvCard
                     materialCard
+                    normenSpurCard
                 }
 
                 kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
