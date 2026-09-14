@@ -2,6 +2,24 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 14.09.2026 — Auftrag „Material prüfen" (Wareneingang) in der Kausalkette
+
+**Branch `feature/ehrliche-kalkulation`** (PR #166), Commit `40f4d80`. Volle Suite grün (clean).
+Der Materialcheck ist jetzt ein **zugeteilter, belegter Auftrag** statt eines passiven Hakens.
+- `HofauffahrtSeeder`: Schritt 11 „Material prüfen (Wareneingang)" — Kette
+  **bestellen → prüfen → Tragschicht** (Einbau wartet auf die Prüfung). Checkliste =
+  geplante Materialien als `AuftragLineItem` mit `vorhanden` (da/fehlt) + Nachweis
+  (`geprueftVon`/`geprueftAm`); die Oberfläche dafür hat `AuftragDetailView` schon.
+- **EINE Wahrheit:** `materialCard` SPIEGELT den Prüf-Auftrag (grün „geprüft"), eigener
+  Toggle raus. Match über den Materialnamen (Katalog-Name = LineItem-Titel).
+- Eine Material-Quelle im Seeder: `HofauffahrtSeeder.hofMaterialien` (Code/Name/Einheit/
+  Bedarf) für Bedarf + Prüf-Checkliste + Pinnen. `materialPruefItems()` öffentlich.
+- Bestehende Demos: `ruesteNach` legt Bedarf + Prüf-Auftrag nach (additive Kanten), kein Löschen.
+- `EventExtrasPayload.materialGeprueft` ist damit ungenutzt (deprecated, harmlos).
+- Tests: materialPruefenAuftragMitCheckliste, tragschichtWartetAufVliesUndPruefung; Counts 11/10.
+
+---
+
 ## Delta 14.09.2026 — Polier-Materialliste (geplant · auf Lager · fehlt · vor Ort abhaken)
 
 **Branch `feature/ehrliche-kalkulation`** (PR #166), Commit `5783bb3`. Build + volle Suite grün.
