@@ -158,6 +158,9 @@ struct EventDetailView: View {
     @State private var showingWandLeser = false
     @State private var showingMaterialliste = false
 
+    // Import-Katalog: die Auswerte-Werkzeuge klappen hinter EINEM Knopf auf
+    @State private var zeigeImportKatalog = false
+
     // Stufe 2: Unterlagen auswerten (/extract-doc)
     @State private var showingUnterlagenPicker = false
     @State private var showingTuerPicker = false           // „Alle Unterlagen reinwerfen"
@@ -333,17 +336,19 @@ struct EventDetailView: View {
                 }
 
                 kartenGruppe("Pläne & Unterlagen", systemImage: "doc.on.doc", isExpanded: $gruppePlaene) {
-                    cadCard
-                    unterlagenCard
-                    BPlanVorgabenCard(event: event)   // Vorgaben aus ausgewertetem B-Plan (nur wenn vorhanden)
-                    geländeCard
-                    wandLeserCard
-                    materiallisteCard
+                    cadCard                       // Vorhandene Pläne (Dateien + 3D-Ansicht)
+                    importKatalogButton
+                    if zeigeImportKatalog {
+                        wandLeserCard             // Zeichnung → Wände (DXF/DWG)
+                        geländeCard               // Gelände → Aushub (DXF/DWG)
+                        materiallisteCard         // Mengen aus Excel (.xlsx)
+                        unterlagenCard            // Unterlagen (PDF) → Fakten
+                    }
+                    BPlanVorgabenCard(event: event)   // nur wenn ein B-Plan ausgewertet ist
                 }
 
-                kartenGruppe("LV & Kalkulation", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
+                kartenGruppe("Leistungsverzeichnis", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
                     lvCard
-                    kalkulationCard
                     materialCard
                 }
 
@@ -1125,6 +1130,33 @@ struct EventDetailView: View {
     }
 
     // MARK: - CAD CARD
+    /// Ein Knopf statt sechs Karten: klappt die Auswerte-Werkzeuge auf.
+    /// „Import" zeigt, was der Mops lesen kann — an einer Stelle.
+    private var importKatalogButton: some View {
+        Button {
+            withAnimation(.snappy) { zeigeImportKatalog.toggle() }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.down.fill").font(.title3)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Import").font(.headline)
+                    Text(zeigeImportKatalog
+                         ? "Was der Mops lesen kann — tippen zum Einklappen"
+                         : "Zeichnung · 3D · Gelände · Excel · Unterlagen")
+                        .font(.caption).foregroundStyle(.white.opacity(0.9))
+                }
+                Spacer()
+                Image(systemName: zeigeImportKatalog ? "chevron.up" : "chevron.down")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .foregroundStyle(.white)
+        }
+        .buttonStyle(.plain)
+    }
+
     private var cadCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
