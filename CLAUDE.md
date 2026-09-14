@@ -8,6 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **🧭 Tao — Erst messen, dann behaupten.** Keine Empfehlung, keine Architektur-Meinung, keine Analyse ohne vorher nachzusehen (`rg`, das echte Modell, die echten Dateien, den echten Stand). Gilt für **Vorschläge und Argumente**, nicht nur für Code. Eine Behauptung aus der Erinnerung ist ein Fehler — auch wenn sie plausibel klingt. *(Thermodynamik der Arbeit: ein Nachweis entsteht durch Messen, nicht durch Aussage.)*
 
+> **🔦 Kühlhaus-Check — bevor du „brauchen/bauen wir X" sagst: prüf, ob X SCHON da ist.** `rg` allein hat Scheuklappen (sieht nur, wonach es sucht; „nicht in DIESER Datei" ≠ „gibt's nicht"). Nutze **Graphify** (als Skill installiert, `/graphify`) — der Beziehungs-Graph über Dateigrenzen:
+> - `graphify affected "X"` — wer benutzt X / was hängt dran · `graphify explain "X"` — X + Nachbarn
+> - `graphify query "…"` — Frage in Prosa · `graphify god-nodes` — die Hubs (was überall benutzt wird)
+> - Graph frisch halten: `graphify update .` (kein LLM nötig)
+> Dazu das **Warenlager-Verzeichnis** `~/Documents/Grap8/BESTANDSAUFNAHME-Mops.md`. **Beleg (11.09.):** an EINEM Tag fast neu gebaut, was schon existierte — SettingsView (Firmendaten+Logo, 511 Z.), RechnungPDFExporter, RaphaelStammdatenSeeder, SKPConversionService, KGZuordnungsService. Der Mops ist WEITER, als es sich anfühlt.
+
 1. `git status` + `git branch -a` — wo stehst du, welche offenen Branches gibt es? (Oft läuft schon Arbeit am selben Thema.)
 2. **`docs/HANDOFF-AKTUELL.md`** lesen — der stabile Zeiger auf den aktuellen Stand. Nicht die Datumssuche raten.
 3. Bevor du etwas Neues entwirfst: `rg <begriff>` in Code **und** `docs/`. **Das Feature existiert wahrscheinlich schon** (View, Service, Branch, Handoff, Spec) — der Job ist meist *verbinden/reparieren*, nicht neu erfinden.
