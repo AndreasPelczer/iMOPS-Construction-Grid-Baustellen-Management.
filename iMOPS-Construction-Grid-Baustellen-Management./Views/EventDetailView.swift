@@ -170,6 +170,7 @@ struct EventDetailView: View {
     // Welle 5c: Wände aus Plan lesen
     @State private var showingWandLeser = false
     @State private var showingMaterialliste = false
+    @State private var showingGAEBImport = false
 
     // Import-Katalog: die Auswerte-Werkzeuge klappen hinter EINEM Knopf auf
     @State private var zeigeImportKatalog = false
@@ -386,6 +387,7 @@ struct EventDetailView: View {
                     cadCard                       // Vorhandene Pläne (Dateien + 3D-Ansicht)
                     importKatalogButton
                     if zeigeImportKatalog {
+                        gaebCard                  // Ausschreibung → LV (GAEB DA XML)
                         wandLeserCard             // Zeichnung → Wände (DXF/DWG)
                         geländeCard               // Gelände → Aushub (DXF/DWG)
                         materiallisteCard         // Mengen aus Excel (.xlsx)
@@ -651,12 +653,38 @@ struct EventDetailView: View {
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color(uiColor: .secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showingWandLeser) {
             WandLeserView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - GAEB CARD (Leistungsverzeichnis aus GAEB DA XML)
+    private var gaebCard: some View {
+        Button {
+            showingGAEBImport = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "doc.badge.arrow.up").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("GAEB einlesen").font(.headline).foregroundStyle(.primary)
+                    Text("Ausschreibung (.x83/.x84/.xml) → Positionen, Mengen, Einheiten")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingGAEBImport) {
+            GAEBImportView(event: event, initialURL: nil)
                 .environment(\.managedObjectContext, viewContext)
         }
     }
@@ -677,8 +705,8 @@ struct EventDetailView: View {
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color(uiColor: .secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showingMaterialliste) {
