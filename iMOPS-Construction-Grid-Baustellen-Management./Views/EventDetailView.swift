@@ -11,6 +11,7 @@ struct EventExtrasPayload: Codable {
     var checklist: [EventChecklistItem] = []
     var pinnedProductIDs: [String] = []
     var pinnedLexikonCodes: [String] = []
+    var bestellteCodes: [String]? = nil         // als „bestellt" markiert; optional → alte Blobs bleiben dekodierbar
     var houseProject: HouseProject? = nil
     var importHerkunft: ImportHerkunft? = nil   // Herkunft der importierten LV-Daten (PDF/JSON)
     var bauphasen: [IstBauphase]? = nil         // manuell geplante Bauphasen (Zeitplan-Reiter)
@@ -116,6 +117,7 @@ struct EventDetailView: View {
     @State private var showingMaterialPicker = false
     @State private var selectedJobFilter: JobFilter = .all
     @State private var extras = EventExtrasPayload()
+    @ObservedObject private var lagerStore = LagerStore.shared   // für „auf Lager"-Status
     @State private var cadFiles: [CADFileInfo] = []
     @State private var planZumLoeschen: CADFileInfo? = nil   // Lösch-Bestätigung Pläne
     // Einklappbare Karten-Gruppen — „Übersicht" ist beim Öffnen aufgeklappt, Rest zu.
@@ -1450,13 +1452,14 @@ struct EventDetailView: View {
                     ForEach(pinnedMaterials, id: \.objectID) { mat in
                         HStack(spacing: 12) {
                             Image(systemName: iconForKategorie(mat.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 Text(mat.name ?? "").font(.body)
                                 HStack(spacing: 6) {
                                     Text(mat.code ?? "").font(.caption).foregroundStyle(.secondary)
                                     Text("•").foregroundStyle(.secondary)
                                     Text(mat.kategorie ?? "").font(.caption).foregroundStyle(.secondary)
                                 }
+                                materialStatusChip(code: mat.code ?? "")
                             }
                             Spacer()
                             Button { unpinMaterial(code: mat.code ?? "") } label: {
@@ -1490,8 +1493,47 @@ struct EventDetailView: View {
 
     private func unpinMaterial(code: String) {
         extras.pinnedLexikonCodes.removeAll { $0 == code }
+        extras.bestellteCodes?.removeAll { $0 == code }
         saveExtras(extras)
         pinnedMaterials = fetchPinnedMaterials()
+    }
+
+    /// Der Status eines Materials: auf Lager (grün, aus dem echten Bestand) ·
+    /// bestellt (blau, vom Nutzer markiert) · zu bestellen (orange). Tippen schaltet
+    /// zwischen „zu bestellen" und „bestellt" — „auf Lager" ist ein Fakt, kein Schalter.
+    @ViewBuilder
+    private func materialStatusChip(code: String) -> some View {
+        let status = Materialstatus.fuer(artikelCode: code,
+                                         bestellt: (extras.bestellteCodes ?? []).contains(code),
+                                         store: lagerStore)
+        let (farbe, icon): (Color, String) = {
+            switch status {
+            case .aufLager:    return (.green, "shippingbox.fill")
+            case .bestellt:    return (.blue,  "checkmark.circle.fill")
+            case .zuBestellen: return (.orange, "cart.badge.plus")
+            }
+        }()
+        let chip = HStack(spacing: 4) {
+            Image(systemName: icon).font(.caption2)
+            Text(status.kurz).font(.caption.weight(.semibold))
+        }
+        .foregroundStyle(farbe)
+        .padding(.horizontal, 8).padding(.vertical, 3)
+        .background(farbe.opacity(0.14), in: Capsule())
+
+        if case .aufLager = status {
+            chip   // Fakt aus dem Lager — nicht tippbar
+        } else {
+            Button { toggleBestellt(code: code) } label: { chip }
+                .buttonStyle(.plain)
+        }
+    }
+
+    private func toggleBestellt(code: String) {
+        var codes = extras.bestellteCodes ?? []
+        if codes.contains(code) { codes.removeAll { $0 == code } } else { codes.append(code) }
+        extras.bestellteCodes = codes
+        saveExtras(extras)
     }
 
     private func fetchPinnedMaterials() -> [CDLexikonEntry] {
