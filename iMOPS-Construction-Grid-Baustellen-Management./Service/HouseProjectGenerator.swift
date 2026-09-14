@@ -1010,7 +1010,14 @@ enum HouseProjectGenerator {
             "Leerrohr M20 flexibel": "LR-M20",
             "HT-Rohr DN50": "HT-50",
             "HT-Rohr DN100": "HT-100",
-            "Kupferrohr 15x1mm": "CU-15"
+            "Kupferrohr 15x1mm": "CU-15",
+            // Tiefbau / Hofeinfahrt — Titel aus HofeinfahrtVorlage.generiere.
+            // Ohne diese Zeilen bliebe die Materialliste einer per Konfigurator
+            // angelegten Hofeinfahrt leer (Codes siehe DemoSeeder, Kategorie Tiefbau).
+            "Schotter 0/32": "SCH-032",
+            "Betonpflaster": "PFL-VBS",
+            "Pflastersplitt 0/5": "SPL-208",
+            "Tiefbord Betonstein": "RND-TB"
         ]
         for mat in result.materialien {
             if let code = bekannteCodeMap[mat.titel] {
