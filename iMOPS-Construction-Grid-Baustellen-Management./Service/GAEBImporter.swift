@@ -49,6 +49,14 @@ struct GAEBImporter {
         guard var data = try? Data(contentsOf: url) else {
             throw GAEBImportError.fileNotReadable
         }
+
+        // Weiche: GAEB 90 (.d83/.d84, zeilenbasiert) ODER DA XML (.x83/.x84/.xml)?
+        // An der Endung UND am Inhalt festmachen — Endungen sind nicht verlässlich.
+        let endung = url.pathExtension.lowercased()
+        if endung == "d83" || endung == "d84" || GAEB90Importer.sieht90Aus(data) {
+            return try GAEB90Importer.parse(data: data)
+        }
+
         data = normaliseEncoding(data)
 
         let delegate = GAEBXMLDelegate()
@@ -85,6 +93,50 @@ struct GAEBImporter {
             return s.data(using: .utf8) ?? utf8
         }
         return data
+    }
+
+    // MARK: - Geteilte Helfer (XML + GAEB 90)
+
+    /// Einheit aus GAEB → iMOPS-Anzeigeform.
+    static func mapEinheit(_ u: String) -> String {
+        switch u.lowercased().trimmingCharacters(in: .whitespaces) {
+        case "m2", "qm":          return "m²"
+        case "m3", "cbm":         return "m³"
+        case "lfdm", "lfm", "lm": return "lfm"
+        case "m":                  return "m"
+        case "stk", "stück", "st": return "Stück"
+        case "kgm", "kg":          return "kg"
+        case "tne", "t", "to":     return "t"
+        case "psch", "ls", "pauschal", "psch.": return "Psch"
+        case "hur", "h", "std":   return "h"
+        case "l", "lt", "ltr":    return "l"
+        default: return u
+        }
+    }
+
+    /// DIN-276-KG grob aus einem Gruppentitel raten.
+    static func kgAusGruppe(_ t: String) -> String {
+        let l = t.lowercased()
+        if l.contains("grundstück") || l.contains("grundstueck")                 { return "100" }
+        if l.contains("herrichten") || l.contains("erschlie")                     { return "200" }
+        if l.contains("baugrube")  || l.contains("aushub")                        { return "310" }
+        if l.contains("gründung") || l.contains("gruendung") || l.contains("fundament") { return "320" }
+        if l.contains("außenwand") || l.contains("mauerwerk") || l.contains("fassade")  { return "330" }
+        if l.contains("innenwand")                                                 { return "340" }
+        if l.contains("decken")                                                   { return "350" }
+        if l.contains("dach")                                                     { return "360" }
+        if l.contains("fenster") || l.contains("tür") || l.contains("türen")      { return "380" }
+        if l.contains("baukonstruktion") || l.contains("rohbau")                  { return "300" }
+        if l.contains("abwasser") || l.contains("sanitär")                        { return "410" }
+        if l.contains("heizung") || l.contains("wärme")                           { return "420" }
+        if l.contains("lüftung") || l.contains("klima")                           { return "430" }
+        if l.contains("elektro") || l.contains("starkstrom")                      { return "440" }
+        if l.contains("fernmelde") || l.contains("it-anlage") || l.contains("schwachstrom") { return "450" }
+        if l.contains("technische anlage") || l.contains("haustechnik")           { return "400" }
+        if l.contains("außenanlage") || l.contains("freianlagen") || l.contains("garten") { return "500" }
+        if l.contains("ausstattung")                                               { return "600" }
+        if l.contains("baunebenkosten") || l.contains("planung")                  { return "700" }
+        return "300"  // fallback: Baukonstruktionen
     }
 }
 
@@ -212,45 +264,7 @@ private final class GAEBXMLDelegate: NSObject, XMLParserDelegate {
         }
     }
 
-    // MARK: - Unit mapping (GAEB → iMOPS)
-    private func mapUnit(_ u: String) -> String {
-        switch u.lowercased().trimmingCharacters(in: .whitespaces) {
-        case "m2", "qm":          return "m²"
-        case "m3", "cbm":         return "m³"
-        case "lfdm", "lfm", "lm": return "lfm"
-        case "m":                  return "m"
-        case "stk", "stück", "st": return "Stück"
-        case "kgm", "kg":          return "kg"
-        case "tne", "t", "to":     return "t"
-        case "psch", "ls", "pauschal", "psch.": return "Psch"
-        case "hur", "h", "std":   return "h"
-        case "l", "lt", "ltr":    return "l"
-        default: return u
-        }
-    }
-
-    // MARK: - KG heuristic from group title
-    private func kgFromTitle(_ t: String) -> String {
-        let l = t.lowercased()
-        if l.contains("grundstück") || l.contains("grundstueck")                 { return "100" }
-        if l.contains("herrichten") || l.contains("erschlie")                     { return "200" }
-        if l.contains("baugrube")  || l.contains("aushub")                        { return "310" }
-        if l.contains("gründung") || l.contains("gruendung") || l.contains("fundament") { return "320" }
-        if l.contains("außenwand") || l.contains("mauerwerk") || l.contains("fassade")  { return "330" }
-        if l.contains("innenwand")                                                 { return "340" }
-        if l.contains("decken")                                                   { return "350" }
-        if l.contains("dach")                                                     { return "360" }
-        if l.contains("fenster") || l.contains("tür") || l.contains("türen")      { return "380" }
-        if l.contains("baukonstruktion") || l.contains("rohbau")                  { return "300" }
-        if l.contains("abwasser") || l.contains("sanitär")                        { return "410" }
-        if l.contains("heizung") || l.contains("wärme")                           { return "420" }
-        if l.contains("lüftung") || l.contains("klima")                           { return "430" }
-        if l.contains("elektro") || l.contains("starkstrom")                      { return "440" }
-        if l.contains("fernmelde") || l.contains("it-anlage") || l.contains("schwachstrom") { return "450" }
-        if l.contains("technische anlage") || l.contains("haustechnik")           { return "400" }
-        if l.contains("außenanlage") || l.contains("freianlagen") || l.contains("garten") { return "500" }
-        if l.contains("ausstattung")                                               { return "600" }
-        if l.contains("baunebenkosten") || l.contains("planung")                  { return "700" }
-        return "300"  // fallback: Baukonstruktionen
-    }
+    // MARK: - Unit mapping / KG heuristic (geteilt mit GAEB 90)
+    private func mapUnit(_ u: String) -> String { GAEBImporter.mapEinheit(u) }
+    private func kgFromTitle(_ t: String) -> String { GAEBImporter.kgAusGruppe(t) }
 }
