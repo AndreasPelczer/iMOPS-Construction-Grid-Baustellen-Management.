@@ -141,6 +141,7 @@ enum HofauffahrtSeeder {
         guard (try? context.fetch(suche))?.first == nil else { return }
 
         let baustelle = macheBaustelle(in: context)
+        pinneMaterialliste(an: baustelle)
         let schritte = macheAuftraege(fuer: baustelle, in: context)
         verketteSchritte(schritte)
         macheAuffahrtPosition(fuer: baustelle, in: context)
@@ -189,6 +190,19 @@ enum HofauffahrtSeeder {
         event.setupTime = jetzt
         // Bewusst kein eventStartTime/eventEndTime: das Aufmaß steht aus.
         return event
+    }
+
+    // MARK: - Materialliste
+
+    /// Pinnt das Tiefbau-Material aus dem Katalog (Material-Lexikon) an die Baustelle,
+    /// damit die Materialliste (Baustellen-Ansicht → Materialien) gefüllt ist statt
+    /// „Keine Materialien zugeordnet". Die Katalog-Einträge legt der `DemoSeeder` an;
+    /// hier stehen nur ihre Codes. Fehlt ein Code im Katalog, wird er beim Anzeigen
+    /// still übersprungen — kein Fehler, nur eine Zeile weniger.
+    private static func pinneMaterialliste(an event: Event) {
+        var extras = EventExtrasPayload.laden(aus: event)
+        extras.pinnedLexikonCodes = DemoSeeder.hofeinfahrtMaterialCodes
+        extras.speichern(in: event)
     }
 
     // MARK: - Die zehn Schritte

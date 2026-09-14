@@ -427,4 +427,35 @@ struct HofauffahrtSeederTests {
         // wo vorher eine Pflaster-Flaeche stand.
         #expect((try position().kalkMaterialien?.count ?? 0) == 8)
     }
+
+    // MARK: - Materialliste (Katalog-Material an die Baustelle gepinnt)
+
+    /// Die Baustellen-Materialliste war leer: der Seeder pinnt jetzt die Tiefbau-
+    /// Codes aus dem Katalog an die Demo. Ohne das steht dort „Keine Materialien".
+    @Test @MainActor func materiallisteIstGepinnt() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let extras = EventExtrasPayload.laden(aus: try baustelle())
+        #expect(!extras.pinnedLexikonCodes.isEmpty)
+        #expect(extras.pinnedLexikonCodes == DemoSeeder.hofeinfahrtMaterialCodes)
+    }
+
+    /// Das Hofeinfahrt-Material liegt im Katalog (Material-Lexikon), Kategorie Tiefbau,
+    /// und die gepinnten Codes finden sich dort wieder — sonst zeigt die Liste nichts.
+    @Test @MainActor func katalogHatTiefbauMaterial() throws {
+        DemoSeeder.seedMaterialsIfNeeded(into: ctx)
+        let r: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
+        r.predicate = NSPredicate(format: "code IN %@", DemoSeeder.hofeinfahrtMaterialCodes)
+        let gefunden = try ctx.fetch(r)
+        #expect(gefunden.count == DemoSeeder.hofeinfahrtMaterialCodes.count)
+        #expect(gefunden.allSatisfy { $0.kategorie == "Tiefbau" })
+    }
+
+    /// Idempotent: zweimal seeden legt keine Dubletten an.
+    @Test @MainActor func katalogSeedingIstIdempotent() throws {
+        DemoSeeder.seedMaterialsIfNeeded(into: ctx)
+        DemoSeeder.seedMaterialsIfNeeded(into: ctx)
+        let r: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
+        r.predicate = NSPredicate(format: "code == %@", "SCH-032")
+        #expect(try ctx.count(for: r) == 1)
+    }
 }
