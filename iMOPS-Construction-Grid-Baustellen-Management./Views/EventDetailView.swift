@@ -171,6 +171,8 @@ struct EventDetailView: View {
     @State private var showingWandLeser = false
     @State private var showingMaterialliste = false
     @State private var showingGAEBImport = false
+    @State private var showingWarmup = false
+    @State private var warmupRefresh = UUID()
 
     // Import-Katalog: die Auswerte-Werkzeuge klappen hinter EINEM Knopf auf
     @State private var zeigeImportKatalog = false
@@ -208,21 +210,7 @@ struct EventDetailView: View {
     /// So lässt sich die Liste in der Reihenfolge abarbeiten, in der gebaut wird —
     /// wie die Arbeitsschritte innerhalb eines Auftrags schon vorgegeben sind.
     private func bauablaufRang() -> [NSManagedObjectID: Int] {
-        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
-        var rang: [NSManagedObjectID: Int] = [:]
-        var laeuft: Set<NSManagedObjectID> = []          // Zyklus-Schutz
-        func r(_ a: Auftrag) -> Int {
-            if let v = rang[a.objectID] { return v }
-            if laeuft.contains(a.objectID) { return 0 }
-            laeuft.insert(a.objectID)
-            let vor = a.vorgaenger
-            let val = vor.isEmpty ? 0 : (vor.map { r($0) }.max() ?? 0) + 1
-            laeuft.remove(a.objectID)
-            rang[a.objectID] = val
-            return val
-        }
-        jobs.forEach { _ = r($0) }
-        return rang
+        Bauablauf.rang((event.jobs?.allObjects as? [Auftrag]) ?? [])
     }
 
     // MARK: Checklist Progress
@@ -404,7 +392,12 @@ struct EventDetailView: View {
 
                 kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
                     SchichtUebergabeCard(event: event)
+                    lehrlingWarmupCard
                     jobsCard
+                        .sheet(isPresented: $showingWarmup) {
+                            SortierSpielView(event: event) { warmupRefresh = UUID() }
+                                .environment(\.managedObjectContext, viewContext)
+                        }
                     checklistCard
                 }
 
@@ -1972,6 +1965,38 @@ struct EventDetailView: View {
         case "450": return "Fernmelde- & IT-Anlagen"
         case "500": return "Außenanlagen"
         default:    return "Sonstige"
+        }
+    }
+
+    /// Ob das 5-Minuten-Warm-up (Sortier-Spiel) heute noch aussteht. Braucht ≥2 offene
+    /// Aufgaben (unter einer ist nichts zu ordnen). `warmupRefresh` triggert die Neu-
+    /// bewertung, nachdem das Spiel fertig/übersprungen ist.
+    private var warmupNoetig: Bool {
+        _ = warmupRefresh
+        return !WarmupStore.istErledigt(event) && filteredJobs.count >= 2
+    }
+
+    /// Der spielerische Schubs für den Lehrling: erst die Reihenfolge sortieren, dann
+    /// geht's an die Tagesaufgaben. Still, wenn erledigt (Tao Kap 10).
+    @ViewBuilder private var lehrlingWarmupCard: some View {
+        if warmupNoetig {
+            Button { showingWarmup = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "gamecontroller.fill").font(.title3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("5 Minuten: Reihenfolge 🧱").font(.headline)
+                        Text("Bring die heutigen Aufgaben in die richtige Bauablauf-Reihenfolge — dann geht's los.")
+                            .font(.caption).foregroundStyle(.white.opacity(0.9))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold))
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
         }
     }
 
