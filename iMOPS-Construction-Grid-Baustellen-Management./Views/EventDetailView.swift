@@ -13,6 +13,7 @@ struct EventExtrasPayload: Codable {
     var pinnedLexikonCodes: [String] = []
     var bestellteCodes: [String]? = nil         // als „bestellt" markiert; optional → alte Blobs bleiben dekodierbar
     var materialBedarf: [MaterialBedarf]? = nil // wieviel diese Baustelle je Material braucht (Bestellvorschlag)
+    var materialGeprueft: [String]? = nil       // vom Polier vor Ort als „da" abgehakt (Codes)
     var houseProject: HouseProject? = nil
     var importHerkunft: ImportHerkunft? = nil   // Herkunft der importierten LV-Daten (PDF/JSON)
     var bauphasen: [IstBauphase]? = nil         // manuell geplante Bauphasen (Zeitplan-Reiter)
@@ -1439,46 +1440,40 @@ struct EventDetailView: View {
     }
 
     // MARK: - MATERIAL CARD
+    //
+    // Die Materialliste, die der Polier vor Ort abhakt: die GEPLANTEN Materialien
+    // dieser Baustelle (echte Mengen), je Zeile geplant · auf Lager · fehlt · und ein
+    // Haken „vor Ort da". Grundlage ist `extras.materialBedarf` (Bedarf mit Katalog-Code),
+    // damit „auf Lager" gegen den echten Lagerbestand rechnet.
     private var materialCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let bedarf = extras.materialBedarf ?? []
+        let katalog = Dictionary(pinnedMaterials.map { ($0.code ?? "", $0) }, uniquingKeysWith: { a, _ in a })
+        let bedarfCodes = Set(bedarf.map { $0.code })
+        let zusatz = pinnedMaterials.filter { !bedarfCodes.contains($0.code ?? "") }
+
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Materialien").font(.headline)
+                Text("Materialliste").font(.headline)
                 Spacer()
                 Button { showingMaterialPicker = true } label: {
                     Label("Zuordnen", systemImage: "plus.circle").font(.subheadline)
                 }
             }
-            if pinnedMaterials.isEmpty && extras.pinnedLexikonCodes.isEmpty {
-                HStack(spacing: 10) {
-                    Image(systemName: "shippingbox").font(.title2).foregroundStyle(.secondary)
-                    VStack(alignment: .leading) {
-                        Text("Keine Materialien zugeordnet").font(.subheadline)
-                        Text("Materialien aus dem Katalog dieser Baustelle zuweisen").font(.caption).foregroundStyle(.secondary)
+
+            if bedarf.isEmpty && pinnedMaterials.isEmpty {
+                materialLeerHinweis
+            } else {
+                if !bedarf.isEmpty {
+                    Text("Geplant für diese Baustelle — der Polier hakt vor Ort ab, was da ist.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    VStack(spacing: 8) {
+                        ForEach(bedarf, id: \.code) { b in bedarfRow(b, entry: katalog[b.code]) }
                     }
                 }
-                .padding(.top, 4)
-            } else {
-                VStack(spacing: 8) {
-                    ForEach(pinnedMaterials, id: \.objectID) { mat in
-                        HStack(spacing: 12) {
-                            Image(systemName: iconForKategorie(mat.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(mat.name ?? "").font(.body)
-                                HStack(spacing: 6) {
-                                    Text(mat.code ?? "").font(.caption).foregroundStyle(.secondary)
-                                    Text("•").foregroundStyle(.secondary)
-                                    Text(mat.kategorie ?? "").font(.caption).foregroundStyle(.secondary)
-                                }
-                                materialStatusChip(code: mat.code ?? "")
-                            }
-                            Spacer()
-                            Button { unpinMaterial(code: mat.code ?? "") } label: {
-                                Image(systemName: "minus.circle.fill").foregroundStyle(.red.opacity(0.7))
-                            }
-                        }
-                        .padding(.vertical, 8).padding(.horizontal, 10)
-                        .background(.thinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                if !zusatz.isEmpty {
+                    Text("Zusätzlich zugeordnet").font(.caption).foregroundStyle(.secondary).padding(.top, 4)
+                    VStack(spacing: 8) {
+                        ForEach(zusatz, id: \.objectID) { mat in zusatzRow(mat) }
                     }
                 }
             }
@@ -1486,6 +1481,67 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var materialLeerHinweis: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "shippingbox").font(.title2).foregroundStyle(.secondary)
+            VStack(alignment: .leading) {
+                Text("Keine Materialien").font(.subheadline)
+                Text("Materialien aus dem Katalog dieser Baustelle zuweisen").font(.caption).foregroundStyle(.secondary)
+            }
+        }.padding(.top, 4)
+    }
+
+    /// Eine geplante Material-Zeile: Name · geplant · Lager-Status · vor-Ort-Haken.
+    private func bedarfRow(_ b: MaterialBedarf, entry: CDLexikonEntry?) -> some View {
+        let name = entry?.name ?? b.code
+        let geprueft = (extras.materialGeprueft ?? []).contains(b.code)
+        let mengeText = b.menge.formatted(.number.precision(.fractionLength(0...2)))
+        return HStack(spacing: 12) {
+            Image(systemName: iconForKategorie(entry?.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name).font(.body)
+                Text("geplant \(mengeText) \(b.einheit)").font(.caption).foregroundStyle(.secondary)
+                materialStatusChip(code: b.code)
+            }
+            Spacer()
+            Button { toggleGeprueft(code: b.code) } label: {
+                VStack(spacing: 2) {
+                    Image(systemName: geprueft ? "checkmark.circle.fill" : "circle")
+                        .font(.title2).foregroundStyle(geprueft ? .green : .secondary)
+                    Text(geprueft ? "da" : "prüfen").font(.caption2).foregroundStyle(geprueft ? .green : .secondary)
+                }
+            }.buttonStyle(.plain)
+        }
+        .padding(.vertical, 8).padding(.horizontal, 10)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// Manuell zugeordnetes Material ohne geplante Menge (nur „auf Lager?"-Status).
+    private func zusatzRow(_ mat: CDLexikonEntry) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: iconForKategorie(mat.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(mat.name ?? "").font(.body)
+                materialStatusChip(code: mat.code ?? "")
+            }
+            Spacer()
+            Button { unpinMaterial(code: mat.code ?? "") } label: {
+                Image(systemName: "minus.circle.fill").foregroundStyle(.red.opacity(0.7))
+            }
+        }
+        .padding(.vertical, 8).padding(.horizontal, 10)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func toggleGeprueft(code: String) {
+        var codes = extras.materialGeprueft ?? []
+        if codes.contains(code) { codes.removeAll { $0 == code } } else { codes.append(code) }
+        extras.materialGeprueft = codes
+        saveExtras(extras)
     }
 
     private func iconForKategorie(_ kat: String?) -> String {
@@ -1553,9 +1609,13 @@ struct EventDetailView: View {
     }
 
     private func fetchPinnedMaterials() -> [CDLexikonEntry] {
-        guard !extras.pinnedLexikonCodes.isEmpty else { return [] }
+        // Sowohl angepinnte als auch geplante (Bedarf) Codes — beide brauchen ihren
+        // Katalog-Namen für die Anzeige.
+        let bedarfCodes = (extras.materialBedarf ?? []).map { $0.code }
+        let codes = Array(Set(extras.pinnedLexikonCodes + bedarfCodes))
+        guard !codes.isEmpty else { return [] }
         let req: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
-        req.predicate = NSPredicate(format: "code IN %@", extras.pinnedLexikonCodes)
+        req.predicate = NSPredicate(format: "code IN %@", codes)
         req.sortDescriptors = [NSSortDescriptor(keyPath: \CDLexikonEntry.name, ascending: true)]
         return (try? viewContext.fetch(req)) ?? []
     }
