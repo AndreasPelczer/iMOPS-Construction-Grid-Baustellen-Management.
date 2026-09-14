@@ -46,6 +46,10 @@ struct iMOPSApp: App {
                 )
                 .task {
                     ScharpeggeSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    // NACH Scharpegge (das den ganzen Katalog einmalig löscht + neu füllt):
+                    // die Tiefbau/Pflaster-Materialien sichern, sonst könnten sie in dem
+                    // einen Start-Fenster fehlen (Reihenfolge Scharpegge ↔ DemoSeeder).
+                    DemoSeeder.seedMaterialsIfNeeded(into: persistence.container.viewContext)
                     StammdatenSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     MarktbreitSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     // NACH MarktbreitSeeder: rechnet dessen Dach-/Decken-Positionen durch
