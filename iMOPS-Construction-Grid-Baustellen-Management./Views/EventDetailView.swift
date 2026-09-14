@@ -173,6 +173,7 @@ struct EventDetailView: View {
     @State private var showingGAEBImport = false
     @State private var showingWarmup = false
     @State private var warmupRefresh = UUID()
+    @State private var showingBauQuiz = false
 
     // Import-Katalog: die Auswerte-Werkzeuge klappen hinter EINEM Knopf auf
     @State private var zeigeImportKatalog = false
@@ -399,6 +400,8 @@ struct EventDetailView: View {
                                 .environment(\.managedObjectContext, viewContext)
                         }
                     checklistCard
+                    bauQuizCard
+                        .sheet(isPresented: $showingBauQuiz) { BauQuizView() }
                 }
 
                 kartenGruppe("Mängel", systemImage: "exclamationmark.triangle", isExpanded: $gruppeMaengel) {
@@ -1998,6 +2001,26 @@ struct EventDetailView: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    /// Kleine Runde Baufragen — jederzeit, freiwillig (das Bau-Kochquiz). Lernen darf Spaß machen.
+    private var bauQuizCard: some View {
+        Button { showingBauQuiz = true } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "questionmark.circle.fill").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Baufragen — kleine Runde 🧱").font(.headline).foregroundStyle(.primary)
+                    Text("5 Fragen aus dem 1. Lehrjahr, mit Erklärung. Freiwillig.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     private var jobsCard: some View {
