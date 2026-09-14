@@ -505,8 +505,10 @@ enum HofauffahrtSeeder {
             ("Splitt 8/16 (Bettung)",            bettungT / flaecheQm,  "to",  8.50, 0),
             // 2,01 t — Fugen einkehren                           [Werbach, ab Werk]
             ("Abdecksand/Fugensand 0/2",                        0.02,   "to",  3.00, 0),
-            // 110,34 m² — 10 % Ueberlappung an den Stoessen          [Schätzung]
-            ("Trennvlies (Geotextil)",                          1.10,   "m²",  1.50, 0),
+            // 110,34 m² — 10 % Ueberlappung. Preis korrigiert: Li 5,11 €/m²
+            // (Raphaels echter Preis, „Vlies" 1050090) → mit 15 % Material-Zuschlag
+            // Kalk 5,88. Vorher stand hier eine zu niedrige Schätzung von 1,50.
+            ("Trennvlies (Geotextil)",                          1.10,   "m²",  5.11, 0),
             // 1,00 m³ — Rueckenstuetze der Leistensteine             [Schätzung]
             ("Beton C16/20 (Randstein-Rückenstütze)", 1.0 / flaecheQm,  "m³", 110.00, 0),
         ]
