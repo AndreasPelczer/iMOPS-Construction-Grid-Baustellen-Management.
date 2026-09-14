@@ -68,16 +68,36 @@ struct LagerStoreTests {
         #expect(unter.contains { $0.code == "RND-TB" && $0.bestand == 8 && $0.schwelle == 20 })
     }
 
-    @Test func materialstatusDreiZustaende() {
+    @Test func materialstatusOhneBedarf() {
         let s = store()
         let hof = s.addLagerort(name: "Hof")
-        // Nichts gebucht, nicht bestellt → zu bestellen.
-        #expect(Materialstatus.fuer(artikelCode: "VLI-GEO", bestellt: false, store: s) == .zuBestellen)
-        // Als bestellt markiert schlägt alles.
-        #expect(Materialstatus.fuer(artikelCode: "VLI-GEO", bestellt: true, store: s) == .bestellt)
-        // Im Lager → auf Lager (mit Menge).
+        // Nichts gebucht, kein Bedarf → zu bestellen (Menge unbekannt).
+        #expect(Materialstatus.fuer(artikelCode: "VLI-GEO", bedarf: nil, einheit: "", bestellt: false, store: s)
+                == .zuBestellen(menge: nil, einheit: ""))
+        // Bestellt schlägt alles.
+        #expect(Materialstatus.fuer(artikelCode: "VLI-GEO", bedarf: nil, einheit: "", bestellt: true, store: s) == .bestellt)
+        // Im Lager, kein Bedarf → auf Lager (haben wir welche).
         s.eingang(artikelCode: "VLI-GEO", name: "Trennvlies", einheit: "m²", menge: 50, lagerortID: hof.id)
-        #expect(Materialstatus.fuer(artikelCode: "VLI-GEO", bestellt: false, store: s) == .aufLager(menge: 50, einheit: "m²"))
+        #expect(Materialstatus.fuer(artikelCode: "VLI-GEO", bedarf: nil, einheit: "", bestellt: false, store: s)
+                == .aufLager(menge: 50, einheit: "m²"))
+    }
+
+    /// Der Kern von Andreas' Frage: 250 ins Lager → zu bestellen sinkt live.
+    @Test func materialstatusMitBedarfRechnetZuBestellen() {
+        let s = store()
+        let hof = s.addLagerort(name: "Hof")
+        let code = "PFL-VBS"
+        // Bedarf 1294 Stück, nichts im Lager → zu bestellen 1294.
+        #expect(Materialstatus.fuer(artikelCode: code, bedarf: 1294, einheit: "Stk", bestellt: false, store: s)
+                == .zuBestellen(menge: 1294, einheit: "Stk"))
+        // 250 auf Lager → teils: Lager 250, zu bestellen 1044.
+        s.eingang(artikelCode: code, name: "Betonpflaster", einheit: "Stk", menge: 250, lagerortID: hof.id)
+        #expect(Materialstatus.fuer(artikelCode: code, bedarf: 1294, einheit: "Stk", bestellt: false, store: s)
+                == .teils(lager: 250, zuBestellen: 1044, einheit: "Stk"))
+        // Genug (1300) → reicht, nichts mehr zu bestellen.
+        s.eingang(artikelCode: code, name: "Betonpflaster", einheit: "Stk", menge: 1050, lagerortID: hof.id)
+        #expect(Materialstatus.fuer(artikelCode: code, bedarf: 1294, einheit: "Stk", bestellt: false, store: s)
+                == .reicht(lager: 1300, einheit: "Stk"))
     }
 
     @Test func lagerortLoeschenNurWennLeer() {

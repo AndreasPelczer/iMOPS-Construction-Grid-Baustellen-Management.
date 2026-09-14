@@ -286,29 +286,45 @@ final class LagerStore: ObservableObject {
 /// die der Polier stellt: müssen wir das noch besorgen? UI-agnostisch (die View
 /// mappt auf Farbe/Icon).
 enum Materialstatus: Equatable {
-    case aufLager(menge: Double, einheit: String)
-    case bestellt
-    case zuBestellen
+    case bestellt                                                   // manuell markiert
+    case reicht(lager: Double, einheit: String)                    // Lager deckt den Bedarf
+    case teils(lager: Double, zuBestellen: Double, einheit: String)// etwas da, Rest bestellen
+    case zuBestellen(menge: Double?, einheit: String)              // nichts da; menge = Bedarf, nil = unbekannt
+    case aufLager(menge: Double, einheit: String)                  // Bestand da, aber kein Bedarf hinterlegt
 
-    /// Reihenfolge der Wahrheit: als „bestellt" markiert schlägt alles; sonst
-    /// entscheidet der echte Lagerbestand; sonst „zu bestellen".
-    static func fuer(artikelCode: String, bestellt: Bool, store: LagerStore) -> Materialstatus {
+    /// Reihenfolge der Wahrheit: „bestellt" schlägt alles; sonst rechnet der
+    /// Bedarf gegen den echten Lagerbestand (zu bestellen = Bedarf − Lager); ohne
+    /// hinterlegten Bedarf bleibt es beim schlichten „haben wir welche?".
+    static func fuer(artikelCode: String, bedarf: Double?, einheit: String,
+                     bestellt: Bool, store: LagerStore) -> Materialstatus {
         if bestellt { return .bestellt }
-        let b = store.gesamtbestand(artikelCode: artikelCode)
-        if b > 0.0001 {
-            let einheit = store.artikelImLager().first { $0.code == artikelCode }?.einheit ?? ""
-            return .aufLager(menge: b, einheit: einheit)
+        let lager = store.gesamtbestand(artikelCode: artikelCode)
+        if let bedarf, bedarf > 0 {
+            let zuB = max(0, bedarf - lager)
+            if zuB <= 0.0001    { return .reicht(lager: lager, einheit: einheit) }
+            if lager > 0.0001   { return .teils(lager: lager, zuBestellen: zuB, einheit: einheit) }
+            return .zuBestellen(menge: bedarf, einheit: einheit)
         }
-        return .zuBestellen
+        // Kein Bedarf hinterlegt.
+        if lager > 0.0001 {
+            let e = store.artikelImLager().first { $0.code == artikelCode }?.einheit ?? einheit
+            return .aufLager(menge: lager, einheit: e)
+        }
+        return .zuBestellen(menge: nil, einheit: einheit)
+    }
+
+    private static func z(_ m: Double, _ e: String) -> String {
+        let n = m.formatted(.number.precision(.fractionLength(0...2)))
+        return e.isEmpty ? n : "\(n) \(e)"
     }
 
     var kurz: String {
         switch self {
-        case .aufLager(let m, let e):
-            let mengeText = m.formatted(.number.precision(.fractionLength(0...2)))
-            return e.isEmpty ? "auf Lager (\(mengeText))" : "auf Lager (\(mengeText) \(e))"
-        case .bestellt:     return "bestellt"
-        case .zuBestellen:  return "zu bestellen"
+        case .bestellt:                       return "bestellt"
+        case .reicht(let l, let e):           return "auf Lager – reicht (\(Materialstatus.z(l, e)))"
+        case .teils(let l, let z, let e):     return "Lager \(Materialstatus.z(l, e)) · zu bestellen \(Materialstatus.z(z, e))"
+        case .zuBestellen(let m, let e):      return m == nil ? "zu bestellen" : "zu bestellen \(Materialstatus.z(m!, e))"
+        case .aufLager(let m, let e):         return "auf Lager (\(Materialstatus.z(m, e)))"
         }
     }
 }

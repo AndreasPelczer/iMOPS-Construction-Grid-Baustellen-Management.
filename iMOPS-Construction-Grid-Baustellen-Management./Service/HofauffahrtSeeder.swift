@@ -202,6 +202,20 @@ enum HofauffahrtSeeder {
     private static func pinneMaterialliste(an event: Event) {
         var extras = EventExtrasPayload.laden(aus: event)
         extras.pinnedLexikonCodes = DemoSeeder.hofeinfahrtMaterialCodes
+        // Der Bedarf dieser Baustelle je Material — die Grundlage für den
+        // Bestellvorschlag „zu bestellen = Bedarf − Lager". Mengen aus dem DXF/den
+        // Richtwerten dieser Auffahrt. Einheit passt zur Buchungseinheit im Lager.
+        // Betonpflaster in STÜCK (1294 gezählte Vollsteine) — damit man „250 Steine
+        // ins Lager" eingeben und die zu bestellende Menge live sinken sehen kann.
+        extras.materialBedarf = [
+            MaterialBedarf(code: "SCH-032", menge: (tragschichtT).rounded(), einheit: "to"),
+            MaterialBedarf(code: "VLI-GEO", menge: (flaecheQm * 1.10).rounded(), einheit: "m²"),
+            MaterialBedarf(code: "SPL-208", menge: (bettungT).rounded(), einheit: "to"),
+            MaterialBedarf(code: "PFL-VBS", menge: vollsteine, einheit: "Stk"),   // 1294
+            MaterialBedarf(code: "RND-TB",  menge: leistensteine, einheit: "Stk"),// 40
+            MaterialBedarf(code: "BET-C16", menge: 1, einheit: "m³"),
+            MaterialBedarf(code: "FUG-02",  menge: 2, einheit: "to"),
+        ]
         extras.speichern(in: event)
     }
 

@@ -450,6 +450,17 @@ struct HofauffahrtSeederTests {
         #expect(gefunden.allSatisfy { $0.kategorie == "Tiefbau" })
     }
 
+    /// Der Hof-Seeder hinterlegt den Material-Bedarf (Grundlage für „zu bestellen =
+    /// Bedarf − Lager"). Betonpflaster in Stück (die 1294 gezählten Vollsteine).
+    @Test @MainActor func bedarfIstHinterlegt() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let extras = EventExtrasPayload.laden(aus: try baustelle())
+        let bedarf = try #require(extras.materialBedarf)
+        let pflaster = try #require(bedarf.first { $0.code == "PFL-VBS" })
+        #expect(pflaster.menge == 1294)
+        #expect(pflaster.einheit == "Stk")
+    }
+
     /// Idempotent: zweimal seeden legt keine Dubletten an.
     @Test @MainActor func katalogSeedingIstIdempotent() throws {
         DemoSeeder.seedMaterialsIfNeeded(into: ctx)
