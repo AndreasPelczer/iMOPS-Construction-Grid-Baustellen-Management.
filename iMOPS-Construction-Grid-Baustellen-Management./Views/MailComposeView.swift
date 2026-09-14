@@ -14,11 +14,32 @@ struct MailComposeView: UIViewControllerRepresentable {
     let empfaenger: [String]
     let betreff: String
     let text: String
-    let pdf: Data
-    let dateiname: String
+    var pdf: Data? = nil               // optional: ohne Anhang für einfache Mails
+    var dateiname: String = "Anhang.pdf"
     var onFinish: () -> Void = {}
 
     static var kannMailSenden: Bool { MFMailComposeViewController.canSendMail() }
+
+    /// Bequemer Aufruf für Mails ohne Anhang (ein Empfänger).
+    init(recipient: String, subject: String, body: String, onFinish: @escaping () -> Void = {}) {
+        self.empfaenger = recipient.isEmpty ? [] : [recipient]
+        self.betreff = subject
+        self.text = body
+        self.pdf = nil
+        self.onFinish = onFinish
+    }
+
+    /// Voller Aufruf mit PDF-Anhang (z. B. Angebot an Kunden).
+    init(empfaenger: [String], betreff: String, text: String,
+         pdf: Data? = nil, dateiname: String = "Anhang.pdf",
+         onFinish: @escaping () -> Void = {}) {
+        self.empfaenger = empfaenger
+        self.betreff = betreff
+        self.text = text
+        self.pdf = pdf
+        self.dateiname = dateiname
+        self.onFinish = onFinish
+    }
 
     func makeCoordinator() -> Coordinator { Coordinator(onFinish: onFinish) }
 
@@ -28,7 +49,7 @@ struct MailComposeView: UIViewControllerRepresentable {
         vc.setToRecipients(empfaenger.filter { !$0.isEmpty })
         vc.setSubject(betreff)
         vc.setMessageBody(text, isHTML: false)
-        vc.addAttachmentData(pdf, mimeType: "application/pdf", fileName: dateiname)
+        if let pdf { vc.addAttachmentData(pdf, mimeType: "application/pdf", fileName: dateiname) }
         return vc
     }
 
