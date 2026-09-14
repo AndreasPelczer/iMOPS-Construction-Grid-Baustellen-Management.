@@ -16,6 +16,7 @@ enum DemoSeeder {
 
     static func seedIfNeeded(into context: NSManagedObjectContext) {
         seedMaterialsIfNeeded(into: context)
+        seedLagerortDemoIfNeeded()
         seedDemoCADFile()
 
         let req: NSFetchRequest<Event> = Event.fetchRequest()
@@ -178,6 +179,14 @@ Sanitaer OG – Baeder + Kueche
     }
 
     // MARK: - Baumaterialien seeden
+
+    /// Legt EINEN leeren Lagerort „Hof" an, wenn noch keiner existiert — damit man
+    /// sofort einen Wareneingang buchen kann (z. B. 250 Betonpflaster), ohne erst
+    /// einen Lagerort anzulegen. **Kein** Bestand: den gibt der Nutzer selbst ein.
+    static func seedLagerortDemoIfNeeded(into store: LagerStore = .shared) {
+        guard store.lagerorte.isEmpty else { return }
+        store.addLagerort(name: "Hof")
+    }
 
     // internal (nicht private): der HofauffahrtSeederTest seedet damit gezielt nur den
     // Material-Katalog, ohne den CAD-Datei-Nebeneffekt von `seedIfNeeded`.

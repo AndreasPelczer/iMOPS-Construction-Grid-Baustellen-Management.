@@ -12,10 +12,20 @@ struct EventExtrasPayload: Codable {
     var pinnedProductIDs: [String] = []
     var pinnedLexikonCodes: [String] = []
     var bestellteCodes: [String]? = nil         // als „bestellt" markiert; optional → alte Blobs bleiben dekodierbar
+    var materialBedarf: [MaterialBedarf]? = nil // wieviel diese Baustelle je Material braucht (Bestellvorschlag)
     var houseProject: HouseProject? = nil
     var importHerkunft: ImportHerkunft? = nil   // Herkunft der importierten LV-Daten (PDF/JSON)
     var bauphasen: [IstBauphase]? = nil         // manuell geplante Bauphasen (Zeitplan-Reiter)
     var auswertungen: [GespeicherteAuswertung]? = nil   // gespeicherte /extract-doc-Ergebnisse
+}
+
+/// Der Bedarf einer Baustelle an einem Katalog-Material — die Grundlage für den
+/// Bestellvorschlag „zu bestellen = Bedarf − Lager". Menge/Einheit müssen zur
+/// Buchungseinheit im Lager passen (sonst vergleicht man Äpfel mit Birnen).
+struct MaterialBedarf: Codable, Equatable {
+    var code: String
+    var menge: Double
+    var einheit: String
 }
 
 /// Eine gespeicherte Dokument-Auswertung (`/extract-doc`), abgelegt in `EventExtrasPayload`.
@@ -1498,19 +1508,25 @@ struct EventDetailView: View {
         pinnedMaterials = fetchPinnedMaterials()
     }
 
-    /// Der Status eines Materials: auf Lager (grün, aus dem echten Bestand) ·
-    /// bestellt (blau, vom Nutzer markiert) · zu bestellen (orange). Tippen schaltet
-    /// zwischen „zu bestellen" und „bestellt" — „auf Lager" ist ein Fakt, kein Schalter.
+    /// Der Status eines Materials, bedarfsbewusst: reicht/auf Lager (grün, Fakt) ·
+    /// teils da (orange, Rest bestellen) · zu bestellen (orange) · bestellt (blau,
+    /// markiert). „zu bestellen = Bedarf − Lager" wird live gerechnet — trägt man im
+    /// Lager 250 ein, sinkt die zu bestellende Menge hier sofort. Grün ist ein Fakt
+    /// und nicht tippbar; die anderen schaltet ein Tipp auf „bestellt".
     @ViewBuilder
     private func materialStatusChip(code: String) -> some View {
+        let bedarf = (extras.materialBedarf ?? []).first { $0.code == code }
         let status = Materialstatus.fuer(artikelCode: code,
+                                         bedarf: bedarf?.menge,
+                                         einheit: bedarf?.einheit ?? "",
                                          bestellt: (extras.bestellteCodes ?? []).contains(code),
                                          store: lagerStore)
-        let (farbe, icon): (Color, String) = {
+        let (farbe, icon, fakt): (Color, String, Bool) = {
             switch status {
-            case .aufLager:    return (.green, "shippingbox.fill")
-            case .bestellt:    return (.blue,  "checkmark.circle.fill")
-            case .zuBestellen: return (.orange, "cart.badge.plus")
+            case .reicht, .aufLager: return (.green, "shippingbox.fill", true)
+            case .bestellt:          return (.blue,  "checkmark.circle.fill", false)
+            case .teils:             return (.orange, "cart.badge.plus", false)
+            case .zuBestellen:       return (.orange, "cart.badge.plus", false)
             }
         }()
         let chip = HStack(spacing: 4) {
@@ -1521,8 +1537,8 @@ struct EventDetailView: View {
         .padding(.horizontal, 8).padding(.vertical, 3)
         .background(farbe.opacity(0.14), in: Capsule())
 
-        if case .aufLager = status {
-            chip   // Fakt aus dem Lager — nicht tippbar
+        if fakt {
+            chip   // Lager deckt den Bedarf — Fakt, kein Schalter
         } else {
             Button { toggleBestellt(code: code) } label: { chip }
                 .buttonStyle(.plain)
