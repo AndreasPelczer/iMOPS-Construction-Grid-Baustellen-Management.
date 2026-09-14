@@ -84,4 +84,51 @@ struct GAEBAutoMatchTests {
         let pos = position("Verfüllen der Baugrube", "m²", menge: 600)
         #expect(!LeistungskatalogService.autoMatch(position: pos, in: ctx))
     }
+
+    // MARK: - Lücke 2: volles Rezept (Lohn + Material + Gerät)
+
+    @Test @MainActor func rezeptMitMaterialUndGeraetWirdMitkalkuliert() throws {
+        // Quelle: eine fertig kalkulierte Position mit Lohn + Material + Gerät.
+        let quelle = position("Betonsohle herstellen", "m²", menge: 800)
+        LeistungskatalogService.schreibeAufwandAlsLohn(maurer: 0.3, helfer: 0.2, auf: quelle, in: ctx)
+        let pm = PositionMaterial(context: ctx)
+        pm.id = UUID(); pm.materialName = "Beton C20/25"; pm.mengeProEinheit = 0.12
+        pm.einzelpreis = 110; pm.verschnittProzent = 0.05; pm.einheit = "m³"; pm.position = quelle
+        let pg = PositionGeraet(context: ctx)
+        pg.id = UUID(); pg.geraetName = "Rüttelplatte"; pg.stunden = 0.05; pg.kostenProStunde = 30; pg.position = quelle
+
+        // Rezept lernen (Lohn via merke, Material/Gerät via lerneMaterialUndGeraet).
+        let baustein = LeistungskatalogService.merke(
+            leistung: "Betonsohle herstellen", einheit: "m²", maurer: 0.3, helfer: 0.2, in: ctx)
+        LeistungskatalogService.lerneMaterialUndGeraet(von: quelle, auf: baustein)
+        #expect(baustein.rezeptJSON != nil)
+
+        // Ziel: frische Position → autoMatch schreibt Lohn + Material + Gerät.
+        let ziel = position("Betonsohle herstellen", "m²", menge: 800)
+        #expect(LeistungskatalogService.autoMatch(position: ziel, in: ctx))
+        #expect(ziel.materialArray.count == 1)
+        #expect(ziel.geraeteArray.count == 1)
+        #expect(ziel.lohnArray.count == 2)
+
+        let kalk = LVKalkulator.kalkuliere(position: ziel)
+        #expect(kalk.materialKosten > 0)
+        #expect(kalk.geraeteKosten > 0)
+        #expect(kalk.lohnKosten > 0)
+    }
+
+    @Test @MainActor func autoMatchIstIdempotentKeinMaterialStapeln() throws {
+        let quelle = position("Betonsohle herstellen", "m²", menge: 800)
+        let pm = PositionMaterial(context: ctx)
+        pm.id = UUID(); pm.materialName = "Beton"; pm.mengeProEinheit = 0.12
+        pm.einzelpreis = 110; pm.verschnittProzent = 0; pm.einheit = "m³"; pm.position = quelle
+        let baustein = LeistungskatalogService.merke(
+            leistung: "Betonsohle herstellen", einheit: "m²", maurer: 0.3, helfer: 0.2, in: ctx)
+        LeistungskatalogService.lerneMaterialUndGeraet(von: quelle, auf: baustein)
+
+        let ziel = position("Betonsohle herstellen", "m²", menge: 800)
+        _ = LeistungskatalogService.autoMatch(position: ziel, in: ctx)
+        _ = LeistungskatalogService.autoMatch(position: ziel, in: ctx)   // zweimal
+        #expect(ziel.materialArray.count == 1)                           // nicht gestapelt
+        #expect(ziel.lohnArray.count == 2)
+    }
 }
