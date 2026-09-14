@@ -33,13 +33,17 @@ Trennung Kostenseite / Angebotsseite, generisch — echte Firmenzahlen bleiben d
 **Vertraulichkeit:** `.gitignore` sperrt jetzt `docs/lohnberechnung/` (Goldschmitt-Quell-Excel,
 nur lesen) + `graphify-out/`. Nur Formeln + öffentliche Richtwerte im Repo.
 
-**Nächster Schritt (Andreas' Idee 14.9., verabredet):** ein **Firmenzuschlag-Schieber** —
-links Vollkosten (fest), Mitte der Schieber (Firmenzuschlag), rechts der Verrechnungssatz
-live, daneben die **74 als Orakel-Linie**. Schiebt man bis die Nadel auf 74 sitzt, liest man
-Goldschmitts echten Aufschlag ab (die Zahl, die nur in FirmenSettings darf). Offene Frage:
-EIN Regler (ganzer Firmenzuschlag) oder nur Wagnis&Gewinn (BGK/AGK fest, weil gemessene
-Kosten). Rückwärts-Formel steht schon (`firmenzuschlag(ausVollkosten:verrechnungssatz:)`),
-es fehlt nur die View.
+**Gewinn-Schieber gebaut (14.9., Andreas' Idee):** `Views/GewinnSchieberView.swift` — die
+EINE ehrliche Schraube „Wo verdient der Boss?". Links Vollkosten (fest), Mitte der
+**Wagnis&Gewinn**-Schieber (Gewinn-only entschieden: BGK/AGK/Skonto fest, weil gemessene
+Kosten), rechts der Verrechnungssatz live + die **74-Orakel-Linie** mit Lücke-Anzeige
+(grün „passt" bei <0,50 €). Button **„Auf das Orakel einrasten"** rechnet den festen Teil
+heraus und setzt den Gewinn so, dass der Satz das Orakel trifft → man liest den echten
+Aufschlag ab (Zahl bleibt in FirmenSettings). Interne Aufschlüsselung fällt außen zu EINEM
+„Firmenzuschlag" zusammen. Schreibt `Keys.wagnisGewinn`; Vollkosten + Orakel als eigene
+Firmen-Config (`firma_vollkosten_referenz` / `firma_verrechnungssatz_orakel`, Default
+generischer Facharbeiter / 74). Erreichbar per NavigationLink aus `SettingsView` (Zuschläge).
+Build grün. Commit `a964d7f`.
 
 **Bewusst offen:**
 - **Schritt C** — den 74-Verrechnungssatz im `RaphaelStammdatenSeeder` (26,91×2,75=74) auf
