@@ -18,16 +18,12 @@ Ehrliche Grenze: **„berührt" ≠ „erfüllt"** (UI trägt „keine Rechtsber
 - `EventDetailView`: `normenSpurCard` im Leistungsverzeichnis.
 - `…Tests/BaunormenTests.swift` (7 grün).
 
-**🔴 BEFUND — Kollision auf `din_normen.yaml`:** Während dieser Arbeit hat eine **zweite
-Instanz** parallel `Resources/Knowledge/din_normen.yaml` bearbeitet (Zeilennummern
-verschoben sich zwischen zwei Reads → live-Schreiben). Sie hat einen breiten Norm-Satz
-ergänzt (18195, 18330, 18331, 18560, 4124, EN 1610, RSA/StVO, BaustellV, HOAI, VOB, ein
-kombiniertes „18315_18318" …). Mein zwischenzeitlich angehängter Tiefbau-Block hat dabei
-**DIN_18299 und DIN_18300 DOPPELT** erzeugt. **Nach Hausordnung nicht selbst angefasst.**
-Meinen Commit habe ich code-only gemacht (YAML per `git restore --staged --source=HEAD~1`
-wieder rausgenommen), die Arbeitskopie unberührt gelassen. **Zu tun (die YAML-Instanz oder
-Andreas):** die zwei Dubletten DIN_18299/DIN_18300 auflösen (eine je Norm behalten), dann
-die YAML committen. Baunormen.swift läuft unabhängig davon.
+**✅ ERLEDIGT — YAML-Kollision aufgelöst (`din_normen.yaml`, Commit `0073544`):** Während
+des Baus hatte eine zweite Instanz parallel dieselbe Datei bearbeitet (Dubletten
+DIN_18299/18300, kombiniertes „18315_18318"). Andreas hat sie danach zur Kontrolle
+freigegeben. Geprüft (python yaml): **25 Normen, valide, keine Duplikate**, jedes Feld
+gefüllt, kein Norm-Volltext (lizenzsauber), deckt **alle 9 Spur-Normen** als Alias ab,
+fachlich stimmig (18195 korrekt als zurückgezogen). Committet auf diesem Branch.
 
 **Offen:** DIN-Nummern erforscht (Andreas = Koch) → von ihm/Raphi prüfen; Norm hängt bisher
 am Leistungstext, später ggf. am LVBaustein.
