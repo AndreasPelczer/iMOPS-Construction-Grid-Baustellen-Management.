@@ -2,6 +2,22 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 14.09.2026 — Polier-Materialliste (geplant · auf Lager · fehlt · vor Ort abhaken)
+
+**Branch `feature/ehrliche-kalkulation`** (PR #166), Commit `5783bb3`. Build + volle Suite grün.
+Korrektur nach Andreas' Bild: die „auf Lager"-Info hing an der Nebenliste (angepinnte
+Katalog-Artikel). Sie gehört an DIE Liste, die der Polier vor Ort prüft — die **geplanten
+Materialien** der Baustelle. `EventDetailView.materialCard` zeigt jetzt `extras.materialBedarf`
+(Katalog-Code + Menge): je Zeile Name · „geplant X" · Lager-Status (auf Lager/teils/fehlt/
+reicht, live) · **Haken „vor Ort da/prüfen"** (`extras.materialGeprueft`, OPTIONAL). Manuelle
+Pins ohne Menge stehen als „Zusätzlich zugeordnet". `HofauffahrtSeeder` rüstet eine bereits
+existierende Demo-Baustelle nach (setzt materialBedarf, wenn leer).
+**Offen (Andreas' Nordstern hier):** die geplante Liste in Konfigurator/LV/Materialliste ist
+noch mehrgleisig — echte Vereinheitlichung (ein Artikel-Schlüssel für LV-PositionMaterial +
+Bestellung + Lager) ist die nächste Runde; Bedarf/Lager brauchen dieselbe Einheit.
+
+---
+
 ## Delta 14.09.2026 — Materialliste bedarfsbewusst: „zu bestellen = Bedarf − Lager" (live)
 
 **Branch `feature/ehrliche-kalkulation`** (PR #166), Commit `24c92d9`. Build + volle Suite grün.
