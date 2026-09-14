@@ -540,9 +540,15 @@ enum HofauffahrtSeeder {
         // falsch. `PositionGeraet` kennt nur `stunden × kostenProStunde`; eine
         // Pauschale oder einen Preis pro Stück gibt es im Modell nicht.
         // Kleine Schwester der Fremdleistungs-Lücke.
+        // Bagger-Stunden HERGELEITET: Aushubmenge ÷ Leistung (Richtwert), nicht
+        // geraten. Planum-Aushub ≈ Fläche × 0,35 m. Bei 4,4 m³/h ergibt das ~8 h wie
+        // bisher — ändert man den Richtwert (Erdbauleistung.minibagger), wandert die
+        // Zahl mit. Das ist der „woher die Stunden"-Nachweis aus der Bagger-Frage.
+        let aushubM3 = flaecheQm * 0.35
+        let baggerStunden = Erdbauleistung.stunden(menge: aushubM3, leistung: Erdbauleistung.minibagger)
         let geraete: [(name: String, stunden: Double, satz: Double)] = [
-            // 8 h Bagger auf 100 qm — Aushub 40 cm
-            ("Minibagger inkl. Bediener",                  8.0 / flaecheQm, 65.00),
+            // 35,11 m³ ÷ 4,4 m³/h ≈ 8 h Bagger (Menge ÷ Leistung, siehe oben)
+            ("Minibagger inkl. Bediener",                  baggerStunden / flaecheQm, 65.00),
             // 10 h Rüttelplatte — Tragschicht lagenweise, Pflaster abrütteln
             ("Rüttelplatte / Verdichter",                 10.0 / flaecheQm, 12.00),
             // 6 Fuhren à 120 € — siehe Hinweis oben: Stückzahl im Zeit-Modell
