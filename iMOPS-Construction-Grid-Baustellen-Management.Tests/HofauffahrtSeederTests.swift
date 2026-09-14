@@ -261,11 +261,14 @@ struct HofauffahrtSeederTests {
         // Lohn je m²: 70 h / 100,31 × 74 €
         #expect(abs(k.lohnKosten - 51.63996) < 0.01, "Lohn je m²: \(k.lohnKosten)")
 
-        // Gerät je m²: (8×65 + 10×12 + 6×120) / 100,31 = 1360 / 100,31
-        #expect(abs(k.geraeteKosten - 13.55797) < 0.01, "Gerät je m²: \(k.geraeteKosten)")
+        // Gerät je m²: Bagger-Stunden HERGELEITET (Aushub ÷ Leistung) + Rüttler + Fuhren.
+        // So verifiziert der Test die Herleitung statt einer Magic-Zahl.
+        let baggerH = Erdbauleistung.stunden(menge: 100.31 * 0.35, leistung: Erdbauleistung.minibagger)
+        let geraetErwartet = (baggerH * 65 + 10 * 12 + 6 * 120) / 100.31
+        #expect(abs(k.geraeteKosten - geraetErwartet) < 0.01, "Gerät je m²: \(k.geraeteKosten)")
 
         // Der Einheitspreis ist die Summe der drei Töpfe.
-        #expect(abs(k.einheitspreisEK - (52.22289 + 51.63996 + 13.55797)) < 0.01)
+        #expect(abs(k.einheitspreisEK - (52.22289 + 51.63996 + geraetErwartet)) < 0.01)
 
         // Und der Gesamtpreis skaliert mit der Menge — das ist der Punkt.
         #expect(abs(k.menge - 100.31) < 0.0001)
