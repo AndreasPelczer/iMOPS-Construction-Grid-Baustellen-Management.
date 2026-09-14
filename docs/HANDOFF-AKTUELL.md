@@ -2,6 +2,38 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 14.09.2026 — Normen-Spur: berührte DIN ambient im Baustellen-Canvas
+
+**Branch `feature/ehrliche-kalkulation`**, Commit `4412cc9`. Build + 7 neue Tests grün.
+**Nicht gepusht.** Andreas' Idee: die einschlägigen Bau-Normen einer Baustelle
+blass/ausgegraut zeigen — ambient statt mahnend, zugleich Nachweis „arbeitet nach DIN".
+Ehrliche Grenze: **„berührt" ≠ „erfüllt"** (UI trägt „keine Rechtsberatung").
+
+**Gebaut:**
+- `Service/Baunormen.swift` — Katalog (9 Normen) + `berührt(vonLeistungen:hatLV:)`:
+  matcht Leistungstext (LV-Position ODER Checklisten-Aufgabe) per Stichwort auf die Norm,
+  dedupliziert, Bauablauf-Reihenfolge. DIN 276 gilt sobald ein LV existiert. **Selbsttragend
+  — braucht die YAML NICHT zur Laufzeit.**
+- `Views/NormenSpurView.swift` — blasses Wasserzeichen (opacity .78, gestrichelt).
+- `EventDetailView`: `normenSpurCard` im Leistungsverzeichnis.
+- `…Tests/BaunormenTests.swift` (7 grün).
+
+**🔴 BEFUND — Kollision auf `din_normen.yaml`:** Während dieser Arbeit hat eine **zweite
+Instanz** parallel `Resources/Knowledge/din_normen.yaml` bearbeitet (Zeilennummern
+verschoben sich zwischen zwei Reads → live-Schreiben). Sie hat einen breiten Norm-Satz
+ergänzt (18195, 18330, 18331, 18560, 4124, EN 1610, RSA/StVO, BaustellV, HOAI, VOB, ein
+kombiniertes „18315_18318" …). Mein zwischenzeitlich angehängter Tiefbau-Block hat dabei
+**DIN_18299 und DIN_18300 DOPPELT** erzeugt. **Nach Hausordnung nicht selbst angefasst.**
+Meinen Commit habe ich code-only gemacht (YAML per `git restore --staged --source=HEAD~1`
+wieder rausgenommen), die Arbeitskopie unberührt gelassen. **Zu tun (die YAML-Instanz oder
+Andreas):** die zwei Dubletten DIN_18299/DIN_18300 auflösen (eine je Norm behalten), dann
+die YAML committen. Baunormen.swift läuft unabhängig davon.
+
+**Offen:** DIN-Nummern erforscht (Andreas = Koch) → von ihm/Raphi prüfen; Norm hängt bisher
+am Leistungstext, später ggf. am LVBaustein.
+
+---
+
 ## Delta 14.09.2026 — Ehrliche Kalkulation: Lohngruppen→Mittellohn + Aufschlag-Kette
 
 **Branch `feature/ehrliche-kalkulation`** (von `feature/uebergabe-nachweis`). Build + die 4
