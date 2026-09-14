@@ -251,11 +251,11 @@ struct HofauffahrtSeederTests {
         //   Schotter               =  0,57000 ×10,00 =  5,70000
         //   Splitt                 =  0,06500 × 8,50 =  0,55250
         //   Fugensand              =  0,02000 × 3,00 =  0,06000
-        //   Trennvlies             =  1,10000 × 1,50 =  1,65000
+        //   Trennvlies             =  1,10000 × 5,11 =  5,62100  (Raphaels Li 5,11)
         //   Beton         1/100,31 =  0,00997 ×110,00=  1,09660
         //                                            ──────────
-        //                                              52,22289
-        #expect(abs(k.materialKosten - 52.22289) < 0.01,
+        //                                              56,19389
+        #expect(abs(k.materialKosten - 56.19389) < 0.01,
                 "Material je m²: \(k.materialKosten)")
 
         // Lohn je m²: 70 h / 100,31 × 74 €
@@ -268,7 +268,7 @@ struct HofauffahrtSeederTests {
         #expect(abs(k.geraeteKosten - geraetErwartet) < 0.01, "Gerät je m²: \(k.geraeteKosten)")
 
         // Der Einheitspreis ist die Summe der drei Töpfe.
-        #expect(abs(k.einheitspreisEK - (52.22289 + 51.63996 + geraetErwartet)) < 0.01)
+        #expect(abs(k.einheitspreisEK - (56.19389 + 51.63996 + geraetErwartet)) < 0.01)
 
         // Und der Gesamtpreis skaliert mit der Menge — das ist der Punkt.
         #expect(abs(k.menge - 100.31) < 0.0001)
