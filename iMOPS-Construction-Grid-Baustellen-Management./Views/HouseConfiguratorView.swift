@@ -23,6 +23,13 @@ struct HouseConfiguratorView: View {
     @State private var showingSaveConfirmation = false
     @State private var savedSuccessfully = false
 
+    // Angebot an Kunden
+    @State private var showingKundeSheet = false
+    @State private var kunde = AngebotKunde(name: "", strasse: "", plzOrt: "", email: "")
+    @State private var angebotPDF: Data? = nil
+    @State private var showingAngebotMail = false
+    @State private var angebotShareURL: URL? = nil
+
     init(spezielesEvent: Event? = nil, onCreated: ((Event) -> Void)? = nil) {
         self.spezielesEvent = spezielesEvent
         self.onCreated = onCreated
@@ -118,20 +125,28 @@ struct HouseConfiguratorView: View {
                 }
             }
 
-            if spezielesEvent == nil {
-                HStack(spacing: 16) {
-                    Button("Anpassen") {
-                        self.result = nil
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button("Als Baustelle anlegen") {
-                        showingSaveConfirmation = true
-                    }
-                    .buttonStyle(.borderedProminent)
+            VStack(spacing: 12) {
+                Button {
+                    // Empfänger-Name vorbelegen, falls leer (aus dem Projektnamen)
+                    if kunde.name.isEmpty { kunde.name = result.project.projektName }
+                    showingKundeSheet = true
+                } label: {
+                    Label("Angebot an Kunden", systemImage: "envelope.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
                 }
-                .padding()
+                .buttonStyle(.borderedProminent)
+
+                if spezielesEvent == nil {
+                    HStack(spacing: 16) {
+                        Button("Anpassen") { self.result = nil }
+                            .buttonStyle(.bordered)
+                        Button("Als Baustelle anlegen") { showingSaveConfirmation = true }
+                            .buttonStyle(.bordered)
+                    }
+                }
             }
+            .padding()
         }
         .navigationTitle(result.project.projektName.isEmpty ? "Uebersicht" : result.project.projektName)
         .navigationBarTitleDisplayMode(.inline)
@@ -154,6 +169,77 @@ struct HouseConfiguratorView: View {
             Button("OK") {}
         } message: {
             Text("Die Baustelle wurde erfolgreich angelegt.")
+        }
+        .sheet(isPresented: $showingKundeSheet) {
+            kundeSheet(result)
+        }
+        .sheet(isPresented: $showingAngebotMail) {
+            if let pdf = angebotPDF {
+                MailComposeView(
+                    empfaenger: kunde.email.isEmpty ? [] : [kunde.email],
+                    betreff: "Angebot — \(result.project.projektName.isEmpty ? "Bauvorhaben" : result.project.projektName)",
+                    text: "Sehr geehrte Damen und Herren,\n\nanbei unser Angebot als PDF. Bei Rückfragen stehen wir gern zur Verfügung.\n\nMit freundlichen Grüßen\n\(FirmenSettings.name)",
+                    pdf: pdf,
+                    dateiname: "Angebot.pdf"
+                )
+                .ignoresSafeArea()
+            }
+        }
+        .teilenOderSpeichern(datei: $angebotShareURL)
+    }
+
+    // MARK: - Kunden-Sheet (Empfänger fürs Angebot)
+    private func kundeSheet(_ result: HouseProjectResult) -> some View {
+        NavigationStack {
+            Form {
+                Section("Kunde") {
+                    TextField("Name / Firma", text: $kunde.name)
+                        .textContentType(.name)
+                    TextField("Straße & Nr.", text: $kunde.strasse)
+                        .textContentType(.fullStreetAddress)
+                    TextField("PLZ & Ort", text: $kunde.plzOrt)
+                        .textContentType(.addressCityAndState)
+                    TextField("E-Mail", text: $kunde.email)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                }
+                Section {
+                    Text("Das Angebot geht als PDF (mit Firmenlogo & Briefkopf) — per Mail an den Kunden, oder zum Teilen/Speichern, falls keine Mail eingerichtet ist.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Angebot an Kunden")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") { showingKundeSheet = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Angebot erstellen") { angebotErstellen(result) }
+                        .tint(.orange)
+                }
+            }
+        }
+    }
+
+    /// Erzeugt das Angebots-PDF und öffnet Mail (wenn möglich) oder das Teilen-Blatt.
+    private func angebotErstellen(_ result: HouseProjectResult) {
+        let pdf = AngebotPDFExporter.generate(result: result, kunde: kunde)
+        showingKundeSheet = false
+
+        // Erst das Kunden-Sheet schließen lassen, dann Mail/Teilen öffnen —
+        // sonst verschluckt SwiftUI die zweite Präsentation.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            if MailComposeView.kannMailSenden {
+                angebotPDF = pdf
+                showingAngebotMail = true
+            } else {
+                let url = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("Angebot-\(AngebotPDFExporter.angebotsnummer()).pdf")
+                try? pdf.write(to: url)
+                angebotShareURL = url
+            }
         }
     }
 
