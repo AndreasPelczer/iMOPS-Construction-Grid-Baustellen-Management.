@@ -35,6 +35,10 @@ enum FirmenSettings {
         static let zuschlagGeraet      = "firma_zuschlag_geraet"
         static let bgk                 = "firma_bgk"
         static let wagnisGewinn        = "firma_wagnis_gewinn"
+        // Ehrliche Kalkulation: Kostenseite (Nebenkosten-Faktor) + Aufschlag-Kette.
+        static let nebenkostenFaktor   = "firma_nebenkosten_faktor"
+        static let agk                 = "firma_agk"
+        static let skonto              = "firma_skonto"
         // Kennwerte je m² Wohnflaeche fuer die Grobkostenschaetzung im Planer.
         static let kennwertEinfach     = "firma_kennwert_einfach"
         static let kennwertMittel      = "firma_kennwert_mittel"
@@ -165,6 +169,21 @@ enum FirmenSettings {
     static var zuschlagGeraet:   Double { satz(Keys.zuschlagGeraet,   vorgabe: 0.20) }
     static var bgk:              Double { satz(Keys.bgk,              vorgabe: 0.12) }
     static var wagnisGewinn:     Double { satz(Keys.wagnisGewinn,     vorgabe: 0.08) }
+
+    // Ehrliche Kalkulation — firmen-konfigurierbar, generische öffentliche Defaults.
+    static var nebenkostenFaktor: Double {
+        let v = UserDefaults.standard.double(forKey: Keys.nebenkostenFaktor)
+        return v > 0 ? v : LohnkalkulationDefaults.nebenkostenFaktor   // Default 1,85
+    }
+    static var agk:              Double { satz(Keys.agk,              vorgabe: 0.10) }
+    static var skonto:           Double { satz(Keys.skonto,           vorgabe: 0.025) }
+
+    /// Die Aufschlags-Kette aus den Firmenwerten (BGK · AGK · Wagnis&Gewinn · Skonto · MwSt).
+    /// Innen einzeln, außen als EIN vertraulicher `firmenzuschlag` ausweisbar.
+    static var aufschlagskette: Aufschlagskette {
+        Aufschlagskette(bgk: bgk, agk: agk, wagnisGewinn: wagnisGewinn,
+                        skonto: skonto, mwstSatz: mwstSatz)
+    }
 
     /// Ein Zuschlagssatz aus den UserDefaults.
     ///
