@@ -2,6 +2,27 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 14.09.2026 — Hofeinfahrt im Projekt-Konfigurator (2 Lücken behoben)
+
+**Branch `feature/ehrliche-kalkulation`**, Commit `85ddb52`. Tests grün. Der Konfigurator
+(`HouseConfiguratorView` → `ProjektGenerator`) KONNTE die Hofeinfahrt schon zeigen (vier
+Reiter), aber:
+1. `HofeinfahrtVorlage.generiere` setzte nie `wohnflaeche` → Header „0 m²" und **EUR/m² =
+   Kosten ÷ 0 (NaN)**. Fix: Pflasterfläche als `wohnflaeche` + Div-Guard in der KPI.
+2. „Als Baustelle anlegen" (`HouseProjectGenerator.createEvent`) pinnte nur Hochbau —
+   `bekannteCodeMap` kannte kein Tiefbau → leere Materialliste. Fix: 4 Hofeinfahrt-Titel
+   → Katalog-Codes (SCH-032/PFL-VBS/SPL-208/RND-TB).
+Tests: `hofeinfahrtSetztDieFlaeche`, `konfiguratorHofeinfahrtPinntMaterial`.
+**Offen (kosmetisch):** Ergebnis-Header zeigt für die Hofeinfahrt „0 Geschoss(e)" + Ausstattung
+(Haus-Felder) — für Nicht-Haus-Typen ausblendbar.
+
+**⚠️ BUILD-FALLE (wichtig):** Bei den **synchronisierten Xcode-Ordnern** lief der inkrementelle
+`xcodebuild test` still eine ALTE Test-Bundle (nur 4 statt 6 Tests, „TEST SUCCEEDED" trotzdem).
+Erst `xcodebuild clean` zog die neuen Tests. → Nach dem Anlegen NEUER Tests die Trefferzahl
+gegenprüfen, nicht nur auf „SUCCEEDED" vertrauen.
+
+---
+
 ## Delta 14.09.2026 — Hofeinfahrt-Material im Katalog + Materialliste gepinnt
 
 **Branch `feature/ehrliche-kalkulation`**, Commit `89df575`. Build + Hofauffahrt-Tests (+3) grün.
