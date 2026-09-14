@@ -121,6 +121,33 @@ struct HofauffahrtSeederTests {
         #expect(auftraege.contains { $0.istStartbar })   // ein Kreis würde alles blockieren
     }
 
+    /// GENAU Andreas' Fall: eine bereits existierende (alte) Demo ohne Prüf-Auftrag
+    /// wird beim nächsten seedIfNeeded nachgerüstet — Prüf-Auftrag + Bedarf kommen dazu,
+    /// und die Tragschicht hängt danach am Prüf-Auftrag.
+    @Test @MainActor func nachruestenAlterDemoLegtPruefAuftragAn() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)      // frisch
+        let event = try baustelle()
+
+        // „Alten Stand" simulieren: Prüf-Auftrag + Bedarf entfernen.
+        if let pruef = ((event.jobs?.allObjects as? [Auftrag]) ?? [])
+            .first(where: { ($0.processingDetails ?? "").contains("Material prüfen") }) {
+            ctx.delete(pruef)
+        }
+        var extras = EventExtrasPayload.laden(aus: event)
+        extras.materialBedarf = nil
+        extras.speichern(in: event)
+        try ctx.save()
+
+        // Zweiter Lauf → ruesteNach.
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let jobs = (try baustelle().jobs?.allObjects as? [Auftrag]) ?? []
+        let pruef = try schritt("Material prüfen", jobs)
+        #expect(AuftragExtrasPayload.from(pruef.extras).lineItems.count == 7)
+        #expect(!(EventExtrasPayload.laden(aus: try baustelle()).materialBedarf ?? []).isEmpty)
+        let tragschicht = try schritt("Tragschicht", jobs)
+        #expect(tragschicht.vorgaenger.map(Kausalkette.bezeichnung).contains { $0.contains("prüfen") })
+    }
+
     /// Der Polier bekommt einen Auftrag „Material prüfen" mit der geplanten Liste als
     /// da/fehlt-Checkliste (Wareneingang), und der Einbau (Tragschicht) hängt daran.
     @Test @MainActor func materialPruefenAuftragMitCheckliste() throws {
