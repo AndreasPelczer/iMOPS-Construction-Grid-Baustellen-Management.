@@ -39,11 +39,13 @@ struct HofauffahrtSeederTests {
 
     // MARK: - Anlegen
 
-    @Test @MainActor func zehnSchritteUndEineLVZeile() throws {
+    @Test @MainActor func elfSchritteUndEineLVZeile() throws {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
         let event = try baustelle()
 
-        #expect((event.jobs?.count ?? 0) == 10)
+        // 11 seit dem „Material prüfen"-Auftrag (Wareneingang) zwischen Anlieferung
+        // und Einbau.
+        #expect((event.jobs?.count ?? 0) == 11)
         #expect((event.lvPositionen?.count ?? 0) == 1)
     }
 
@@ -88,13 +90,15 @@ struct HofauffahrtSeederTests {
         #expect(startklar.contains { Kausalkette.bezeichnung($0).contains("einrichten") })
         #expect(startklar.contains { Kausalkette.bezeichnung($0).contains("bestellen") })
 
-        // Der Rest wartet — acht von zehn.
-        #expect(auftraege.filter { !$0.istStartbar }.count == 8)
+        // Der Rest wartet — neun von elf (inkl. „Material prüfen", das auf die
+        // Bestellung wartet).
+        #expect(auftraege.filter { !$0.istStartbar }.count == 9)
     }
 
     /// Der Punkt dieser Demo: Die Tragschicht wartet auf **zwei** Stränge — das
-    /// Trennvlies muss liegen *und* das Material muss geliefert sein.
-    @Test @MainActor func tragschichtWartetAufVliesUndMaterial() throws {
+    /// Trennvlies muss liegen *und* das Material muss **geprüft** sein (Wareneingang,
+    /// nicht nur bestellt). Man baut nicht mit ungeprüftem Material.
+    @Test @MainActor func tragschichtWartetAufVliesUndPruefung() throws {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
         let auftraege = (try baustelle().jobs?.allObjects as? [Auftrag]) ?? []
 
@@ -103,16 +107,33 @@ struct HofauffahrtSeederTests {
 
         #expect(tragschicht.vorgaenger.count == 2, "Vorgänger: \(namen)")
         #expect(namen.contains { $0.contains("Trennvlies") })
-        #expect(namen.contains { $0.contains("bestellen") })
+        #expect(namen.contains { $0.contains("prüfen") })
     }
 
-    @Test @MainActor func neunKantenKeinKreis() throws {
+    @Test @MainActor func zehnKantenKeinKreis() throws {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
         let auftraege = (try baustelle().jobs?.allObjects as? [Auftrag]) ?? []
         let kanten = auftraege.flatMap { $0.voraussetzungenArray.filter(\.istKante) }
 
-        #expect(kanten.count == 9)
+        // 10 seit „Material prüfen": statt (bestellen→Tragschicht) jetzt
+        // (bestellen→prüfen) + (prüfen→Tragschicht).
+        #expect(kanten.count == 10)
         #expect(auftraege.contains { $0.istStartbar })   // ein Kreis würde alles blockieren
+    }
+
+    /// Der Polier bekommt einen Auftrag „Material prüfen" mit der geplanten Liste als
+    /// da/fehlt-Checkliste (Wareneingang), und der Einbau (Tragschicht) hängt daran.
+    @Test @MainActor func materialPruefenAuftragMitCheckliste() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let auftraege = (try baustelle().jobs?.allObjects as? [Auftrag]) ?? []
+        let pruef = try schritt("Material prüfen", auftraege)
+        let items = AuftragExtrasPayload.from(pruef.extras).lineItems
+        #expect(items.count == 7)                                   // 7 geplante Materialien
+        #expect(items.allSatisfy { $0.vorhanden == nil })           // anfangs ungeprüft
+        #expect(items.contains { $0.title.contains("Betonpflaster") })
+        // Der Prüf-Auftrag hängt hinter dem Bestellen und vor der Tragschicht.
+        let vor = pruef.vorgaenger.map(Kausalkette.bezeichnung)
+        #expect(vor.contains { $0.contains("bestellen") })
     }
 
     // MARK: - Die Kostengruppen
@@ -422,7 +443,7 @@ struct HofauffahrtSeederTests {
         let r: NSFetchRequest<Event> = Event.fetchRequest()
         r.predicate = NSPredicate(format: "eventNumber == %@", "DEMO-AUFFAHRT-001")
         #expect(try ctx.count(for: r) == 1)
-        #expect((try baustelle().jobs?.count ?? 0) == 10)
+        #expect((try baustelle().jobs?.count ?? 0) == 11)   // inkl. „Material prüfen", nicht doppelt
         // Acht seit der DXF-Runde: Voll- und Halbstein sind zwei Artikel,
         // wo vorher eine Pflaster-Flaeche stand.
         #expect((try position().kalkMaterialien?.count ?? 0) == 8)

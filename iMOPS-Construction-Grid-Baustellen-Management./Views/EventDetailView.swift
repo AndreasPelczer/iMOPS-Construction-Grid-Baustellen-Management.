@@ -1441,15 +1441,17 @@ struct EventDetailView: View {
 
     // MARK: - MATERIAL CARD
     //
-    // Die Materialliste, die der Polier vor Ort abhakt: die GEPLANTEN Materialien
-    // dieser Baustelle (echte Mengen), je Zeile geplant · auf Lager · fehlt · und ein
-    // Haken „vor Ort da". Grundlage ist `extras.materialBedarf` (Bedarf mit Katalog-Code),
-    // damit „auf Lager" gegen den echten Lagerbestand rechnet.
+    // Die Materialliste zeigt die GEPLANTEN Materialien dieser Baustelle (echte Mengen),
+    // je Zeile geplant · auf Lager · fehlt · und ob vor Ort GEPRÜFT. Grundlage ist
+    // `extras.materialBedarf` (mit Katalog-Code → „auf Lager" gegen den echten Bestand).
+    // Die Prüfung selbst passiert im Auftrag „Material prüfen" (dort mit Nachweis
+    // wer/wann); hier wird sie nur gespiegelt — EINE Wahrheit.
     private var materialCard: some View {
         let bedarf = extras.materialBedarf ?? []
         let katalog = Dictionary(pinnedMaterials.map { ($0.code ?? "", $0) }, uniquingKeysWith: { a, _ in a })
         let bedarfCodes = Set(bedarf.map { $0.code })
         let zusatz = pinnedMaterials.filter { !bedarfCodes.contains($0.code ?? "") }
+        let gepruefte = gepruefteMaterialNamen()
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -1464,10 +1466,13 @@ struct EventDetailView: View {
                 materialLeerHinweis
             } else {
                 if !bedarf.isEmpty {
-                    Text("Geplant für diese Baustelle — der Polier hakt vor Ort ab, was da ist.")
+                    Text("Geplant für diese Baustelle. Geprüft wird im Auftrag „Material prüfen“ (Gewerke & Ausführung) — hier gespiegelt.")
                         .font(.caption).foregroundStyle(.secondary)
                     VStack(spacing: 8) {
-                        ForEach(bedarf, id: \.code) { b in bedarfRow(b, entry: katalog[b.code]) }
+                        ForEach(bedarf, id: \.code) { b in
+                            let name = katalog[b.code]?.name ?? b.code
+                            bedarfRow(b, entry: katalog[b.code], geprueft: gepruefte.contains(name))
+                        }
                     }
                 }
                 if !zusatz.isEmpty {
@@ -1493,10 +1498,10 @@ struct EventDetailView: View {
         }.padding(.top, 4)
     }
 
-    /// Eine geplante Material-Zeile: Name · geplant · Lager-Status · vor-Ort-Haken.
-    private func bedarfRow(_ b: MaterialBedarf, entry: CDLexikonEntry?) -> some View {
+    /// Eine geplante Material-Zeile: Name · geplant · Lager-Status · und ob im
+    /// Prüf-Auftrag als „da" abgehakt (nur Anzeige — geprüft wird im Auftrag).
+    private func bedarfRow(_ b: MaterialBedarf, entry: CDLexikonEntry?, geprueft: Bool) -> some View {
         let name = entry?.name ?? b.code
-        let geprueft = (extras.materialGeprueft ?? []).contains(b.code)
         let mengeText = b.menge.formatted(.number.precision(.fractionLength(0...2)))
         return HStack(spacing: 12) {
             Image(systemName: iconForKategorie(entry?.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
@@ -1506,17 +1511,24 @@ struct EventDetailView: View {
                 materialStatusChip(code: b.code)
             }
             Spacer()
-            Button { toggleGeprueft(code: b.code) } label: {
-                VStack(spacing: 2) {
-                    Image(systemName: geprueft ? "checkmark.circle.fill" : "circle")
-                        .font(.title2).foregroundStyle(geprueft ? .green : .secondary)
-                    Text(geprueft ? "da" : "prüfen").font(.caption2).foregroundStyle(geprueft ? .green : .secondary)
-                }
-            }.buttonStyle(.plain)
+            VStack(spacing: 2) {
+                Image(systemName: geprueft ? "checkmark.circle.fill" : "circle.dashed")
+                    .font(.title2).foregroundStyle(geprueft ? .green : .secondary)
+                Text(geprueft ? "geprüft" : "offen").font(.caption2).foregroundStyle(geprueft ? .green : .secondary)
+            }
         }
         .padding(.vertical, 8).padding(.horizontal, 10)
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// Namen der Materialien, die im Auftrag „Material prüfen" als „da" (vorhanden==true)
+    /// abgehakt sind — die eine Prüf-Wahrheit, hier nur gespiegelt.
+    private func gepruefteMaterialNamen() -> Set<String> {
+        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        guard let pruef = jobs.first(where: { ($0.processingDetails ?? "").contains("Material prüfen") }) else { return [] }
+        let items = AuftragExtrasPayload.from(pruef.extras).lineItems
+        return Set(items.filter { $0.vorhanden == true }.map { $0.title })
     }
 
     /// Manuell zugeordnetes Material ohne geplante Menge (nur „auf Lager?"-Status).
@@ -1537,12 +1549,6 @@ struct EventDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private func toggleGeprueft(code: String) {
-        var codes = extras.materialGeprueft ?? []
-        if codes.contains(code) { codes.removeAll { $0 == code } } else { codes.append(code) }
-        extras.materialGeprueft = codes
-        saveExtras(extras)
-    }
 
     private func iconForKategorie(_ kat: String?) -> String {
         switch kat {
