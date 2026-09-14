@@ -138,7 +138,16 @@ enum HofauffahrtSeeder {
         let suche: NSFetchRequest<Event> = Event.fetchRequest()
         suche.fetchLimit = 1
         suche.predicate = NSPredicate(format: "eventNumber == %@", eventNummer)
-        guard (try? context.fetch(suche))?.first == nil else { return }
+        if let vorhanden = (try? context.fetch(suche))?.first {
+            // Demo gibt es schon — aber eine ältere Fassung hat evtl. noch keinen
+            // Material-Bedarf (Polier-Materialliste). Sanft nachrüsten, nichts sonst.
+            let extras = EventExtrasPayload.laden(aus: vorhanden)
+            if (extras.materialBedarf ?? []).isEmpty {
+                pinneMaterialliste(an: vorhanden)
+                try? context.save()
+            }
+            return
+        }
 
         let baustelle = macheBaustelle(in: context)
         pinneMaterialliste(an: baustelle)
