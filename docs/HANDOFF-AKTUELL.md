@@ -2,6 +2,26 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 14.09.2026 — Materialliste bedarfsbewusst: „zu bestellen = Bedarf − Lager" (live)
+
+**Branch `feature/ehrliche-kalkulation`** (PR #166), Commit `24c92d9`. Build + volle Suite grün.
+Andreas' Wunsch: 250 Steine ins Lager → zu bestellende Menge sinkt live. Der Materialstatus
+rechnet jetzt den **Bedarf** gegen den echten Lagerbestand.
+- `EventExtrasPayload.materialBedarf` ([MaterialBedarf {code,menge,einheit}], **OPTIONAL**).
+- `Materialstatus` (LagerStore) fünf Zustände: bestellt · **reicht** (grün, Fakt) · **teils**
+  (Lager X · zu bestellen Y, orange) · **zuBestellen(Menge)** · aufLager (ohne Bedarf).
+  zu bestellen = max(0, Bedarf − Lager). `materialCard` @ObservedObject LagerStore → live.
+- `HofauffahrtSeeder`: Bedarf je Material (Betonpflaster PFL-VBS = **1294 Stk**).
+- `DemoSeeder.seedLagerortDemoIfNeeded`: leerer Lagerort „Hof" (nur wenn keiner existiert).
+- Tests: materialstatusMitBedarfRechnetZuBestellen (250→teils/1044, 1300→reicht), bedarfIstHinterlegt.
+
+**Live-Test:** Hofeinfahrt-Demo → Materialien: „Betonpflaster · zu bestellen 1294 Stk".
+Katalog → Lager → Buchen → 250 Stk PFL-VBS in „Hof" → zurück: „Lager 250 · zu bestellen 1044".
+**Ehrliche Grenze:** Bedarf/Lager brauchen dieselbe Einheit (Stk gegen Stk); die LV-Position
+rechnet in m² — der Bestellvorschlag ist bewusst getrennt, noch nicht verknüpft.
+
+---
+
 ## Delta 14.09.2026 — Kleines Lagersystem (Bestand = Summe der Buchungen)
 
 **Branch `feature/lager` → gefast-forwarded in `feature/ehrliche-kalkulation`** (PR #166),
