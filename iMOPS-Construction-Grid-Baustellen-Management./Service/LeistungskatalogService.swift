@@ -65,6 +65,30 @@ enum LeistungskatalogService {
         baustein.verwendungen += 1
     }
 
+    /// Auto-Match beim Import: sucht das gelernte Rezept zur Position (Bezeichnung +
+    /// Einheit) und schreibt dessen Aufwand als Lohn — damit rechnet der `LVKalkulator`
+    /// den Preis. Gibt zurück, ob ein Treffer gefunden wurde.
+    ///
+    /// KEIN Treffer = die Position bleibt OHNE Preis (keine erfundene Zahl). Das ist die
+    /// ehrliche Voreinstellung: gerechnet nur, wo ein gelerntes Rezept passt; alles andere
+    /// wartet sichtbar auf einen Preis (Auswahl aus dem Katalog oder Prof/KI-Schätzung).
+    @discardableResult
+    static func autoMatch(position pos: LVPosition, in ctx: NSManagedObjectContext) -> Bool {
+        guard let leistung = pos.bezeichnung, !leistung.isEmpty else { return false }
+        guard let baustein = finde(leistung: leistung, einheit: pos.einheit ?? "", in: ctx) else {
+            return false
+        }
+        schreibeAufwandAlsLohn(maurer: baustein.maurerStunden,
+                               helfer: baustein.helferStunden,
+                               auf: pos, in: ctx)
+        if let kg = baustein.kostenGruppeNummer, !kg.isEmpty,
+           (pos.kostenGruppeNummer ?? "").isEmpty {
+            pos.kostenGruppeNummer = kg
+        }
+        benutzt(baustein)
+        return true
+    }
+
     // MARK: - Aufwandswert als Lohn schreiben (gemeinsam für Knoten & Picker)
 
     /// Schreibt den Aufwandswert (Maurer/Helfer h je Einheit) als zwei Lohnzeilen auf eine

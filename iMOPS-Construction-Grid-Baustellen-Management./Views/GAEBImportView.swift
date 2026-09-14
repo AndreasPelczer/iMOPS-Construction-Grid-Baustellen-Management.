@@ -16,6 +16,8 @@ struct GAEBImportView: View {
     @State private var isParsing = false
     @State private var parseError: String?
     @State private var showError = false
+    @State private var importSummary: String?
+    @State private var showingImportSummary = false
 
     private var selectedCount: Int { items.filter { $0.isSelected }.count }
     private var allSelected: Bool  { items.allSatisfy { $0.isSelected } }
@@ -54,6 +56,11 @@ struct GAEBImportView: View {
                 Button("OK") {}
             } message: {
                 Text(parseError ?? "Die Datei konnte nicht verarbeitet werden.")
+            }
+            .alert("Import fertig", isPresented: $showingImportSummary) {
+                Button("OK") { dismiss() }
+            } message: {
+                Text(importSummary ?? "")
             }
             .overlay {
                 if isParsing {
@@ -261,7 +268,10 @@ struct GAEBImportView: View {
 
     private func importSelected() {
         let store = AngebotsStore.shared
+        var gesamt = 0
+        var kalkuliert = 0
         for item in items where item.isSelected {
+            gesamt += 1
             let pos = LVPosition(context: viewContext)
             pos.posNr              = item.posNr
             pos.bezeichnung        = item.kurztext
@@ -277,10 +287,35 @@ struct GAEBImportView: View {
                                      ? importResult!.ownerName : "GAEB-Import",
                                      einzelpreis: up)
                 store.upsert(angebot, for: posID)
+                kalkuliert += 1
+            } else if LeistungskatalogService.autoMatch(position: pos, in: viewContext) {
+                // Treffer im gelernten Katalog → Aufwand geschrieben, LVKalkulator rechnet.
+                kalkuliert += 1
             }
+            // Kein Treffer = bewusst OHNE Preis (keine erfundene Zahl).
         }
         try? viewContext.save()
-        dismiss()
+        importSummary = zusammenfassung(gesamt: gesamt, kalkuliert: kalkuliert)
+        showingImportSummary = true
+    }
+
+    /// Ehrliche Bilanz nach dem Import: wie viele Positionen automatisch einen Preis
+    /// bekamen (aus dem Katalog/X84) und wie viele noch auf einen Preis warten.
+    private func zusammenfassung(gesamt: Int, kalkuliert: Int) -> String {
+        let offen = gesamt - kalkuliert
+        if kalkuliert == 0 {
+            return "\(gesamt) Positionen übernommen. Noch kein Preis — der gelernte Katalog "
+                + "hat (noch) kein passendes Rezept. Preise über die Kalkulation zuweisen; "
+                + "was du bestätigst, merkt sich der Mops für's nächste Mal."
+        }
+        var s = "\(gesamt) Positionen übernommen, davon \(kalkuliert) automatisch kalkuliert "
+              + "(aus dem gelernten Katalog\(isX84 ? " / Angebotspreisen" : "")). "
+        if offen > 0 {
+            s += "\(offen) warten noch auf einen Preis — keine erfundenen Zahlen."
+        } else {
+            s += "Alle mit Preis."
+        }
+        return s
     }
 
     /// DIN-276-Bezeichnung zu einer KG-Nummer.
