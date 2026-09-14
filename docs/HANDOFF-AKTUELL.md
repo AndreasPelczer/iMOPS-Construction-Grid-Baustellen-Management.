@@ -2,6 +2,31 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 14.09.2026 — Kleines Lagersystem (Bestand = Summe der Buchungen)
+
+**Branch `feature/lager` → gefast-forwarded in `feature/ehrliche-kalkulation`** (PR #166),
+Commit `3da01ff`. Build + LagerStoreTests (7) + volle Suite grün. Konform zu gängiger
+Lagersoftware: **der Bestand ist die Summe der Buchungen, keine editierbare Zahl**
+(= Tao). Migrationsfrei: Codable + JSON (`lager.json`), wie AngebotsStore — **kein
+Core Data**. Artikel = Katalog-Eintrag (`CDLexikonEntry`) über den Code.
+- `Service/LagerStore.swift`: `Lagerort`, `Buchungsart` (Eingang/Ausgang/Umlagerung/
+  Inventur/Korrektur), `Lagerbuchung` (signierte Menge); reine `Lagerlogik` + Store
+  (`init(fileURL:)` für Tests). Umlagerung = Buchungspaar, Inventur = Differenz aufs
+  gezählte Ist, Meldebestand, Lagerort-Löschschutz solange Buchungen existieren.
+- `Views/LagerView.swift` (Bestand · Nachbestellen · Lagerorte), `LagerBuchungSheet.swift`.
+- `MaterialLexikonView`: „X auf Lager"-Badge + Einstieg „Lager" (Toolbar).
+- **Materialliste (`EventDetailView.materialCard`): je Position Status-Chip — auf Lager
+  (grün, echter Bestand) · bestellt (blau, tippbar) · zu bestellen (orange).**
+  `bestellteCodes` in `EventExtrasPayload` **OPTIONAL** (sonst brechen die Backward-Compat-
+  Blob-Tests — synthetisiertes Codable wirft keyNotFound bei nicht-optionalem neuem Feld).
+- `Materialstatus.fuer(artikelCode:bestellt:store:)` kapselt die 3-Zustands-Logik.
+
+**Bewusst offen (dockt an):** Barcode/Scan (BuildIQ), Chargen/Serien, Auto-Abbuchen bei
+Bestellung/Verbrauch. Einheit kommt beim Buchen aus der letzten Buchung / Handeingabe
+(CDLexikonEntry hat kein Einheit-Feld).
+
+---
+
 ## Delta 14.09.2026 — Hofeinfahrt im Projekt-Konfigurator (2 Lücken behoben)
 
 **Branch `feature/ehrliche-kalkulation`**, Commit `85ddb52`. Tests grün. Der Konfigurator
