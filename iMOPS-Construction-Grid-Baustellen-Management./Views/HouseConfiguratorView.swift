@@ -601,7 +601,8 @@ struct HouseProjectResultView: View {
             HStack(spacing: 16) {
                 miniKPI(label: "Baukosten", value: result.baukosten.gesamtBaukosten)
                 miniKPI(label: "Nebenkosten", value: result.baunebenkosten.reduce(0) { $0 + $1.betrag })
-                miniKPI(label: "EUR/m\u{00B2}", value: result.gesamtkosten / result.project.wohnflaeche)
+                miniKPI(label: "EUR/m\u{00B2}", value: result.project.wohnflaeche > 0
+                        ? result.gesamtkosten / result.project.wohnflaeche : 0)
                 let totalWeeks = result.phasen.map { $0.endeWoche }.max() ?? 0
                 VStack(spacing: 2) {
                     Text("\(totalWeeks) Wo.")
