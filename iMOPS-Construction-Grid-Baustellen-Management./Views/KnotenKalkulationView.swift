@@ -356,13 +356,16 @@ struct KnotenKalkulationView: View {
     private func inKalkulationUebernehmen(_ v: (maurer: Double, helfer: Double)) {
         guard let pos = auftrag.lvPosition else { return }
         stundenSchreiben(maurer: v.maurer, helfer: v.helfer, in: pos)
-        LeistungskatalogService.merke(
+        let baustein = LeistungskatalogService.merke(
             leistung: leistung,
             einheit: pos.einheit ?? "",
             maurer: v.maurer, helfer: v.helfer,
             kostenGruppeNummer: auftrag.kostenGruppeNummer,
             quelle: "prof",
             in: viewContext)
+        // Volles Rezept ernten: falls die Position schon Material/Gerät trägt, wandern
+        // sie mit in den Baustein — dann rechnet der nächste Auto-Match sie mit.
+        LeistungskatalogService.lerneMaterialUndGeraet(von: pos, auf: baustein)
         speichern()
         katalogVorschlaegeAktualisieren()
         uebernommen = true

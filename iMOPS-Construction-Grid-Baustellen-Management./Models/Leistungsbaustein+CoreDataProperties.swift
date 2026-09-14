@@ -14,6 +14,7 @@ extension Leistungsbaustein {
     @NSManaged var helferStunden: Double      // h je Einheit
     @NSManaged var kostenGruppeNummer: String?
     @NSManaged var quelle: String?            // "prof" | "manuell"
+    @NSManaged var rezeptJSON: String?        // Material/Gerät als JSON (Lohn steht in maurer/helferStunden)
     @NSManaged var erstelltAm: Date?
     @NSManaged var verwendungen: Int32        // wie oft gepickt — häufige zuerst
 
