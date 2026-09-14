@@ -2,6 +2,24 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 14.09.2026 — Hofeinfahrt-Material im Katalog + Materialliste gepinnt
+
+**Branch `feature/ehrliche-kalkulation`**, Commit `89df575`. Build + Hofauffahrt-Tests (+3) grün.
+Die Baustellen-Materialliste (`EventDetailView` → Materialien) zeigt **angepinnte
+Katalog-Einträge** (`CDLexikonEntry`). Der Katalog kannte nur Hochbau → die Hofeinfahrt-Demo
+konnte nichts pinnen, Liste blieb leer.
+- `DemoSeeder`: 7 Tiefbau/Pflaster-Materialien (Kategorie „Tiefbau"), Codes zentral als
+  `DemoSeeder.hofeinfahrtMaterialCodes`. Seeding jetzt **idempotent per Code** (nicht mehr
+  „nur wenn leer") → bestehende Installs bekommen sie nach, keine Dubletten.
+- `HofauffahrtSeeder.pinneMaterialliste`: pinnt die Codes ans Demo-Event.
+- `EventDetailView`: Icon für Kategorie „Tiefbau".
+- Tests: materiallisteIstGepinnt, katalogHatTiefbauMaterial, katalogSeedingIstIdempotent.
+
+Merke: „Materialliste" = angepinnte `CDLexikonEntry` (Tab 4 Katalog), NICHT `PositionMaterial`
+(LV) oder `AuftragLineItem` (Bestellung) — die füllte der Seeder schon.
+
+---
+
 ## Delta 14.09.2026 — Normen-Spur: berührte DIN ambient im Baustellen-Canvas
 
 **Branch `feature/ehrliche-kalkulation`**, Commit `4412cc9`. Build + 7 neue Tests grün.
