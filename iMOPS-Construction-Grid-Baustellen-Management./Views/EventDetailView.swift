@@ -186,7 +186,7 @@ struct EventDetailView: View {
     @State private var zeigeAuswertung = false
     @State private var zeigeGespeicherteAuswertung = false   // gespeicherte Auswertungen wieder aufrufen
 
-    // MARK: Jobs: gefiltert + sortiert
+    // MARK: Jobs: gefiltert + sortiert (nach Bauablauf, zum Abarbeiten)
     private var filteredJobs: [Auftrag] {
         _ = refreshID
         guard let jobsSet = event.jobs,
@@ -194,10 +194,34 @@ struct EventDetailView: View {
         if selectedJobFilter == .open {
             allJobs = allJobs.filter { !$0.istFertig }
         }
+        let rang = bauablaufRang()
         return allJobs.sorted { a, b in
-            if a.istFertig != b.istFertig { return !a.istFertig }
+            let ra = rang[a.objectID] ?? 0, rb = rang[b.objectID] ?? 0
+            if ra != rb { return ra < rb }                       // Bauablauf zuerst
+            if a.istFertig != b.istFertig { return !a.istFertig } // offene vor fertigen
             return (a.employeeName ?? "") < (b.employeeName ?? "")
         }
+    }
+
+    /// Rang im Bauablauf = längster Weg über die Kausalkette bis zu diesem Auftrag.
+    /// So lässt sich die Liste in der Reihenfolge abarbeiten, in der gebaut wird —
+    /// wie die Arbeitsschritte innerhalb eines Auftrags schon vorgegeben sind.
+    private func bauablaufRang() -> [NSManagedObjectID: Int] {
+        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        var rang: [NSManagedObjectID: Int] = [:]
+        var laeuft: Set<NSManagedObjectID> = []          // Zyklus-Schutz
+        func r(_ a: Auftrag) -> Int {
+            if let v = rang[a.objectID] { return v }
+            if laeuft.contains(a.objectID) { return 0 }
+            laeuft.insert(a.objectID)
+            let vor = a.vorgaenger
+            let val = vor.isEmpty ? 0 : (vor.map { r($0) }.max() ?? 0) + 1
+            laeuft.remove(a.objectID)
+            rang[a.objectID] = val
+            return val
+        }
+        jobs.forEach { _ = r($0) }
+        return rang
     }
 
     // MARK: Checklist Progress
@@ -1858,13 +1882,8 @@ struct EventDetailView: View {
     }
 
     // MARK: - JOBS CARD
-    // Aufträge nach DIN-276-Kostengruppe gruppieren (für die Abschnitts-Ansicht).
-    private var groupedJobs: [(kg: String, items: [Auftrag])] {
-        let dict = Dictionary(grouping: filteredJobs, by: { $0.kostenGruppeNummer ?? "—" })
-        return dict.sorted { $0.key < $1.key }.map { (kg: $0.key, items: $0.value) }
-    }
 
-    // KG-Klartext für die Abschnitts-Überschriften (wie im LV).
+    // KG-Klartext (wie im LV) — für die KG-Badges/Abschnitte anderswo verfügbar.
     private func dinBezeichnungJobs(_ kg: String) -> String {
         switch kg {
         case "300": return "Baukonstruktionen"
@@ -1902,28 +1921,17 @@ struct EventDetailView: View {
             if filteredJobs.isEmpty {
                 Text("Keine Auftraege gefunden.").font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
             } else {
-                VStack(spacing: 12) {
-                    ForEach(groupedJobs, id: \.kg) { gruppe in
-                        // Abschnitts-Überschrift je Kostengruppe
-                        HStack {
-                            Text("KG \(gruppe.kg) – \(dinBezeichnungJobs(gruppe.kg))")
-                                .font(.caption.weight(.semibold))
-                            Spacer()
-                            Text("\(gruppe.items.count) Aufträge")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        // Aufträge dieser Kostengruppe
-                        VStack(spacing: 10) {
-                            ForEach(gruppe.items, id: \.objectID) { job in
-                                NavigationLink { AuftragDetailView(job: job) } label: {
-                                    AuftragRowView(auftrag: job) { refreshID = UUID() }
-                                        .padding(12)
-                                        .background(Color(.systemBackground))
-                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                        .shadow(radius: 1, y: 1)
-                                }
-                            }
+                // Flache Liste in Bauablauf-Reihenfolge — zum Abarbeiten von oben nach
+                // unten. Die Kostengruppe steht als Badge auf jeder Karte (AuftragRowView).
+                Text("In Bauablauf-Reihenfolge").font(.caption).foregroundStyle(.secondary)
+                VStack(spacing: 10) {
+                    ForEach(filteredJobs, id: \.objectID) { job in
+                        NavigationLink { AuftragDetailView(job: job) } label: {
+                            AuftragRowView(auftrag: job) { refreshID = UUID() }
+                                .padding(12)
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .shadow(radius: 1, y: 1)
                         }
                     }
                 }
