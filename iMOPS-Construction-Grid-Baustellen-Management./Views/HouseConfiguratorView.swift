@@ -165,8 +165,12 @@ struct HouseConfiguratorView: View {
                         .font(.headline)
                     HStack(spacing: 8) {
                         Label("\(Int(result.project.wohnflaeche)) m\u{00B2}", systemImage: "ruler")
-                        Label("\(result.project.geschosse) Geschoss(e)", systemImage: "building.2")
-                        Label(result.project.ausstattung.rawValue, systemImage: "star")
+                        // Geschosse/Ausstattung sind Haus-Felder — bei einer kleinen
+                        // Vorlage (Hofeinfahrt: 0 Geschosse) weglassen statt „0" zeigen.
+                        if result.project.geschosse > 0 {
+                            Label("\(result.project.geschosse) Geschoss(e)", systemImage: "building.2")
+                            Label(result.project.ausstattung.rawValue, systemImage: "star")
+                        }
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -579,8 +583,12 @@ struct HouseProjectResultView: View {
                         .font(.headline)
                     HStack(spacing: 8) {
                         Label("\(Int(result.project.wohnflaeche)) m\u{00B2}", systemImage: "ruler")
-                        Label("\(result.project.geschosse) Geschoss(e)", systemImage: "building.2")
-                        Label(result.project.ausstattung.rawValue, systemImage: "star")
+                        // Geschosse/Ausstattung sind Haus-Felder — bei einer kleinen
+                        // Vorlage (Hofeinfahrt: 0 Geschosse) weglassen statt „0" zeigen.
+                        if result.project.geschosse > 0 {
+                            Label("\(result.project.geschosse) Geschoss(e)", systemImage: "building.2")
+                            Label(result.project.ausstattung.rawValue, systemImage: "star")
+                        }
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
