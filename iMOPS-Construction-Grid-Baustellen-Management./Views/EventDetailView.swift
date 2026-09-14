@@ -1483,6 +1483,7 @@ struct EventDetailView: View {
         case "Sanitaer":   return "drop.fill"
         case "Daemmung":   return "shield.fill"
         case "Ausbau":     return "paintbrush.fill"
+        case "Tiefbau":    return "square.grid.3x3.fill"
         default:           return "shippingbox"
         }
     }
