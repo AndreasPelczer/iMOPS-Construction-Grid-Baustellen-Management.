@@ -96,7 +96,7 @@ struct GAEBImportView: View {
                 Button {
                     showDocumentPicker = true
                 } label: {
-                    Label("Datei wählen (.x83 / .xml)", systemImage: "doc.badge.plus")
+                    Label("Datei wählen (.x83 / .d83 / .xml)", systemImage: "doc.badge.plus")
                         .font(.headline)
                         .padding(.horizontal, 28).padding(.vertical, 14)
                         .background(.orange)
@@ -107,7 +107,7 @@ struct GAEBImportView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Format-Hinweise", systemImage: "info.circle")
                         .font(.caption.bold()).foregroundStyle(.secondary)
-                    Text("• Unterstützt: GAEB DA XML 3.2 und 3.3\n• Phasen: X83 (Angebotsaufforderung) und X84 (Angebot)\n• Dateien als .x83, .x84 oder .xml speichern\n• Encoding: UTF-8 und Windows-1252 werden erkannt\n• Nicht unterstützt: GAEB 90 (.d83/.d84 Binärformat)")
+                    Text("• GAEB DA XML 3.2 / 3.3 (.x83, .x84, .xml)\n• GAEB 90 (.d83, .d84) — das ältere Zeilenformat\n• Phasen: X83 (Angebotsaufforderung) und X84 (Angebot)\n• Encoding: UTF-8, Windows-1252 und CP850 werden erkannt\n• Positionen, Mengen, Einheiten und Texte werden gelesen\n• Nicht unterstützt: GAEB 2000 in seltenen Sonderformaten")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding()
@@ -230,13 +230,20 @@ struct GAEBImportView: View {
     private func parsefile(url: URL) {
         isParsing = true
         DispatchQueue.global(qos: .userInitiated).async {
-            // Copy to temp while security-scoped access is open
+            // Der Picker hat bereits in einen lokalen Temp-Pfad kopiert (Security-Scope
+            // dort geschlossen). Für den Drag&Drop-Weg (initialURL) kopieren wir sicher
+            // in einen EIGENEN Temp-Pfad (eindeutig, nie Quelle==Ziel).
             let tmp = FileManager.default.temporaryDirectory
-                .appendingPathComponent(url.lastPathComponent)
-            try? FileManager.default.copyItem(at: url, to: tmp)
+                .appendingPathComponent("\(UUID().uuidString)-\(url.lastPathComponent)")
+            let quelle: URL
+            if (try? FileManager.default.copyItem(at: url, to: tmp)) != nil {
+                quelle = tmp
+            } else {
+                quelle = url   // schon lokal lesbar → direkt nehmen
+            }
 
             do {
-                let result = try GAEBImporter.parse(url: tmp)
+                let result = try GAEBImporter.parse(url: quelle)
                 DispatchQueue.main.async {
                     isParsing = false
                     importResult = result
@@ -292,10 +299,12 @@ struct GAEBDocumentPicker: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        // Accept .xml + .data (broad fallback catches .x83/.x84 on most systems)
+        // Accept .xml + GAEB-Endungen (.x83/.x84 = DA XML, .d83/.d84 = GAEB 90);
+        // .data als breiter Fallback, falls die Endung nicht als UTType bekannt ist.
         var types: [UTType] = [.xml]
-        if let x83 = UTType(filenameExtension: "x83") { types.append(x83) }
-        if let x84 = UTType(filenameExtension: "x84") { types.append(x84) }
+        for ext in ["x83", "x84", "d83", "d84"] {
+            if let t = UTType(filenameExtension: ext) { types.append(t) }
+        }
         types.append(.data)
         let vc = UIDocumentPickerViewController(forOpeningContentTypes: types)
         vc.delegate = context.coordinator
@@ -310,9 +319,20 @@ struct GAEBDocumentPicker: UIViewControllerRepresentable {
         init(onPick: @escaping (URL) -> Void) { self.onPick = onPick }
         func documentPicker(_ c: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
+            // WICHTIG: solange der geschützte Zugriff offen ist, SOFORT (synchron) in
+            // einen eindeutigen Temp-Pfad kopieren. Vorher wurde der Zugriff geschlossen,
+            // bevor der asynchrone Import las → auf dem Mac schlug das Lesen fehl.
             let secured = url.startAccessingSecurityScopedResource()
-            onPick(url)
-            if secured { url.stopAccessingSecurityScopedResource() }
+            defer { if secured { url.stopAccessingSecurityScopedResource() } }
+
+            let tmp = FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(UUID().uuidString)-\(url.lastPathComponent)")
+            do {
+                try FileManager.default.copyItem(at: url, to: tmp)
+                onPick(tmp)                    // lokaler Pfad, kein Security-Scope mehr nötig
+            } catch {
+                onPick(url)                    // Fallback: Original weiterreichen
+            }
         }
     }
 }
