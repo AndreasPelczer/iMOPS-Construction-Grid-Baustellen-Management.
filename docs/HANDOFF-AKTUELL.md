@@ -2,6 +2,57 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 14.09.2026 — Ehrliche Kalkulation: Lohngruppen→Mittellohn + Aufschlag-Kette
+
+**Branch `feature/ehrliche-kalkulation`** (von `feature/uebergabe-nachweis`). Build + die 4
+neuen Tests grün. **Nicht gepusht.** Behebt den **74-Fehler**: die 74 €/h ist der
+**Verrechnungssatz** (Ergebnis der Kette), NICHT der Lohn (~38 €/h Vollkosten). Saubere
+Trennung Kostenseite / Angebotsseite, generisch — echte Firmenzahlen bleiben draussen.
+
+**Gebaut:**
+- `Service/Lohnkalkulation.swift` (NEU) — die Struktur:
+  - `Lohngruppe.vollkosten = Brutto × Nebenkosten-Faktor` (was die Stunde KOSTET).
+  - `Mittellohn.berechne(kolonne:…)` = gewichteter Vollkosten-Schnitt → der Lohnsatz je
+    Mannstunde, der in die Positionen gehört (statt der 74).
+  - `Aufschlagskette` (BGK·AGK·Wagnis&Gewinn·Skonto·MwSt): innen einzeln, **aussen als EIN
+    vertraulicher `firmenzuschlag`** ausweisbar (Geschäftsgeheimnis). `nettoAngebot` /
+    `bruttoAngebot`; `firmenzuschlag(ausVollkosten:verrechnungssatz:)` rückwärts fürs Orakel.
+  - `LohnkalkulationDefaults`: nebenkostenFaktor 1,85; generische ZDB-Lohngruppen (LG1 17,00 …
+    LG6 28,50, Platzhalter); Default-Kette (bgk 0,10 / agk 0,10 / w&g 0,08 / skonto 0,025).
+- `Service/FirmenSettings.swift` (geändert) — Keys + Accessors `nebenkostenFaktor`, `agk`,
+  `skonto` (dazu bgk/wagnisGewinn/mwst schon da) + `static var aufschlagskette` Builder.
+  Die echten Firmenzahlen kommen HIER rein (UserDefaults), nie in den Code.
+
+**Nachweis:** `…Tests/LohnkalkulationTests.swift` (4, grün):
+- `vollkostenOrakel` — Brutto×1,85 = 31,45 / 38,85 / 52,73.
+- `mittellohnOrakel_37_81` — Beispiel-Kolonne (1×LG6 + 4×LG4 + 3×LG1) → **37,81 €/h**.
+- `ketteNettoUndBrutto` — firmenzuschlag 0,33947; netto 13.394,7 aus 10.000.
+- `orakel74_istErgebnisNichtInput` — die Kette TRIFFT mit dem vertraulichen Firmenzuschlag
+  exakt 74; generisch kommt ~52 raus. **Die Differenz ist Firmensache, nicht im Code.**
+
+**Vertraulichkeit:** `.gitignore` sperrt jetzt `docs/lohnberechnung/` (Goldschmitt-Quell-Excel,
+nur lesen) + `graphify-out/`. Nur Formeln + öffentliche Richtwerte im Repo.
+
+**Nächster Schritt (Andreas' Idee 14.9., verabredet):** ein **Firmenzuschlag-Schieber** —
+links Vollkosten (fest), Mitte der Schieber (Firmenzuschlag), rechts der Verrechnungssatz
+live, daneben die **74 als Orakel-Linie**. Schiebt man bis die Nadel auf 74 sitzt, liest man
+Goldschmitts echten Aufschlag ab (die Zahl, die nur in FirmenSettings darf). Offene Frage:
+EIN Regler (ganzer Firmenzuschlag) oder nur Wagnis&Gewinn (BGK/AGK fest, weil gemessene
+Kosten). Rückwärts-Formel steht schon (`firmenzuschlag(ausVollkosten:verrechnungssatz:)`),
+es fehlt nur die View.
+
+**Bewusst offen:**
+- **Schritt C** — den 74-Verrechnungssatz im `RaphaelStammdatenSeeder` (26,91×2,75=74) auf
+  Vollkosten-Mittellohn umstellen. Hängt an der **offenen DSGVO-Leak-Bereinigung** (Raphis
+  Preise im public Repo, Memo `keine-kundendaten-im-rag-repo` — Andreas entscheidet noch).
+- **Integration** — den Mittellohn in die LV-Positionen ziehen; Aufschlagskette an
+  `LVKalkulator` andocken.
+- Deferred (Auftrag-GRENZE): Bauformeln/Auto-Menge, Maschinenpark-Sätze, Aufwandswerte.
+
+Commits: `7dbc30d` (Kalkulation), `d58405f` (gitignore/CLAUDE.md). Backup HANDOFF: `.backup_…_ehrliche-kalk`.
+
+---
+
 ## Delta 13.09.2026 — Leitstand Schritt 2: Auto-Menge (Größe → Menge)
 
 **Branch `feature/auto-menge`** (von `main`). Build + Suite grün. **Nicht gepusht.**
