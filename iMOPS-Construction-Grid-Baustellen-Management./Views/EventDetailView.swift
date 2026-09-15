@@ -393,6 +393,7 @@ struct EventDetailView: View {
 
                 kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
                     SchichtUebergabeCard(event: event)
+                    brigadeCard
                     lehrlingWarmupCard
                     jobsCard
                         .sheet(isPresented: $showingWarmup) {
@@ -2021,6 +2022,51 @@ struct EventDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - BRIGADE (Mannstunden → Personalbedarf, Nordstern-Stufe 5)
+    private var brigadeLVPositionen: [LVPosition] {
+        (event.lvPositionen?.allObjects as? [LVPosition]) ?? []
+    }
+    private var aktiveLeuteCount: Int {
+        let req: NSFetchRequest<Employee> = Employee.fetchRequest()
+        req.predicate = NSPredicate(format: "isActive == YES")
+        return (try? viewContext.count(for: req)) ?? 0
+    }
+
+    /// Wie viele Mannstunden/-tage stecken in dieser Baustelle — aus den Aufwandswerten
+    /// des LV. Ehrlich: zeigt an, wenn noch Aufwandswerte fehlen (Summe unvollständig).
+    @ViewBuilder private var brigadeCard: some View {
+        let plan = BrigadePlanung.fuer(positionen: brigadeLVPositionen)
+        let leute = aktiveLeuteCount
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Brigade — Mannstunden", systemImage: "person.3.fill").font(.headline)
+            if plan.mannstunden == 0 {
+                Text("Noch kein Aufwandswert hinterlegt. Sobald Positionen einen Aufwandswert (Lohn h/Einheit) tragen — z.B. über den Mops-Vorschlag — erscheint hier der Personalbedarf.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                Text("\(plan.mannstunden.formatted(.number.precision(.fractionLength(0...1)))) Mannstunden  ≈  \(plan.manntage.formatted(.number.precision(.fractionLength(0...1)))) Manntage")
+                    .font(.subheadline.weight(.semibold))
+                Text("(bei \(Int(BrigadePlanung.stundenJeTag)) h je Person und Tag)")
+                    .font(.caption2).foregroundStyle(.secondary)
+                if leute > 0, let tage = plan.arbeitstage(beiLeuten: leute) {
+                    Text("Bei \(leute) aktiven Leuten ≈ \(tage.formatted(.number.precision(.fractionLength(0...1)))) Arbeitstage")
+                        .font(.subheadline)
+                } else {
+                    Text("Lege im Team-Tab aktive Leute an, um die Arbeitstage zu sehen.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            if plan.unvollstaendig {
+                Text("⚠️ \(plan.positionenOhneAufwand) von \(plan.positionenGesamt) Positionen noch ohne Aufwandswert — die Summe wächst, wenn du sie ergänzt.")
+                    .font(.caption2).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var jobsCard: some View {
