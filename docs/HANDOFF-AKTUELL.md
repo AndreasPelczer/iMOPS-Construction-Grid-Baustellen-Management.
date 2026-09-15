@@ -2,6 +2,19 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 15.09.2026 — GAEB, Matcher, Angebot-Button, Lehrling-Spiel (Branch gepusht)
+
+**Branch `feature/ehrliche-kalkulation`** — bis `09c090d` **auf GitHub gepusht** (verifiziert). Volles Unit-Target grün.
+
+- **GAEB-Import komplett:** DA XML (X83/X84) an echter Datei belegt (`GAEBImportTests`), **GAEB 90 (.d83/.d84) NEU** (`Service/GAEB90Importer.swift`, Festspalten-Zeilenformat, cp850/1252, an Andreas' echter `.d83` belegt). `GAEBImporter.parse` ist Weiche XML↔90. Erreichbar über neue Karte **„GAEB einlesen"** im Import-Katalog (EventDetailView `gaebCard`). Picker-Bug gefixt (security-scoped Zugriff schloss zu früh → betraf ALLE Mac-Importe). Commits a7d6b2c, 53e56de, 8a13633.
+- **Matcher (Text→Rezept→Preis):** `LeistungskatalogService` war schon da (via graphify gefunden — Beleg für „verbinden statt erfinden"). Lücke 1 `autoMatch(position:in:)`: beim GAEB-Import findet eine Position ihr gelerntes Rezept → Preis via `LVKalkulator`; kein Treffer = bewusst OHNE Preis (keine erfundene Zahl); ehrliche Import-Bilanz. Lücke 2: `Leistungsbaustein.rezeptJSON` (neues optionales Attribut, Lightweight-Migration) trägt jetzt auch **Material + Gerät** → voller Positionspreis; Ernte in `KnotenKalkulationView`. Commits dd27780, 582506f. Tests `GAEBAutoMatchTests` (6). **Modell-Falle:** aktive Version = `test25B 2.xcdatamodel` (mit Leerzeichen!).
+- **„Angebot an Kunden"-Button** im Planer (HouseConfiguratorView): Kunden-Sheet → PDF mit Logo/Briefkopf (`AngebotPDFExporter`) → per Mail (`MailComposeView`, ein Wrapper) oder Teilen-Fallback. Commits 85fdcf4, 68786ae.
+- **Lehrling-Spiel IM Mops** (aus Andreas' Ausbildungsspiel „Der junge Hering"): (1) Warm-up **„Reihenfolge sortieren"** — gemischte Aufträge in Bauablauf-Reihenfolge ziehen, geprüft gegen die **Kausalkette** (`Service/Bauablauf.swift` = eine Wahrheit für Liste UND Spiel; `EventDetailView.bauablaufRang` nutzt sie jetzt); Überspringen erlaubt; `WarmupStore` pro Baustelle+Tag. (2) **Baufragen-Quiz** (`Service/Baufragen.swift`, 12 Fragen 1. Lehrjahr; `BauQuizView`). Karten in „Gewerke & Ausführung". Tests `BauablaufTests` (3) + `BaufragenTests` (3). Commits d548b09, 09c090d.
+- **Nordstern-Review** (die 3 fehlenden Verbindungen): heute alle angefasst — (a) Import-Brücke durch (GAEB+WandLeser+JSON), (b) Mannstunden existieren, nur CrewPlanning-Nachfrage offen, (c) `Erdbauleistung` gebaut, nur `Geraet.leistung`-Feld + Einsatzplan offen. Memory `nordstern-zeichnung-zu-baustelle` aktualisiert.
+- **🔴 DSGVO:** Commit `164fa00` (Trennvlies = Raphis realer Li 5,11) wurde **bewusst mitgepusht** — Andreas hat am 15.9. informiert so entschieden (RaphaelStammdatenSeeder ist eh schon auf origin/main). Der offene „3. Fall" bleibt seine Entscheidung.
+
+---
+
 ## Delta 14.09.2026 — Auftrag „Material prüfen" (Wareneingang) in der Kausalkette
 
 **Branch `feature/ehrliche-kalkulation`** (PR #166), Commit `40f4d80`. Volle Suite grün (clean).
