@@ -51,6 +51,9 @@ struct iMOPSApp: App {
                     // einen Start-Fenster fehlen (Reihenfolge Scharpegge ↔ DemoSeeder).
                     DemoSeeder.seedMaterialsIfNeeded(into: persistence.container.viewContext)
                     StammdatenSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    // Öffentliche Ytong-Bedarfswerte je m³ als Mauerwerks-Rezepte
+                    // (Mengen fest, Preis 0 → in den Stammdaten nachtragen).
+                    YtongBedarf.seedIfNeeded(context: persistence.container.viewContext)
                     MarktbreitSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     // NACH MarktbreitSeeder: rechnet dessen Dach-/Decken-Positionen durch
                     // und braucht sie deshalb schon in der Datenbank.
