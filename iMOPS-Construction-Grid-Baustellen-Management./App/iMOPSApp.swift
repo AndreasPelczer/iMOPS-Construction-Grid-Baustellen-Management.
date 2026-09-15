@@ -54,6 +54,9 @@ struct iMOPSApp: App {
                     // Öffentliche Ytong-Bedarfswerte je m³ als Mauerwerks-Rezepte
                     // (Mengen fest, Preis 0 → in den Stammdaten nachtragen).
                     YtongBedarf.seedIfNeeded(context: persistence.container.viewContext)
+                    // Tiefbau-/Außenanlagen-Rezepte (Hofeinfahrt): Material-Richtwerte +
+                    // Bagger-Stunden; Lohn/Preis bleiben offen (Aufwandswert per Prof).
+                    TiefbauRezepte.seedIfNeeded(context: persistence.container.viewContext)
                     MarktbreitSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     // NACH MarktbreitSeeder: rechnet dessen Dach-/Decken-Positionen durch
                     // und braucht sie deshalb schon in der Datenbank.
