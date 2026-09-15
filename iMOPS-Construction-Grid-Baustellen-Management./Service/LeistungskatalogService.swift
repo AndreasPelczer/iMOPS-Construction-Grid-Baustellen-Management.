@@ -14,6 +14,18 @@ import CoreData
 // seinen Baustein statt ihn zu verdoppeln.
 enum LeistungskatalogService {
 
+    /// Zentraler Material-Preis (€/Einheit) aus den Stammdaten (`KalkMaterial`) — die EINE
+    /// vorhandene Preis-Liste (gepflegt in StammdatenPflegeView, gerätelokal, vertraulich).
+    /// Nachschlag über den normalisierten Namen, wie bei den Leistungsbausteinen. Kein
+    /// Treffer → nil (dann bleibt der Rezept-Preis, oft 0).
+    static func materialPreis(fuer name: String, in ctx: NSManagedObjectContext) -> Double? {
+        let ziel = normalisiere(name)
+        guard !ziel.isEmpty else { return nil }
+        let req: NSFetchRequest<KalkMaterial> = KalkMaterial.fetchRequest()
+        let alle = (try? ctx.fetch(req)) ?? []
+        return alle.first { normalisiere($0.name) == ziel }?.preisProEinheit
+    }
+
     /// Vergleichsform: klein, ohne Diakritika, getrimmt. Dieselbe Regel für Leistung und Einheit.
     static func normalisiere(_ text: String?) -> String {
         (text ?? "")
@@ -160,7 +172,10 @@ enum LeistungskatalogService {
             pm.id = UUID()
             pm.materialName = m.name
             pm.mengeProEinheit = m.mengeProEinheit
-            pm.einzelpreis = m.einzelpreis
+            // Menge kommt aus dem Rezept (öffentlicher Richtwert), PREIS zentral aus den
+            // Stammdaten (KalkMaterial, gerätelokal). Zentraler Preis gewinnt; Rezept-Preis
+            // (oft 0) ist nur Rückfall.
+            pm.einzelpreis = materialPreis(fuer: m.name, in: ctx) ?? m.einzelpreis
             pm.verschnittProzent = m.verschnittProzent
             pm.einheit = m.einheit
             pm.position = pos
