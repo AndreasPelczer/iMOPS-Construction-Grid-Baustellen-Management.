@@ -2,6 +2,20 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 15.09.2026 (Nacht) — Rezepte für den Matcher (Ytong + Tiefbau), Goldschmitt-Fotos
+
+**Branch `feature/ehrliche-kalkulation`** — Commits `0a8ac59` (Ytong), `f0b17cf` (Tiefbau). **LOKAL, NICHT gepusht** (Nachtschicht — Andreas entscheidet wach). Beide Suiten grün.
+
+Damit der Auto-Match beim GAEB-Import wirklich Preise setzt, brauchen die Positionen **Rezepte** (Leistungsbausteine mit Menge Material/Gerät je Einheit). Ein Rezept hat 3 Zutaten: **Menge** (Tabelle/Foto) · **Aufwandswert** Lohn h/Einheit (Prof/KI, Folgerung) · **Preis** (gerätelokal, Stammdaten).
+
+- **`Service/YtongBedarf.swift`** — öffentliche Ytong-Bedarfswerte je m³ (Steine Stück/m³ + DBM kg/m³ je Wanddicke 5–48 cm, aus Foto IMG_0348). `seedIfNeeded` legt je Wanddicke einen Baustein „Mauerwerk Ytong X cm" (m³) an, Material-Menge fest, **Preis 0**. Idempotent, überschreibt Lohn nicht. `YtongBedarfTests` (4).
+- **`Service/TiefbauRezepte.swift`** — die 8 Hofeinfahrt-Leistungen (Oberboden/Aushub/abfahren/Schotter/Splitt/Trennvlies/Pflaster/Randstein). Material-Mengen = **Richtwerte** (Verschnitt/Verdichtung), Bagger-Stunden aus `Erdbauleistung`. **Lohn 0 + Preis 0 bewusst** (Aufwandswert steht in keiner Tabelle). `TiefbauRezepteTests` (5). `iMOPSApp` seedet beide im Start-Lauf.
+- **DSGVO sauber getrennt:** Ytong-Mengen/Artikel-Nummern = öffentliche Xella-Daten (Code ok). **Goldschmitts Preise + „Gerhard Goldschmitt Bau GmbH"/Bernd Goldschmitts Telefon** (auf Fotos IMG_0350/0353) = vertraulich → nur Stammdaten, device-lokal. Fotos liegen unter `~/Desktop/goldschmitt-fotos/` (nicht im Repo).
+- **🔴 OFFEN / nächster Schritt:** der **Aufwandswert** (Lohn h/Einheit) ist der Engpass bei fast jedem Rezept — kommt per Prof/KI (`MopsKalkulationsHelper`, markiert als Schätzung) oder Andreas' Erfahrung. Erst dann liefert ein Rezept einen echten Preis. Dazu: die € je Material/Stunde in den Stammdaten.
+- **⚠️ FLAKY TEST (vorbestehend, NICHT durch diese Arbeit):** `RechnungPDFExporterTests/ibanOhneBanknameGenuegt` fällt im vollen Target GELEGENTLICH (Race auf geteilte `UserDefaults.standard` zwischen FirmenSettings-Tests; allein + im 2. Lauf grün). Sauber wäre, die FirmenSettings-berührenden Test-Suiten zu serialisieren/isolieren — bewusst NICHT nachts unbeaufsichtigt gemacht.
+
+---
+
 ## Delta 15.09.2026 — GAEB, Matcher, Angebot-Button, Lehrling-Spiel (Branch gepusht)
 
 **Branch `feature/ehrliche-kalkulation`** — bis `09c090d` **auf GitHub gepusht** (verifiziert). Volles Unit-Target grün.
