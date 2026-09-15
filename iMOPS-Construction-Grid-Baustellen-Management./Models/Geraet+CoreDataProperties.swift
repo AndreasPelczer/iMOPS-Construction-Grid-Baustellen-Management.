@@ -12,6 +12,7 @@ extension Geraet {
     @NSManaged var anschaffungsKosten: Double
     @NSManaged var nutzungsdauerStunden: Int32
     @NSManaged var notiz: String?
+    @NSManaged var leistung: Double     // Aushubleistung in m³/h (0 = nicht gesetzt → Richtwert)
 
     // Kosten pro Betriebsstunde (lineare Abschreibung)
     var kostenProStunde: Double {

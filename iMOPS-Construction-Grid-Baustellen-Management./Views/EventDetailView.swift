@@ -394,6 +394,7 @@ struct EventDetailView: View {
                 kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
                     SchichtUebergabeCard(event: event)
                     brigadeCard
+                    maschinenCard
                     lehrlingWarmupCard
                     jobsCard
                         .sheet(isPresented: $showingWarmup) {
@@ -2067,6 +2068,40 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    // MARK: - MASCHINEN (Aushub → Bagger-Stunden, Nordstern-Stufe 3+4)
+    /// Bagger-Leistung: ein Gerät mit gesetzter Leistung (Name enthält „bagger") oder Richtwert.
+    private var baggerLeistung: (wert: Double, quelle: String) {
+        let req: NSFetchRequest<Geraet> = Geraet.fetchRequest()
+        req.predicate = NSPredicate(format: "leistung > 0")
+        let geraete = (try? viewContext.fetch(req)) ?? []
+        if let bagger = geraete.first(where: { ($0.name ?? "").localizedCaseInsensitiveContains("bagger") }) ?? geraete.first {
+            return (bagger.leistung, bagger.name ?? "Gerät")
+        }
+        return (Erdbauleistung.minibagger, "Minibagger (Richtwert)")
+    }
+
+    /// Aus den Erdbau-Positionen des LV: Aushubmenge → Bagger-Stunden (Erdbauleistung).
+    @ViewBuilder private var maschinenCard: some View {
+        let l = baggerLeistung
+        let plan = MaschinenPlanung.fuer(positionen: brigadeLVPositionen, leistung: l.wert, quelle: l.quelle)
+        if plan.hatAushub {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Maschinen — Erdbau", systemImage: "gearshape.2.fill").font(.headline)
+                Text("Aushub \(plan.aushubM3.formatted(.number.precision(.fractionLength(0...1)))) m³  →  ca. \(plan.baggerStunden.formatted(.number.precision(.fractionLength(0...1)))) Bagger-Stunden")
+                    .font(.subheadline.weight(.semibold))
+                Text("≈ \(plan.baggerTage.formatted(.number.precision(.fractionLength(0...1)))) Tage · Leistung \(plan.leistungM3h.formatted(.number.precision(.fractionLength(0...1)))) m³/h (\(plan.quelleLeistung))")
+                    .font(.caption).foregroundStyle(.secondary)
+                Text("Aushubmenge aus \(plan.erdbauPositionen) Erdbau-Position\(plan.erdbauPositionen == 1 ? "" : "en") erkannt — Leistung in den Geräte-Stammdaten anpassbar.")
+                    .font(.caption2).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
     }
 
     private var jobsCard: some View {
