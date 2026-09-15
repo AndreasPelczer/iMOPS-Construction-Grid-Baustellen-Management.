@@ -18,6 +18,9 @@ struct MopsVorschlagSheet: View {
     @State private var selectedAction = 0
     @State private var showApplyConfirmation = false
     @State private var didApplyText = false
+    @State private var aufwandVorschlag: (maurer: Double, helfer: Double)?
+    @State private var aufwandUebernommen = false
+    @State private var showAufwandConfirmation = false
 
     private let aktionen = ["Aufwandswert", "Material-Alternative", "Positionstext"]
 
@@ -102,6 +105,22 @@ struct MopsVorschlagSheet: View {
                         .padding(.horizontal)
                         .disabled(didApplyText)
                     }
+
+                    if selectedAction == 0, aufwandVorschlag != nil {
+                        Button {
+                            showAufwandConfirmation = true
+                        } label: {
+                            Label(
+                                aufwandUebernommen ? "Als Schätzung übernommen" : "Aufwandswert übernehmen (Schätzung)",
+                                systemImage: aufwandUebernommen ? "checkmark.circle.fill" : "square.and.arrow.down"
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(aufwandUebernommen ? .green : .orange)
+                        .padding(.horizontal)
+                        .disabled(aufwandUebernommen)
+                    }
                 }
 
                 if let err = errorText {
@@ -147,7 +166,24 @@ struct MopsVorschlagSheet: View {
             } message: {
                 Text("Der bestehende Positionstext wird ersetzt. Bitte nur übernehmen, wenn du den Vorschlag fachlich geprüft hast.")
             }
+            .alert("Aufwandswert als Schätzung übernehmen?", isPresented: $showAufwandConfirmation) {
+                Button("Abbrechen", role: .cancel) { }
+                Button("Übernehmen") { aufwandUebernehmen() }
+            } message: {
+                Text("Der Vorschlag (REFA) ist eine Schätzung, kein fester Wert. Er wird auf die Position geschrieben und für die nächste gleiche Leistung gemerkt — bitte fachlich prüfen und bei Bedarf anpassen.")
+            }
         }
+    }
+
+    /// Den vorgeschlagenen Aufwandswert übernehmen: auf die Position schreiben UND ins
+    /// Rezept lernen (Herkunft „schätzung"). Kein fester Wert — bewusst markiert.
+    private func aufwandUebernehmen() {
+        guard let w = aufwandVorschlag else { return }
+        LeistungskatalogService.uebernehmeAufwand(
+            maurer: w.maurer, helfer: w.helfer, quelle: "schätzung",
+            auf: position, in: viewContext)
+        try? viewContext.save()
+        aufwandUebernommen = true
     }
 
     // MARK: - Mops fragen
@@ -156,6 +192,8 @@ struct MopsVorschlagSheet: View {
         isLoading = true
         errorText = nil
         mopsText = nil
+        aufwandVorschlag = nil
+        aufwandUebernommen = false
 
         let helper = MopsKalkulationsHelper.shared
         let leistung = "\(position.menge.formatted()) \(position.einheit ?? "") \(position.bezeichnung ?? "")"
@@ -170,6 +208,7 @@ struct MopsVorschlagSheet: View {
                         let text = "Vorschlag (REFA):\n• Maurer: \(wert.maurer) h/\(position.einheit ?? "E")\n• Helfer: \(wert.helfer) h/\(position.einheit ?? "E")"
                         mopsText = text
                         antwort = text
+                        aufwandVorschlag = wert          // für „Übernehmen" merken
                         isLoading = false
                     }
                 } else {

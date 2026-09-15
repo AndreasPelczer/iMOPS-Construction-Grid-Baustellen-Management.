@@ -87,6 +87,19 @@ enum LeistungskatalogService {
         return true
     }
 
+    /// Einen Aufwandswert (Maurer/Helfer h je Einheit) auf eine Position ÜBERNEHMEN und
+    /// zugleich ins Rezept LERNEN — damit der nächste gleiche Import ihn automatisch
+    /// bekommt. Das schließt den Kreis für importierte Positionen (die kein Knoten sind).
+    /// `quelle` hält die Herkunft fest: „schätzung" (KI/Prof-Vorschlag, Folgerung) vs.
+    /// „erfahrung" (von Hand). Das vorhandene Material-Rezept (rezeptJSON) bleibt erhalten.
+    static func uebernehmeAufwand(maurer: Double, helfer: Double, quelle: String,
+                                  auf pos: LVPosition, in ctx: NSManagedObjectContext) {
+        schreibeAufwandAlsLohn(maurer: maurer, helfer: helfer, auf: pos, in: ctx)
+        merke(leistung: pos.bezeichnung ?? "", einheit: pos.einheit ?? "",
+              maurer: maurer, helfer: helfer,
+              kostenGruppeNummer: pos.kostenGruppeNummer, quelle: quelle, in: ctx)
+    }
+
     // MARK: - Volles Rezept (Lohn + Material + Gerät)
 
     /// Ein wiederverwendbares Rezept über die reine Arbeitszeit hinaus: Material und Gerät
