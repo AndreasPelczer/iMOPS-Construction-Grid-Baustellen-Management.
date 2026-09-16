@@ -68,10 +68,19 @@ final class AufwandswerteKatalog: @unchecked Sendable {
     func finde(leistung: String, langtext: String? = nil) -> AufwandsTreffer? {
         ladeFallsNoetig()
 
-        let heuHaystack = normalisiere("\(leistung) \(langtext ?? "")")
-        let heuTokens = Set(tokenize(heuHaystack))
-        guard !heuTokens.isEmpty else { return nil }
+        // NUR der Titel (Kurztext) wählt den Eintrag. An echten Ausschreibungen erwiesen:
+        // der Langtext ist zu verrauscht — Füllwörter wie „seitlich“, „entsorgen“, „Aushub
+        // laden und abfahren“ ziehen den Treffer auf falsche Einträge (Steinzeugrohr →
+        // „Oberboden“, WC demontieren → „Dach abdecken“). Lieber ehrlich kein Treffer (der
+        // Prof/die ROT-Liste fängt es) als ein selbstsicher falscher.
+        // `langtext` bleibt in der Signatur — er geht weiter an den Prof und in die Anzeige.
+        _ = langtext
+        return besterTreffer(Set(tokenize(normalisiere(leistung))))
+    }
 
+    /// Bestbewerteter Eintrag zu einer Token-Menge, oder nil unter der Hürde.
+    private func besterTreffer(_ heuTokens: Set<String>) -> AufwandsTreffer? {
+        guard !heuTokens.isEmpty else { return nil }
         var best: (score: Int, treffer: AufwandsTreffer)? = nil
         for e in eintraege {
             let kandidat = Set(tokenize(normalisiere("\(e.bezeichnung) \(e.key.replacingOccurrences(of: "_", with: " "))")))
