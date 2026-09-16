@@ -2,6 +2,19 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 16.09.2026 (Spätabend) — Langtext klappbar + Bausteine + Raphael pullt (PR #172); Firmenprofil GEPARKT
+
+**Auf `main` (PR #172, `8784fa2`):**
+- **📄 LV-Langtext klappbar** an jeder Position — im „Mops fass"-Review (`MopsFassReviewView`) UND in der LV-Liste (`LVPositionRow`). Volle Leistungsbeschreibung (Tiefe/Boden/Verbau) auf der Baustelle, Text markierbar. (In der Review-Zeile wandert der Rezept-Tap auf die Kopfzeile, damit er den Klapp-Klick nicht schluckt.)
+- **+13 STLB-Bausteine / +6 Aufwandswerte**, an einer ECHTEN Goldschmitt-Ausschreibung geprüft (`LV-Ausenanlage.d81`, GAEB 90): Bewehrung (Betonstab/-matten, neue Sektion `bewehrung`), Abbruch (Asphalt/Pflaster/Unterbau/Einbauteile), Fundamentbeton, PE-Folie, Bettungs-/Verfugmaterial, Schnittfuge, Poller + Fahrradbügel (neue Sektion `ausstattung`). Treffer auf dem LV: **8 → 19**. Zwei Fehlgriffe gefixt (Asphalt/Betonpflaster landeten auf falschem Baustein). Stand: **115 Aufwandswerte, 107 Bausteine**, alle mit auflösbarem Key.
+- **d81-Erkenntnis:** GAEB-90-Import (`GAEB90Importer`) parst `.d81` über die `sieht90Aus`-Heuristik (Endungsliste kennt nur d83/d84); Kurztext=Satzart 25, OZ/Menge=21, Langtext=26. Läuft.
+
+**🅿️ GEPARKT — Firmenprofil (Goldschmitt ↔ Mops), NICHT auf main:** `Service/Firmenprofil.swift` liegt **lokal untracked** auf Andreas' Mac, kompiliert, aber **noch nicht verdrahtet**. Ziel: Umschalter „echte Firma (Goldschmitt, Lohnsatz-ZG1 = 74 €/h) ↔ Mops (neutrale Tarif-Defaults)", damit man an denselben Daten sofort vergleicht, „an welcher Schraube gedreht wird". `bruttoEK`/`schreibeAufwandAusKolonne` müssen noch profil-fähig werden; die Stundenlohn-Positionen „Meister/Facharbeiter" (Regie, kein Baustein) hängen genau daran. **Nächster Schritt: fertig verdrahten + Settings-Toggle + Sofort-Vergleich.**
+
+**Raphael zieht jetzt selbst:** sein MacBook Air (Tailscale, `ssh raphis`) pullt das PRIVATE Repo über einen **read-only Deploy-Key** — Details in Memory [[raphael-mac-zugang-deploykey]]. Xcode war ok (Yams-Package war nur ungelöst); das eigentliche Problem war HTTPS-Remote ohne Login → jetzt SSH.
+
+**Testlauf-Fallen (wichtig):** iMOPS nutzt **Swift Testing** (Ausgabe `◇`/`✔`/`✘`, NICHT „Test case") + volle Suite parallel crasht bei wenig Platte → immer `-parallel-testing-enabled NO`.
+
 ## Delta 16.09.2026 (Abend) — Text→Rezept DETERMINISTISCH: STLB-Bausteine + Kataloge + Rollenpreise (PR #171)
 
 Der eigentliche Durchbruch: aus dem KI-Raten wird eine nachvollziehbare Kette. **An 10 echten Ausschreibungen (109 Positionen): 95% erkannt UND bepreist** (vorher 66%).
