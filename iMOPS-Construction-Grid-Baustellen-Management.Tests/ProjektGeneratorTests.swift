@@ -9,9 +9,14 @@
 
 import Testing
 import Foundation
+import CoreData
 @testable import iMOPS_Construction_Grid_Baustellen_Management_
 
 struct ProjektGeneratorTests {
+
+    // Festgehalten (nicht inline): sonst gibt der In-Memory-Stack den Container sofort
+    // wieder frei und die Objekte verlieren ihre Attribute (siehe CLAUDE.md).
+    private let controller = PersistenceController(inMemory: true)
 
     // MARK: - ProjektTyp: Haus vs. Vorlage
 
@@ -62,5 +67,30 @@ struct ProjektGeneratorTests {
         let klein = ProjektGenerator.generate(typ: .hofeinfahrt, haus: HouseProject(), flaeche: 50)
         let gross = ProjektGenerator.generate(typ: .hofeinfahrt, haus: HouseProject(), flaeche: 200)
         #expect(gross.baukosten.gesamtBaukosten > klein.baukosten.gesamtBaukosten)
+    }
+
+    /// Die Pflasterfläche steht als `wohnflaeche` im Ergebnis — sonst zeigt der
+    /// Konfigurator „0 m²" und rechnet EUR/m² = Kosten ÷ 0 (NaN).
+    @Test func hofeinfahrtSetztDieFlaeche() {
+        let r = ProjektGenerator.generate(typ: .hofeinfahrt, haus: HouseProject(), flaeche: 100)
+        #expect(r.project.wohnflaeche == 100)
+        // Und damit ist EUR/m² eine echte Zahl statt NaN.
+        #expect(r.project.wohnflaeche > 0)
+        let proQm = r.gesamtkosten / r.project.wohnflaeche
+        #expect(proQm.isFinite && proQm > 0)
+    }
+
+    /// „Als Baustelle anlegen" pinnt jetzt auch das Tiefbau-Material an die Baustelle —
+    /// vorher kannte `bekannteCodeMap` nur Hochbau, die Materialliste blieb leer.
+    @Test @MainActor func konfiguratorHofeinfahrtPinntMaterial() throws {
+        let ctx = controller.container.viewContext
+        let r = ProjektGenerator.generate(typ: .hofeinfahrt, haus: HouseProject(), flaeche: 100)
+        let event = HouseProjectGenerator.createEvent(from: r, into: ctx)
+
+        let extras = EventExtrasPayload.laden(aus: event)
+        #expect(!extras.pinnedLexikonCodes.isEmpty)
+        for code in ["SCH-032", "PFL-VBS", "SPL-208", "RND-TB"] {
+            #expect(extras.pinnedLexikonCodes.contains(code))
+        }
     }
 }

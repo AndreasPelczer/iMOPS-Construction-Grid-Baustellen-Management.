@@ -65,6 +65,103 @@ enum LeistungskatalogService {
         baustein.verwendungen += 1
     }
 
+    /// Auto-Match beim Import: sucht das gelernte Rezept zur Position (Bezeichnung +
+    /// Einheit) und schreibt dessen Aufwand als Lohn — damit rechnet der `LVKalkulator`
+    /// den Preis. Gibt zurück, ob ein Treffer gefunden wurde.
+    ///
+    /// KEIN Treffer = die Position bleibt OHNE Preis (keine erfundene Zahl). Das ist die
+    /// ehrliche Voreinstellung: gerechnet nur, wo ein gelerntes Rezept passt; alles andere
+    /// wartet sichtbar auf einen Preis (Auswahl aus dem Katalog oder Prof/KI-Schätzung).
+    @discardableResult
+    static func autoMatch(position pos: LVPosition, in ctx: NSManagedObjectContext) -> Bool {
+        guard let leistung = pos.bezeichnung, !leistung.isEmpty else { return false }
+        guard let baustein = finde(leistung: leistung, einheit: pos.einheit ?? "", in: ctx) else {
+            return false
+        }
+        schreibeRezept(baustein, auf: pos, in: ctx)
+        if let kg = baustein.kostenGruppeNummer, !kg.isEmpty,
+           (pos.kostenGruppeNummer ?? "").isEmpty {
+            pos.kostenGruppeNummer = kg
+        }
+        benutzt(baustein)
+        return true
+    }
+
+    // MARK: - Volles Rezept (Lohn + Material + Gerät)
+
+    /// Ein wiederverwendbares Rezept über die reine Arbeitszeit hinaus: Material und Gerät
+    /// je Einheit. Lohn bleibt in `maurerStunden`/`helferStunden` (Rückwärtskompatibilität);
+    /// hier nur die Teile, die es vorher nicht gab.
+    struct Rezept: Codable {
+        struct Material: Codable {
+            var name: String; var mengeProEinheit: Double
+            var einzelpreis: Double; var verschnittProzent: Double; var einheit: String
+        }
+        struct Geraet: Codable {
+            var name: String; var stunden: Double; var kostenProStunde: Double
+        }
+        var material: [Material] = []
+        var geraet: [Geraet] = []
+        var istLeer: Bool { material.isEmpty && geraet.isEmpty }
+    }
+
+    /// Ernten: Material + Gerät einer fertig kalkulierten Position als Rezept am Baustein
+    /// ablegen (JSON). Lohn wird separat über `merke(...)` gepflegt. Leeres Rezept → nil.
+    static func lerneMaterialUndGeraet(von pos: LVPosition, auf baustein: Leistungsbaustein) {
+        let rezept = Rezept(
+            material: pos.materialArray.map {
+                .init(name: $0.materialName ?? "", mengeProEinheit: $0.mengeProEinheit,
+                      einzelpreis: $0.einzelpreis, verschnittProzent: $0.verschnittProzent,
+                      einheit: $0.einheit ?? "")
+            },
+            geraet: pos.geraeteArray.map {
+                .init(name: $0.geraetName ?? "", stunden: $0.stunden, kostenProStunde: $0.kostenProStunde)
+            })
+        if rezept.istLeer { baustein.rezeptJSON = nil; return }
+        if let data = try? JSONEncoder().encode(rezept) {
+            baustein.rezeptJSON = String(decoding: data, as: UTF8.self)
+        }
+    }
+
+    /// Das gelernte Material/Gerät-Rezept eines Bausteins, oder nil.
+    static func rezept(von baustein: Leistungsbaustein) -> Rezept? {
+        guard let s = baustein.rezeptJSON, let data = s.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(Rezept.self, from: data)
+    }
+
+    /// Replay: das volle Rezept auf eine Position schreiben — Lohn (Maurer/Helfer) UND,
+    /// falls vorhanden, Material + Gerät. Idempotent: vorhandene Material/Gerät-Zeilen
+    /// werden ersetzt, nicht gestapelt.
+    static func schreibeRezept(_ baustein: Leistungsbaustein,
+                               auf pos: LVPosition, in ctx: NSManagedObjectContext) {
+        schreibeAufwandAlsLohn(maurer: baustein.maurerStunden,
+                               helfer: baustein.helferStunden, auf: pos, in: ctx)
+        guard let rezept = rezept(von: baustein) else { return }
+
+        for pm in pos.materialArray { ctx.delete(pm) }
+        for pg in pos.geraeteArray { ctx.delete(pg) }
+        ctx.processPendingChanges()   // Löschungen aus der Beziehung ziehen (Idempotenz ohne save)
+
+        for m in rezept.material {
+            let pm = PositionMaterial(context: ctx)
+            pm.id = UUID()
+            pm.materialName = m.name
+            pm.mengeProEinheit = m.mengeProEinheit
+            pm.einzelpreis = m.einzelpreis
+            pm.verschnittProzent = m.verschnittProzent
+            pm.einheit = m.einheit
+            pm.position = pos
+        }
+        for g in rezept.geraet {
+            let pg = PositionGeraet(context: ctx)
+            pg.id = UUID()
+            pg.geraetName = g.name
+            pg.stunden = g.stunden
+            pg.kostenProStunde = g.kostenProStunde
+            pg.position = pos
+        }
+    }
+
     // MARK: - Aufwandswert als Lohn schreiben (gemeinsam für Knoten & Picker)
 
     /// Schreibt den Aufwandswert (Maurer/Helfer h je Einheit) als zwei Lohnzeilen auf eine
@@ -77,6 +174,7 @@ enum LeistungskatalogService {
         for pl in pos.lohnArray where pl.qualifikation == "Maurer" || pl.qualifikation == "Helfer" {
             ctx.delete(pl)
         }
+        ctx.processPendingChanges()   // Löschungen aus der Beziehung ziehen (sonst gestapelt ohne save)
         lohnEintrag("Maurer", maurer, pos, ctx)
         lohnEintrag("Helfer", helfer, pos, ctx)
     }

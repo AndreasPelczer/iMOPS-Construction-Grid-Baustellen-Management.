@@ -138,9 +138,13 @@ enum HofauffahrtSeeder {
         let suche: NSFetchRequest<Event> = Event.fetchRequest()
         suche.fetchLimit = 1
         suche.predicate = NSPredicate(format: "eventNumber == %@", eventNummer)
-        guard (try? context.fetch(suche))?.first == nil else { return }
+        if let vorhanden = (try? context.fetch(suche))?.first {
+            ruesteNach(vorhanden, in: context)   // ältere Demo sanft aufwerten
+            return
+        }
 
         let baustelle = macheBaustelle(in: context)
+        pinneMaterialliste(an: baustelle)
         let schritte = macheAuftraege(fuer: baustelle, in: context)
         verketteSchritte(schritte)
         macheAuffahrtPosition(fuer: baustelle, in: context)
@@ -152,6 +156,43 @@ enum HofauffahrtSeeder {
             context.rollback()
             print("HofauffahrtSeeder: konnte nicht sichern — \(error)")
         }
+    }
+
+    /// Rüstet eine bereits existierende Demo-Baustelle sanft nach — ohne sie neu
+    /// anzulegen: (1) Material-Bedarf setzen, falls leer; (2) den „Material prüfen"-
+    /// Auftrag anlegen, falls er fehlt, und in die Kette hängen (bestellen → prüfen →
+    /// Tragschicht, nur zusätzliche Kanten). So bekommt auch eine alte Demo die
+    /// Polier-Materialliste + den Prüf-Auftrag, ohne dass man sie löschen muss.
+    private static func ruesteNach(_ event: Event, in context: NSManagedObjectContext) {
+        var geaendert = false
+
+        if (EventExtrasPayload.laden(aus: event).materialBedarf ?? []).isEmpty {
+            pinneMaterialliste(an: event)
+            geaendert = true
+        }
+
+        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        let hatPruef = jobs.contains { ($0.processingDetails ?? "").contains("Material prüfen") }
+        if !hatPruef {
+            let pruef = Auftrag(context: context)
+            pruef.event = event
+            pruef.processingDetails = "Material prüfen (Wareneingang): ist alles da, unbeschädigt, richtige Menge?"
+            pruef.status = .pending
+            pruef.employeeName = ""; pruef.storageLocation = ""; pruef.storageNote = ""
+            pruef.deliveryTemperature = false; pruef.totalProcessingTime = 0
+            var pe = AuftragExtrasPayload(); pe.station = "Hofeinfahrt"; pe.lineItems = materialPruefItems()
+            pruef.extras = pe.toJSONString()
+
+            if let bestellen = jobs.first(where: { ($0.processingDetails ?? "").contains("Material bestellen") }) {
+                try? Kausalkette.verknuepfe(pruef, brauchtVorher: bestellen, in: context)
+            }
+            if let tragschicht = jobs.first(where: { ($0.processingDetails ?? "").contains("Tragschicht") }) {
+                try? Kausalkette.verknuepfe(tragschicht, brauchtVorher: pruef, in: context)
+            }
+            geaendert = true
+        }
+
+        if geaendert { try? context.save() }
     }
 
     // MARK: - Die Baustelle
@@ -191,6 +232,53 @@ enum HofauffahrtSeeder {
         return event
     }
 
+    // MARK: - Materialliste
+
+    /// Pinnt das Tiefbau-Material aus dem Katalog (Material-Lexikon) an die Baustelle,
+    /// damit die Materialliste (Baustellen-Ansicht → Materialien) gefüllt ist statt
+    /// „Keine Materialien zugeordnet". Die Katalog-Einträge legt der `DemoSeeder` an;
+    /// hier stehen nur ihre Codes. Fehlt ein Code im Katalog, wird er beim Anzeigen
+    /// still übersprungen — kein Fehler, nur eine Zeile weniger.
+    private static func pinneMaterialliste(an event: Event) {
+        var extras = EventExtrasPayload.laden(aus: event)
+        extras.pinnedLexikonCodes = DemoSeeder.hofeinfahrtMaterialCodes
+        // Der Bedarf dieser Baustelle je Material — die Grundlage für den
+        // Bestellvorschlag „zu bestellen = Bedarf − Lager". Mengen aus dem DXF/den
+        // Richtwerten dieser Auffahrt. Einheit passt zur Buchungseinheit im Lager.
+        // Betonpflaster in STÜCK (1294 gezählte Vollsteine) — damit man „250 Steine
+        // ins Lager" eingeben und die zu bestellende Menge live sinken sehen kann.
+        extras.materialBedarf = hofMaterialien.map {
+            MaterialBedarf(code: $0.code, menge: $0.bedarf, einheit: $0.einheit)
+        }
+        extras.speichern(in: event)
+    }
+
+    /// Ein Hofeinfahrt-Material: Katalog-Code + Name (wie im Katalog) + Einheit + Bedarf.
+    /// EINE Quelle für den Materialbedarf, die Prüf-Checkliste und das Pinnen.
+    private struct HofMaterial { let code: String; let name: String; let einheit: String; let bedarf: Double }
+
+    private static var hofMaterialien: [HofMaterial] {
+        [
+            HofMaterial(code: "SCH-032", name: "Schotter 0/32 (Tragschicht)",  einheit: "to",  bedarf: tragschichtT.rounded()),
+            HofMaterial(code: "VLI-GEO", name: "Trennvlies (Geotextil)",        einheit: "m²",  bedarf: (flaecheQm * 1.10).rounded()),
+            HofMaterial(code: "SPL-208", name: "Pflastersplitt 2/8 (Bettung)",  einheit: "to",  bedarf: bettungT.rounded()),
+            HofMaterial(code: "PFL-VBS", name: "Betonpflaster Verbundstein",    einheit: "Stk", bedarf: vollsteine),
+            HofMaterial(code: "RND-TB",  name: "Randstein / Tiefbord (Beton)",  einheit: "Stk", bedarf: leistensteine),
+            HofMaterial(code: "BET-C16", name: "Beton C16/20 (Randstuetze)",    einheit: "m³",  bedarf: 1),
+            HofMaterial(code: "FUG-02",  name: "Fugensand 0/2",                 einheit: "to",  bedarf: 2),
+        ]
+    }
+
+    /// Die Checkliste des „Material prüfen"-Auftrags: jedes geplante Material als
+    /// Positions-Zeile mit da/fehlt-Prüfung (AuftragLineItem.vorhanden + Nachweis).
+    static func materialPruefItems() -> [AuftragLineItem] {
+        hofMaterialien.map {
+            AuftragLineItem(title: $0.name,
+                            amount: $0.bedarf.formatted(.number.precision(.fractionLength(0...2))),
+                            unit: $0.einheit)
+        }
+    }
+
     // MARK: - Die zehn Schritte
 
     /// Name und Kostengruppe. Kostengruppe nur an Schritten, die ein **Bauteil**
@@ -225,6 +313,9 @@ enum HofauffahrtSeeder {
         ("Bettung + Pflaster verlegen (Gefälle 1,5 %)",                          "534"),
         ("Abrütteln, Fugen füllen + einkehren",                                    nil),
         ("Reinigen, räumen, Reste abfahren",                                       nil),
+        // Schritt 11 (Wareneingang prüfen): sitzt zwischen Anlieferung und Einbau.
+        // Der Polier/Arbeiter hakt hier jede Position ab (da/fehlt, mit Nachweis).
+        ("Material prüfen (Wareneingang): ist alles da, unbeschädigt, richtige Menge?", nil),
     ]
 
     private static func macheAuftraege(fuer baustelle: Event,
@@ -280,6 +371,8 @@ enum HofauffahrtSeeder {
                 AuftragLineItem(title: "Splitt 2/5 (Bettung)", amount: "5", unit: "m³"),
                 AuftragLineItem(title: "Fugensplitt", amount: "1", unit: "m³"),
             ]
+        case 10:  // Schritt 11: Material prüfen — die volle geplante Liste, da/fehlt.
+            return materialPruefItems()
         default:
             return []
         }
@@ -305,7 +398,9 @@ enum HofauffahrtSeeder {
         (1, 3),            // einrichten → ausheben
         (3, 4),            // ausheben → abfahren/entsorgen
         (3, 5),            // ausheben → Trennvlies
-        (5, 6), (2, 6),    // Tragschicht braucht Vlies UND Material  ← Zusammenführung
+        (5, 6),            // Tragschicht braucht das verlegte Vlies …
+        (2, 11),           // … und das bestellte Material muss ANGELIEFERT + …
+        (11, 6),           // … GEPRÜFT sein (Wareneingang) — erst dann Einbau. ← Zusammenführung
         (6, 7),            // Tragschicht → Randsteine
         (7, 8),            // Randsteine → pflastern
         (8, 9),            // pflastern → abrütteln, Fugen
@@ -410,8 +505,10 @@ enum HofauffahrtSeeder {
             ("Splitt 8/16 (Bettung)",            bettungT / flaecheQm,  "to",  8.50, 0),
             // 2,01 t — Fugen einkehren                           [Werbach, ab Werk]
             ("Abdecksand/Fugensand 0/2",                        0.02,   "to",  3.00, 0),
-            // 110,34 m² — 10 % Ueberlappung an den Stoessen          [Schätzung]
-            ("Trennvlies (Geotextil)",                          1.10,   "m²",  1.50, 0),
+            // 110,34 m² — 10 % Ueberlappung. Preis korrigiert: Li 5,11 €/m²
+            // (Raphaels echter Preis, „Vlies" 1050090) → mit 15 % Material-Zuschlag
+            // Kalk 5,88. Vorher stand hier eine zu niedrige Schätzung von 1,50.
+            ("Trennvlies (Geotextil)",                          1.10,   "m²",  5.11, 0),
             // 1,00 m³ — Rueckenstuetze der Leistensteine             [Schätzung]
             ("Beton C16/20 (Randstein-Rückenstütze)", 1.0 / flaecheQm,  "m³", 110.00, 0),
         ]
@@ -445,9 +542,15 @@ enum HofauffahrtSeeder {
         // falsch. `PositionGeraet` kennt nur `stunden × kostenProStunde`; eine
         // Pauschale oder einen Preis pro Stück gibt es im Modell nicht.
         // Kleine Schwester der Fremdleistungs-Lücke.
+        // Bagger-Stunden HERGELEITET: Aushubmenge ÷ Leistung (Richtwert), nicht
+        // geraten. Planum-Aushub ≈ Fläche × 0,35 m. Bei 4,4 m³/h ergibt das ~8 h wie
+        // bisher — ändert man den Richtwert (Erdbauleistung.minibagger), wandert die
+        // Zahl mit. Das ist der „woher die Stunden"-Nachweis aus der Bagger-Frage.
+        let aushubM3 = flaecheQm * 0.35
+        let baggerStunden = Erdbauleistung.stunden(menge: aushubM3, leistung: Erdbauleistung.minibagger)
         let geraete: [(name: String, stunden: Double, satz: Double)] = [
-            // 8 h Bagger auf 100 qm — Aushub 40 cm
-            ("Minibagger inkl. Bediener",                  8.0 / flaecheQm, 65.00),
+            // 35,11 m³ ÷ 4,4 m³/h ≈ 8 h Bagger (Menge ÷ Leistung, siehe oben)
+            ("Minibagger inkl. Bediener",                  baggerStunden / flaecheQm, 65.00),
             // 10 h Rüttelplatte — Tragschicht lagenweise, Pflaster abrütteln
             ("Rüttelplatte / Verdichter",                 10.0 / flaecheQm, 12.00),
             // 6 Fuhren à 120 € — siehe Hinweis oben: Stückzahl im Zeit-Modell

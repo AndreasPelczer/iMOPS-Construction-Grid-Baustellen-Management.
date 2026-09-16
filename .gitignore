@@ -58,3 +58,9 @@ _backups/
 
 # Wer gerade schreibt (siehe AGENTS.md, Hausordnung)
 .arbeitsplatz
+
+# graphify-Graphen gehoeren NIE ins Repo (ausserhalb bauen: ~/graphs/)
+graphify-out/
+
+# Vertrauliche Lohn-/Preis-Unterlagen (Goldschmitt) — NIE ins oeffentliche Repo
+docs/lohnberechnung/

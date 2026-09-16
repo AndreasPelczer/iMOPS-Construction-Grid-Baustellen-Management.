@@ -203,3 +203,209 @@
     Definiert Aufmaß-Datenaustausch zwischen Bau-Beteiligten.
   quelle_kurz: "REB 23.003"
   license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+# --- Tiefbau / Pflaster (Außenanlagen) — für die Normen-Spur (Baunormen.swift) ---
+# Kurzbeschreibungen, kein Norm-Volltext (VOB/C und EN-Normen sind Beuth-lizenziert).
+
+- id: "DIN_18299"
+  aliases:
+    - "DIN 18299"
+    - "VOB/C Allgemeine Regelungen"
+    - "Allgemeine Regelungen für Bauarbeiten"
+  antwort: |
+    DIN 18299 ist die „Allgemeine Technische Vertragsbedingung" (ATV) der
+    VOB/C und gilt für Bauarbeiten JEDER Art — also auch für die
+    Baustelleneinrichtung, Absperrung/Verkehrssicherung und Abrechnung.
+    Sie steht vor den gewerkespezifischen ATVs (18300 ff.) und regelt das
+    Gemeinsame (u.a. Nebenleistungen, Besondere Leistungen, Abrechnung).
+  quelle_kurz: "DIN 18299 (VOB/C, ATV)"
+  license_note: "Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_18300"
+  aliases:
+    - "DIN 18300"
+    - "Erdarbeiten"
+    - "VOB/C Erdarbeiten"
+  antwort: |
+    DIN 18300 (VOB/C) regelt Erdarbeiten: Lösen, Laden, Fördern, Einbauen
+    und Verdichten von Boden und Fels — also Mutterboden abtragen, Aushub,
+    Planum herstellen. Enthält u.a. die Bodenklassen (Homogenbereiche).
+  quelle_kurz: "DIN 18300 (VOB/C, ATV)"
+  license_note: "Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_18315"
+  aliases:
+    - "DIN 18315"
+    - "Oberbauschichten ohne Bindemittel"
+    - "Verkehrswegebau ohne Bindemittel"
+  antwort: |
+    DIN 18315 (VOB/C) regelt Verkehrswegebauarbeiten — Oberbauschichten OHNE
+    Bindemittel, also die Schotter-/Frostschutz-/Tragschicht aus ungebundenem
+    Mineralgemisch: liefern, einbauen, verdichten, Tragfähigkeit (z.B. Ev2).
+  quelle_kurz: "DIN 18315 (VOB/C, ATV)"
+  license_note: "Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_18318"
+  aliases:
+    - "DIN 18318"
+    - "Pflasterdecken"
+    - "Plattenbeläge"
+    - "Einfassungen"
+    - "Verkehrswegebau Pflaster"
+  antwort: |
+    DIN 18318 (VOB/C) regelt Verkehrswegebauarbeiten — Pflasterdecken,
+    Plattenbeläge und Einfassungen in ungebundener Ausführung: Bettung,
+    Verlegen, Fugen, Abrütteln sowie Rand-/Bordeinfassungen.
+  quelle_kurz: "DIN 18318 (VOB/C, ATV)"
+  license_note: "Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_EN_1338"
+  aliases:
+    - "DIN EN 1338"
+    - "EN 1338"
+    - "Pflastersteine aus Beton"
+  antwort: |
+    DIN EN 1338 legt Anforderungen und Prüfverfahren für Pflastersteine aus
+    Beton fest (Maße, Maßtoleranzen, Festigkeit, Witterungsbeständigkeit,
+    Abriebwiderstand). Produktnorm für das Betonpflaster selbst.
+  quelle_kurz: "DIN EN 1338"
+  license_note: "Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_EN_1340"
+  aliases:
+    - "DIN EN 1340"
+    - "EN 1340"
+    - "Bordsteine aus Beton"
+  antwort: |
+    DIN EN 1340 legt Anforderungen und Prüfverfahren für Bord- und
+    Randsteine aus Beton fest — die Produktnorm für Tiefbord/Randeinfassung.
+  quelle_kurz: "DIN EN 1340"
+  license_note: "Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_EN_13242"
+  aliases:
+    - "DIN EN 13242"
+    - "EN 13242"
+    - "Gesteinskörnungen"
+  antwort: |
+    DIN EN 13242 regelt Gesteinskörnungen für ungebundene und hydraulisch
+    gebundene Gemische im Ingenieur- und Straßenbau — also die Anforderungen
+    an Schotter (z.B. 0/32) und Splitt: Korngruppen, Kornform, Eigenschaften.
+  quelle_kurz: "DIN EN 13242"
+  license_note: "Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "RStO_12"
+  aliases:
+    - "RStO 12"
+    - "RStO"
+    - "Standardisierung des Oberbaus"
+  antwort: |
+    RStO 12 = Richtlinien für die Standardisierung des Oberbaus von
+    Verkehrsflächen (FGSV). Aus der Belastungsklasse ergibt sich der
+    standardisierte Aufbau: Schichtdicken und -folge von Pflaster/Decke,
+    Tragschicht und Frostschutzschicht. Grundlage für den Schichtaufbau.
+  quelle_kurz: "RStO 12 (FGSV)"
+  license_note: "Kurzbeschreibung — Volltext bei FGSV"
+
+- id: "DIN_18330"
+  aliases:
+    - "DIN 18330"
+    - "Mauerarbeiten"
+    - "Mauerwerksarbeiten"
+  antwort: |
+    ATV Mauerarbeiten (Ziegel, Kalksandstein, Poren-/Leichtbeton, Naturstein).
+    Regelt Ausfuehrung und Abrechnung von Mauerwerk (meist nach m2 Wandflaeche bzw. m3, mit Regeln
+    fuer Oeffnungsabzuege). Bemessung ueber die Eurocodes (DIN EN 1996 / Mauerwerk).
+  quelle_kurz: "DIN 18330 (VOB/C, ATV Mauerarbeiten)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_18331"
+  aliases:
+    - "DIN 18331"
+    - "Betonarbeiten"
+    - "Stahlbetonarbeiten"
+  antwort: |
+    ATV Beton- und Stahlbetonarbeiten (Schalung, Bewehrung, Betonieren, Nachbehandlung).
+    Verweist fuer Bemessung/Ausfuehrung auf DIN EN 1992 (Eurocode 2) sowie DIN 1045-2/-3.
+  quelle_kurz: "DIN 18331 (VOB/C, ATV Betonarbeiten)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_4124"
+  aliases:
+    - "DIN 4124"
+    - "Baugrube"
+    - "Baugruben und Graeben"
+    - "Boeschung"
+    - "Boeschungswinkel"
+    - "Verbau"
+    - "Arbeitsraum"
+  antwort: |
+    Baugruben und Graeben — Boeschungen, Verbau, Arbeitsraum.
+    Ohne rechnerischen Nachweis zulaessige Boeschungswinkel (Richtwerte):
+    - nichtbindiger oder weicher bindiger Boden: bis 45 Grad
+    - steifer/halbfester bindiger Boden: bis 60 Grad
+    - Fels: bis 80 Grad
+    Ab ca. 1,25 m Tiefe ist im Regelfall Boeschung oder Verbau erforderlich.
+    Arbeitsraumbreiten richten sich nach Tiefe und Bauteil.
+  quelle_kurz: "DIN 4124 (Baugruben und Graeben)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "DIN_EN_1610"
+  aliases:
+    - "DIN EN 1610"
+    - "Abwasserleitung"
+    - "Kanalbau"
+    - "Rohrverlegung"
+    - "Dichtheitspruefung"
+  antwort: |
+    Einbau und Pruefung von Abwasserleitungen und -kanaelen: Grabenherstellung, Bettung, seitliche
+    Verfuellung und Verdichtung, Abdeckung sowie Dichtheitspruefung (Wasser- oder Luftdruck).
+    Relevant fuer Entwaesserung und Hausanschluesse.
+  quelle_kurz: "DIN EN 1610 (Einbau und Pruefung von Abwasserleitungen)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"
+
+- id: "RSA_StVO"
+  aliases:
+    - "RSA"
+    - "RSA 21"
+    - "Verkehrssicherung"
+    - "Verkehrszeichenplan"
+    - "Arbeitsstellen an Strassen"
+    - "verkehrsrechtliche Anordnung"
+  antwort: |
+    Richtlinien fuer die Sicherung von Arbeitsstellen an Strassen (aktuell RSA 21).
+    Bei Arbeiten im oeffentlichen Verkehrsraum: Verkehrszeichenplan + verkehrsrechtliche Anordnung
+    der Behoerde nach Paragraf 45 StVO erforderlich.
+    In der VOB/C ist die Verkehrssicherung eine BESONDERE Leistung — eigene, bepreiste LV-Position,
+    nicht im Einheitspreis enthalten.
+  quelle_kurz: "RSA 21 / StVO Paragraf 45"
+  license_note: "Werte und Kurzbeschreibung"
+
+- id: "BaustellV"
+  aliases:
+    - "BaustellV"
+    - "Baustellenverordnung"
+    - "SiGeKo"
+    - "SiGe-Plan"
+    - "Sicherheitskoordinator"
+  antwort: |
+    Baustellenverordnung (Umsetzung der EU-Baustellenrichtlinie).
+    Pflichten bei groesseren Baustellen: Vorankuendigung an die Behoerde und Bestellung eines
+    Sicherheits- und Gesundheitsschutzkoordinators (SiGeKo) mit SiGe-Plan.
+    Vorankuendigung noetig ab: Dauer > 30 Arbeitstage UND > 20 Beschaeftigte gleichzeitig,
+    ODER Umfang > 500 Personentage.
+  quelle_kurz: "BaustellV (Baustellenverordnung)"
+  license_note: "Werte und Kurzbeschreibung"
+
+- id: "DIN_18196"
+  aliases:
+    - "DIN 18196"
+    - "Bodenklassifikation"
+    - "Bodengruppe"
+    - "Bodengruppen"
+  antwort: |
+    Bodenklassifikation fuer bautechnische Zwecke — Einteilung der Boeden in Bodengruppen nach
+    Korngroessenverteilung und Plastizitaet (z.B. GW, GE, SU, TL, TM).
+    Ergaenzt DIN 18300 bei der Beschreibung der Homogenbereiche.
+  quelle_kurz: "DIN 18196 (Bodenklassifikation fuer bautechnische Zwecke)"
+  license_note: "Werte und Kurzbeschreibung — Volltext bei Beuth"

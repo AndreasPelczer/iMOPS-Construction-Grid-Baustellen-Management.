@@ -96,6 +96,10 @@ enum HofeinfahrtVorlage {
 
         var project = HouseProject()
         project.projektName = "Hofeinfahrt pflastern"
+        // Die „Fläche" der Hofeinfahrt ist die Pflasterfläche (kein Wohnhaus). Ohne das
+        // bliebe `wohnflaeche = 0` → Header „0 m²" und EUR/m² = Kosten ÷ 0 (NaN). Die
+        // vier Reiter teilen sich das Feld mit dem Haus-Weg, darum hier belegen.
+        project.wohnflaeche = f
 
         return HouseProjectResult(
             project: project,

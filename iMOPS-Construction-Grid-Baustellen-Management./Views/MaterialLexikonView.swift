@@ -11,6 +11,7 @@ struct MaterialLexikonView: View {
         ]
     ) private var materials: FetchedResults<CDLexikonEntry>
 
+    @ObservedObject private var lager = LagerStore.shared
     @State private var searchText = ""
     @State private var selectedKategorie: String?
     @State private var showingAddSheet = false
@@ -76,6 +77,11 @@ struct MaterialLexikonView: View {
         .searchable(text: $searchText, prompt: "Name, Code oder Beschreibung...")
         .navigationTitle("Katalog")
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                NavigationLink { LagerView() } label: {
+                    Label("Lager", systemImage: "shippingbox")
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showingAddSheet = true } label: {
                     Image(systemName: "plus")
@@ -104,6 +110,24 @@ struct MaterialLexikonView: View {
                         Text(beschr).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     }
                 }
+            }
+            Spacer()
+            lagerBadge(for: entry.code)
+        }
+    }
+
+    /// „X auf Lager", wenn für diesen Katalog-Artikel ein Bestand gebucht ist.
+    @ViewBuilder
+    private func lagerBadge(for code: String?) -> some View {
+        if let code, !code.isEmpty {
+            let bestand = lager.gesamtbestand(artikelCode: code)
+            if bestand > 0.0001 {
+                let einheit = lager.artikelImLager().first { $0.code == code }?.einheit ?? ""
+                Text("\(bestand.formatted(.number.precision(.fractionLength(0...2)))) \(einheit) auf Lager")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.green)
+                    .padding(.horizontal, 7).padding(.vertical, 3)
+                    .background(.green.opacity(0.14), in: Capsule())
             }
         }
     }

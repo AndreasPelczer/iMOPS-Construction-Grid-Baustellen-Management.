@@ -39,11 +39,13 @@ struct HofauffahrtSeederTests {
 
     // MARK: - Anlegen
 
-    @Test @MainActor func zehnSchritteUndEineLVZeile() throws {
+    @Test @MainActor func elfSchritteUndEineLVZeile() throws {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
         let event = try baustelle()
 
-        #expect((event.jobs?.count ?? 0) == 10)
+        // 11 seit dem „Material prüfen"-Auftrag (Wareneingang) zwischen Anlieferung
+        // und Einbau.
+        #expect((event.jobs?.count ?? 0) == 11)
         #expect((event.lvPositionen?.count ?? 0) == 1)
     }
 
@@ -88,13 +90,15 @@ struct HofauffahrtSeederTests {
         #expect(startklar.contains { Kausalkette.bezeichnung($0).contains("einrichten") })
         #expect(startklar.contains { Kausalkette.bezeichnung($0).contains("bestellen") })
 
-        // Der Rest wartet — acht von zehn.
-        #expect(auftraege.filter { !$0.istStartbar }.count == 8)
+        // Der Rest wartet — neun von elf (inkl. „Material prüfen", das auf die
+        // Bestellung wartet).
+        #expect(auftraege.filter { !$0.istStartbar }.count == 9)
     }
 
     /// Der Punkt dieser Demo: Die Tragschicht wartet auf **zwei** Stränge — das
-    /// Trennvlies muss liegen *und* das Material muss geliefert sein.
-    @Test @MainActor func tragschichtWartetAufVliesUndMaterial() throws {
+    /// Trennvlies muss liegen *und* das Material muss **geprüft** sein (Wareneingang,
+    /// nicht nur bestellt). Man baut nicht mit ungeprüftem Material.
+    @Test @MainActor func tragschichtWartetAufVliesUndPruefung() throws {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
         let auftraege = (try baustelle().jobs?.allObjects as? [Auftrag]) ?? []
 
@@ -103,16 +107,60 @@ struct HofauffahrtSeederTests {
 
         #expect(tragschicht.vorgaenger.count == 2, "Vorgänger: \(namen)")
         #expect(namen.contains { $0.contains("Trennvlies") })
-        #expect(namen.contains { $0.contains("bestellen") })
+        #expect(namen.contains { $0.contains("prüfen") })
     }
 
-    @Test @MainActor func neunKantenKeinKreis() throws {
+    @Test @MainActor func zehnKantenKeinKreis() throws {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
         let auftraege = (try baustelle().jobs?.allObjects as? [Auftrag]) ?? []
         let kanten = auftraege.flatMap { $0.voraussetzungenArray.filter(\.istKante) }
 
-        #expect(kanten.count == 9)
+        // 10 seit „Material prüfen": statt (bestellen→Tragschicht) jetzt
+        // (bestellen→prüfen) + (prüfen→Tragschicht).
+        #expect(kanten.count == 10)
         #expect(auftraege.contains { $0.istStartbar })   // ein Kreis würde alles blockieren
+    }
+
+    /// GENAU Andreas' Fall: eine bereits existierende (alte) Demo ohne Prüf-Auftrag
+    /// wird beim nächsten seedIfNeeded nachgerüstet — Prüf-Auftrag + Bedarf kommen dazu,
+    /// und die Tragschicht hängt danach am Prüf-Auftrag.
+    @Test @MainActor func nachruestenAlterDemoLegtPruefAuftragAn() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)      // frisch
+        let event = try baustelle()
+
+        // „Alten Stand" simulieren: Prüf-Auftrag + Bedarf entfernen.
+        if let pruef = ((event.jobs?.allObjects as? [Auftrag]) ?? [])
+            .first(where: { ($0.processingDetails ?? "").contains("Material prüfen") }) {
+            ctx.delete(pruef)
+        }
+        var extras = EventExtrasPayload.laden(aus: event)
+        extras.materialBedarf = nil
+        extras.speichern(in: event)
+        try ctx.save()
+
+        // Zweiter Lauf → ruesteNach.
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let jobs = (try baustelle().jobs?.allObjects as? [Auftrag]) ?? []
+        let pruef = try schritt("Material prüfen", jobs)
+        #expect(AuftragExtrasPayload.from(pruef.extras).lineItems.count == 7)
+        #expect(!(EventExtrasPayload.laden(aus: try baustelle()).materialBedarf ?? []).isEmpty)
+        let tragschicht = try schritt("Tragschicht", jobs)
+        #expect(tragschicht.vorgaenger.map(Kausalkette.bezeichnung).contains { $0.contains("prüfen") })
+    }
+
+    /// Der Polier bekommt einen Auftrag „Material prüfen" mit der geplanten Liste als
+    /// da/fehlt-Checkliste (Wareneingang), und der Einbau (Tragschicht) hängt daran.
+    @Test @MainActor func materialPruefenAuftragMitCheckliste() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let auftraege = (try baustelle().jobs?.allObjects as? [Auftrag]) ?? []
+        let pruef = try schritt("Material prüfen", auftraege)
+        let items = AuftragExtrasPayload.from(pruef.extras).lineItems
+        #expect(items.count == 7)                                   // 7 geplante Materialien
+        #expect(items.allSatisfy { $0.vorhanden == nil })           // anfangs ungeprüft
+        #expect(items.contains { $0.title.contains("Betonpflaster") })
+        // Der Prüf-Auftrag hängt hinter dem Bestellen und vor der Tragschicht.
+        let vor = pruef.vorgaenger.map(Kausalkette.bezeichnung)
+        #expect(vor.contains { $0.contains("bestellen") })
     }
 
     // MARK: - Die Kostengruppen
@@ -203,21 +251,24 @@ struct HofauffahrtSeederTests {
         //   Schotter               =  0,57000 ×10,00 =  5,70000
         //   Splitt                 =  0,06500 × 8,50 =  0,55250
         //   Fugensand              =  0,02000 × 3,00 =  0,06000
-        //   Trennvlies             =  1,10000 × 1,50 =  1,65000
+        //   Trennvlies             =  1,10000 × 5,11 =  5,62100  (Raphaels Li 5,11)
         //   Beton         1/100,31 =  0,00997 ×110,00=  1,09660
         //                                            ──────────
-        //                                              52,22289
-        #expect(abs(k.materialKosten - 52.22289) < 0.01,
+        //                                              56,19389
+        #expect(abs(k.materialKosten - 56.19389) < 0.01,
                 "Material je m²: \(k.materialKosten)")
 
         // Lohn je m²: 70 h / 100,31 × 74 €
         #expect(abs(k.lohnKosten - 51.63996) < 0.01, "Lohn je m²: \(k.lohnKosten)")
 
-        // Gerät je m²: (8×65 + 10×12 + 6×120) / 100,31 = 1360 / 100,31
-        #expect(abs(k.geraeteKosten - 13.55797) < 0.01, "Gerät je m²: \(k.geraeteKosten)")
+        // Gerät je m²: Bagger-Stunden HERGELEITET (Aushub ÷ Leistung) + Rüttler + Fuhren.
+        // So verifiziert der Test die Herleitung statt einer Magic-Zahl.
+        let baggerH = Erdbauleistung.stunden(menge: 100.31 * 0.35, leistung: Erdbauleistung.minibagger)
+        let geraetErwartet = (baggerH * 65 + 10 * 12 + 6 * 120) / 100.31
+        #expect(abs(k.geraeteKosten - geraetErwartet) < 0.01, "Gerät je m²: \(k.geraeteKosten)")
 
         // Der Einheitspreis ist die Summe der drei Töpfe.
-        #expect(abs(k.einheitspreisEK - (52.22289 + 51.63996 + 13.55797)) < 0.01)
+        #expect(abs(k.einheitspreisEK - (56.19389 + 51.63996 + geraetErwartet)) < 0.01)
 
         // Und der Gesamtpreis skaliert mit der Menge — das ist der Punkt.
         #expect(abs(k.menge - 100.31) < 0.0001)
@@ -422,9 +473,51 @@ struct HofauffahrtSeederTests {
         let r: NSFetchRequest<Event> = Event.fetchRequest()
         r.predicate = NSPredicate(format: "eventNumber == %@", "DEMO-AUFFAHRT-001")
         #expect(try ctx.count(for: r) == 1)
-        #expect((try baustelle().jobs?.count ?? 0) == 10)
+        #expect((try baustelle().jobs?.count ?? 0) == 11)   // inkl. „Material prüfen", nicht doppelt
         // Acht seit der DXF-Runde: Voll- und Halbstein sind zwei Artikel,
         // wo vorher eine Pflaster-Flaeche stand.
         #expect((try position().kalkMaterialien?.count ?? 0) == 8)
+    }
+
+    // MARK: - Materialliste (Katalog-Material an die Baustelle gepinnt)
+
+    /// Die Baustellen-Materialliste war leer: der Seeder pinnt jetzt die Tiefbau-
+    /// Codes aus dem Katalog an die Demo. Ohne das steht dort „Keine Materialien".
+    @Test @MainActor func materiallisteIstGepinnt() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let extras = EventExtrasPayload.laden(aus: try baustelle())
+        #expect(!extras.pinnedLexikonCodes.isEmpty)
+        #expect(extras.pinnedLexikonCodes == DemoSeeder.hofeinfahrtMaterialCodes)
+    }
+
+    /// Das Hofeinfahrt-Material liegt im Katalog (Material-Lexikon), Kategorie Tiefbau,
+    /// und die gepinnten Codes finden sich dort wieder — sonst zeigt die Liste nichts.
+    @Test @MainActor func katalogHatTiefbauMaterial() throws {
+        DemoSeeder.seedMaterialsIfNeeded(into: ctx)
+        let r: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
+        r.predicate = NSPredicate(format: "code IN %@", DemoSeeder.hofeinfahrtMaterialCodes)
+        let gefunden = try ctx.fetch(r)
+        #expect(gefunden.count == DemoSeeder.hofeinfahrtMaterialCodes.count)
+        #expect(gefunden.allSatisfy { $0.kategorie == "Tiefbau" })
+    }
+
+    /// Der Hof-Seeder hinterlegt den Material-Bedarf (Grundlage für „zu bestellen =
+    /// Bedarf − Lager"). Betonpflaster in Stück (die 1294 gezählten Vollsteine).
+    @Test @MainActor func bedarfIstHinterlegt() throws {
+        HofauffahrtSeeder.seedIfNeeded(context: ctx)
+        let extras = EventExtrasPayload.laden(aus: try baustelle())
+        let bedarf = try #require(extras.materialBedarf)
+        let pflaster = try #require(bedarf.first { $0.code == "PFL-VBS" })
+        #expect(pflaster.menge == 1294)
+        #expect(pflaster.einheit == "Stk")
+    }
+
+    /// Idempotent: zweimal seeden legt keine Dubletten an.
+    @Test @MainActor func katalogSeedingIstIdempotent() throws {
+        DemoSeeder.seedMaterialsIfNeeded(into: ctx)
+        DemoSeeder.seedMaterialsIfNeeded(into: ctx)
+        let r: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
+        r.predicate = NSPredicate(format: "code == %@", "SCH-032")
+        #expect(try ctx.count(for: r) == 1)
     }
 }

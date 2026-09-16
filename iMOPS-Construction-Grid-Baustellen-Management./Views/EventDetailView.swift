@@ -11,10 +11,22 @@ struct EventExtrasPayload: Codable {
     var checklist: [EventChecklistItem] = []
     var pinnedProductIDs: [String] = []
     var pinnedLexikonCodes: [String] = []
+    var bestellteCodes: [String]? = nil         // als „bestellt" markiert; optional → alte Blobs bleiben dekodierbar
+    var materialBedarf: [MaterialBedarf]? = nil // wieviel diese Baustelle je Material braucht (Bestellvorschlag)
+    var materialGeprueft: [String]? = nil       // vom Polier vor Ort als „da" abgehakt (Codes)
     var houseProject: HouseProject? = nil
     var importHerkunft: ImportHerkunft? = nil   // Herkunft der importierten LV-Daten (PDF/JSON)
     var bauphasen: [IstBauphase]? = nil         // manuell geplante Bauphasen (Zeitplan-Reiter)
     var auswertungen: [GespeicherteAuswertung]? = nil   // gespeicherte /extract-doc-Ergebnisse
+}
+
+/// Der Bedarf einer Baustelle an einem Katalog-Material — die Grundlage für den
+/// Bestellvorschlag „zu bestellen = Bedarf − Lager". Menge/Einheit müssen zur
+/// Buchungseinheit im Lager passen (sonst vergleicht man Äpfel mit Birnen).
+struct MaterialBedarf: Codable, Equatable {
+    var code: String
+    var menge: Double
+    var einheit: String
 }
 
 /// Eine gespeicherte Dokument-Auswertung (`/extract-doc`), abgelegt in `EventExtrasPayload`.
@@ -116,6 +128,7 @@ struct EventDetailView: View {
     @State private var showingMaterialPicker = false
     @State private var selectedJobFilter: JobFilter = .all
     @State private var extras = EventExtrasPayload()
+    @ObservedObject private var lagerStore = LagerStore.shared   // für „auf Lager"-Status
     @State private var cadFiles: [CADFileInfo] = []
     @State private var planZumLoeschen: CADFileInfo? = nil   // Lösch-Bestätigung Pläne
     // Einklappbare Karten-Gruppen — „Übersicht" ist beim Öffnen aufgeklappt, Rest zu.
@@ -157,6 +170,10 @@ struct EventDetailView: View {
     // Welle 5c: Wände aus Plan lesen
     @State private var showingWandLeser = false
     @State private var showingMaterialliste = false
+    @State private var showingGAEBImport = false
+    @State private var showingWarmup = false
+    @State private var warmupRefresh = UUID()
+    @State private var showingBauQuiz = false
 
     // Import-Katalog: die Auswerte-Werkzeuge klappen hinter EINEM Knopf auf
     @State private var zeigeImportKatalog = false
@@ -173,7 +190,7 @@ struct EventDetailView: View {
     @State private var zeigeAuswertung = false
     @State private var zeigeGespeicherteAuswertung = false   // gespeicherte Auswertungen wieder aufrufen
 
-    // MARK: Jobs: gefiltert + sortiert
+    // MARK: Jobs: gefiltert + sortiert (nach Bauablauf, zum Abarbeiten)
     private var filteredJobs: [Auftrag] {
         _ = refreshID
         guard let jobsSet = event.jobs,
@@ -181,10 +198,20 @@ struct EventDetailView: View {
         if selectedJobFilter == .open {
             allJobs = allJobs.filter { !$0.istFertig }
         }
+        let rang = bauablaufRang()
         return allJobs.sorted { a, b in
-            if a.istFertig != b.istFertig { return !a.istFertig }
+            let ra = rang[a.objectID] ?? 0, rb = rang[b.objectID] ?? 0
+            if ra != rb { return ra < rb }                       // Bauablauf zuerst
+            if a.istFertig != b.istFertig { return !a.istFertig } // offene vor fertigen
             return (a.employeeName ?? "") < (b.employeeName ?? "")
         }
+    }
+
+    /// Rang im Bauablauf = längster Weg über die Kausalkette bis zu diesem Auftrag.
+    /// So lässt sich die Liste in der Reihenfolge abarbeiten, in der gebaut wird —
+    /// wie die Arbeitsschritte innerhalb eines Auftrags schon vorgegeben sind.
+    private func bauablaufRang() -> [NSManagedObjectID: Int] {
+        Bauablauf.rang((event.jobs?.allObjects as? [Auftrag]) ?? [])
     }
 
     // MARK: Checklist Progress
@@ -310,6 +337,16 @@ struct EventDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
+    /// Die berührten DIN-Normen dieser Baustelle — blass, ambient (siehe NormenSpurView).
+    /// Speist sich aus den LV-Positionen UND den Checklisten-Aufgaben: legt der Nutzer
+    /// eine Leistung an, die eine Norm berührt, taucht sie hier ausgegraut auf.
+    private var normenSpurCard: some View {
+        let positionen = (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
+        let texte = positionen.compactMap { $0.bezeichnung } + extras.checklist.map { $0.title }
+        let normen = Baunormen.berührt(vonLeistungen: texte, hatLV: !positionen.isEmpty)
+        return NormenSpurView(normen: normen)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -339,6 +376,7 @@ struct EventDetailView: View {
                     cadCard                       // Vorhandene Pläne (Dateien + 3D-Ansicht)
                     importKatalogButton
                     if zeigeImportKatalog {
+                        gaebCard                  // Ausschreibung → LV (GAEB DA XML)
                         wandLeserCard             // Zeichnung → Wände (DXF/DWG)
                         geländeCard               // Gelände → Aushub (DXF/DWG)
                         materiallisteCard         // Mengen aus Excel (.xlsx)
@@ -350,12 +388,20 @@ struct EventDetailView: View {
                 kartenGruppe("Leistungsverzeichnis", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
                     lvCard
                     materialCard
+                    normenSpurCard
                 }
 
                 kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
                     SchichtUebergabeCard(event: event)
+                    lehrlingWarmupCard
                     jobsCard
+                        .sheet(isPresented: $showingWarmup) {
+                            SortierSpielView(event: event) { warmupRefresh = UUID() }
+                                .environment(\.managedObjectContext, viewContext)
+                        }
                     checklistCard
+                    bauQuizCard
+                        .sheet(isPresented: $showingBauQuiz) { BauQuizView() }
                 }
 
                 kartenGruppe("Mängel", systemImage: "exclamationmark.triangle", isExpanded: $gruppeMaengel) {
@@ -603,12 +649,38 @@ struct EventDetailView: View {
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color(uiColor: .secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showingWandLeser) {
             WandLeserView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - GAEB CARD (Leistungsverzeichnis aus GAEB DA XML)
+    private var gaebCard: some View {
+        Button {
+            showingGAEBImport = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "doc.badge.arrow.up").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("GAEB einlesen").font(.headline).foregroundStyle(.primary)
+                    Text("Ausschreibung (.x83/.x84/.xml) → Positionen, Mengen, Einheiten")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingGAEBImport) {
+            GAEBImportView(event: event, initialURL: nil)
                 .environment(\.managedObjectContext, viewContext)
         }
     }
@@ -629,8 +701,8 @@ struct EventDetailView: View {
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color(uiColor: .secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showingMaterialliste) {
@@ -1416,45 +1488,60 @@ struct EventDetailView: View {
     }
 
     // MARK: - MATERIAL CARD
+    //
+    // Die Materialliste zeigt die GEPLANTEN Materialien dieser Baustelle (echte Mengen),
+    // je Zeile geplant · auf Lager · fehlt · und ob vor Ort GEPRÜFT. Grundlage ist
+    // `extras.materialBedarf` (mit Katalog-Code → „auf Lager" gegen den echten Bestand).
+    // Die Prüfung selbst passiert im Auftrag „Material prüfen" (dort mit Nachweis
+    // wer/wann); hier wird sie nur gespiegelt — EINE Wahrheit.
     private var materialCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let bedarf = extras.materialBedarf ?? []
+        let katalog = Dictionary(pinnedMaterials.map { ($0.code ?? "", $0) }, uniquingKeysWith: { a, _ in a })
+        let bedarfCodes = Set(bedarf.map { $0.code })
+        let zusatz = pinnedMaterials.filter { !bedarfCodes.contains($0.code ?? "") }
+        let pruef = pruefStatusNamen()
+
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Materialien").font(.headline)
+                Text("Materialliste").font(.headline)
                 Spacer()
                 Button { showingMaterialPicker = true } label: {
                     Label("Zuordnen", systemImage: "plus.circle").font(.subheadline)
                 }
             }
-            if pinnedMaterials.isEmpty && extras.pinnedLexikonCodes.isEmpty {
-                HStack(spacing: 10) {
-                    Image(systemName: "shippingbox").font(.title2).foregroundStyle(.secondary)
-                    VStack(alignment: .leading) {
-                        Text("Keine Materialien zugeordnet").font(.subheadline)
-                        Text("Materialien aus dem Katalog dieser Baustelle zuweisen").font(.caption).foregroundStyle(.secondary)
+
+            // Soll/Ist-Widerspruch auf einen Blick: Lager sagt „da", vor Ort „fehlt".
+            let widersprueche = bedarf.filter { b in
+                pruef.fehlt.contains(katalog[b.code]?.name ?? b.code)
+                    && lagerStore.gesamtbestand(artikelCode: b.code) > 0.0001
+            }
+            if !widersprueche.isEmpty {
+                Label("\(widersprueche.count)× Lager sagt „vorhanden“, vor Ort als fehlend gemeldet — klären.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.red)
+                    .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.red.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+            }
+
+            if bedarf.isEmpty && pinnedMaterials.isEmpty {
+                materialLeerHinweis
+            } else {
+                if !bedarf.isEmpty {
+                    Text("Geplant für diese Baustelle. Geprüft wird im Auftrag „Material prüfen“ (Gewerke & Ausführung) — hier gespiegelt.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    VStack(spacing: 8) {
+                        ForEach(bedarf, id: \.code) { b in
+                            let name = katalog[b.code]?.name ?? b.code
+                            bedarfRow(b, entry: katalog[b.code],
+                                      geprueft: pruef.da.contains(name),
+                                      gemeldetFehlt: pruef.fehlt.contains(name))
+                        }
                     }
                 }
-                .padding(.top, 4)
-            } else {
-                VStack(spacing: 8) {
-                    ForEach(pinnedMaterials, id: \.objectID) { mat in
-                        HStack(spacing: 12) {
-                            Image(systemName: iconForKategorie(mat.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(mat.name ?? "").font(.body)
-                                HStack(spacing: 6) {
-                                    Text(mat.code ?? "").font(.caption).foregroundStyle(.secondary)
-                                    Text("•").foregroundStyle(.secondary)
-                                    Text(mat.kategorie ?? "").font(.caption).foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer()
-                            Button { unpinMaterial(code: mat.code ?? "") } label: {
-                                Image(systemName: "minus.circle.fill").foregroundStyle(.red.opacity(0.7))
-                            }
-                        }
-                        .padding(.vertical, 8).padding(.horizontal, 10)
-                        .background(.thinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                if !zusatz.isEmpty {
+                    Text("Zusätzlich zugeordnet").font(.caption).foregroundStyle(.secondary).padding(.top, 4)
+                    VStack(spacing: 8) {
+                        ForEach(zusatz, id: \.objectID) { mat in zusatzRow(mat) }
                     }
                 }
             }
@@ -1464,6 +1551,94 @@ struct EventDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
+    private var materialLeerHinweis: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "shippingbox").font(.title2).foregroundStyle(.secondary)
+            VStack(alignment: .leading) {
+                Text("Keine Materialien").font(.subheadline)
+                Text("Materialien aus dem Katalog dieser Baustelle zuweisen").font(.caption).foregroundStyle(.secondary)
+            }
+        }.padding(.top, 4)
+    }
+
+    /// Eine geplante Material-Zeile: Name · geplant · Lager-Status · WO es liegt
+    /// (Lagerort) · Prüf-Status. Plus der Soll/Ist-Widerspruch: sagt das Lager „da",
+    /// wurde es aber vor Ort als fehlend gemeldet → rote Warnung „klären".
+    private func bedarfRow(_ b: MaterialBedarf, entry: CDLexikonEntry?,
+                           geprueft: Bool, gemeldetFehlt: Bool) -> some View {
+        let name = entry?.name ?? b.code
+        let mengeText = b.menge.formatted(.number.precision(.fractionLength(0...2)))
+        let orte = lagerStore.bestandJeOrt(artikelCode: b.code)     // WO liegt es
+        let widerspruch = gemeldetFehlt && !orte.isEmpty            // Lager sagt da, vor Ort fehlt
+        return HStack(spacing: 12) {
+            Image(systemName: iconForKategorie(entry?.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name).font(.body)
+                Text("geplant \(mengeText) \(b.einheit)").font(.caption).foregroundStyle(.secondary)
+                materialStatusChip(code: b.code)
+                // WO liegt es — der fehlende Bezug zum Lagerort.
+                if !orte.isEmpty {
+                    Label(orte.map { "\($0.ort.name) (\($0.menge.formatted(.number.precision(.fractionLength(0...2)))))" }
+                            .joined(separator: " · "),
+                          systemImage: "mappin.and.ellipse")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                // Soll/Ist-Widerspruch: der Mops erkennt „da stimmt was nicht".
+                if widerspruch {
+                    Label("Laut Lager vorhanden, aber vor Ort als fehlend gemeldet — bitte klären.",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.red)
+                }
+            }
+            Spacer()
+            VStack(spacing: 2) {
+                let icon = widerspruch ? "exclamationmark.triangle.fill"
+                         : (geprueft ? "checkmark.circle.fill" : "circle.dashed")
+                let farbe: Color = widerspruch ? .red : (geprueft ? .green : .secondary)
+                Image(systemName: icon).font(.title2).foregroundStyle(farbe)
+                Text(widerspruch ? "klären" : (geprueft ? "geprüft" : "offen"))
+                    .font(.caption2).foregroundStyle(farbe)
+            }
+        }
+        .padding(.vertical, 8).padding(.horizontal, 10)
+        .background(widerspruch ? Color.red.opacity(0.06) : Color(.tertiarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(widerspruch ? Color.red.opacity(0.5) : .clear, lineWidth: 1)
+        )
+    }
+
+    /// Aus dem Auftrag „Material prüfen": welche Materialien als „da" (vorhanden==true)
+    /// und welche als „fehlt" (vorhanden==false) gemeldet sind. Die eine Prüf-Wahrheit,
+    /// hier gespiegelt. „fehlt" trotz Lagerbestand = ein Widerspruch (siehe bedarfRow).
+    private func pruefStatusNamen() -> (da: Set<String>, fehlt: Set<String>) {
+        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        guard let pruef = jobs.first(where: { ($0.processingDetails ?? "").contains("Material prüfen") }) else { return ([], []) }
+        let items = AuftragExtrasPayload.from(pruef.extras).lineItems
+        return (Set(items.filter { $0.vorhanden == true }.map { $0.title }),
+                Set(items.filter { $0.vorhanden == false }.map { $0.title }))
+    }
+
+    /// Manuell zugeordnetes Material ohne geplante Menge (nur „auf Lager?"-Status).
+    private func zusatzRow(_ mat: CDLexikonEntry) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: iconForKategorie(mat.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(mat.name ?? "").font(.body)
+                materialStatusChip(code: mat.code ?? "")
+            }
+            Spacer()
+            Button { unpinMaterial(code: mat.code ?? "") } label: {
+                Image(systemName: "minus.circle.fill").foregroundStyle(.red.opacity(0.7))
+            }
+        }
+        .padding(.vertical, 8).padding(.horizontal, 10)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+
     private func iconForKategorie(_ kat: String?) -> String {
         switch kat {
         case "Rohbau":     return "building.2"
@@ -1472,20 +1647,70 @@ struct EventDetailView: View {
         case "Sanitaer":   return "drop.fill"
         case "Daemmung":   return "shield.fill"
         case "Ausbau":     return "paintbrush.fill"
+        case "Tiefbau":    return "square.grid.3x3.fill"
         default:           return "shippingbox"
         }
     }
 
     private func unpinMaterial(code: String) {
         extras.pinnedLexikonCodes.removeAll { $0 == code }
+        extras.bestellteCodes?.removeAll { $0 == code }
         saveExtras(extras)
         pinnedMaterials = fetchPinnedMaterials()
     }
 
+    /// Der Status eines Materials, bedarfsbewusst: reicht/auf Lager (grün, Fakt) ·
+    /// teils da (orange, Rest bestellen) · zu bestellen (orange) · bestellt (blau,
+    /// markiert). „zu bestellen = Bedarf − Lager" wird live gerechnet — trägt man im
+    /// Lager 250 ein, sinkt die zu bestellende Menge hier sofort. Grün ist ein Fakt
+    /// und nicht tippbar; die anderen schaltet ein Tipp auf „bestellt".
+    @ViewBuilder
+    private func materialStatusChip(code: String) -> some View {
+        let bedarf = (extras.materialBedarf ?? []).first { $0.code == code }
+        let status = Materialstatus.fuer(artikelCode: code,
+                                         bedarf: bedarf?.menge,
+                                         einheit: bedarf?.einheit ?? "",
+                                         bestellt: (extras.bestellteCodes ?? []).contains(code),
+                                         store: lagerStore)
+        let (farbe, icon, fakt): (Color, String, Bool) = {
+            switch status {
+            case .reicht, .aufLager: return (.green, "shippingbox.fill", true)
+            case .bestellt:          return (.blue,  "checkmark.circle.fill", false)
+            case .teils:             return (.orange, "cart.badge.plus", false)
+            case .zuBestellen:       return (.orange, "cart.badge.plus", false)
+            }
+        }()
+        let chip = HStack(spacing: 4) {
+            Image(systemName: icon).font(.caption2)
+            Text(status.kurz).font(.caption.weight(.semibold))
+        }
+        .foregroundStyle(farbe)
+        .padding(.horizontal, 8).padding(.vertical, 3)
+        .background(farbe.opacity(0.14), in: Capsule())
+
+        if fakt {
+            chip   // Lager deckt den Bedarf — Fakt, kein Schalter
+        } else {
+            Button { toggleBestellt(code: code) } label: { chip }
+                .buttonStyle(.plain)
+        }
+    }
+
+    private func toggleBestellt(code: String) {
+        var codes = extras.bestellteCodes ?? []
+        if codes.contains(code) { codes.removeAll { $0 == code } } else { codes.append(code) }
+        extras.bestellteCodes = codes
+        saveExtras(extras)
+    }
+
     private func fetchPinnedMaterials() -> [CDLexikonEntry] {
-        guard !extras.pinnedLexikonCodes.isEmpty else { return [] }
+        // Sowohl angepinnte als auch geplante (Bedarf) Codes — beide brauchen ihren
+        // Katalog-Namen für die Anzeige.
+        let bedarfCodes = (extras.materialBedarf ?? []).map { $0.code }
+        let codes = Array(Set(extras.pinnedLexikonCodes + bedarfCodes))
+        guard !codes.isEmpty else { return [] }
         let req: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
-        req.predicate = NSPredicate(format: "code IN %@", extras.pinnedLexikonCodes)
+        req.predicate = NSPredicate(format: "code IN %@", codes)
         req.sortDescriptors = [NSSortDescriptor(keyPath: \CDLexikonEntry.name, ascending: true)]
         return (try? viewContext.fetch(req)) ?? []
     }
@@ -1722,13 +1947,8 @@ struct EventDetailView: View {
     }
 
     // MARK: - JOBS CARD
-    // Aufträge nach DIN-276-Kostengruppe gruppieren (für die Abschnitts-Ansicht).
-    private var groupedJobs: [(kg: String, items: [Auftrag])] {
-        let dict = Dictionary(grouping: filteredJobs, by: { $0.kostenGruppeNummer ?? "—" })
-        return dict.sorted { $0.key < $1.key }.map { (kg: $0.key, items: $0.value) }
-    }
 
-    // KG-Klartext für die Abschnitts-Überschriften (wie im LV).
+    // KG-Klartext (wie im LV) — für die KG-Badges/Abschnitte anderswo verfügbar.
     private func dinBezeichnungJobs(_ kg: String) -> String {
         switch kg {
         case "300": return "Baukonstruktionen"
@@ -1751,6 +1971,58 @@ struct EventDetailView: View {
         }
     }
 
+    /// Ob das 5-Minuten-Warm-up (Sortier-Spiel) heute noch aussteht. Braucht ≥2 offene
+    /// Aufgaben (unter einer ist nichts zu ordnen). `warmupRefresh` triggert die Neu-
+    /// bewertung, nachdem das Spiel fertig/übersprungen ist.
+    private var warmupNoetig: Bool {
+        _ = warmupRefresh
+        return !WarmupStore.istErledigt(event) && filteredJobs.count >= 2
+    }
+
+    /// Der spielerische Schubs für den Lehrling: erst die Reihenfolge sortieren, dann
+    /// geht's an die Tagesaufgaben. Still, wenn erledigt (Tao Kap 10).
+    @ViewBuilder private var lehrlingWarmupCard: some View {
+        if warmupNoetig {
+            Button { showingWarmup = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "gamecontroller.fill").font(.title3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("5 Minuten: Reihenfolge 🧱").font(.headline)
+                        Text("Bring die heutigen Aufgaben in die richtige Bauablauf-Reihenfolge — dann geht's los.")
+                            .font(.caption).foregroundStyle(.white.opacity(0.9))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold))
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// Kleine Runde Baufragen — jederzeit, freiwillig (das Bau-Kochquiz). Lernen darf Spaß machen.
+    private var bauQuizCard: some View {
+        Button { showingBauQuiz = true } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "questionmark.circle.fill").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Baufragen — kleine Runde 🧱").font(.headline).foregroundStyle(.primary)
+                    Text("5 Fragen aus dem 1. Lehrjahr, mit Erklärung. Freiwillig.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var jobsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -1766,28 +2038,17 @@ struct EventDetailView: View {
             if filteredJobs.isEmpty {
                 Text("Keine Auftraege gefunden.").font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
             } else {
-                VStack(spacing: 12) {
-                    ForEach(groupedJobs, id: \.kg) { gruppe in
-                        // Abschnitts-Überschrift je Kostengruppe
-                        HStack {
-                            Text("KG \(gruppe.kg) – \(dinBezeichnungJobs(gruppe.kg))")
-                                .font(.caption.weight(.semibold))
-                            Spacer()
-                            Text("\(gruppe.items.count) Aufträge")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        // Aufträge dieser Kostengruppe
-                        VStack(spacing: 10) {
-                            ForEach(gruppe.items, id: \.objectID) { job in
-                                NavigationLink { AuftragDetailView(job: job) } label: {
-                                    AuftragRowView(auftrag: job) { refreshID = UUID() }
-                                        .padding(12)
-                                        .background(Color(.systemBackground))
-                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                        .shadow(radius: 1, y: 1)
-                                }
-                            }
+                // Flache Liste in Bauablauf-Reihenfolge — zum Abarbeiten von oben nach
+                // unten. Die Kostengruppe steht als Badge auf jeder Karte (AuftragRowView).
+                Text("In Bauablauf-Reihenfolge").font(.caption).foregroundStyle(.secondary)
+                VStack(spacing: 10) {
+                    ForEach(filteredJobs, id: \.objectID) { job in
+                        NavigationLink { AuftragDetailView(job: job) } label: {
+                            AuftragRowView(auftrag: job) { refreshID = UUID() }
+                                .padding(12)
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .shadow(radius: 1, y: 1)
                         }
                     }
                 }

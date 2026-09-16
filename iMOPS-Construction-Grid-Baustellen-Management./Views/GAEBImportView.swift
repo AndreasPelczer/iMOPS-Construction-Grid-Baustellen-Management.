@@ -16,6 +16,8 @@ struct GAEBImportView: View {
     @State private var isParsing = false
     @State private var parseError: String?
     @State private var showError = false
+    @State private var importSummary: String?
+    @State private var showingImportSummary = false
 
     private var selectedCount: Int { items.filter { $0.isSelected }.count }
     private var allSelected: Bool  { items.allSatisfy { $0.isSelected } }
@@ -54,6 +56,11 @@ struct GAEBImportView: View {
                 Button("OK") {}
             } message: {
                 Text(parseError ?? "Die Datei konnte nicht verarbeitet werden.")
+            }
+            .alert("Import fertig", isPresented: $showingImportSummary) {
+                Button("OK") { dismiss() }
+            } message: {
+                Text(importSummary ?? "")
             }
             .overlay {
                 if isParsing {
@@ -96,7 +103,7 @@ struct GAEBImportView: View {
                 Button {
                     showDocumentPicker = true
                 } label: {
-                    Label("Datei wählen (.x83 / .xml)", systemImage: "doc.badge.plus")
+                    Label("Datei wählen (.x83 / .d83 / .xml)", systemImage: "doc.badge.plus")
                         .font(.headline)
                         .padding(.horizontal, 28).padding(.vertical, 14)
                         .background(.orange)
@@ -107,7 +114,7 @@ struct GAEBImportView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Format-Hinweise", systemImage: "info.circle")
                         .font(.caption.bold()).foregroundStyle(.secondary)
-                    Text("• Unterstützt: GAEB DA XML 3.2 und 3.3\n• Phasen: X83 (Angebotsaufforderung) und X84 (Angebot)\n• Dateien als .x83, .x84 oder .xml speichern\n• Encoding: UTF-8 und Windows-1252 werden erkannt\n• Nicht unterstützt: GAEB 90 (.d83/.d84 Binärformat)")
+                    Text("• GAEB DA XML 3.2 / 3.3 (.x83, .x84, .xml)\n• GAEB 90 (.d83, .d84) — das ältere Zeilenformat\n• Phasen: X83 (Angebotsaufforderung) und X84 (Angebot)\n• Encoding: UTF-8, Windows-1252 und CP850 werden erkannt\n• Positionen, Mengen, Einheiten und Texte werden gelesen\n• Nicht unterstützt: GAEB 2000 in seltenen Sonderformaten")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding()
@@ -230,13 +237,20 @@ struct GAEBImportView: View {
     private func parsefile(url: URL) {
         isParsing = true
         DispatchQueue.global(qos: .userInitiated).async {
-            // Copy to temp while security-scoped access is open
+            // Der Picker hat bereits in einen lokalen Temp-Pfad kopiert (Security-Scope
+            // dort geschlossen). Für den Drag&Drop-Weg (initialURL) kopieren wir sicher
+            // in einen EIGENEN Temp-Pfad (eindeutig, nie Quelle==Ziel).
             let tmp = FileManager.default.temporaryDirectory
-                .appendingPathComponent(url.lastPathComponent)
-            try? FileManager.default.copyItem(at: url, to: tmp)
+                .appendingPathComponent("\(UUID().uuidString)-\(url.lastPathComponent)")
+            let quelle: URL
+            if (try? FileManager.default.copyItem(at: url, to: tmp)) != nil {
+                quelle = tmp
+            } else {
+                quelle = url   // schon lokal lesbar → direkt nehmen
+            }
 
             do {
-                let result = try GAEBImporter.parse(url: tmp)
+                let result = try GAEBImporter.parse(url: quelle)
                 DispatchQueue.main.async {
                     isParsing = false
                     importResult = result
@@ -254,7 +268,10 @@ struct GAEBImportView: View {
 
     private func importSelected() {
         let store = AngebotsStore.shared
+        var gesamt = 0
+        var kalkuliert = 0
         for item in items where item.isSelected {
+            gesamt += 1
             let pos = LVPosition(context: viewContext)
             pos.posNr              = item.posNr
             pos.bezeichnung        = item.kurztext
@@ -270,10 +287,35 @@ struct GAEBImportView: View {
                                      ? importResult!.ownerName : "GAEB-Import",
                                      einzelpreis: up)
                 store.upsert(angebot, for: posID)
+                kalkuliert += 1
+            } else if LeistungskatalogService.autoMatch(position: pos, in: viewContext) {
+                // Treffer im gelernten Katalog → Aufwand geschrieben, LVKalkulator rechnet.
+                kalkuliert += 1
             }
+            // Kein Treffer = bewusst OHNE Preis (keine erfundene Zahl).
         }
         try? viewContext.save()
-        dismiss()
+        importSummary = zusammenfassung(gesamt: gesamt, kalkuliert: kalkuliert)
+        showingImportSummary = true
+    }
+
+    /// Ehrliche Bilanz nach dem Import: wie viele Positionen automatisch einen Preis
+    /// bekamen (aus dem Katalog/X84) und wie viele noch auf einen Preis warten.
+    private func zusammenfassung(gesamt: Int, kalkuliert: Int) -> String {
+        let offen = gesamt - kalkuliert
+        if kalkuliert == 0 {
+            return "\(gesamt) Positionen übernommen. Noch kein Preis — der gelernte Katalog "
+                + "hat (noch) kein passendes Rezept. Preise über die Kalkulation zuweisen; "
+                + "was du bestätigst, merkt sich der Mops für's nächste Mal."
+        }
+        var s = "\(gesamt) Positionen übernommen, davon \(kalkuliert) automatisch kalkuliert "
+              + "(aus dem gelernten Katalog\(isX84 ? " / Angebotspreisen" : "")). "
+        if offen > 0 {
+            s += "\(offen) warten noch auf einen Preis — keine erfundenen Zahlen."
+        } else {
+            s += "Alle mit Preis."
+        }
+        return s
     }
 
     /// DIN-276-Bezeichnung zu einer KG-Nummer.
@@ -292,10 +334,12 @@ struct GAEBDocumentPicker: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        // Accept .xml + .data (broad fallback catches .x83/.x84 on most systems)
+        // Accept .xml + GAEB-Endungen (.x83/.x84 = DA XML, .d83/.d84 = GAEB 90);
+        // .data als breiter Fallback, falls die Endung nicht als UTType bekannt ist.
         var types: [UTType] = [.xml]
-        if let x83 = UTType(filenameExtension: "x83") { types.append(x83) }
-        if let x84 = UTType(filenameExtension: "x84") { types.append(x84) }
+        for ext in ["x83", "x84", "d83", "d84"] {
+            if let t = UTType(filenameExtension: ext) { types.append(t) }
+        }
         types.append(.data)
         let vc = UIDocumentPickerViewController(forOpeningContentTypes: types)
         vc.delegate = context.coordinator
@@ -310,9 +354,20 @@ struct GAEBDocumentPicker: UIViewControllerRepresentable {
         init(onPick: @escaping (URL) -> Void) { self.onPick = onPick }
         func documentPicker(_ c: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
+            // WICHTIG: solange der geschützte Zugriff offen ist, SOFORT (synchron) in
+            // einen eindeutigen Temp-Pfad kopieren. Vorher wurde der Zugriff geschlossen,
+            // bevor der asynchrone Import las → auf dem Mac schlug das Lesen fehl.
             let secured = url.startAccessingSecurityScopedResource()
-            onPick(url)
-            if secured { url.stopAccessingSecurityScopedResource() }
+            defer { if secured { url.stopAccessingSecurityScopedResource() } }
+
+            let tmp = FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(UUID().uuidString)-\(url.lastPathComponent)")
+            do {
+                try FileManager.default.copyItem(at: url, to: tmp)
+                onPick(tmp)                    // lokaler Pfad, kein Security-Scope mehr nötig
+            } catch {
+                onPick(url)                    // Fallback: Original weiterreichen
+            }
         }
     }
 }

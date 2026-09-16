@@ -484,33 +484,6 @@ private enum LieferwarnungDemoFactory {
     }
 }
 
-// MARK: - Mail Compose Wrapper
-
-struct MailComposeView: UIViewControllerRepresentable {
-    let recipient: String
-    let subject: String
-    let body: String
-
-    @Environment(\.dismiss) private var dismiss
-
-    func makeCoordinator() -> Coordinator { Coordinator(dismiss: dismiss) }
-
-    func makeUIViewController(context: Context) -> MFMailComposeViewController {
-        let vc = MFMailComposeViewController()
-        vc.mailComposeDelegate = context.coordinator
-        if !recipient.isEmpty { vc.setToRecipients([recipient]) }
-        vc.setSubject(subject)
-        vc.setMessageBody(body, isHTML: false)
-        return vc
-    }
-
-    func updateUIViewController(_ vc: MFMailComposeViewController, context: Context) {}
-
-    final class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
-        let dismiss: DismissAction
-        init(dismiss: DismissAction) { self.dismiss = dismiss }
-        func mailComposeController(_ c: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
-            dismiss()
-        }
-    }
-}
+// Der Mail-Wrapper `MailComposeView` lebt jetzt zentral in `MailComposeView.swift`
+// (ein Struct für alle Mail-Fälle, mit optionalem PDF-Anhang). Der frühere lokale
+// Duplikat-Struct hier wurde entfernt — sonst „invalid redeclaration".

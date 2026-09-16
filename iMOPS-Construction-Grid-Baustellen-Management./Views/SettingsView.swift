@@ -269,6 +269,12 @@ struct SettingsView: View {
                     satzZeile("Wagnis & Gewinn", wert: $wagnisGewinn, farbe: .orange, bis: 0.25)
                     satzZeile("BGK", wert: $bgk, farbe: .orange, bis: 0.25)
                 }
+
+                NavigationLink {
+                    GewinnSchieberView()
+                } label: {
+                    Label("Wo verdient der Boss? — gegen das Orakel prüfen", systemImage: "scope")
+                }
             } header: {
                 Text("Kalkulation — Zuschläge")
             } footer: {

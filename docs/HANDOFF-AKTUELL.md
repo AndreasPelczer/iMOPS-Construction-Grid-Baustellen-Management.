@@ -2,6 +2,220 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 15.09.2026 — GAEB, Matcher, Angebot-Button, Lehrling-Spiel (Branch gepusht)
+
+**Branch `feature/ehrliche-kalkulation`** — bis `09c090d` **auf GitHub gepusht** (verifiziert). Volles Unit-Target grün.
+
+- **GAEB-Import komplett:** DA XML (X83/X84) an echter Datei belegt (`GAEBImportTests`), **GAEB 90 (.d83/.d84) NEU** (`Service/GAEB90Importer.swift`, Festspalten-Zeilenformat, cp850/1252, an Andreas' echter `.d83` belegt). `GAEBImporter.parse` ist Weiche XML↔90. Erreichbar über neue Karte **„GAEB einlesen"** im Import-Katalog (EventDetailView `gaebCard`). Picker-Bug gefixt (security-scoped Zugriff schloss zu früh → betraf ALLE Mac-Importe). Commits a7d6b2c, 53e56de, 8a13633.
+- **Matcher (Text→Rezept→Preis):** `LeistungskatalogService` war schon da (via graphify gefunden — Beleg für „verbinden statt erfinden"). Lücke 1 `autoMatch(position:in:)`: beim GAEB-Import findet eine Position ihr gelerntes Rezept → Preis via `LVKalkulator`; kein Treffer = bewusst OHNE Preis (keine erfundene Zahl); ehrliche Import-Bilanz. Lücke 2: `Leistungsbaustein.rezeptJSON` (neues optionales Attribut, Lightweight-Migration) trägt jetzt auch **Material + Gerät** → voller Positionspreis; Ernte in `KnotenKalkulationView`. Commits dd27780, 582506f. Tests `GAEBAutoMatchTests` (6). **Modell-Falle:** aktive Version = `test25B 2.xcdatamodel` (mit Leerzeichen!).
+- **„Angebot an Kunden"-Button** im Planer (HouseConfiguratorView): Kunden-Sheet → PDF mit Logo/Briefkopf (`AngebotPDFExporter`) → per Mail (`MailComposeView`, ein Wrapper) oder Teilen-Fallback. Commits 85fdcf4, 68786ae.
+- **Lehrling-Spiel IM Mops** (aus Andreas' Ausbildungsspiel „Der junge Hering"): (1) Warm-up **„Reihenfolge sortieren"** — gemischte Aufträge in Bauablauf-Reihenfolge ziehen, geprüft gegen die **Kausalkette** (`Service/Bauablauf.swift` = eine Wahrheit für Liste UND Spiel; `EventDetailView.bauablaufRang` nutzt sie jetzt); Überspringen erlaubt; `WarmupStore` pro Baustelle+Tag. (2) **Baufragen-Quiz** (`Service/Baufragen.swift`, 12 Fragen 1. Lehrjahr; `BauQuizView`). Karten in „Gewerke & Ausführung". Tests `BauablaufTests` (3) + `BaufragenTests` (3). Commits d548b09, 09c090d.
+- **Nordstern-Review** (die 3 fehlenden Verbindungen): heute alle angefasst — (a) Import-Brücke durch (GAEB+WandLeser+JSON), (b) Mannstunden existieren, nur CrewPlanning-Nachfrage offen, (c) `Erdbauleistung` gebaut, nur `Geraet.leistung`-Feld + Einsatzplan offen. Memory `nordstern-zeichnung-zu-baustelle` aktualisiert.
+- **🔴 DSGVO:** Commit `164fa00` (Trennvlies = Raphis realer Li 5,11) wurde **bewusst mitgepusht** — Andreas hat am 15.9. informiert so entschieden (RaphaelStammdatenSeeder ist eh schon auf origin/main). Der offene „3. Fall" bleibt seine Entscheidung.
+
+---
+
+## Delta 14.09.2026 — Auftrag „Material prüfen" (Wareneingang) in der Kausalkette
+
+**Branch `feature/ehrliche-kalkulation`** (PR #166), Commit `40f4d80`. Volle Suite grün (clean).
+Der Materialcheck ist jetzt ein **zugeteilter, belegter Auftrag** statt eines passiven Hakens.
+- `HofauffahrtSeeder`: Schritt 11 „Material prüfen (Wareneingang)" — Kette
+  **bestellen → prüfen → Tragschicht** (Einbau wartet auf die Prüfung). Checkliste =
+  geplante Materialien als `AuftragLineItem` mit `vorhanden` (da/fehlt) + Nachweis
+  (`geprueftVon`/`geprueftAm`); die Oberfläche dafür hat `AuftragDetailView` schon.
+- **EINE Wahrheit:** `materialCard` SPIEGELT den Prüf-Auftrag (grün „geprüft"), eigener
+  Toggle raus. Match über den Materialnamen (Katalog-Name = LineItem-Titel).
+- Eine Material-Quelle im Seeder: `HofauffahrtSeeder.hofMaterialien` (Code/Name/Einheit/
+  Bedarf) für Bedarf + Prüf-Checkliste + Pinnen. `materialPruefItems()` öffentlich.
+- Bestehende Demos: `ruesteNach` legt Bedarf + Prüf-Auftrag nach (additive Kanten), kein Löschen.
+- `EventExtrasPayload.materialGeprueft` ist damit ungenutzt (deprecated, harmlos).
+- Tests: materialPruefenAuftragMitCheckliste, tragschichtWartetAufVliesUndPruefung; Counts 11/10.
+
+---
+
+## Delta 14.09.2026 — Polier-Materialliste (geplant · auf Lager · fehlt · vor Ort abhaken)
+
+**Branch `feature/ehrliche-kalkulation`** (PR #166), Commit `5783bb3`. Build + volle Suite grün.
+Korrektur nach Andreas' Bild: die „auf Lager"-Info hing an der Nebenliste (angepinnte
+Katalog-Artikel). Sie gehört an DIE Liste, die der Polier vor Ort prüft — die **geplanten
+Materialien** der Baustelle. `EventDetailView.materialCard` zeigt jetzt `extras.materialBedarf`
+(Katalog-Code + Menge): je Zeile Name · „geplant X" · Lager-Status (auf Lager/teils/fehlt/
+reicht, live) · **Haken „vor Ort da/prüfen"** (`extras.materialGeprueft`, OPTIONAL). Manuelle
+Pins ohne Menge stehen als „Zusätzlich zugeordnet". `HofauffahrtSeeder` rüstet eine bereits
+existierende Demo-Baustelle nach (setzt materialBedarf, wenn leer).
+**Offen (Andreas' Nordstern hier):** die geplante Liste in Konfigurator/LV/Materialliste ist
+noch mehrgleisig — echte Vereinheitlichung (ein Artikel-Schlüssel für LV-PositionMaterial +
+Bestellung + Lager) ist die nächste Runde; Bedarf/Lager brauchen dieselbe Einheit.
+
+---
+
+## Delta 14.09.2026 — Materialliste bedarfsbewusst: „zu bestellen = Bedarf − Lager" (live)
+
+**Branch `feature/ehrliche-kalkulation`** (PR #166), Commit `24c92d9`. Build + volle Suite grün.
+Andreas' Wunsch: 250 Steine ins Lager → zu bestellende Menge sinkt live. Der Materialstatus
+rechnet jetzt den **Bedarf** gegen den echten Lagerbestand.
+- `EventExtrasPayload.materialBedarf` ([MaterialBedarf {code,menge,einheit}], **OPTIONAL**).
+- `Materialstatus` (LagerStore) fünf Zustände: bestellt · **reicht** (grün, Fakt) · **teils**
+  (Lager X · zu bestellen Y, orange) · **zuBestellen(Menge)** · aufLager (ohne Bedarf).
+  zu bestellen = max(0, Bedarf − Lager). `materialCard` @ObservedObject LagerStore → live.
+- `HofauffahrtSeeder`: Bedarf je Material (Betonpflaster PFL-VBS = **1294 Stk**).
+- `DemoSeeder.seedLagerortDemoIfNeeded`: leerer Lagerort „Hof" (nur wenn keiner existiert).
+- Tests: materialstatusMitBedarfRechnetZuBestellen (250→teils/1044, 1300→reicht), bedarfIstHinterlegt.
+
+**Live-Test:** Hofeinfahrt-Demo → Materialien: „Betonpflaster · zu bestellen 1294 Stk".
+Katalog → Lager → Buchen → 250 Stk PFL-VBS in „Hof" → zurück: „Lager 250 · zu bestellen 1044".
+**Ehrliche Grenze:** Bedarf/Lager brauchen dieselbe Einheit (Stk gegen Stk); die LV-Position
+rechnet in m² — der Bestellvorschlag ist bewusst getrennt, noch nicht verknüpft.
+
+---
+
+## Delta 14.09.2026 — Kleines Lagersystem (Bestand = Summe der Buchungen)
+
+**Branch `feature/lager` → gefast-forwarded in `feature/ehrliche-kalkulation`** (PR #166),
+Commit `3da01ff`. Build + LagerStoreTests (7) + volle Suite grün. Konform zu gängiger
+Lagersoftware: **der Bestand ist die Summe der Buchungen, keine editierbare Zahl**
+(= Tao). Migrationsfrei: Codable + JSON (`lager.json`), wie AngebotsStore — **kein
+Core Data**. Artikel = Katalog-Eintrag (`CDLexikonEntry`) über den Code.
+- `Service/LagerStore.swift`: `Lagerort`, `Buchungsart` (Eingang/Ausgang/Umlagerung/
+  Inventur/Korrektur), `Lagerbuchung` (signierte Menge); reine `Lagerlogik` + Store
+  (`init(fileURL:)` für Tests). Umlagerung = Buchungspaar, Inventur = Differenz aufs
+  gezählte Ist, Meldebestand, Lagerort-Löschschutz solange Buchungen existieren.
+- `Views/LagerView.swift` (Bestand · Nachbestellen · Lagerorte), `LagerBuchungSheet.swift`.
+- `MaterialLexikonView`: „X auf Lager"-Badge + Einstieg „Lager" (Toolbar).
+- **Materialliste (`EventDetailView.materialCard`): je Position Status-Chip — auf Lager
+  (grün, echter Bestand) · bestellt (blau, tippbar) · zu bestellen (orange).**
+  `bestellteCodes` in `EventExtrasPayload` **OPTIONAL** (sonst brechen die Backward-Compat-
+  Blob-Tests — synthetisiertes Codable wirft keyNotFound bei nicht-optionalem neuem Feld).
+- `Materialstatus.fuer(artikelCode:bestellt:store:)` kapselt die 3-Zustands-Logik.
+
+**Bewusst offen (dockt an):** Barcode/Scan (BuildIQ), Chargen/Serien, Auto-Abbuchen bei
+Bestellung/Verbrauch. Einheit kommt beim Buchen aus der letzten Buchung / Handeingabe
+(CDLexikonEntry hat kein Einheit-Feld).
+
+---
+
+## Delta 14.09.2026 — Hofeinfahrt im Projekt-Konfigurator (2 Lücken behoben)
+
+**Branch `feature/ehrliche-kalkulation`**, Commit `85ddb52`. Tests grün. Der Konfigurator
+(`HouseConfiguratorView` → `ProjektGenerator`) KONNTE die Hofeinfahrt schon zeigen (vier
+Reiter), aber:
+1. `HofeinfahrtVorlage.generiere` setzte nie `wohnflaeche` → Header „0 m²" und **EUR/m² =
+   Kosten ÷ 0 (NaN)**. Fix: Pflasterfläche als `wohnflaeche` + Div-Guard in der KPI.
+2. „Als Baustelle anlegen" (`HouseProjectGenerator.createEvent`) pinnte nur Hochbau —
+   `bekannteCodeMap` kannte kein Tiefbau → leere Materialliste. Fix: 4 Hofeinfahrt-Titel
+   → Katalog-Codes (SCH-032/PFL-VBS/SPL-208/RND-TB).
+Tests: `hofeinfahrtSetztDieFlaeche`, `konfiguratorHofeinfahrtPinntMaterial`.
+**Offen (kosmetisch):** Ergebnis-Header zeigt für die Hofeinfahrt „0 Geschoss(e)" + Ausstattung
+(Haus-Felder) — für Nicht-Haus-Typen ausblendbar.
+
+**⚠️ BUILD-FALLE (wichtig):** Bei den **synchronisierten Xcode-Ordnern** lief der inkrementelle
+`xcodebuild test` still eine ALTE Test-Bundle (nur 4 statt 6 Tests, „TEST SUCCEEDED" trotzdem).
+Erst `xcodebuild clean` zog die neuen Tests. → Nach dem Anlegen NEUER Tests die Trefferzahl
+gegenprüfen, nicht nur auf „SUCCEEDED" vertrauen.
+
+---
+
+## Delta 14.09.2026 — Hofeinfahrt-Material im Katalog + Materialliste gepinnt
+
+**Branch `feature/ehrliche-kalkulation`**, Commit `89df575`. Build + Hofauffahrt-Tests (+3) grün.
+Die Baustellen-Materialliste (`EventDetailView` → Materialien) zeigt **angepinnte
+Katalog-Einträge** (`CDLexikonEntry`). Der Katalog kannte nur Hochbau → die Hofeinfahrt-Demo
+konnte nichts pinnen, Liste blieb leer.
+- `DemoSeeder`: 7 Tiefbau/Pflaster-Materialien (Kategorie „Tiefbau"), Codes zentral als
+  `DemoSeeder.hofeinfahrtMaterialCodes`. Seeding jetzt **idempotent per Code** (nicht mehr
+  „nur wenn leer") → bestehende Installs bekommen sie nach, keine Dubletten.
+- `HofauffahrtSeeder.pinneMaterialliste`: pinnt die Codes ans Demo-Event.
+- `EventDetailView`: Icon für Kategorie „Tiefbau".
+- Tests: materiallisteIstGepinnt, katalogHatTiefbauMaterial, katalogSeedingIstIdempotent.
+
+Merke: „Materialliste" = angepinnte `CDLexikonEntry` (Tab 4 Katalog), NICHT `PositionMaterial`
+(LV) oder `AuftragLineItem` (Bestellung) — die füllte der Seeder schon.
+
+---
+
+## Delta 14.09.2026 — Normen-Spur: berührte DIN ambient im Baustellen-Canvas
+
+**Branch `feature/ehrliche-kalkulation`**, Commit `4412cc9`. Build + 7 neue Tests grün.
+**Nicht gepusht.** Andreas' Idee: die einschlägigen Bau-Normen einer Baustelle
+blass/ausgegraut zeigen — ambient statt mahnend, zugleich Nachweis „arbeitet nach DIN".
+Ehrliche Grenze: **„berührt" ≠ „erfüllt"** (UI trägt „keine Rechtsberatung").
+
+**Gebaut:**
+- `Service/Baunormen.swift` — Katalog (9 Normen) + `berührt(vonLeistungen:hatLV:)`:
+  matcht Leistungstext (LV-Position ODER Checklisten-Aufgabe) per Stichwort auf die Norm,
+  dedupliziert, Bauablauf-Reihenfolge. DIN 276 gilt sobald ein LV existiert. **Selbsttragend
+  — braucht die YAML NICHT zur Laufzeit.**
+- `Views/NormenSpurView.swift` — blasses Wasserzeichen (opacity .78, gestrichelt).
+- `EventDetailView`: `normenSpurCard` im Leistungsverzeichnis.
+- `…Tests/BaunormenTests.swift` (7 grün).
+
+**✅ ERLEDIGT — YAML-Kollision aufgelöst (`din_normen.yaml`, Commit `0073544`):** Während
+des Baus hatte eine zweite Instanz parallel dieselbe Datei bearbeitet (Dubletten
+DIN_18299/18300, kombiniertes „18315_18318"). Andreas hat sie danach zur Kontrolle
+freigegeben. Geprüft (python yaml): **25 Normen, valide, keine Duplikate**, jedes Feld
+gefüllt, kein Norm-Volltext (lizenzsauber), deckt **alle 9 Spur-Normen** als Alias ab,
+fachlich stimmig (18195 korrekt als zurückgezogen). Committet auf diesem Branch.
+
+**Offen:** DIN-Nummern erforscht (Andreas = Koch) → von ihm/Raphi prüfen; Norm hängt bisher
+am Leistungstext, später ggf. am LVBaustein.
+
+---
+
+## Delta 14.09.2026 — Ehrliche Kalkulation: Lohngruppen→Mittellohn + Aufschlag-Kette
+
+**Branch `feature/ehrliche-kalkulation`** (von `feature/uebergabe-nachweis`). Build + die 4
+neuen Tests grün. **Nicht gepusht.** Behebt den **74-Fehler**: die 74 €/h ist der
+**Verrechnungssatz** (Ergebnis der Kette), NICHT der Lohn (~38 €/h Vollkosten). Saubere
+Trennung Kostenseite / Angebotsseite, generisch — echte Firmenzahlen bleiben draussen.
+
+**Gebaut:**
+- `Service/Lohnkalkulation.swift` (NEU) — die Struktur:
+  - `Lohngruppe.vollkosten = Brutto × Nebenkosten-Faktor` (was die Stunde KOSTET).
+  - `Mittellohn.berechne(kolonne:…)` = gewichteter Vollkosten-Schnitt → der Lohnsatz je
+    Mannstunde, der in die Positionen gehört (statt der 74).
+  - `Aufschlagskette` (BGK·AGK·Wagnis&Gewinn·Skonto·MwSt): innen einzeln, **aussen als EIN
+    vertraulicher `firmenzuschlag`** ausweisbar (Geschäftsgeheimnis). `nettoAngebot` /
+    `bruttoAngebot`; `firmenzuschlag(ausVollkosten:verrechnungssatz:)` rückwärts fürs Orakel.
+  - `LohnkalkulationDefaults`: nebenkostenFaktor 1,85; generische ZDB-Lohngruppen (LG1 17,00 …
+    LG6 28,50, Platzhalter); Default-Kette (bgk 0,10 / agk 0,10 / w&g 0,08 / skonto 0,025).
+- `Service/FirmenSettings.swift` (geändert) — Keys + Accessors `nebenkostenFaktor`, `agk`,
+  `skonto` (dazu bgk/wagnisGewinn/mwst schon da) + `static var aufschlagskette` Builder.
+  Die echten Firmenzahlen kommen HIER rein (UserDefaults), nie in den Code.
+
+**Nachweis:** `…Tests/LohnkalkulationTests.swift` (4, grün):
+- `vollkostenOrakel` — Brutto×1,85 = 31,45 / 38,85 / 52,73.
+- `mittellohnOrakel_37_81` — Beispiel-Kolonne (1×LG6 + 4×LG4 + 3×LG1) → **37,81 €/h**.
+- `ketteNettoUndBrutto` — firmenzuschlag 0,33947; netto 13.394,7 aus 10.000.
+- `orakel74_istErgebnisNichtInput` — die Kette TRIFFT mit dem vertraulichen Firmenzuschlag
+  exakt 74; generisch kommt ~52 raus. **Die Differenz ist Firmensache, nicht im Code.**
+
+**Vertraulichkeit:** `.gitignore` sperrt jetzt `docs/lohnberechnung/` (Goldschmitt-Quell-Excel,
+nur lesen) + `graphify-out/`. Nur Formeln + öffentliche Richtwerte im Repo.
+
+**Gewinn-Schieber gebaut (14.9., Andreas' Idee):** `Views/GewinnSchieberView.swift` — die
+EINE ehrliche Schraube „Wo verdient der Boss?". Links Vollkosten (fest), Mitte der
+**Wagnis&Gewinn**-Schieber (Gewinn-only entschieden: BGK/AGK/Skonto fest, weil gemessene
+Kosten), rechts der Verrechnungssatz live + die **74-Orakel-Linie** mit Lücke-Anzeige
+(grün „passt" bei <0,50 €). Button **„Auf das Orakel einrasten"** rechnet den festen Teil
+heraus und setzt den Gewinn so, dass der Satz das Orakel trifft → man liest den echten
+Aufschlag ab (Zahl bleibt in FirmenSettings). Interne Aufschlüsselung fällt außen zu EINEM
+„Firmenzuschlag" zusammen. Schreibt `Keys.wagnisGewinn`; Vollkosten + Orakel als eigene
+Firmen-Config (`firma_vollkosten_referenz` / `firma_verrechnungssatz_orakel`, Default
+generischer Facharbeiter / 74). Erreichbar per NavigationLink aus `SettingsView` (Zuschläge).
+Build grün. Commit `a964d7f`.
+
+**Bewusst offen:**
+- **Schritt C** — den 74-Verrechnungssatz im `RaphaelStammdatenSeeder` (26,91×2,75=74) auf
+  Vollkosten-Mittellohn umstellen. Hängt an der **offenen DSGVO-Leak-Bereinigung** (Raphis
+  Preise im public Repo, Memo `keine-kundendaten-im-rag-repo` — Andreas entscheidet noch).
+- **Integration** — den Mittellohn in die LV-Positionen ziehen; Aufschlagskette an
+  `LVKalkulator` andocken.
+- Deferred (Auftrag-GRENZE): Bauformeln/Auto-Menge, Maschinenpark-Sätze, Aufwandswerte.
+
+Commits: `7dbc30d` (Kalkulation), `d58405f` (gitignore/CLAUDE.md). Backup HANDOFF: `.backup_…_ehrliche-kalk`.
+
+---
+
 ## Delta 13.09.2026 — Leitstand Schritt 2: Auto-Menge (Größe → Menge)
 
 **Branch `feature/auto-menge`** (von `main`). Build + Suite grün. **Nicht gepusht.**

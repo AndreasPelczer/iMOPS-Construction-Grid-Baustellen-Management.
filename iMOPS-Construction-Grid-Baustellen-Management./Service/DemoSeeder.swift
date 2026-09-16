@@ -7,8 +7,16 @@ enum DemoSeeder {
 
     private static let demoEventNumber = "DEMO-BAU-001"
 
+    /// Die Katalog-Codes des Tiefbau/Pflaster-Materials — die der HofauffahrtSeeder
+    /// an die Hofeinfahrt-Demo pinnt, damit deren Materialliste gefüllt ist.
+    /// Reihenfolge = Bauablauf (Unterbau → Bettung → Pflaster → Rand → Fugen).
+    static let hofeinfahrtMaterialCodes = [
+        "SCH-032", "VLI-GEO", "SPL-208", "PFL-VBS", "RND-TB", "BET-C16", "FUG-02",
+    ]
+
     static func seedIfNeeded(into context: NSManagedObjectContext) {
         seedMaterialsIfNeeded(into: context)
+        seedLagerortDemoIfNeeded()
         seedDemoCADFile()
 
         let req: NSFetchRequest<Event> = Event.fetchRequest()
@@ -172,10 +180,18 @@ Sanitaer OG – Baeder + Kueche
 
     // MARK: - Baumaterialien seeden
 
-    private static func seedMaterialsIfNeeded(into context: NSManagedObjectContext) {
+    /// Legt EINEN leeren Lagerort „Hof" an, wenn noch keiner existiert — damit man
+    /// sofort einen Wareneingang buchen kann (z. B. 250 Betonpflaster), ohne erst
+    /// einen Lagerort anzulegen. **Kein** Bestand: den gibt der Nutzer selbst ein.
+    static func seedLagerortDemoIfNeeded(into store: LagerStore = .shared) {
+        guard store.lagerorte.isEmpty else { return }
+        store.addLagerort(name: "Hof")
+    }
+
+    // internal (nicht private): der HofauffahrtSeederTest seedet damit gezielt nur den
+    // Material-Katalog, ohne den CAD-Datei-Nebeneffekt von `seedIfNeeded`.
+    static func seedMaterialsIfNeeded(into context: NSManagedObjectContext) {
         let req: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
-        req.fetchLimit = 1
-        if let results = try? context.fetch(req), !results.isEmpty { return }
 
         let materials: [(String, String, String, String, String)] = [
             ("Transportbeton C25/30",       "BET-C25",  "Rohbau",     "Beton Druckfestigkeitsklasse C25/30",          "Verwendung: Fundamente, Decken, Waende. Expositionsklasse: XC1-XC4"),
@@ -192,21 +208,38 @@ Sanitaer OG – Baeder + Kueche
             ("HT-Rohr DN50",               "HT-50",    "Sanitaer",   "Abwasserrohr fuer Innenentwasserung",          "Durchmesser: 50mm, Laenge: 250-2000mm, Steckmuffe"),
             ("HT-Rohr DN100",              "HT-100",   "Sanitaer",   "Abwasser-Fallleitung und Sammelleitung",       "Durchmesser: 100mm, Laenge: 250-3000mm"),
             ("Kupferrohr 15x1mm",           "CU-15",    "Sanitaer",   "Trinkwasserleitung (Kalt-/Warmwasser)",        "Durchmesser: 15mm, Wandstaerke 1mm, Stange 5m"),
-            ("Estrich CT-C25-F4",           "EST-C25",  "Ausbau",     "Zementestrich als schwimmender Estrich",       "Druckfestigkeit C25, Biegezugfestigkeitsklasse F4, Mindestdicke 45mm")
+            ("Estrich CT-C25-F4",           "EST-C25",  "Ausbau",     "Zementestrich als schwimmender Estrich",       "Druckfestigkeit C25, Biegezugfestigkeitsklasse F4, Mindestdicke 45mm"),
+
+            // Tiefbau / Pflaster (Aussenanlagen) — fuer Hofeinfahrt & Co. Codes werden
+            // vom HofauffahrtSeeder gepinnt (siehe DemoSeeder.hofeinfahrtMaterialCodes).
+            ("Schotter 0/32 (Tragschicht)",   "SCH-032", "Tiefbau", "Mineralgemisch fuer die ungebundene Tragschicht",   "Koernung 0/32, lagenweise einbauen + verdichten (Ev2). DIN EN 13242 / DIN 18315"),
+            ("Pflastersplitt 2/8 (Bettung)",  "SPL-208", "Tiefbau", "Splittbettung unter dem Pflaster",                  "Koernung 2/8, Bettung ca. 3-5 cm. DIN EN 13242"),
+            ("Betonpflaster Verbundstein",    "PFL-VBS", "Tiefbau", "Betonpflasterstein fuer befahrbare Flaechen",       "z.B. 20x10x8 cm, druck-/frostbestaendig. DIN EN 1338"),
+            ("Randstein / Tiefbord (Beton)",  "RND-TB",  "Tiefbau", "Rand-/Bordstein aus Beton zur Einfassung",          "in Beton mit Rueckenstuetze setzen. DIN EN 1340 / DIN 18318"),
+            ("Trennvlies (Geotextil)",        "VLI-GEO", "Tiefbau", "Geotextil trennt Boden von Tragschicht",            "wasserdurchlaessig, verhindert Vermischung; Stoesse >= 30 cm ueberlappen"),
+            ("Fugensand 0/2",                 "FUG-02",  "Tiefbau", "Einkehrsand zum Verfuellen der Pflasterfugen",      "Koernung 0/2, nach dem Abruetteln einkehren"),
+            ("Beton C16/20 (Randstuetze)",    "BET-C16", "Tiefbau", "Beton fuer Randstein-Fundament + Rueckenstuetze",   "erdfeucht, DIN EN 206 / DIN 1045"),
         ]
 
-        for m in materials {
+        // Idempotent per Code: legt nur an, was noch fehlt. So bekommen auch
+        // bestehende Installationen (Katalog schon geseedet) die Tiefbau-Materialien
+        // nachtraeglich, ohne Dubletten.
+        let vorhandeneCodes = Set((try? context.fetch(req))?.compactMap { $0.code } ?? [])
+        var neu = 0
+        for m in materials where !vorhandeneCodes.contains(m.1) {
             let entry = CDLexikonEntry(context: context)
             entry.name = m.0
             entry.code = m.1
             entry.kategorie = m.2
             entry.beschreibung = m.3
             entry.details = m.4
+            neu += 1
         }
 
+        guard neu > 0 else { return }
         do {
             try context.save()
-            print("DemoSeeder: 15 Baumaterialien angelegt.")
+            print("DemoSeeder: \(neu) Baumaterialien angelegt.")
         } catch {
             print("DemoSeeder: Fehler beim Material-Seeding: \(error)")
         }
