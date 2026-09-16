@@ -102,6 +102,7 @@
     <entity name="Geraet" representedClassName="Geraet" syncable="YES">
         <attribute name="anschaffungsKosten" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="leistung" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="notiz" optional="YES" attributeType="String"/>
         <attribute name="nutzungsdauerStunden" optional="YES" attributeType="Integer 32" defaultValueString="1000" usesScalarValueType="YES"/>

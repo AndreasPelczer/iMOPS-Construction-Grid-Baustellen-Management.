@@ -18,6 +18,9 @@ struct GAEBImportView: View {
     @State private var showError = false
     @State private var importSummary: String?
     @State private var showingImportSummary = false
+    // „Mops fass": Review nach dem X83-Import
+    @State private var fassErgebnisse: [AutoKalkulationsService.Ergebnis] = []
+    @State private var showFassReview = false
 
     private var selectedCount: Int { items.filter { $0.isSelected }.count }
     private var allSelected: Bool  { items.allSatisfy { $0.isSelected } }
@@ -61,6 +64,9 @@ struct GAEBImportView: View {
                 Button("OK") { dismiss() }
             } message: {
                 Text(importSummary ?? "")
+            }
+            .sheet(isPresented: $showFassReview) {
+                MopsFassReviewView(ergebnisse: fassErgebnisse, event: event) { dismiss() }
             }
             .overlay {
                 if isParsing {
@@ -270,6 +276,7 @@ struct GAEBImportView: View {
         let store = AngebotsStore.shared
         var gesamt = 0
         var kalkuliert = 0
+        var erstellt: [LVPosition] = []
         for item in items where item.isSelected {
             gesamt += 1
             let pos = LVPosition(context: viewContext)
@@ -279,6 +286,7 @@ struct GAEBImportView: View {
             pos.einheit            = item.einheit
             pos.kostenGruppeNummer = item.guessedKG
             pos.event              = event
+            erstellt.append(pos)
 
             // If X84: store unit price in AngebotsStore as "Auftraggeber"-offer
             if let up = item.unitPrice, up > 0, isX84 {
@@ -295,8 +303,15 @@ struct GAEBImportView: View {
             // Kein Treffer = bewusst OHNE Preis (keine erfundene Zahl).
         }
         try? viewContext.save()
-        importSummary = zusammenfassung(gesamt: gesamt, kalkuliert: kalkuliert)
-        showingImportSummary = true
+        if !isX84 {
+            // „Mops fass": über alle importierten Positionen kalkulieren → Ampel-Review
+            fassErgebnisse = AutoKalkulationsService.fass(positionen: erstellt, in: viewContext)
+            try? viewContext.save()
+            showFassReview = true
+        } else {
+            importSummary = zusammenfassung(gesamt: gesamt, kalkuliert: kalkuliert)
+            showingImportSummary = true
+        }
     }
 
     /// Ehrliche Bilanz nach dem Import: wie viele Positionen automatisch einen Preis

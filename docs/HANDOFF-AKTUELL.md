@@ -2,6 +2,35 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 16.09.2026 — „Mops fass" + Rezept-Assistent + LV↔Canvas-Brücke — Branch `feature/material-preise-zentral`
+
+Der komplette Kalkulations-Bogen: **GAEB rein → auf den Canvas → Knoten kalkulieren (Rezept entsteht) → „Mops fass" wird grün → X84 raus.** Alles auf dem vorhandenen Motor (`LeistungskatalogService.autoMatch` + `LVKalkulator`) — KEIN neuer Rechenkern (die Opus-Spec wollte 500 Zeilen `berechneEP`/`versucheMatch`/`einheitspreis` — gibt's so nicht; Kühlhaus-Check hat's gefangen).
+
+**Commit 1 (`97600af`):** `Service/AutoKalkulationsService.swift` (`fass` → Ampel-Diagnose GRÜN/GELB/ROT, `Bilanz`+`exportBereit`), `Views/MopsFassReviewView.swift` (Ampel + „was fehlt" + X84-Export via `GAEBExporter`, gesperrt bis ROT==0), Integration in `GAEBImportView` (X83-Import → Auto-Review). `MopsFassTests`.
+
+**Commit 2 (dieser Batch):**
+- **`Views/LVView.swift`** — „🐕 Mops fass" + „Auf den Canvas holen" als Knöpfe **oben in der LV-Liste** (Andreas' Wunsch: eine Ebene über der Einzel-Kalkulation). Review als `.fullScreenCover` (mehrere `.sheet` in LVView präsentierten nicht zuverlässig).
+- **`Service/LVCanvasBruecke.swift`** — Brücke LV ↔ Grap8-Canvas, **beide Richtungen**, idempotent über die vorhandene Beziehung `Auftrag.lvPosition`. `lvAufDenCanvas` / `canvasInsLV`. Pflichtfelder gesetzt (`statusRawValue`,`storageNote` — sonst crasht `save()`). Knopf in `Grap8View` (⋯-Menü „Knoten ins LV übernehmen"). `LVCanvasBrueckeTests` (3).
+- **Rezept-Assistent `Views/RezeptAssistentView.swift`** — geführt, Schritt für Schritt, Küchensprache: Mops **schlägt vor, User bestätigt/korrigiert**. Zeit (Prof-Vorschlag, offline→Erfahrungswert) · Material (Preis aus Stammdaten) · **Gerät = Auswahl aus dem Maschinenpark** (`Geraet.kostenProStunde`). Startet aus jeder 🔴/🟡-Zeile der Review; Zeile wird danach grün. Speichert über neu `LeistungskatalogService.speichereRezept(...)` (Aufwandswert + Material + Gerät → Position + Baustein gelernt). Test in `MopsFassTests`.
+- **`Views/MopsVorschlagSheet.swift`** — Reiter-Umschalter raus, **eine Ansicht, nur Aufwandswert** (die einzige Frage, die echte Zahlen liefert; Material-Alt/Positionstext lieferten generischen KI-Rohtext → aus der UI raus, Helper-Methoden bleiben im Code). Zeigt **pro Einheit UND Gesamtzeit** (× Menge).
+
+**Stand:** volle Unit-Suite grün (16.9.), App-Build SUCCEEDED. Beide Commits auf `feature/material-preise-zentral`, **lokal** — Andreas pusht + merged selbst.
+**🔴 OFFEN / nächste Schritte:** (a) der Assistent soll Positionen wie „Rohrgraben DN 400" **erst erklären + die fehlenden Fragen stellen** (Tiefe/Boden aus dem Plan) statt gleich nach Stunden — Andreas' großer Wunsch, noch offen. (b) **Bei „Pläne und Unterlagen" das eingelesene GAEB menschenlesbar anzeigen** (das LV, mit dem auf der Baustelle gearbeitet wird — die Positionen als lesbare Liste, nicht das rohe XML). Andreas' Wunsch 16.9. (c) Integrationstest mit echten `.x83`. (d) vorbestehender flaky `RechnungPDFExporterTests` beachten.
+
+## Delta 15.09.2026 (Nacht) — Rezepte für den Matcher (Ytong + Tiefbau), Goldschmitt-Fotos
+
+**Branch `feature/ehrliche-kalkulation`** — Commits `0a8ac59` (Ytong), `f0b17cf` (Tiefbau). **LOKAL, NICHT gepusht** (Nachtschicht — Andreas entscheidet wach). Beide Suiten grün.
+
+Damit der Auto-Match beim GAEB-Import wirklich Preise setzt, brauchen die Positionen **Rezepte** (Leistungsbausteine mit Menge Material/Gerät je Einheit). Ein Rezept hat 3 Zutaten: **Menge** (Tabelle/Foto) · **Aufwandswert** Lohn h/Einheit (Prof/KI, Folgerung) · **Preis** (gerätelokal, Stammdaten).
+
+- **`Service/YtongBedarf.swift`** — öffentliche Ytong-Bedarfswerte je m³ (Steine Stück/m³ + DBM kg/m³ je Wanddicke 5–48 cm, aus Foto IMG_0348). `seedIfNeeded` legt je Wanddicke einen Baustein „Mauerwerk Ytong X cm" (m³) an, Material-Menge fest, **Preis 0**. Idempotent, überschreibt Lohn nicht. `YtongBedarfTests` (4).
+- **`Service/TiefbauRezepte.swift`** — die 8 Hofeinfahrt-Leistungen (Oberboden/Aushub/abfahren/Schotter/Splitt/Trennvlies/Pflaster/Randstein). Material-Mengen = **Richtwerte** (Verschnitt/Verdichtung), Bagger-Stunden aus `Erdbauleistung`. **Lohn 0 + Preis 0 bewusst** (Aufwandswert steht in keiner Tabelle). `TiefbauRezepteTests` (5). `iMOPSApp` seedet beide im Start-Lauf.
+- **DSGVO sauber getrennt:** Ytong-Mengen/Artikel-Nummern = öffentliche Xella-Daten (Code ok). **Goldschmitts Preise + „Gerhard Goldschmitt Bau GmbH"/Bernd Goldschmitts Telefon** (auf Fotos IMG_0350/0353) = vertraulich → nur Stammdaten, device-lokal. Fotos liegen unter `~/Desktop/goldschmitt-fotos/` (nicht im Repo).
+- **🔴 OFFEN / nächster Schritt:** der **Aufwandswert** (Lohn h/Einheit) ist der Engpass bei fast jedem Rezept — kommt per Prof/KI (`MopsKalkulationsHelper`, markiert als Schätzung) oder Andreas' Erfahrung. Erst dann liefert ein Rezept einen echten Preis. Dazu: die € je Material/Stunde in den Stammdaten.
+- **⚠️ FLAKY TEST (vorbestehend, NICHT durch diese Arbeit):** `RechnungPDFExporterTests/ibanOhneBanknameGenuegt` fällt im vollen Target GELEGENTLICH (Race auf geteilte `UserDefaults.standard` zwischen FirmenSettings-Tests; allein + im 2. Lauf grün). Sauber wäre, die FirmenSettings-berührenden Test-Suiten zu serialisieren/isolieren — bewusst NICHT nachts unbeaufsichtigt gemacht.
+
+---
+
 ## Delta 15.09.2026 — GAEB, Matcher, Angebot-Button, Lehrling-Spiel (Branch gepusht)
 
 **Branch `feature/ehrliche-kalkulation`** — bis `09c090d` **auf GitHub gepusht** (verifiziert). Volles Unit-Target grün.

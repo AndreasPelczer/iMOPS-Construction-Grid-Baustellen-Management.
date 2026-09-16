@@ -153,6 +153,18 @@ struct Grap8View: View {
                         .tint(.orange)
                     }
                 }
+                // Brücke Canvas → LV: Knoten ohne LV-Position ins Leistungsverzeichnis übernehmen
+                if let event = gewaehlt {
+                    ToolbarItem(placement: .secondaryAction) {
+                        Button {
+                            _ = LVCanvasBruecke.canvasInsLV(event: event, in: viewContext)
+                            try? viewContext.save()
+                            aktualisierung += 1
+                        } label: {
+                            Label("Knoten ins LV übernehmen", systemImage: "arrow.down.doc")
+                        }
+                    }
+                }
                 // Zurück zur Auswahl — nur, wenn hier gewählt wurde. Kam die
                 // Baustelle von außen, wäre „andere Baustelle" ein falsches
                 // Versprechen: die Ansicht gehört dann zu ihr.

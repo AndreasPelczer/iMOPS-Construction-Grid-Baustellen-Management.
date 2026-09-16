@@ -14,6 +14,18 @@ import CoreData
 // seinen Baustein statt ihn zu verdoppeln.
 enum LeistungskatalogService {
 
+    /// Zentraler Material-Preis (€/Einheit) aus den Stammdaten (`KalkMaterial`) — die EINE
+    /// vorhandene Preis-Liste (gepflegt in StammdatenPflegeView, gerätelokal, vertraulich).
+    /// Nachschlag über den normalisierten Namen, wie bei den Leistungsbausteinen. Kein
+    /// Treffer → nil (dann bleibt der Rezept-Preis, oft 0).
+    static func materialPreis(fuer name: String, in ctx: NSManagedObjectContext) -> Double? {
+        let ziel = normalisiere(name)
+        guard !ziel.isEmpty else { return nil }
+        let req: NSFetchRequest<KalkMaterial> = KalkMaterial.fetchRequest()
+        let alle = (try? ctx.fetch(req)) ?? []
+        return alle.first { normalisiere($0.name) == ziel }?.preisProEinheit
+    }
+
     /// Vergleichsform: klein, ohne Diakritika, getrimmt. Dieselbe Regel für Leistung und Einheit.
     static func normalisiere(_ text: String?) -> String {
         (text ?? "")
@@ -87,6 +99,64 @@ enum LeistungskatalogService {
         return true
     }
 
+    /// Einen Aufwandswert (Maurer/Helfer h je Einheit) auf eine Position ÜBERNEHMEN und
+    /// zugleich ins Rezept LERNEN — damit der nächste gleiche Import ihn automatisch
+    /// bekommt. Das schließt den Kreis für importierte Positionen (die kein Knoten sind).
+    /// `quelle` hält die Herkunft fest: „schätzung" (KI/Prof-Vorschlag, Folgerung) vs.
+    /// „erfahrung" (von Hand). Das vorhandene Material-Rezept (rezeptJSON) bleibt erhalten.
+    static func uebernehmeAufwand(maurer: Double, helfer: Double, quelle: String,
+                                  auf pos: LVPosition, in ctx: NSManagedObjectContext) {
+        schreibeAufwandAlsLohn(maurer: maurer, helfer: helfer, auf: pos, in: ctx)
+        merke(leistung: pos.bezeichnung ?? "", einheit: pos.einheit ?? "",
+              maurer: maurer, helfer: helfer,
+              kostenGruppeNummer: pos.kostenGruppeNummer, quelle: quelle, in: ctx)
+    }
+
+    // MARK: - Rezept-Assistent („Rezept mit dem Mops")
+
+    struct RezeptMaterial { var name: String; var menge: Double; var verschnitt: Double; var einheit: String }
+    struct RezeptGeraet { var name: String; var stunden: Double; var satz: Double }
+
+    /// Das im geführten Assistenten zusammengestellte Rezept auf die Position schreiben UND
+    /// in den Katalog lernen — Aufwandswert (Maurer/Helfer), Material (Preis zentral aus den
+    /// Stammdaten) und Gerät. Idempotent: bestehende Material/Gerät/Lohn-Zeilen werden
+    /// ersetzt, nicht gestapelt. `quelle`: „schätzung" (Vorschlag übernommen) oder
+    /// „erfahrung" (von Hand geändert) — die Herkunft bleibt ehrlich sichtbar.
+    static func speichereRezept(auf pos: LVPosition,
+                                maurer: Double, helfer: Double,
+                                material: [RezeptMaterial] = [],
+                                geraet: [RezeptGeraet] = [],
+                                quelle: String,
+                                in ctx: NSManagedObjectContext) {
+        // Material/Gerät schreiben (idempotent — wie schreibeRezept)
+        for pm in pos.materialArray { ctx.delete(pm) }
+        for pg in pos.geraeteArray { ctx.delete(pg) }
+        ctx.processPendingChanges()
+        for m in material where !m.name.trimmingCharacters(in: .whitespaces).isEmpty {
+            let pm = PositionMaterial(context: ctx)
+            pm.id = UUID()
+            pm.materialName = m.name
+            pm.mengeProEinheit = m.menge
+            pm.einzelpreis = materialPreis(fuer: m.name, in: ctx) ?? 0   // Preis zentral, sonst 0 (sichtbare Lücke)
+            pm.verschnittProzent = m.verschnitt
+            pm.einheit = m.einheit
+            pm.position = pos
+        }
+        for g in geraet where !g.name.trimmingCharacters(in: .whitespaces).isEmpty {
+            let pg = PositionGeraet(context: ctx)
+            pg.id = UUID()
+            pg.geraetName = g.name
+            pg.stunden = g.stunden
+            pg.kostenProStunde = g.satz
+            pg.position = pos
+        }
+        // Aufwandswert schreiben + Baustein anlegen/aktualisieren, dann Material/Gerät ins Rezept lernen
+        uebernehmeAufwand(maurer: maurer, helfer: helfer, quelle: quelle, auf: pos, in: ctx)
+        if let baustein = finde(leistung: pos.bezeichnung ?? "", einheit: pos.einheit ?? "", in: ctx) {
+            lerneMaterialUndGeraet(von: pos, auf: baustein)
+        }
+    }
+
     // MARK: - Volles Rezept (Lohn + Material + Gerät)
 
     /// Ein wiederverwendbares Rezept über die reine Arbeitszeit hinaus: Material und Gerät
@@ -147,7 +217,10 @@ enum LeistungskatalogService {
             pm.id = UUID()
             pm.materialName = m.name
             pm.mengeProEinheit = m.mengeProEinheit
-            pm.einzelpreis = m.einzelpreis
+            // Menge kommt aus dem Rezept (öffentlicher Richtwert), PREIS zentral aus den
+            // Stammdaten (KalkMaterial, gerätelokal). Zentraler Preis gewinnt; Rezept-Preis
+            // (oft 0) ist nur Rückfall.
+            pm.einzelpreis = materialPreis(fuer: m.name, in: ctx) ?? m.einzelpreis
             pm.verschnittProzent = m.verschnittProzent
             pm.einheit = m.einheit
             pm.position = pos

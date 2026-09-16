@@ -393,6 +393,8 @@ struct EventDetailView: View {
 
                 kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
                     SchichtUebergabeCard(event: event)
+                    brigadeCard
+                    maschinenCard
                     lehrlingWarmupCard
                     jobsCard
                         .sheet(isPresented: $showingWarmup) {
@@ -2021,6 +2023,85 @@ struct EventDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - BRIGADE (Mannstunden → Personalbedarf, Nordstern-Stufe 5)
+    private var brigadeLVPositionen: [LVPosition] {
+        (event.lvPositionen?.allObjects as? [LVPosition]) ?? []
+    }
+    private var aktiveLeuteCount: Int {
+        let req: NSFetchRequest<Employee> = Employee.fetchRequest()
+        req.predicate = NSPredicate(format: "isActive == YES")
+        return (try? viewContext.count(for: req)) ?? 0
+    }
+
+    /// Wie viele Mannstunden/-tage stecken in dieser Baustelle — aus den Aufwandswerten
+    /// des LV. Ehrlich: zeigt an, wenn noch Aufwandswerte fehlen (Summe unvollständig).
+    @ViewBuilder private var brigadeCard: some View {
+        let plan = BrigadePlanung.fuer(positionen: brigadeLVPositionen)
+        let leute = aktiveLeuteCount
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Brigade — Mannstunden", systemImage: "person.3.fill").font(.headline)
+            if plan.mannstunden == 0 {
+                Text("Noch kein Aufwandswert hinterlegt. Sobald Positionen einen Aufwandswert (Lohn h/Einheit) tragen — z.B. über den Mops-Vorschlag — erscheint hier der Personalbedarf.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                Text("\(plan.mannstunden.formatted(.number.precision(.fractionLength(0...1)))) Mannstunden  ≈  \(plan.manntage.formatted(.number.precision(.fractionLength(0...1)))) Manntage")
+                    .font(.subheadline.weight(.semibold))
+                Text("(bei \(Int(BrigadePlanung.stundenJeTag)) h je Person und Tag)")
+                    .font(.caption2).foregroundStyle(.secondary)
+                if leute > 0, let tage = plan.arbeitstage(beiLeuten: leute) {
+                    Text("Bei \(leute) aktiven Leuten ≈ \(tage.formatted(.number.precision(.fractionLength(0...1)))) Arbeitstage")
+                        .font(.subheadline)
+                } else {
+                    Text("Lege im Team-Tab aktive Leute an, um die Arbeitstage zu sehen.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            if plan.unvollstaendig {
+                Text("⚠️ \(plan.positionenOhneAufwand) von \(plan.positionenGesamt) Positionen noch ohne Aufwandswert — die Summe wächst, wenn du sie ergänzt.")
+                    .font(.caption2).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    // MARK: - MASCHINEN (Aushub → Bagger-Stunden, Nordstern-Stufe 3+4)
+    /// Bagger-Leistung: ein Gerät mit gesetzter Leistung (Name enthält „bagger") oder Richtwert.
+    private var baggerLeistung: (wert: Double, quelle: String) {
+        let req: NSFetchRequest<Geraet> = Geraet.fetchRequest()
+        req.predicate = NSPredicate(format: "leistung > 0")
+        let geraete = (try? viewContext.fetch(req)) ?? []
+        if let bagger = geraete.first(where: { ($0.name ?? "").localizedCaseInsensitiveContains("bagger") }) ?? geraete.first {
+            return (bagger.leistung, bagger.name ?? "Gerät")
+        }
+        return (Erdbauleistung.minibagger, "Minibagger (Richtwert)")
+    }
+
+    /// Aus den Erdbau-Positionen des LV: Aushubmenge → Bagger-Stunden (Erdbauleistung).
+    @ViewBuilder private var maschinenCard: some View {
+        let l = baggerLeistung
+        let plan = MaschinenPlanung.fuer(positionen: brigadeLVPositionen, leistung: l.wert, quelle: l.quelle)
+        if plan.hatAushub {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Maschinen — Erdbau", systemImage: "gearshape.2.fill").font(.headline)
+                Text("Aushub \(plan.aushubM3.formatted(.number.precision(.fractionLength(0...1)))) m³  →  ca. \(plan.baggerStunden.formatted(.number.precision(.fractionLength(0...1)))) Bagger-Stunden")
+                    .font(.subheadline.weight(.semibold))
+                Text("≈ \(plan.baggerTage.formatted(.number.precision(.fractionLength(0...1)))) Tage · Leistung \(plan.leistungM3h.formatted(.number.precision(.fractionLength(0...1)))) m³/h (\(plan.quelleLeistung))")
+                    .font(.caption).foregroundStyle(.secondary)
+                Text("Aushubmenge aus \(plan.erdbauPositionen) Erdbau-Position\(plan.erdbauPositionen == 1 ? "" : "en") erkannt — Leistung in den Geräte-Stammdaten anpassbar.")
+                    .font(.caption2).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
     }
 
     private var jobsCard: some View {

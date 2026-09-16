@@ -2,9 +2,10 @@ import SwiftUI
 import CoreData
 
 // MARK: - MopsVorschlagSheet
-// Sheet fuer den optionalen Mops/Prof-Vorschlag bei der Kalkulation.
-// Fragt nach Aufwandswerten oder Material-Alternativen.
-// IMMER nur Vorschlag — User entscheidet.
+// Der Mops/Prof-Vorschlag für den Aufwandswert (die einzige Frage, die echte Zahlen liefert:
+// Maurer/Helfer h je Einheit, geparst und ins Rezept übernehmbar). Material-Alternative und
+// Positionstext-Generierung sind rausgeflogen — sie lieferten nur generischen KI-Rohtext.
+// IMMER nur Vorschlag (Schätzung) — der User entscheidet.
 
 struct MopsVorschlagSheet: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -13,217 +14,137 @@ struct MopsVorschlagSheet: View {
     @Binding var antwort: String?
 
     @State private var isLoading = false
-    @State private var mopsText: String?
     @State private var errorText: String?
-    @State private var selectedAction = 0
-    @State private var showApplyConfirmation = false
-    @State private var didApplyText = false
+    @State private var aufwandVorschlag: (maurer: Double, helfer: Double)?
+    @State private var aufwandUebernommen = false
+    @State private var showAufwandConfirmation = false
 
-    private let aktionen = ["Aufwandswert", "Material-Alternative", "Positionstext"]
+    private var einheit: String { position.einheit ?? "E" }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                // Header
-                HStack(spacing: 12) {
-                    Text("🐶")
-                        .font(.system(size: 40))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Mops fragen")
-                            .font(.headline)
-                        Text("Vorschlag — du entscheidest!")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal)
-
-                // Aktion waehlen
-                Picker("Aktion", selection: $selectedAction) {
-                    ForEach(0..<aktionen.count, id: \.self) { i in
-                        Text(aktionen[i]).tag(i)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-
-                // Position-Info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(position.bezeichnung ?? "Unbenannte Position")
-                        .font(.subheadline)
-                        .bold()
-                    Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "")")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(10)
-                .padding(.horizontal)
-
-                // Ergebnis
-                if isLoading {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                        Text("Mops denkt nach …")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 30)
-                }
-
-                if let text = mopsText {
-                    ScrollView {
-                        Text(text)
-                            .font(.subheadline)
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.orange.opacity(0.08))
-                            .cornerRadius(10)
-                    }
-                    .frame(maxHeight: 200)
-                    .padding(.horizontal)
-
-                    if selectedAction == 2 {
-                        Button {
-                            showApplyConfirmation = true
-                        } label: {
-                            Label(
-                                didApplyText ? "Positionstext übernommen" : "Positionstext übernehmen",
-                                systemImage: didApplyText ? "checkmark.circle.fill" : "text.badge.checkmark"
-                            )
-                            .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(didApplyText ? .green : .orange)
-                        .padding(.horizontal)
-                        .disabled(didApplyText)
-                    }
-                }
-
+            VStack(spacing: 14) {
+                header
+                positionInfo
                 if let err = errorText {
-                    Text(err)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .padding(.horizontal)
+                    Text(err).font(.caption).foregroundStyle(.red).padding(.horizontal)
                 }
-
-                Spacer()
-
-                // Buttons
-                HStack(spacing: 12) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Schließen")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button {
-                        fragenAbschicken()
-                    } label: {
-                        Label("Fragen", systemImage: "paperplane.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.orange)
-                    .disabled(isLoading)
+                ScrollView {
+                    VStack(spacing: 14) { aufwandCard }.padding(.horizontal)
                 }
-                .padding(.horizontal)
-                .padding(.bottom)
+                aktionsButtons
             }
             .padding(.top)
             .navigationTitle("Mops-Vorschlag")
+            #if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
-            .alert("Positionstext übernehmen?", isPresented: $showApplyConfirmation) {
+            #endif
+            .alert("Aufwandswert als Schätzung übernehmen?", isPresented: $showAufwandConfirmation) {
                 Button("Abbrechen", role: .cancel) { }
-                Button("Übernehmen", role: .destructive) {
-                    positionstextUebernehmen()
-                }
+                Button("Übernehmen") { aufwandUebernehmen() }
             } message: {
-                Text("Der bestehende Positionstext wird ersetzt. Bitte nur übernehmen, wenn du den Vorschlag fachlich geprüft hast.")
+                Text("Der Vorschlag (REFA) ist eine Schätzung, kein fester Wert. Er wird auf die Position geschrieben und für die nächste gleiche Leistung gemerkt — bitte fachlich prüfen und bei Bedarf anpassen.")
             }
         }
     }
 
-    // MARK: - Mops fragen
+    // MARK: - Bausteine
+
+    private var header: some View {
+        HStack(spacing: 12) {
+            Text("🐶").font(.system(size: 40))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Mops fragen").font(.headline)
+                Text("Aufwandswert-Vorschlag — du entscheidest!").font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal)
+    }
+
+    private var positionInfo: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(position.bezeichnung ?? "Unbenannte Position").font(.subheadline).bold()
+            Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "")")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(10)
+        .padding(.horizontal)
+    }
+
+    private var aufwandCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("⏱ Aufwandswert (REFA)").font(.subheadline.weight(.semibold))
+            if let w = aufwandVorschlag {
+                Text("• Maurer: \(fmt(w.maurer)) h/\(einheit)   →  gesamt \(fmt(w.maurer * position.menge)) h\n• Helfer: \(fmt(w.helfer)) h/\(einheit)   →  gesamt \(fmt(w.helfer * position.menge)) h")
+                    .font(.subheadline)
+                Text("Zusammen ≈ \(fmt((w.maurer + w.helfer) * position.menge)) Std für \(fmt(position.menge)) \(position.einheit ?? "")")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button {
+                    showAufwandConfirmation = true
+                } label: {
+                    Label(aufwandUebernommen ? "Als Schätzung übernommen" : "Übernehmen (Schätzung)",
+                          systemImage: aufwandUebernommen ? "checkmark.circle.fill" : "square.and.arrow.down")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent).tint(aufwandUebernommen ? .green : .orange)
+                .disabled(aufwandUebernommen)
+            } else {
+                HStack(spacing: 8) {
+                    if isLoading { ProgressView() }
+                    Text(isLoading ? "Mops denkt nach …" : "— auf „Aufwandswert fragen“ tippen")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.orange.opacity(0.06))
+        .cornerRadius(10)
+    }
+
+    private var aktionsButtons: some View {
+        HStack(spacing: 12) {
+            Button { dismiss() } label: { Text("Schließen").frame(maxWidth: .infinity) }
+                .buttonStyle(.bordered)
+            Button { fragenAbschicken() } label: {
+                Label("Aufwandswert fragen", systemImage: "paperplane.fill").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent).tint(.orange).disabled(isLoading)
+        }
+        .padding(.horizontal).padding(.bottom)
+    }
+
+    // MARK: - Logik
 
     private func fragenAbschicken() {
-        isLoading = true
-        errorText = nil
-        mopsText = nil
-
+        isLoading = true; errorText = nil
+        aufwandVorschlag = nil; aufwandUebernommen = false
         let helper = MopsKalkulationsHelper.shared
         let leistung = "\(position.menge.formatted()) \(position.einheit ?? "") \(position.bezeichnung ?? "")"
-        didApplyText = false
-
         Task {
-            switch selectedAction {
-            case 0:
-                // Aufwandswert
-                if let wert = await helper.aufwandswertVorschlag(leistung: leistung) {
-                    await MainActor.run {
-                        let text = "Vorschlag (REFA):\n• Maurer: \(wert.maurer) h/\(position.einheit ?? "E")\n• Helfer: \(wert.helfer) h/\(position.einheit ?? "E")"
-                        mopsText = text
-                        antwort = text
-                        isLoading = false
-                    }
-                } else {
-                    await MainActor.run {
-                        errorText = "Keine Antwort erhalten. Mops offline?"
-                        isLoading = false
-                    }
-                }
-
-            case 1:
-                // Material-Alternative
-                let material = position.materialArray.first?.materialName ?? position.bezeichnung ?? ""
-                if let alt = await helper.materialAlternative(material: material, anforderung: leistung) {
-                    await MainActor.run {
-                        mopsText = alt
-                        antwort = alt
-                        isLoading = false
-                    }
-                } else {
-                    await MainActor.run {
-                        errorText = "Keine Antwort erhalten."
-                        isLoading = false
-                    }
-                }
-
-            case 2:
-                // Positionstext
-                if let text = await helper.positionstextGenerieren(leistung: position.bezeichnung ?? "", details: leistung) {
-                    await MainActor.run {
-                        mopsText = text
-                        antwort = text
-                        isLoading = false
-                    }
-                } else {
-                    await MainActor.run {
-                        errorText = "Keine Antwort erhalten."
-                        isLoading = false
-                    }
-                }
-
-            default:
-                await MainActor.run { isLoading = false }
+            let a = await helper.aufwandswertVorschlag(leistung: leistung)
+            await MainActor.run {
+                aufwandVorschlag = a
+                if let a { antwort = "Aufwand: Maurer \(fmt(a.maurer)) / Helfer \(fmt(a.helfer)) h/\(einheit)" }
+                else { errorText = "Keine Antwort erhalten. Mops offline?" }
+                isLoading = false
             }
         }
     }
 
-    private func positionstextUebernehmen() {
-        guard let text = mopsText?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
-            return
-        }
-
-        position.bezeichnung = text
+    /// Aufwandswert übernehmen: auf die Position schreiben UND ins Rezept lernen (Herkunft „schätzung").
+    private func aufwandUebernehmen() {
+        guard let w = aufwandVorschlag else { return }
+        LeistungskatalogService.uebernehmeAufwand(
+            maurer: w.maurer, helfer: w.helfer, quelle: "schätzung",
+            auf: position, in: viewContext)
         try? viewContext.save()
-        antwort = text
-        didApplyText = true
+        aufwandUebernommen = true
     }
+
+    private func fmt(_ d: Double) -> String { String(format: "%g", d) }
 }
