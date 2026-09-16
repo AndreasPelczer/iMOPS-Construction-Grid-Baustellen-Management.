@@ -44,6 +44,36 @@ final class MopsKalkulationsHelper {
         }
     }
 
+    // MARK: - Markt-Orientierung (Büro-Vorarbeit, online)
+
+    /// Grobe Markt-Orientierung (KI-Schätzung, KEIN Angebot): fragt den Prof nach einem
+    /// ungefähren Marktpreis je Einheit. Das ist Büro-Vorarbeit vor Baustellenbeginn (online) —
+    /// nicht die Offline-Baustellen-Regel. Immer als Schätzung markieren, Mensch entscheidet.
+    func marktpreisVorschlag(material: String, einheit: String) async -> Double? {
+        guard isConnected else { return nil }
+        let frage = "Ungefährer Marktpreis für \(material) pro \(einheit) in EUR "
+            + "(Deutschland, grobe Orientierung, kein verbindliches Angebot). "
+            + "Antworte NUR in diesem Format: PREIS=X.XX"
+        do {
+            let response = try await client.ask(question: frage, useProf: true)
+            return parsePreis(response.answer)
+        } catch {
+            logger.warning("Marktpreis-Anfrage fehlgeschlagen: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func parsePreis(_ text: String) -> Double? {
+        let upper = text.uppercased()
+        guard let r = upper.range(of: #"PREIS\s*=?\s*(\d+[.,]?\d*)"#, options: .regularExpression) else { return nil }
+        let num = String(upper[r])
+            .replacingOccurrences(of: "PREIS", with: "")
+            .replacingOccurrences(of: "=", with: "")
+            .replacingOccurrences(of: ",", with: ".")
+            .trimmingCharacters(in: .whitespaces)
+        return Double(num)
+    }
+
     // MARK: - Material-Alternative
 
     /// Fragt nach alternativen Materialien mit bestimmten Anforderungen.
