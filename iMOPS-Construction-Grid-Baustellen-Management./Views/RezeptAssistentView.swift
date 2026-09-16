@@ -285,17 +285,17 @@ struct RezeptAssistentView: View {
         onFertig(); dismiss()
     }
 
-    // Lesbarer Zeit-Briefing: „Maurer braucht ~X h für 320 m — schafft ~Y m/h · zusammen ~Z Mannstunden"
+    // Lesbarer Zeit-Briefing: zwei getrennte Arbeitsmengen, die sich zu Mannstunden summieren.
+    // Bewusst KEIN „schafft X/h" — das las sich wie ein Renn-Vergleich Maurer↔Helfer.
     private var zeitBriefing: String {
         let m = position.menge
+        let mStd = maurer * m, hStd = helfer * m, gesamt = mStd + hStd
         var teile: [String] = []
-        if maurer > 0 {
-            teile.append("Maurer: ~\(fmtH(maurer * m)) h für \(fmtH(m)) \(einheit) — schafft ~\(fmtH(1 / maurer)) \(einheit)/h")
-        }
-        if helfer > 0 { teile.append("Helfer: ~\(fmtH(helfer * m)) h") }
-        let gesamt = (maurer + helfer) * m
-        if gesamt > 0 { teile.append("zusammen ~\(fmtH(gesamt)) Mannstunden") }
-        return "→ " + teile.joined(separator: " · ")
+        if maurer > 0 { teile.append("\(fmtH(mStd)) Std Maurer") }
+        if helfer > 0 { teile.append("\(fmtH(hStd)) Std Helfer") }
+        let arbeit = teile.joined(separator: " + ")
+        return "Für \(fmtH(m)) \(einheit): \(arbeit) = \(fmtH(gesamt)) Mannstunden. "
+             + "Sie arbeiten zusammen — die Dauer in Tagen hängt von der Kolonnengröße ab (Brigade)."
     }
 
     private func euro(_ d: Double) -> String { String(format: "%.2f €", d) }
