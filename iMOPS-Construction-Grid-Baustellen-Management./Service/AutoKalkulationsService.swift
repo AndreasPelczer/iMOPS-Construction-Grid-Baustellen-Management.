@@ -115,13 +115,15 @@ enum AutoKalkulationsService {
     /// `baustein` = STLB-ID falls über den STLB gefunden (transparent in der Meldung).
     private static func gelbAusRichtwert(_ t: AufwandsTreffer, baustein: String?,
                                          pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
-        LeistungskatalogService.schreibeAufwandAlsLohn(maurer: t.mittel, helfer: 0, auf: pos, in: ctx)
+        // Nach der ECHTEN Kolonne bepreisen: Baggerfahrer zum Maschinisten-Satz, Helfer zum
+        // Helfer-Satz — nicht mehr alles als Maurer.
+        LeistungskatalogService.schreibeAufwandAusKolonne(mittelStunden: t.mittel, kolonne: t.kolonne, auf: pos, in: ctx)
         let kalk = LVKalkulator.kalkuliere(position: pos)
         let g = String(format: "%g", t.mittel), lo = String(format: "%g", t.min), hi = String(format: "%g", t.max)
         let quelle = baustein.map { "STLB \($0) · " } ?? ""
         let msg = "🟡 \(quelle)Richtwert \(g) h/\(t.einheit) (Spanne \(lo)–\(hi)) · Mannschaft: "
                 + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz). "
-                + "Schätzung — Rollen/Preis prüfen; Material fehlt noch."
+                + "Schätzung (Rollen bepreist); Material fehlt noch."
         return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: kalk.einheitspreisVK)
     }
 

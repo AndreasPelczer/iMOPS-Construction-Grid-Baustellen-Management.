@@ -265,6 +265,48 @@ enum LeistungskatalogService {
         lohnEintrag("Helfer", helfer, pos, ctx)
     }
 
+    /// Schreibt Lohnstunden nach der KOLONNE auf (echte Rollen statt alles als Maurer).
+    /// `mittelStunden` = Gesamt-Mannstunden je Einheit; wird nach Kopfzahl auf die Rollen der
+    /// Kolonne verteilt und je Rolle mit ihrem Tarif bepreist. Idempotent (alte Lohnzeilen weg).
+    /// z. B. „1 Baggerfahrer + 1 Helfer", 0,30 h → Baggerfahrer 0,15 h + Helfer 0,15 h.
+    static func schreibeAufwandAusKolonne(mittelStunden: Double, kolonne: String,
+                                          auf pos: LVPosition, in ctx: NSManagedObjectContext) {
+        for pl in pos.lohnArray { ctx.delete(pl) }
+        ctx.processPendingChanges()
+
+        let rollen = parseKolonne(kolonne)
+        let kopf = rollen.reduce(0) { $0 + $1.anzahl }
+        guard mittelStunden > 0, kopf > 0 else {
+            // Keine lesbare Kolonne → als generischer Facharbeiter (nie 0).
+            if mittelStunden > 0 { lohnEintrag("Facharbeiter", mittelStunden, pos, ctx) }
+            return
+        }
+        // Gleiche Rollen zusammenfassen, Stunden anteilig nach Kopfzahl.
+        var proRolle: [String: Double] = [:]
+        for r in rollen { proRolle[r.rolle, default: 0] += mittelStunden * Double(r.anzahl) / Double(kopf) }
+        for (rolle, stunden) in proRolle { lohnEintrag(rolle, stunden, pos, ctx) }
+    }
+
+    /// Zerlegt eine Kolonnen-Beschreibung in (Anzahl, Rolle).
+    /// „1 Baggerfahrer + 2 Rohrleger" → [(1,"Baggerfahrer"),(2,"Rohrleger")].
+    /// Bereich „2-3 Betonbauer" → nimmt die untere Zahl. „1 Baggerfahrer/Walzenfahrer" → erste Rolle.
+    static func parseKolonne(_ kolonne: String) -> [(anzahl: Int, rolle: String)] {
+        var out: [(Int, String)] = []
+        for teil in kolonne.split(separator: "+") {
+            let s = teil.trimmingCharacters(in: .whitespaces)
+            guard let m = s.range(of: #"^(\d+)"#, options: .regularExpression) else { continue }
+            let anzahl = Int(s[m]) ?? 1
+            var rest = String(s[m.upperBound...])
+            // evtl. „-3" eines Bereichs abschneiden
+            if rest.hasPrefix("-") { rest = rest.drop(while: { $0 == "-" || $0.isNumber }).description }
+            // erste Rolle bei „A/B"
+            let rolle = rest.split(separator: "/").first.map(String.init)?
+                .trimmingCharacters(in: .whitespaces) ?? ""
+            if !rolle.isEmpty { out.append((anzahl, rolle)) }
+        }
+        return out
+    }
+
     private static func lohnEintrag(_ qualifikation: String, _ stunden: Double,
                                     _ pos: LVPosition, _ ctx: NSManagedObjectContext) {
         let pl = PositionLohn(context: ctx)
@@ -275,17 +317,30 @@ enum LeistungskatalogService {
         pl.position = pos
     }
 
-    /// Brutto-EK-Stundensatz aus den Stammdaten (`Lohnsatz`), Rückfall = Seeder-Werte.
+    /// Brutto-EK-Stundensatz aus den Stammdaten (`Lohnsatz`), Rückfall über die Tarifgruppe.
+    /// Rollenfähig: für jede Kolonnen-Rolle (Baggerfahrer, Rohrleger, Pflasterer …) gibt es einen
+    /// Satz — zuerst ein exakter Stammdaten-Lohnsatz, sonst der Gruppen-Default. Nie mehr 0.
     static func bruttoEK(fuer qualifikation: String, in ctx: NSManagedObjectContext) -> Double {
         let req: NSFetchRequest<Lohnsatz> = Lohnsatz.fetchRequest()
         req.predicate = NSPredicate(format: "qualifikation ==[c] %@", qualifikation)
         req.fetchLimit = 1
         if let satz = (try? ctx.fetch(req))?.first { return satz.berechnungBruttoEK }
-        switch qualifikation {
-        case "Maurer": return 28.50 * 1.65
-        case "Helfer": return 18.50 * 1.55
-        default:       return 0
+        switch tarifgruppe(fuer: qualifikation) {
+        case .helfer:       return 18.50 * 1.55   // ~28,7 €/h
+        case .maschinist:   return 30.00 * 1.65   // ~49,5 €/h (Baugeräteführer, Gerätezulage)
+        case .facharbeiter: return 28.50 * 1.65   // ~47,0 €/h (Maurer-Tarif als Facharbeiter-Basis)
         }
+    }
+
+    /// Tarifgruppen der Bau-Kolonne. Helfer < Facharbeiter < Maschinist (Gerätezulage).
+    enum Tarifgruppe: Equatable { case helfer, facharbeiter, maschinist }
+
+    /// Ordnet eine Rollen-/Qualifikationsbezeichnung ihrer Tarifgruppe zu (Default: Facharbeiter).
+    static func tarifgruppe(fuer rolle: String) -> Tarifgruppe {
+        let r = rolle.lowercased()
+        if r.contains("helfer") { return .helfer }
+        if r.contains("fahrer") || r.contains("maschinist") || r.contains("kran") { return .maschinist }
+        return .facharbeiter   // Maurer, Rohrleger, Pflasterer, Betonbauer, Zimmerer, Installateur, …
     }
 
     /// Vorschlagsliste zu einem Knoten-/Leistungstext: Bausteine, die zum Text passen
