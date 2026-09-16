@@ -58,9 +58,20 @@ enum AutoKalkulationsService {
 
         // 1) Rezept-Treffer? (schreibt bei Treffer Lohn/Material/Gerät auf die Position)
         guard LeistungskatalogService.autoMatch(position: pos, in: ctx) else {
+            // Kein gelerntes Rezept. Weg über den STLB: Position → Baustein → aufwandswert_key
+            // → deterministischer Richtwert (echte Kolonne + Quelle). GELB statt blind ROT.
+            if let b = STLBKatalog.shared.finde(leistung: bez),
+               let key = b.aufwandswertKey,
+               let t = AufwandswerteKatalog.shared.eintrag(key: key) {
+                return gelbAusRichtwert(t, baustein: b.id, pos: pos, in: ctx)
+            }
+            // Fallback: direkter Stichwort-Treffer im Aufwandswerte-Katalog.
+            if let t = AufwandswerteKatalog.shared.finde(leistung: bez, langtext: pos.langtext) {
+                return gelbAusRichtwert(t, baustein: nil, pos: pos, in: ctx)
+            }
             return Ergebnis(
                 position: pos, status: .rot,
-                meldungen: ["Kein gelerntes Rezept für „\(bez)“ (\(einheit.isEmpty ? "?" : einheit)). "
+                meldungen: ["Kein gelerntes Rezept und kein Richtwert für „\(bez)“ (\(einheit.isEmpty ? "?" : einheit)). "
                           + "Aus dem Katalog wählen, eine Aufwandswert-Schätzung übernehmen oder Stammdaten ergänzen."],
                 einheitspreisVK: 0)
         }
@@ -98,6 +109,22 @@ enum AutoKalkulationsService {
                    + "(Lohn \(euro(kalk.lohnKosten)) · Material \(euro(kalk.materialKosten)) · Gerät \(euro(kalk.geraeteKosten)))"
         return Ergebnis(position: pos, status: .gruen, meldungen: [quelle],
                         einheitspreisVK: kalk.einheitspreisVK)
+    }
+
+    /// Schreibt den Richtwert als GELB-Schätzung auf die Position (echte Kolonne + Quelle).
+    /// `baustein` = STLB-ID falls über den STLB gefunden (transparent in der Meldung).
+    private static func gelbAusRichtwert(_ t: AufwandsTreffer, baustein: String?,
+                                         pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
+        // Nach der ECHTEN Kolonne bepreisen: Baggerfahrer zum Maschinisten-Satz, Helfer zum
+        // Helfer-Satz — nicht mehr alles als Maurer.
+        LeistungskatalogService.schreibeAufwandAusKolonne(mittelStunden: t.mittel, kolonne: t.kolonne, auf: pos, in: ctx)
+        let kalk = LVKalkulator.kalkuliere(position: pos)
+        let g = String(format: "%g", t.mittel), lo = String(format: "%g", t.min), hi = String(format: "%g", t.max)
+        let quelle = baustein.map { "STLB \($0) · " } ?? ""
+        let msg = "🟡 \(quelle)Richtwert \(g) h/\(t.einheit) (Spanne \(lo)–\(hi)) · Mannschaft: "
+                + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz). "
+                + "Schätzung (Rollen bepreist); Material fehlt noch."
+        return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: kalk.einheitspreisVK)
     }
 
     private static func euro(_ d: Double) -> String { String(format: "%.2f €", d) }

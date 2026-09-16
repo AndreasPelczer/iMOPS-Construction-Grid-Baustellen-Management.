@@ -64,3 +64,6 @@ graphify-out/
 
 # Vertrauliche Lohn-/Preis-Unterlagen (Goldschmitt) — NIE ins oeffentliche Repo
 docs/lohnberechnung/
+
+# lokale Claude-Session-Dateien
+.claude/

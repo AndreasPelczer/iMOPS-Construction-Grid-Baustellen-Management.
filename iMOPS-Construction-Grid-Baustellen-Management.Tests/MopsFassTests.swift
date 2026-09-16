@@ -68,9 +68,10 @@ struct MopsFassTests {
     }
 
     @Test @MainActor func rezeptAssistentSpeichertMachtPositionGruen() throws {
-        // Position ohne Rezept → ROT
+        // Ohne gelerntes Rezept ist die Position NICHT grün (kein voller Preis).
+        // (Seit dem STLB-Katalog kann sie GELB sein — Richtwert statt blind ROT.)
         let pos = position("Betonwände herstellen", "m²")
-        #expect(AutoKalkulationsService.bewerte(pos, in: ctx).status == .rot)
+        #expect(AutoKalkulationsService.bewerte(pos, in: ctx).status != .gruen)
         // Rezept über den Assistenten-Speicherweg anlegen (Aufwandswert)
         LeistungskatalogService.speichereRezept(auf: pos, maurer: 0.8, helfer: 0.4,
                                                 quelle: "schätzung", in: ctx)
@@ -79,6 +80,50 @@ struct MopsFassTests {
         #expect(e.status == .gruen)
         #expect(e.einheitspreisVK > 0)
         #expect(LeistungskatalogService.finde(leistung: "Betonwände herstellen", einheit: "m²", in: ctx) != nil)
+    }
+
+    @Test @MainActor func richtwertKatalogMachtRotZuGelb() throws {
+        // Kein gelerntes Rezept, ABER der Aufwandswerte-Katalog kennt den Rohrgraben:
+        // → GELB statt ROT, mit Richtwert-Meldung und echten Lohnstunden (kein 0-Preis).
+        let pos = position("Rohrgraben ausheben", "m", menge: 320)
+        let e = AutoKalkulationsService.bewerte(pos, in: ctx)
+        #expect(e.status == .gelb)
+        #expect(e.meldungen.contains { $0.contains("Richtwert") })
+        #expect(e.meldungen.contains { $0.contains("Baggerfahrer") })
+        // 0,30 h/m × 320 m = 96 Lohnstunden geschrieben → Preis > 0
+        #expect(LVKalkulator.kalkuliere(position: pos).stundenGesamt == 96)
+        #expect(e.einheitspreisVK > 0)
+    }
+
+    @Test func kolonneParsenUndTarifgruppe() {
+        let r = LeistungskatalogService.parseKolonne("1 Baggerfahrer + 2 Rohrleger")
+        #expect(r.count == 2)
+        #expect(r[0].anzahl == 1 && r[0].rolle == "Baggerfahrer")
+        #expect(r[1].anzahl == 2 && r[1].rolle == "Rohrleger")
+        // Bereich + Slash-Rolle
+        let r2 = LeistungskatalogService.parseKolonne("2-3 Betonbauer")
+        #expect(r2.first?.anzahl == 2 && r2.first?.rolle == "Betonbauer")
+        #expect(LeistungskatalogService.tarifgruppe(fuer: "Baggerfahrer") == .maschinist)
+        #expect(LeistungskatalogService.tarifgruppe(fuer: "Helfer") == .helfer)
+        #expect(LeistungskatalogService.tarifgruppe(fuer: "Rohrleger") == .facharbeiter)
+    }
+
+    @Test @MainActor func rollenpreiseStattAllesMaurer() throws {
+        // Rohrgraben über STLB → Kolonne "1 Baggerfahrer + 1 Helfer", 0,30 h/m.
+        let pos = position("Rohrgraben ausheben", "m", menge: 320)
+        let e = AutoKalkulationsService.bewerte(pos, in: ctx)
+        #expect(e.status == .gelb)
+        // Lohn ist auf die echten Rollen verteilt, NICHT alles Maurer.
+        let quals = Set(pos.lohnArray.compactMap { $0.qualifikation })
+        #expect(quals.contains("Baggerfahrer"))
+        #expect(quals.contains("Helfer"))
+        #expect(!quals.contains("Maurer"))
+        let kalk = LVKalkulator.kalkuliere(position: pos)
+        // Gesamtstunden unverändert (0,30 × 320 = 96 Mannstunden).
+        #expect(kalk.stundenGesamt == 96)
+        // Lohnkosten je Einheit kleiner als „alles Maurer" (Helfer-Hälfte ist billiger).
+        let allesMaurer = 0.30 * LeistungskatalogService.bruttoEK(fuer: "Maurer", in: ctx)
+        #expect(kalk.lohnKosten < allesMaurer)
     }
 
     @Test @MainActor func exportBereitWennKeinRot() throws {

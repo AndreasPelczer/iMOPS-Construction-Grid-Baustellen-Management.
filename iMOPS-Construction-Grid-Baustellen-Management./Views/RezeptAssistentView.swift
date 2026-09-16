@@ -23,7 +23,9 @@ struct RezeptAssistentView: View {
     @State private var helfer = 0.0
     @State private var vorschlagMaurer = 0.0
     @State private var vorschlagHelfer = 0.0
-    @State private var vorschlagStatus = "Ich frage kurz den Prof …"
+    @State private var vorschlagStatus = "Ich schau kurz nach …"
+    @State private var richtwert: AufwandsTreffer?   // lokaler Katalog-Treffer (echte Kolonne, Quelle)
+    @State private var maschinenVorschlaege: [Maschine] = []   // passende Geräte zum Richtwert
     @State private var zutaten: [Zutat] = []
     @State private var marktpreise: [UUID: Double] = [:]   // Zutat.id → KI-Marktpreis (Orientierung)
     @State private var marktLaden: Set<UUID> = []
@@ -65,10 +67,15 @@ struct RezeptAssistentView: View {
     @ViewBuilder private var schrittZeit: some View {
         Section {
             Text(leistung).font(.headline)
+            if let lt = position.langtext?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !lt.isEmpty, lt != leistung {
+                Text(lt).font(.caption)   // der VOLLE Auftrag: Tiefe, Boden, Verbau, Umfang
+            }
             Text("LV-Eintrag: \(fmtH(position.menge)) \(einheit) · braucht Arbeit, Maschine und Material.")
                 .font(.caption).foregroundStyle(.secondary)
         }
-        Section("⏱ Die Zeit — wie lange braucht der Maurer für 1 \(einheit)?") {
+        if let t = richtwert { richtwertKarte(t) }
+        Section("⏱ Die Zeit — Arbeitsstunden je 1 \(einheit)") {
             stundenZeile("Maurer", $maurer)
             stundenZeile("Helfer", $helfer)
             if maurer > 0 || helfer > 0 {
@@ -113,6 +120,7 @@ struct RezeptAssistentView: View {
 
     // MARK: Schritt 3 — Das Werkzeug (Maschine aus dem Park)
     @ViewBuilder private var schrittGeraet: some View {
+        if !maschinenVorschlaege.isEmpty { maschinenVorschlagBlock }
         Section("🔧 Das Werkzeug — welche Maschine aus deinem Park?") {
             if geraetePark.isEmpty {
                 Text("Noch keine Maschinen in den Stammdaten. Leg deinen Maschinenpark unter „Stammdaten“ an — Satz (€/h) inklusive — dann kannst du hier auswählen.")
@@ -193,14 +201,105 @@ struct RezeptAssistentView: View {
         }
     }
 
+    /// Der lokale Richtwert als GELB-Karte: echte Kolonne (richtige Rollen), Spanne, Quelle.
+    /// Die Zahl unten (Maurer/Helfer) ist der übernommene Startwert zum Aufteilen — Raffi korrigiert.
+    @ViewBuilder private func richtwertKarte(_ t: AufwandsTreffer) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("🟡 Richtwert · \(t.bezeichnung)").font(.subheadline.weight(.semibold))
+                Text("\(fmtH(t.mittel)) h/\(t.einheit)  ·  Spanne \(fmtH(t.min))–\(fmtH(t.max))")
+                    .font(.callout.monospacedDigit())
+                if !t.kolonne.isEmpty {
+                    Text("👷 Mannschaft: \(t.kolonne)").font(.caption)
+                }
+                if let h = t.hinweis, !h.isEmpty {
+                    Text(h).font(.caption2).foregroundStyle(.secondary)
+                }
+                Text("Quelle: \(t.quelleKurz) · öffentlicher Richtwert, keine ARH-Tabelle. Deine Zahl unten zählt.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Passende Maschinen aus dem Katalog (verzahnt über die Tätigkeit).
+    /// Informativ + GELB: eigene Maschine im Park hat Vorrang, Mietpreise sind Richtwerte ±20%.
+    @ViewBuilder private var maschinenVorschlagBlock: some View {
+        Section("🚜 Passende Maschinen (Katalog-Vorschlag)") {
+            ForEach(maschinenVorschlaege.prefix(4)) { m in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(m.bezeichnung).font(.subheadline.weight(.medium))
+                    HStack(spacing: 10) {
+                        if let l = m.hauptLeistung {
+                            Text("\(fmtH(l.wert)) \(l.einheit)").font(.caption.monospacedDigit())
+                        }
+                        if let tag = m.mieteTag {
+                            Text("Miete ~\(euro(tag))/Tag").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    if let d = dauerText(m) {
+                        Text(d).font(.caption2).foregroundStyle(.orange)
+                    }
+                    if let s = m.brauchtSchein, !s.isEmpty {
+                        Text("Schein: \(s)").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            Text("Richtwerte (regional ±20%). Eigene Maschine aus deinem Park hat Vorrang.")
+                .font(.caption2).foregroundStyle(.secondary)
+        }
+    }
+
+    /// Grobe Dauer-/Mietschätzung für die ganze Position, wenn Einheit & Maschinenleistung passen.
+    private func dauerText(_ m: Maschine) -> String? {
+        guard position.menge > 0, let l = m.hauptLeistung, l.wert > 0 else { return nil }
+        let passt: Bool = {
+            switch einheit.lowercased() {
+            case "m3", "m³": return l.einheit == "m³/h"
+            case "m2", "m²": return l.einheit == "m²/h"
+            case "m", "lfm": return l.einheit == "m/h"
+            default: return false
+            }
+        }()
+        guard passt else { return nil }
+        let stunden = position.menge / l.wert
+        let tage = ceil(stunden / 8.0)
+        var s = "≈ \(fmtH((stunden * 10).rounded() / 10)) h für \(fmtH(position.menge)) \(einheit) (~\(fmtH(tage)) Tag\(tage == 1 ? "" : "e"))"
+        if let tag = m.mieteTag { s += " · Miete ~\(euro(tage * tag))" }
+        return s
+    }
+
     private func ladeVorschlag() async {
+        // 1) Lokaler Richtwert-Katalog zuerst — deterministisch, mit echter Kolonne + Quelle.
+        //    Ersetzt das nicht-deterministische KI-Raten als Startpunkt.
+        // Weg über den STLB: Position → Baustein → aufwandswert_key → Richtwert (deterministisch),
+        // Maschinen direkt aus den maschinen_keys des Bausteins.
+        if let b = STLBKatalog.shared.finde(leistung: leistung),
+           let key = b.aufwandswertKey,
+           let t = AufwandswerteKatalog.shared.eintrag(key: key) {
+            richtwert = t
+            maurer = t.mittel; helfer = 0
+            vorschlagMaurer = maurer; vorschlagHelfer = helfer
+            vorschlagStatus = "🟡 STLB \(b.id) → Richtwert (\(t.quelleKurz)) — Schätzung, bitte prüfen."
+            maschinenVorschlaege = MaschinenKatalog.shared.maschinen(ids: b.maschinenKeys)
+            return
+        }
+        // Fallback: direkter Stichwort-Treffer im Aufwandswerte-Katalog.
+        if let t = AufwandswerteKatalog.shared.finde(leistung: leistung, langtext: position.langtext) {
+            richtwert = t
+            maurer = t.mittel; helfer = 0        // Gesamt-Arbeitszeit je Einheit — Kolonne siehe Karte
+            vorschlagMaurer = maurer; vorschlagHelfer = helfer
+            vorschlagStatus = "🟡 Richtwert aus dem Katalog (\(t.quelleKurz)) — Schätzung, bitte prüfen."
+            maschinenVorschlaege = MaschinenKatalog.shared.fuerTaetigkeit("\(t.gewerk).\(t.key)")
+            return
+        }
+        // 2) Rückfall: den Prof fragen (nicht-deterministisch, wackelt je Anfrage).
         let helper = MopsKalkulationsHelper.shared
-        if let v = await helper.aufwandswertVorschlag(leistung: leistung) {
+        if let v = await helper.aufwandswertVorschlag(leistung: leistung, langtext: position.langtext) {
             maurer = v.maurer; helfer = v.helfer
             vorschlagMaurer = v.maurer; vorschlagHelfer = v.helfer
             vorschlagStatus = "🟡 Vorschlag vom Prof (Schätzung) — passt das, oder ändern?"
         } else {
-            vorschlagStatus = "Kein Prof-Vorschlag (offline) — trag Raphis Erfahrungswert ein."
+            vorschlagStatus = "Kein Vorschlag (offline) — trag Raphis Erfahrungswert ein."
         }
     }
 
@@ -290,6 +389,13 @@ struct RezeptAssistentView: View {
     private var zeitBriefing: String {
         let m = position.menge
         let mStd = maurer * m, hStd = helfer * m, gesamt = mStd + hStd
+        // Katalog-Startwert (nur Gesamtzahl, noch nicht auf Rollen aufgeteilt):
+        // NICHT „Maurer" behaupten — die echte Kolonne steht in der Richtwert-Karte.
+        if let t = richtwert, helfer == 0, maurer == vorschlagMaurer {
+            return "Für \(fmtH(m)) \(einheit) ≈ \(fmtH(gesamt)) Mannstunden "
+                 + "(Mannschaft: \(t.kolonne.isEmpty ? "siehe oben" : t.kolonne)). "
+                 + "Auf deine Rollen aufteilen, wenn du magst."
+        }
         var teile: [String] = []
         if maurer > 0 { teile.append("\(fmtH(mStd)) Std Maurer") }
         if helfer > 0 { teile.append("\(fmtH(hStd)) Std Helfer") }

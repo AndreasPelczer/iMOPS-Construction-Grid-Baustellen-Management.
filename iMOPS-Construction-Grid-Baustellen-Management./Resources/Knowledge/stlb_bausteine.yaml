@@ -1,0 +1,1358 @@
+# ============================================================================
+# STLB-MOPS — Textbaustein-Katalog für Leistungsverzeichnisse
+# ============================================================================
+#
+# Der Mops-eigene "STLB": Wiederverwendbare Ausschreibungstexte für
+# den automatischen LV-Aufbau und X83-Export.
+#
+# Aufbau pro Baustein:
+#   - id: eindeutiger Schlüssel (GEWERK-NR)
+#   - kurztext: GAEB OutlTxt (Positionsüberschrift)
+#   - langtext: GAEB DetailTxt (vollständige Leistungsbeschreibung)
+#              mit {{platzhaltern}} für projektspezifische Werte
+#   - einheit: m2, m3, m, St, t, psch, ...
+#   - gewerk: Zuordnung zum Leistungsbereich
+#   - din: zugehörige DIN/VOB-Norm
+#   - aufwandswert_key: Verweis auf aufwandswerte_bau.yaml
+#   - maschinen_keys: Verweis auf maschinenkatalog_bau.yaml
+#   - tags: Suchbegriffe für den Mops-Match
+#
+# Platzhalter in Langtexten:
+#   {{menge}}        — Menge aus dem LV
+#   {{dicke_cm}}     — Schichtdicke in cm
+#   {{dicke_mm}}     — Schichtdicke in mm
+#   {{hoehe_m}}      — Höhe in Metern
+#   {{tiefe_m}}      — Tiefe in Metern
+#   {{breite_m}}     — Breite in Metern
+#   {{laenge_m}}     — Länge in Metern
+#   {{flaeche_m2}}   — Fläche in m²
+#   {{dn}}           — Nennweite (DN 100, DN 300, etc.)
+#   {{betonguete}}   — z.B. C25/30
+#   {{expositionsklasse}} — z.B. XC2, XA1
+#   {{ev2}}          — Verdichtungsanforderung in MN/m²
+#   {{entfernung_km}} — Transportentfernung
+#   {{bodenklasse}}  — z.B. 3-5
+#   {{stueck}}       — Anzahl Stück
+#   {{material}}     — Materialbezeichnung (z.B. Poroton T7)
+#   {{farbe}}        — Farbangabe
+#   {{vorhaltung_wo}} — Vorhaltedauer in Wochen
+#
+# Quellen: Eigene Formulierungen im Stil der STLB-Bau Systematik.
+# Keine Kopie geschützter STLB-Texte. Fachbegriffe und DIN-Verweise
+# sind Allgemeingut der Baunormen.
+#
+# Letzte Aktualisierung: September 2026
+# ============================================================================
+
+meta:
+  version: "1.0.0"
+  stand: "2026-09"
+  anzahl_bausteine: 95
+  gewerke: 21
+  hinweis: >
+    Eigene Textbausteine im STLB-Stil. Keine lizenzierten STLB-Bau-Texte.
+    Der Mops nutzt sie zum automatischen LV-Aufbau und X83-Export.
+    Raffi und Andreas ergänzen und korrigieren aus der Praxis.
+
+# ============================================================================
+# 01 — BAUSTELLENEINRICHTUNG (DIN 18299)
+# ============================================================================
+baustelleneinrichtung:
+
+  BE-001:
+    kurztext: "Baustelleneinrichtung und -räumung"
+    langtext: >
+      Baustelle einrichten, vorhalten und räumen. Einschl. Bauzaun ca. {{laenge_m}} lfm,
+      Baustromverteiler, Bauwasseranschluss, Verkehrssicherung nach RSA 21,
+      Baustellenschild, Containerstellplatz. Vorhaltung über die gesamte Bauzeit
+      (ca. {{vorhaltung_wo}} Wochen). Einschl. Räumung nach Bauende.
+    einheit: "psch"
+    gewerk: "Baustelleneinrichtung"
+    din: "DIN 18299"
+    aufwandswert_key: "baustelleneinrichtung.container_aufstellen"
+    tags: ["BE", "Einrichtung", "Bauzaun", "Baustrom"]
+
+  BE-002:
+    kurztext: "Verkehrssicherung"
+    langtext: >
+      Verkehrsrechtliche Anordnung einholen und Verkehrssicherung nach RSA 21
+      für den gesamten Bauabschnitt. Einschl. Umleitungsbeschilderung,
+      Anwohnerinformation, Abstimmung mit Polizei und Ordnungsamt. Vorhaltung
+      über die gesamte Bauzeit.
+    einheit: "psch"
+    gewerk: "Baustelleneinrichtung"
+    aufwandswert_key: "baustelleneinrichtung.verkehrssicherung"
+    din: "RSA 21, StVO §45"
+    tags: ["Verkehr", "RSA", "Umleitung", "Beschilderung"]
+
+  BE-003:
+    kurztext: "Schnurgerüst / Baufeld abstecken"
+    langtext: >
+      Baufeld abstecken und Schnurgerüst für {{stueck}} Baukörper herstellen.
+      Höhenfestpunkt und Achsen nach Vermessungsplan einmessen. Schnurgerüst
+      während der Erdarbeiten vorhalten und bei Bedarf nachmessen. Einschl.
+      aller Hilfsmittel und Geräte.
+    einheit: "psch"
+    gewerk: "Baustelleneinrichtung"
+    din: "DIN 18299"
+    aufwandswert_key: "baustelleneinrichtung.vermessung_absteckung"
+    tags: ["Vermessung", "Absteckung", "Schnurgerüst"]
+
+  BE-004:
+    kurztext: "Fassadengerüst"
+    langtext: >
+      Standgerüst als Arbeits- und Schutzgerüst nach DIN EN 12811 für die
+      gesamte Fassade aufstellen und vorhalten. Lastklasse 3, Breitenklasse W09,
+      Gerüstgruppe 4. Belag vollflächig mit Bordbrettern. Außennetz. Aufstieg
+      mit Treppenturm. Verankerung nach DIN EN 12811-1. Vorhaltung ca.
+      {{vorhaltung_wo}} Wochen. Einschl. Auf- und Abbau, Umsetzen wenn
+      erforderlich. Ca. {{flaeche_m2}} m² Gerüstfläche.
+    einheit: "m2"
+    gewerk: "Gerüstarbeiten"
+    din: "DIN EN 12811"
+    aufwandswert_key: "baustelleneinrichtung.geruest_aufstellen"
+    maschinen_keys: ["gerueste.fassadengeruest"]
+    tags: ["Gerüst", "Standgerüst", "Fassade"]
+
+# ============================================================================
+# 02 — ERDARBEITEN (DIN 18300)
+# ============================================================================
+erdarbeiten:
+
+  ERD-001:
+    kurztext: "Oberboden abtragen"
+    langtext: >
+      Oberboden abtragen, Stärke ca. {{dicke_cm}} cm, im Bereich der Baugrube
+      und Arbeitsstreifen. Boden seitlich auf dem Grundstück lagern, vor
+      Verunreinigung schützen, für spätere Wiederverwendung. Einschl. aller
+      erforderlichen Nebenleistungen nach DIN 18300.
+    einheit: "m2"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300"
+    aufwandswert_key: "erdarbeiten.oberboden_abtragen"
+    maschinen_keys: ["erdbau.minibagger_1_8t", "lader.kompaktlader_bobcat"]
+    tags: ["Oberboden", "Mutterboden", "abtragen", "Humus"]
+
+  ERD-002:
+    kurztext: "Baugrubenaushub"
+    langtext: >
+      Baugrube ausheben. Boden der Bodenklasse {{bodenklasse}} nach DIN 18300.
+      Aushubtiefe ca. {{tiefe_m}} m ab GOK. Böschungsneigung 60°. Aushubmaterial
+      auf Halde lagern bzw. abfahren zur Deponie, Entfernung bis {{entfernung_km}} km.
+      Einschl. Laden, Transport, Deponiegebühren. Entsorgungsnachweis durch AN.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300"
+    aufwandswert_key: "erdarbeiten.baugrube_ausheben_bagger"
+    maschinen_keys: ["erdbau.kettenbagger_14t", "transport.lkw_3achser"]
+    tags: ["Baugrube", "Aushub", "Erdaushub", "Keller"]
+
+  ERD-003:
+    kurztext: "Baugrubensohle planieren und verdichten"
+    langtext: >
+      Baugrubensohle planieren, profilgerecht herrichten und verdichten.
+      Tragfähigkeitsnachweis EV2 ≥ {{ev2}} MN/m² nach ZTVE-StB.
+      Verdichtungsprüfung durch anerkanntes Prüfinstitut (Kosten trägt AN).
+    einheit: "m2"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300, ZTVE-StB"
+    aufwandswert_key: "erdarbeiten.boden_verdichten"
+    maschinen_keys: ["verdichtung.ruettelplatte_mittel", "verdichtung.walzenzug_klein"]
+    tags: ["Planum", "verdichten", "Sohle", "EV2"]
+
+  ERD-004:
+    kurztext: "Kapillarbrechende Schicht / Kiespolster"
+    langtext: >
+      Kies-Sand-Gemisch 0/32 als kapillarbrechende Schicht unter der Bodenplatte
+      liefern, einbauen und lagenweise verdichten. Schichtdicke {{dicke_cm}} cm.
+      Verdichtung EV2 ≥ {{ev2}} MN/m². Material frei von bindigen und organischen
+      Bestandteilen. Kornverteilung nach TL SoB-StB.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300, TL SoB-StB"
+    aufwandswert_key: "erdarbeiten.frostschutzschicht"
+    maschinen_keys: ["erdbau.minibagger_3t", "verdichtung.ruettelplatte_mittel"]
+    tags: ["Kiespolster", "kapillarbrechend", "Frostschutz", "KSG"]
+
+  ERD-005:
+    kurztext: "Frostschutzschicht einbauen"
+    langtext: >
+      Frostschutzschicht aus Schotter 0/45 liefern, profilgerecht in Lagen
+      einbauen und verdichten. Schichtdicke {{dicke_cm}} cm. Verdichtung
+      EV2 ≥ {{ev2}} MN/m². Material nach TL SoB-StB. Querneigung beibehalten.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300, TL SoB-StB"
+    aufwandswert_key: "erdarbeiten.frostschutzschicht"
+    maschinen_keys: ["erdbau.kettenbagger_8t", "verdichtung.walzenzug_klein"]
+    tags: ["Frostschutz", "Schotter", "FSS"]
+
+  ERD-006:
+    kurztext: "Baugrube verfüllen"
+    langtext: >
+      Arbeitsraum und Baugrube mit gelagertem Aushubmaterial lagenweise
+      verfüllen und verdichten. Schichtdicke max. 30 cm. Verdichtung bis auf
+      97% Proctordichte. Einschl. aller Nebenleistungen.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300"
+    aufwandswert_key: "erdarbeiten.frostschutzschicht"
+    maschinen_keys: ["erdbau.minibagger_3t", "verdichtung.ruettelplatte_mittel"]
+    tags: ["verfüllen", "Hinterfüllung", "Arbeitsraum"]
+
+  ERD-007:
+    kurztext: "Boden lösen und abfahren"
+    langtext: >
+      Boden der Klasse {{bodenklasse}} lösen, laden und abfahren zur Deponie,
+      Entfernung bis {{entfernung_km}} km. Entsorgungsnachweis durch AN.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300"
+    aufwandswert_key: "erdarbeiten.boden_laden_transport"
+    maschinen_keys: ["erdbau.kettenbagger_14t", "transport.lkw_3achser"]
+    tags: ["abfahren", "Deponie", "Entsorgung", "Transport"]
+
+  ERD-008:
+    kurztext: "Rohrgraben herstellen"
+    langtext: >
+      Rohrgraben für {{dn}} herstellen, Breite nach DIN EN 1610,
+      Tiefe ca. {{tiefe_m}} m, einschl. Verbau, Wasserhaltung,
+      Aushub laden und abfahren. Boden Kl. {{bodenklasse}}.
+    einheit: "m"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300, DIN EN 1610"
+    aufwandswert_key: "erdarbeiten.graben_ausheben"
+    maschinen_keys: ["erdbau.minibagger_3t", "verdichtung.stampfer"]
+    tags: ["Rohrgraben", "Kabelgraben", "Graben"]
+
+# ============================================================================
+# 03 — BETON- UND STAHLBETONARBEITEN (DIN 18331)
+# ============================================================================
+beton:
+
+  BET-001:
+    kurztext: "Sauberkeitsschicht"
+    langtext: >
+      Sauberkeitsschicht aus Beton C8/10 herstellen, Dicke {{dicke_cm}} cm,
+      auf vorbereiteter und abgenommener Baugrubensohle. Oberfläche abziehen.
+      Einschl. aller Schalungsarbeiten am Rand.
+    einheit: "m2"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "betonarbeiten.sauberkeitsschicht"
+    maschinen_keys: ["beton.betonmischer_230l"]
+    tags: ["Sauberkeitsschicht", "Magerbeton", "C8/10", "C12/15"]
+
+  BET-002:
+    kurztext: "Bodenplatte Stahlbeton"
+    langtext: >
+      Bodenplatte in Stahlbeton {{betonguete}}, {{expositionsklasse}}, WU nach
+      WU-Richtlinie des DAfStb. Dicke {{dicke_cm}} cm. Bewehrung nach
+      Bewehrungsplan des Tragwerksplaners. Einschl. Schalung am Rand, Bewehrung
+      liefern und verlegen (ca. 80 kg/m³), Betonieren mit Betonpumpe, Verdichten
+      mit Innenrüttler, Oberfläche abziehen und flügelglätten, Nachbehandlung
+      mind. 7 Tage. Fugenbleche an Arbeitsfugen.
+    einheit: "m3"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331, WU-Richtlinie DAfStb"
+    aufwandswert_key: "betonarbeiten.bodenplatte"
+    maschinen_keys: ["beton.betonpumpe_auto", "beton.innenruettler", "beton.gleitschalung"]
+    tags: ["Bodenplatte", "Fundamentplatte", "WU", "Stahlbeton"]
+
+  BET-003:
+    kurztext: "Stahlbetonwände"
+    langtext: >
+      Wände in Stahlbeton {{betonguete}}, {{expositionsklasse}}, Dicke
+      {{dicke_cm}} cm, Höhe ca. {{hoehe_m}} m. Einschl. Rahmenschalung
+      beidseitig (Schalhaut mindestens SB 2), Bewehrung nach Bewehrungsplan
+      (ca. 100 kg/m³), Betonieren, Verdichten, Nachbehandlung. Fugenbleche an
+      allen Arbeitsfugen. Aussparungen und Durchführungen nach Plan einschalten.
+    einheit: "m2"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "betonarbeiten.stahlbeton_wand"
+    maschinen_keys: ["beton.betonpumpe_auto", "beton.innenruettler", "heben.turmdrehkran"]
+    tags: ["Kellerwand", "Betonwand", "WU-Wand", "Stahlbetonwand"]
+
+  BET-004:
+    kurztext: "Stahlbetondecke"
+    langtext: >
+      Stahlbetondecke {{betonguete}}, {{expositionsklasse}}, Dicke {{dicke_cm}} cm.
+      Einschl. Schalung mit Unterstützung (lichte Höhe ca. {{hoehe_m}} m),
+      Bewehrung nach Bewehrungsplan (ca. 90 kg/m³), Betonieren mit Betonpumpe,
+      Verdichten, Nachbehandlung. Einbauteile nach Plan einbauen. Schalhaut
+      mindestens SB 2.
+    einheit: "m3"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "betonarbeiten.stahlbeton_decke"
+    maschinen_keys: ["beton.betonpumpe_auto", "beton.innenruettler", "heben.turmdrehkran"]
+    tags: ["Decke", "Geschossdecke", "Kellerdecke", "Stahlbetondecke"]
+
+  BET-005:
+    kurztext: "Stahlbetonstützen"
+    langtext: >
+      Stahlbetonstützen {{betonguete}}, {{expositionsklasse}}, Querschnitt
+      {{breite_m}}×{{breite_m}} m, Höhe ca. {{hoehe_m}} m. Einschl. Schalung,
+      Bewehrung nach Bewehrungsplan, Betonieren und Nachbehandlung.
+    einheit: "m3"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "betonarbeiten.stuetze"
+    maschinen_keys: ["beton.innenruettler"]
+    tags: ["Stütze", "Betonstütze", "Pfeiler"]
+
+  BET-006:
+    kurztext: "Stahlbeton Unterzüge"
+    langtext: >
+      Unterzüge in Stahlbeton {{betonguete}}, {{expositionsklasse}}, Querschnitt
+      nach Statik. Einschl. Schalung, Bewehrung nach Bewehrungsplan, Betonieren
+      und Nachbehandlung. Einbindung in Decke und Stützen beachten.
+    einheit: "m"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "betonarbeiten.stahlbeton_wand"
+    tags: ["Unterzug", "Balken", "Sturz"]
+
+  BET-007:
+    kurztext: "Treppenläufe Stahlbeton"
+    langtext: >
+      Treppenläufe in Stahlbeton {{betonguete}}, {{expositionsklasse}},
+      Laufbreite {{breite_m}} m. Einschl. Schalung, Bewehrung, Betonieren.
+      Stufenausbildung in Ortbeton, Steigung/Auftritt nach Planung.
+      Podeste einschl.
+    einheit: "m"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "betonarbeiten.treppe"
+    tags: ["Treppe", "Treppenlauf", "Podest"]
+
+  BET-008:
+    kurztext: "Streifenfundamente / Frostschürzen"
+    langtext: >
+      Streifenfundamente in Beton {{betonguete}}, {{expositionsklasse}}.
+      Querschnitt {{breite_m}}×{{hoehe_m}} m, Frosttiefe {{tiefe_m}} m unter GOK.
+      Einschl. Schalung, Bewehrung nach Plan, Betonieren, Verdichten.
+    einheit: "m3"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "betonarbeiten.betonieren_allgemein"
+    tags: ["Fundament", "Frostschürze", "Streifenfundament"]
+
+# ============================================================================
+# 04 — MAUERARBEITEN (DIN 18330)
+# ============================================================================
+mauer:
+
+  MAU-001:
+    kurztext: "Außenwandmauerwerk Poroton"
+    langtext: >
+      Außenwandmauerwerk aus Poroton-Planziegeln {{material}}, Wanddicke
+      {{dicke_cm}} cm, Festigkeitsklasse 12, im Dünnbettverfahren. Einschl.
+      Anschlüsse an Stahlbetonbauteile mit Anschlussbewehrung und Dichtband,
+      Mauerkronen abdecken bei Arbeitsunterbrechung, Ausgleichsschicht am
+      Wandfuß mit Normalmörtel M10. Stürze nach gesonderter Position.
+    einheit: "m2"
+    gewerk: "Mauerarbeiten"
+    din: "DIN 18330"
+    aufwandswert_key: "mauerarbeiten.mauerwerk_poroton"
+    maschinen_keys: ["heben.teleskoplader"]
+    tags: ["Außenwand", "Poroton", "Ziegel", "Planziegel"]
+
+  MAU-002:
+    kurztext: "Innenwände tragend Kalksandstein"
+    langtext: >
+      Tragende Innenwände aus KS-Plansteinen, Wanddicke {{dicke_cm}} cm,
+      Druckfestigkeitsklasse 20, Rohdichteklasse 1,8, Dünnbettmörtel DM.
+      Einschl. Anschlüsse an Decken und Außenwände. Türaussparungen mit
+      Fertigteilstürzen nach gesonderter Position.
+    einheit: "m2"
+    gewerk: "Mauerarbeiten"
+    din: "DIN 18330"
+    aufwandswert_key: "mauerarbeiten.mauerwerk_ks_planstein"
+    tags: ["Innenwand", "tragend", "Kalksandstein", "KS"]
+
+  MAU-003:
+    kurztext: "Innenwände nicht tragend Porenbeton"
+    langtext: >
+      Nichttragende Innenwände aus Porenbeton-Planbauplatten, Wanddicke
+      {{dicke_cm}} cm, Festigkeitsklasse 4, Dünnbettmörtel. Gleitender
+      Deckenanschluss mit Kompriband. Seitlicher Anschluss an tragende
+      Wände mit Edelstahl-Mauerankern alle 3 Schichten.
+    einheit: "m2"
+    gewerk: "Mauerarbeiten"
+    din: "DIN 18330"
+    aufwandswert_key: "mauerarbeiten.mauerwerk_porenbeton"
+    tags: ["Innenwand", "nichttragend", "Porenbeton", "Ytong"]
+
+  MAU-004:
+    kurztext: "Verblendmauerwerk Klinker"
+    langtext: >
+      Verblendmauerwerk aus Klinkern, Wanddicke {{dicke_cm}} cm,
+      Druckfestigkeitsklasse 28, Normalmauerwerk NM III. Fugen als
+      Hohlkehlfuge ausbilden, Sichtqualität. Einschl. Mauerwerksbewehrung
+      und Luftschichtanker nach Herstellerangabe.
+    einheit: "m2"
+    gewerk: "Mauerarbeiten"
+    din: "DIN 18330"
+    aufwandswert_key: "mauerarbeiten.mauerwerk_klinker"
+    tags: ["Klinker", "Verblender", "Sichtmauerwerk"]
+
+  MAU-005:
+    kurztext: "Fertigteilstürze"
+    langtext: >
+      Fertigteilstürze aus Stahlbeton über Tür- und Fensteröffnungen liefern
+      und einbauen. Verschiedene Längen nach Plan. Auflager mindestens 11,5 cm
+      je Seite. Vermörtelung mit Dünnbettmörtel. {{stueck}} Stück insgesamt,
+      genaue Stückliste siehe Anlage Sturzliste.
+    einheit: "St"
+    gewerk: "Mauerarbeiten"
+    din: "DIN 18330"
+    aufwandswert_key: "mauerarbeiten.sturz_einbauen"
+    tags: ["Sturz", "Fenstersturz", "Türsturz"]
+
+  MAU-006:
+    kurztext: "Ringbalken / Ringanker"
+    langtext: >
+      Ringbalken in U-Schalen, Breite {{dicke_cm}} cm, als verlorene Schalung.
+      Bewehrung 4 Ø 10 mm mit Bügeln Ø 6 mm im Abstand 25 cm.
+      Betonverfüllung {{betonguete}}. Umlaufend auf allen Außen- und tragenden
+      Innenwänden auf Höhe der Rohdeckenoberkante. Einschl. Stoßverbindungen
+      und Eckverstärkungen.
+    einheit: "m"
+    gewerk: "Mauerarbeiten"
+    aufwandswert_key: "mauerarbeiten.ringbalken"
+    din: "DIN 18330"
+    tags: ["Ringbalken", "Ringanker", "U-Schale"]
+
+# ============================================================================
+# 05 — ABDICHTUNG (DIN 18533)
+# ============================================================================
+abdichtung:
+
+  ABD-001:
+    kurztext: "Abdichtung Bodenplatte"
+    langtext: >
+      Waagerechte Abdichtung der Bodenplatte gegen aufsteigende Feuchtigkeit.
+      Bitumenschweißbahn V60 S4 nach DIN 18533, 1-lagig vollflächig auf die
+      grundierte Betonoberfläche aufschweißen. Voranstrich mit Bitumenlösung.
+      Überstand am Rand mind. 15 cm für Hochzug. Stöße mind. 10 cm überlappen.
+    einheit: "m2"
+    gewerk: "Abdichtung"
+    din: "DIN 18533"
+    aufwandswert_key: "abdichtung.abdichtung_bodenplatte"
+    tags: ["Abdichtung", "Bodenplatte", "Bitumenbahn", "Schweißbahn"]
+
+  ABD-002:
+    kurztext: "Abdichtung Kelleraußenwände"
+    langtext: >
+      Senkrechte Abdichtung der Kelleraußenwände. Bituminöse Dickbeschichtung
+      (KMB) nach DIN 18533, 2-lagig, Mindest-Trockenschichtdicke 3 mm.
+      Vlieseinlage zwischen den Lagen. Voranstrich mit lösemittelfreier
+      Bitumenemulsion. Hochzug bis 30 cm über GOK. Anschluss an waagerechte
+      Abdichtung. Trocknungszeit mind. 7 Tage vor Verfüllung.
+    einheit: "m2"
+    gewerk: "Abdichtung"
+    din: "DIN 18533"
+    aufwandswert_key: "abdichtung.abdichtung_kellerwand"
+    tags: ["Kellerwand", "KMB", "Dickbeschichtung"]
+
+  ABD-003:
+    kurztext: "Perimeterdämmung"
+    langtext: >
+      Perimeterdämmung aus XPS-Hartschaumplatten WLG 035, druckfest,
+      wasserunempfindlich, Dicke {{dicke_mm}} mm, auf die abgedichteten
+      Kelleraußenwände vollflächig mit Kaltkleber aufkleben. Noppenbahn als
+      Schutzschicht und Dränage aufbringen.
+    einheit: "m2"
+    gewerk: "Abdichtung"
+    aufwandswert_key: "abdichtung.perimeterdaemmung"
+    din: "DIN 18533"
+    tags: ["Perimeterdämmung", "XPS", "Noppenbahn"]
+
+  ABD-004:
+    kurztext: "Drainage"
+    langtext: >
+      Ringdrainage {{dn}} um das Kellergeschoss nach DIN 4095. Drainagerohr
+      in Filterkies 16/32 einbetten, Filtervlies als Ummantelung. Gefälle mind.
+      0,5% zum Kontrollschacht. Einschl. {{stueck}} Stück Kontrollschächte
+      DN 300. Anschluss an Regenwasserkanal.
+    einheit: "m"
+    gewerk: "Abdichtung"
+    din: "DIN 4095"
+    aufwandswert_key: "abdichtung.drainage_verlegen"
+    maschinen_keys: ["erdbau.microbagger_1t"]
+    tags: ["Drainage", "Ringdrainage", "Kontrollschacht"]
+
+  ABD-005:
+    kurztext: "Trennvlies / Geotextil verlegen"
+    langtext: >
+      Trennvlies (Geotextil) liefern und verlegen. Bahnen längs ausrollen,
+      Überlappung mind. 30 cm, Wannenprinzip beachten. Sofort mit nächster
+      Schicht überschütten, nicht der Witterung aussetzen.
+    einheit: "m2"
+    gewerk: "Abdichtung"
+    aufwandswert_key: "abdichtung.trennvlies_verlegen"
+    tags: ["Trennvlies", "Geotextil", "Vlies"]
+
+# ============================================================================
+# 06 — PFLASTERARBEITEN (DIN 18318)
+# ============================================================================
+pflaster:
+
+  PFL-001:
+    kurztext: "Pflasterbett herstellen"
+    langtext: >
+      Pflasterbett aus Edelsplitt 2/5 mm liefern und profilgerecht einbauen.
+      Bettungsdicke {{dicke_cm}} cm (verdichtet). Oberfläche mit Abziehlehren
+      eben abziehen. Querneigung wie Planum.
+    einheit: "m3"
+    gewerk: "Pflasterarbeiten"
+    din: "DIN 18318"
+    aufwandswert_key: "pflasterarbeiten.splittbett_herstellen"
+    tags: ["Splittbett", "Pflasterbett", "Bettung"]
+
+  PFL-002:
+    kurztext: "Betonverbundpflaster verlegen"
+    langtext: >
+      Betonverbundpflaster verlegen. Betonstein nach DIN EN 1338, Dicke
+      {{dicke_cm}} cm, Farbe {{farbe}}. Verband: Fischgrätverband 45°. Einschl.
+      Passstücke an Rändern (Nassschnitt). Fugenbreite 3-5 mm, Fugen mit
+      Brechsand 0/2 füllen. Pflasterfläche mit Flächenrüttler (mind. 200 kg)
+      abrütteln.
+    einheit: "m2"
+    gewerk: "Pflasterarbeiten"
+    din: "DIN 18318, DIN EN 1338"
+    aufwandswert_key: "pflasterarbeiten.verbundpflaster_verlegen"
+    maschinen_keys: ["verdichtung.ruettelplatte_mittel", "schneiden.nassschneidetisch", "kleingeraete.steinknacker"]
+    tags: ["Verbundpflaster", "Betonpflaster", "Rechteckpflaster"]
+
+  PFL-003:
+    kurztext: "Natursteinpflaster verlegen"
+    langtext: >
+      Natursteinpflaster verlegen. Reihenpflaster aus {{material}}, Größe ca.
+      9/11 cm, auf Splittbett. Fugen mit Brechsand 0/2 einsanden und abrütteln.
+      Einschl. Passstücke. Handverlegung.
+    einheit: "m2"
+    gewerk: "Pflasterarbeiten"
+    din: "DIN 18318"
+    aufwandswert_key: "pflasterarbeiten.natursteinpflaster"
+    tags: ["Naturstein", "Reihenpflaster", "Kopfsteinpflaster", "Granit"]
+
+  PFL-004:
+    kurztext: "Tiefbordsteine setzen"
+    langtext: >
+      Tiefbordsteine Beton 100/25/{{dicke_cm}} cm nach DIN EN 1340 setzen.
+      Bettung in Beton C12/15, Rückenstütze. Überstand {{dicke_cm}} cm über
+      Pflasteroberkante. Einschl. Fugen vergießen. Radien nach Plan. An
+      Ein-/Ausfahrten Absenkung auf 0 cm über 1,00 m Länge.
+    einheit: "m"
+    gewerk: "Pflasterarbeiten"
+    din: "DIN 18318, DIN EN 1340"
+    aufwandswert_key: "pflasterarbeiten.bordstein_setzen"
+    maschinen_keys: ["kleingeraete.steinzange"]
+    tags: ["Bordstein", "Tiefbord", "Randstein", "Hochbord"]
+
+  PFL-005:
+    kurztext: "Pflasterfugen einsanden und abrütteln"
+    langtext: >
+      Pflasterfugen mit Fugensand 0/2 mm einfüllen, Überschuss abkehren und
+      gesamte Fläche mit Flächenrüttler (Gummimatte) abrütteln. Einsanden
+      und Rütteln mind. 2× wiederholen bis Fugen voll.
+    einheit: "m2"
+    gewerk: "Pflasterarbeiten"
+    din: "DIN 18318"
+    aufwandswert_key: "pflasterarbeiten.fugen_einsanden"
+    maschinen_keys: ["verdichtung.ruettelplatte_leicht"]
+    tags: ["Fugen", "einsanden", "abrütteln"]
+
+# ============================================================================
+# 07 — STRASSENBAU / ASPHALT (DIN 18315-18317)
+# ============================================================================
+strasse:
+
+  STR-006:
+    kurztext: "Längsnähte und Anschlussnähte vergießen"
+    langtext: >
+      Längsnähte und Anschlussnähte mit Heißbitumen vergießen nach ZTV Fug-StB.
+      Nahtbreite ca. 3 cm, Fülltiefe ca. 3 cm.
+    einheit: "m"
+    gewerk: "Straßenbau"
+    din: "ZTV Fug-StB"
+    aufwandswert_key: "strassenbau.naehte_vergiessen"
+    tags: ["Nähte", "vergießen", "Bitumen", "Fuge", "Anschlussnaht"]
+
+  STR-001:
+    kurztext: "Asphaltdecke fräsen"
+    langtext: >
+      Vorhandene Asphaltdecke fräsen, Fräsbreite nach Angabe der Bauleitung,
+      Frästiefe ca. {{dicke_cm}} cm. Fräsgut laden und zur Aufbereitungsanlage
+      transportieren, Entfernung bis {{entfernung_km}} km.
+    einheit: "m2"
+    gewerk: "Straßenbau"
+    din: "DIN 18316"
+    aufwandswert_key: "strassenbau.asphaltdecke_fraesen"
+    maschinen_keys: ["strassenbau_maschinen.kaltfraese"]
+    tags: ["fräsen", "Asphalt", "Kaltfräse", "Deckschicht"]
+
+  STR-002:
+    kurztext: "Schottertragschicht einbauen"
+    langtext: >
+      Schottertragschicht aus Natursteinschotter 0/32 nach TL SoB-StB liefern,
+      profilgerecht einbauen und verdichten. Schichtdicke {{dicke_cm}} cm.
+      Verdichtung EV2 ≥ {{ev2}} MN/m².
+    einheit: "m3"
+    gewerk: "Straßenbau"
+    din: "DIN 18315, TL SoB-StB"
+    aufwandswert_key: "strassenbau.schottertragschicht"
+    maschinen_keys: ["erdbau.kettenbagger_14t", "verdichtung.walzenzug_gross"]
+    tags: ["Schottertragschicht", "STS", "Schotter 0/32"]
+
+  STR-003:
+    kurztext: "Asphalttragschicht"
+    langtext: >
+      Asphalttragschicht AC 22 T S nach TL Asphalt-StB, Schichtdicke
+      {{dicke_cm}} cm, einschl. Ansprühen mit Bitumenemulsion C40 BF3-S.
+      Einbau im Fertigerbetrieb. Mischguttemperatur nach TL.
+    einheit: "m2"
+    gewerk: "Straßenbau"
+    din: "DIN 18316, TL Asphalt-StB"
+    aufwandswert_key: "strassenbau.asphalttragschicht"
+    maschinen_keys: ["strassenbau_maschinen.asphaltfertiger", "verdichtung.tandemwalze"]
+    tags: ["Asphalttragschicht", "AC 22", "Asphalt"]
+
+  STR-004:
+    kurztext: "Asphaltdeckschicht"
+    langtext: >
+      Asphaltdeckschicht AC 11 D S nach TL Asphalt-StB, Schichtdicke
+      {{dicke_cm}} cm, einschl. Ansprühen mit Bitumenemulsion. Querneigung 2,5%.
+      Griffigkeit nach ZTV Asphalt-StB.
+    einheit: "m2"
+    gewerk: "Straßenbau"
+    din: "DIN 18316, TL Asphalt-StB, ZTV Asphalt-StB"
+    aufwandswert_key: "strassenbau.asphaltdeckschicht"
+    maschinen_keys: ["strassenbau_maschinen.asphaltfertiger", "verdichtung.tandemwalze"]
+    tags: ["Asphaltdeckschicht", "AC 11", "Deckschicht"]
+
+  STR-005:
+    kurztext: "Asphaltdecke wiederherstellen"
+    langtext: >
+      Fahrbahndecke im Grabenbereich wiederherstellen: Schottertragschicht 0/32
+      d={{dicke_cm}} cm, Asphalttragschicht AC 22 T S d=8 cm, Asphaltdeckschicht
+      AC 11 D S d=4 cm. Einschl. Anschluss an Bestandsdecke.
+    einheit: "m2"
+    gewerk: "Straßenbau"
+    aufwandswert_key: "strassenbau.decke_wiederherstellen"
+    din: "DIN 18316"
+    tags: ["wiederherstellen", "Fahrbahndecke", "Grabenbereich"]
+
+# ============================================================================
+# 08 — KANALBAU (DIN 18306)
+# ============================================================================
+kanal:
+
+  KAN-001:
+    kurztext: "Kanalrohr verlegen"
+    langtext: >
+      Kanalrohr {{dn}} nach DIN 4032 / DIN EN 295 in offener Bauweise verlegen.
+      Einschl. Bettung aus Kies 2/8, Verfüllung und Verdichtung des Rohrgrabens.
+      Grabentiefe ca. {{tiefe_m}} m. Gefälle nach Planung.
+    einheit: "m"
+    gewerk: "Kanalbau"
+    din: "DIN 18306, DIN EN 1610"
+    aufwandswert_key: "kanalbau.kanalrohr_verlegen"
+    maschinen_keys: ["erdbau.kettenbagger_8t", "verdichtung.stampfer"]
+    tags: ["Kanalrohr", "Betonrohr", "Steinzeugrohr", "Rohrleitung"]
+
+  KAN-002:
+    kurztext: "Schachtbauwerk"
+    langtext: >
+      Schachtbauwerk aus Betonfertigteilen {{dn}} nach DIN 4034. Einschl.
+      Schachtunterteil mit Gerinne, Schachtringe, Konus, Schachtabdeckung
+      Klasse D 400. Höhe ca. {{hoehe_m}} m. Anschlüsse einschl. Kernbohrung
+      und Dichtung.
+    einheit: "St"
+    gewerk: "Kanalbau"
+    din: "DIN 18306, DIN 4034"
+    aufwandswert_key: "kanalbau.schacht_setzen"
+    maschinen_keys: ["erdbau.kettenbagger_8t", "heben.mobilkran_30t"]
+    tags: ["Schacht", "Schachtbauwerk", "Kontrollschacht", "Revisionsschacht"]
+
+  KAN-003:
+    kurztext: "Hausanschlüsse herstellen"
+    langtext: >
+      Hausanschlüsse {{dn}} an den Kanal anschließen. Einschl. Abzweig am
+      Hauptrohr, Kernbohrung, Anschlussstutzen mit Dichtung. Lage der
+      vorhandenen Anschlüsse erkunden.
+    einheit: "St"
+    gewerk: "Kanalbau"
+    din: "DIN 18306"
+    aufwandswert_key: "kanalbau.hausanschluss"
+    maschinen_keys: ["schneiden.kernbohrgeraet"]
+    tags: ["Hausanschluss", "Anschluss", "Abzweig"]
+
+  KAN-004:
+    kurztext: "Straßenablauf"
+    langtext: >
+      Straßenablauf nach DIN 4052, Typ I mit Schlammfang, Rohrrahmen und
+      Gussrost Klasse D 400. Einschl. Anschlussleitung {{dn}} bis Hauptkanal,
+      Länge ca. {{laenge_m}} m je Ablauf.
+    einheit: "St"
+    gewerk: "Kanalbau"
+    din: "DIN 18306, DIN 4052"
+    aufwandswert_key: "kanalbau.strassenablauf"
+    tags: ["Straßenablauf", "Gully", "Sinkkästen"]
+
+  KAN-005:
+    kurztext: "Entwässerungsrinne"
+    langtext: >
+      Schlitzrinne aus Polymerbeton mit Gussrost Klasse D 400 nach DIN EN 1433
+      einbauen. Auf Betonfundament C12/15 setzen. Gefälle mind. 0,5% zum Schacht.
+      Anschluss an Regenwasserkanal.
+    einheit: "m"
+    gewerk: "Kanalbau"
+    aufwandswert_key: "kanalbau.entwaesserungsrinne"
+    din: "DIN EN 1433"
+    tags: ["Rinne", "Schlitzrinne", "Entwässerungsrinne"]
+
+# ============================================================================
+# 09 — DACHARBEITEN (DIN 18338 Dachdeckung, DIN 18339 Klempner)
+# ============================================================================
+dach:
+
+  DAC-008:
+    kurztext: "Aufsparrendämmung PUR/PIR"
+    langtext: >
+      Aufsparrendämmung aus PUR/PIR-Hartschaumplatten WLG 024, Dicke {{dicke_mm}} mm,
+      auf die Sparren verlegen. Nut-Feder-Verbindung. Diffusionsoffene Unterdeckbahn
+      oberhalb. Befestigung mit zugelassenen Sparrenschrauben.
+    einheit: "m2"
+    gewerk: "Dachdeckerarbeiten"
+    din: "DIN 18338"
+    aufwandswert_key: "dacharbeiten.aufsparrendaemmung"
+    tags: ["Aufsparren", "PUR", "PIR", "Aufdachdämmung", "Sarking"]
+
+  DAC-001:
+    kurztext: "Dacheindeckung abdecken und entsorgen"
+    langtext: >
+      Vorhandene Dacheindeckung aus {{material}} vollständig abdecken. Lattung
+      und Konterlattung entfernen. Dachsteine und Holz getrennt sammeln und
+      entsorgen. Entsorgungsnachweis durch AN. Einschl. First-, Ortgang- und
+      Traufziegel. Einschl. provisorische Notabdeckung bei Regen.
+    einheit: "m2"
+    gewerk: "Dachdeckerarbeiten"
+    din: "DIN 18338"
+    aufwandswert_key: "dacharbeiten.dach_abdecken"
+    tags: ["abdecken", "Altdach", "Dachziegel", "Dachsteine"]
+
+  DAC-002:
+    kurztext: "Unterdeckbahn / Unterspannbahn verlegen"
+    langtext: >
+      Diffusionsoffene Unterdeckbahn nach ZVDH-Regelwerk auf die Sparren bzw.
+      Aufsparrendämmung verlegen. Sd-Wert ≤ 0,3 m. Stöße mind. 15 cm
+      überlappen. Befestigung mit Konterlatten.
+    einheit: "m2"
+    gewerk: "Dachdeckerarbeiten"
+    din: "DIN 18338, ZVDH"
+    aufwandswert_key: "dacharbeiten.unterspannbahn"
+    tags: ["Unterspannbahn", "Unterdeckbahn", "Dampfsperre"]
+
+  DAC-003:
+    kurztext: "Zwischensparrendämmung"
+    langtext: >
+      Mineralfaser-Dämmplatten WLG 035 zwischen die Sparren klemmen.
+      Sparrenhöhe {{dicke_cm}} cm, Dämmung vollflächig und hohlraumfrei.
+      Dampfbremse Sd-Wert ≥ 2 m auf der Raumseite, Stöße verkleben,
+      Anschlüsse an Bauteile und Durchdringungen luftdicht herstellen.
+    einheit: "m2"
+    gewerk: "Dachdeckerarbeiten"
+    din: "DIN 18338"
+    aufwandswert_key: "dacharbeiten.daemmung_zwischensparren"
+    tags: ["Dämmung", "Zwischensparren", "Mineralfaser", "Dampfbremse"]
+
+  DAC-004:
+    kurztext: "Konterlattung und Traglattung"
+    langtext: >
+      Konterlattung 30/50 mm auf Sparren nageln. Traglattung 30/50 mm,
+      Lattenabstand nach Herstellerangabe des Dachsteins. Holz Nadelholz S10,
+      kesseldruckimprägniert.
+    einheit: "m2"
+    gewerk: "Dachdeckerarbeiten"
+    din: "DIN 18338"
+    aufwandswert_key: "dacharbeiten.lattung_konterlattung"
+    tags: ["Lattung", "Konterlattung", "Traglattung"]
+
+  DAC-005:
+    kurztext: "Dacheindeckung Tondachziegel"
+    langtext: >
+      Dacheindeckung mit Tondachziegeln, {{material}}, Farbe {{farbe}}.
+      Einschl. Ortgangziegel, Lüftungsziegel, Firstziegel mit Firstrolle und
+      Lüftungsband, Schneefanggitter {{stueck}} Reihen. Sturmklammern an jeder
+      3. Pfanne und in Randbereichen an jeder Pfanne.
+    einheit: "m2"
+    gewerk: "Dachdeckerarbeiten"
+    din: "DIN 18338"
+    aufwandswert_key: "dacharbeiten.dacheindeckung_tondachziegel"
+    tags: ["Dachziegel", "Tondachziegel", "Flachdachpfanne", "Eindeckung"]
+
+  DAC-006:
+    kurztext: "Dachrinne halbrund"
+    langtext: >
+      Dachrinne halbrund, Titanzink 0,7 mm, Nennweite RG 333 nach DIN EN 612.
+      Rinnenhalter aus Edelstahl im Abstand ca. 50 cm, Gefälle mind. 0,5%.
+      Rinnenstutzen alle 12 m. Rinnenverbinder gelötet. Laubschutzgitter.
+    einheit: "m"
+    gewerk: "Klempnerarbeiten"
+    din: "DIN 18339, DIN EN 612"
+    aufwandswert_key: "dacharbeiten.dachrinne_montieren"
+    tags: ["Dachrinne", "Regenrinne", "Titanzink", "Zinkrinne"]
+
+  DAC-007:
+    kurztext: "Fallrohr rund"
+    langtext: >
+      Fallrohr rund, Titanzink 0,7 mm, {{dn}} nach DIN EN 612. Rohrschellen
+      aus Edelstahl im Abstand ca. 2 m. Rohrbogen oben und unten. Anschluss
+      an Grundleitung mit Übergangsstück.
+    einheit: "m"
+    gewerk: "Klempnerarbeiten"
+    din: "DIN 18339, DIN EN 612"
+    aufwandswert_key: "dacharbeiten.fallrohr_montieren"
+    tags: ["Fallrohr", "Regenrohr", "Regenfallrohr"]
+
+# ============================================================================
+# 10 — ZIMMERARBEITEN (DIN 18334)
+# ============================================================================
+zimmerer:
+
+  ZIM-001:
+    kurztext: "Dachstuhl aufstellen"
+    langtext: >
+      Dachstuhl als {{material}} nach Statik und Zimmererplan aufstellen.
+      Einschl. Montage mit Kran, Sparren, Pfetten, Kehlbalken, Gratsparren,
+      Windrispenbänder, Sturmverankerung. Abbund werkstattmäßig, Montage
+      auf der Baustelle. Holzschutz nach DIN 68800.
+    einheit: "m2"
+    gewerk: "Zimmerarbeiten"
+    din: "DIN 18334, DIN 68800"
+    aufwandswert_key: "zimmerarbeiten.dachstuhl_aufstellen"
+    maschinen_keys: ["heben.mobilkran_30t", "heben.teleskoplader"]
+    tags: ["Dachstuhl", "Sparren", "Satteldach", "Pfette"]
+
+# ============================================================================
+# 11 — PUTZARBEITEN (DIN 18350)
+# ============================================================================
+putz:
+
+  PUT-001:
+    kurztext: "Innenputz Maschinenputz"
+    langtext: >
+      Innenputz als Gips-Maschinenputz nach DIN 18350 auf Mauerwerk aufbringen.
+      Putzdicke {{dicke_mm}} mm, einlagig, Oberfläche gefilzt (Q2). Einschl.
+      Eckschutzschienen an Außenecken, Putzprofile an Leibungen, Grundierung
+      auf Betonbauteilen.
+    einheit: "m2"
+    gewerk: "Putzarbeiten"
+    din: "DIN 18350"
+    aufwandswert_key: "putzarbeiten.innenputz_maschinenputz"
+    tags: ["Innenputz", "Maschinenputz", "Gipsputz"]
+
+  PUT-002:
+    kurztext: "Außenputz Kalk-Zement"
+    langtext: >
+      Außenputz als Kalk-Zement-Putz, 2-lagig (Unterputz + Oberputz),
+      Gesamtdicke ca. {{dicke_mm}} mm. Einschl. Grundierung, Armierungsgewebe
+      (bei WDVS). Oberputz als Scheibenputz Körnung 2 mm. Farbe nach
+      Bemusterung.
+    einheit: "m2"
+    gewerk: "Putzarbeiten"
+    din: "DIN 18350"
+    aufwandswert_key: "putzarbeiten.aussenputz"
+    tags: ["Außenputz", "Fassadenputz", "Kalk-Zement"]
+
+# ============================================================================
+# 12 — TROCKENBAU (DIN 18340)
+# ============================================================================
+trockenbau:
+
+  TRO-001:
+    kurztext: "Metallständerwand einfach beplankt"
+    langtext: >
+      Metallständerwände nach DIN 18340 herstellen. CW-Profile {{dicke_cm}} mm,
+      UW-Profile Boden/Decke. Beplankung beidseitig 1× GKB 12,5 mm.
+      Mineralwolldämmung WLG 040 in Hohlraum. Raumhöhe ca. {{hoehe_m}} m.
+      Fugen und Schraubenköpfe verspachteln Q2. Anschlüsse an Bestand umlaufend
+      mit Trennstreifen und Acryl.
+    einheit: "m2"
+    gewerk: "Trockenbau"
+    din: "DIN 18340"
+    aufwandswert_key: "trockenbau.staenderwand_einfach"
+    tags: ["Trennwand", "Ständerwand", "Rigips", "GK", "Gipskarton"]
+
+  TRO-002:
+    kurztext: "Metallständerwand Schallschutz"
+    langtext: >
+      Schallschutzwände nach DIN 18340. CW-Profile {{dicke_cm}} mm, UW-Profile.
+      Beplankung beidseitig 2× GKB 12,5 mm, versetzt geschraubt.
+      Mineralwolldämmung WLG 035. Raumhöhe ca. {{hoehe_m}} m. Spachteln Q3.
+      Rw ≥ 55 dB.
+    einheit: "m2"
+    gewerk: "Trockenbau"
+    din: "DIN 18340"
+    aufwandswert_key: "trockenbau.staenderwand_doppelt"
+    tags: ["Schallschutz", "Doppelbeplankung", "Trennwand"]
+
+  TRO-003:
+    kurztext: "Decke abhängen"
+    langtext: >
+      Abgehängte Decke nach DIN 18340. Tragprofil- und Querprofil-System,
+      Abhängehöhe {{dicke_cm}} cm. Beplankung mit GKB 12,5 mm oder
+      Akustik-Mineralfaserplatten 600×600 mm. Einschl. Randprofil umlaufend.
+      Aussparungen für Einbauleuchten nach Elektroplanung vorsehen.
+    einheit: "m2"
+    gewerk: "Trockenbau"
+    din: "DIN 18340"
+    aufwandswert_key: "trockenbau.decke_abhaengen"
+    tags: ["Decke", "abhängen", "Rasterdecke", "Akustikdecke"]
+
+  TRO-004:
+    kurztext: "Wandflächen spachteln und grundieren"
+    langtext: >
+      Wandflächen spachteln Qualitätsstufe Q3 nach Merkblatt Nr.2 des
+      Bundesverbandes der Gipsindustrie. Alle Fugen, Schraubenköpfe und
+      Übergänge breit verspachteln und schleifen. Grundierung mit Tiefengrund.
+      Oberfläche streichfertig.
+    einheit: "m2"
+    gewerk: "Trockenbau"
+    din: "DIN 18340"
+    aufwandswert_key: "trockenbau.spachteln_q2"
+    tags: ["Spachteln", "Grundieren", "Q2", "Q3", "streichfertig"]
+
+# ============================================================================
+# 13 — ESTRICH (DIN 18353)
+# ============================================================================
+estrich:
+
+  EST-001:
+    kurztext: "Zementestrich"
+    langtext: >
+      Zementestrich CT-C25 nach DIN 18560 herstellen. Schichtdicke {{dicke_cm}} cm,
+      auf Trennlage (PE-Folie) bzw. Dämmschicht. Oberfläche abgezogen und
+      geglättet. Scheinfugen nach Plan. Trocknungszeit ca. 4 Wochen bis
+      Belegreife (CM ≤ 2,0%).
+    einheit: "m2"
+    gewerk: "Estricharbeiten"
+    din: "DIN 18353, DIN 18560"
+    aufwandswert_key: "estricharbeiten.zementestrich"
+    maschinen_keys: ["beton.gleitschalung", "wasserhaltung.estrichpumpe"]
+    tags: ["Zementestrich", "Estrich", "CT", "Schwimmestrich"]
+
+  EST-002:
+    kurztext: "Fließestrich Calciumsulfat"
+    langtext: >
+      Fließestrich auf Calciumsulfat-Basis (CAF) herstellen. Schichtdicke
+      {{dicke_cm}} cm, auf Trennlage/Dämmschicht. Selbstnivellierend.
+      Trocknungszeit ca. 28 Tage bis Belegreife (CM ≤ 0,5%).
+    einheit: "m2"
+    gewerk: "Estricharbeiten"
+    din: "DIN 18353, DIN 18560"
+    aufwandswert_key: "estricharbeiten.fliessestrich"
+    tags: ["Fließestrich", "Anhydrit", "CAF", "selbstnivellierend"]
+
+# ============================================================================
+# 14 — FLIESEN (DIN 18352)
+# ============================================================================
+fliesen:
+
+  FLI-001:
+    kurztext: "Wandfliesen verlegen"
+    langtext: >
+      Wandfliesen aus Steingut/Feinsteinzeug, Format {{material}}, im
+      Dünnbettverfahren mit Flexkleber auf vorbereitetem Untergrund verlegen.
+      Kreuzfuge {{dicke_mm}} mm, Fugenmörtel {{farbe}}. Einschl. Sockelleiste
+      wo angegeben. Dehnungsfugen nach Herstellerangabe.
+    einheit: "m2"
+    gewerk: "Fliesenarbeiten"
+    din: "DIN 18352"
+    aufwandswert_key: "fliesenarbeiten.wandfliesen"
+    maschinen_keys: ["schneiden.nassschneidetisch"]
+    tags: ["Wandfliesen", "Fliesen", "Steingut"]
+
+  FLI-002:
+    kurztext: "Bodenfliesen verlegen"
+    langtext: >
+      Bodenfliesen Feinsteinzeug, Format {{material}}, Rutschhemmung R10,
+      im Dünnbettverfahren mit Flexkleber auf Estrich verlegen. Kreuzfuge
+      {{dicke_mm}} mm, Fugenmörtel {{farbe}}. Einschl. Sockel-Fliesenleiste.
+      Dehnungsfugen an Türdurchgängen und ab 40 m².
+    einheit: "m2"
+    gewerk: "Fliesenarbeiten"
+    din: "DIN 18352"
+    aufwandswert_key: "fliesenarbeiten.bodenfliesen"
+    maschinen_keys: ["schneiden.nassschneidetisch"]
+    tags: ["Bodenfliesen", "Feinsteinzeug", "R10"]
+
+# ============================================================================
+# 15 — MALERARBEITEN (DIN 18363)
+# ============================================================================
+maler:
+
+  MAL-001:
+    kurztext: "Innenwände streichen"
+    langtext: >
+      Wandflächen mit hochwertiger Innen-Dispersionsfarbe 2× streichen.
+      Nassabriebbeständigkeit Klasse 2 nach DIN EN 13300, Deckkraft Klasse 1.
+      Farbe {{farbe}}. Saubere Kanten an Decke/Boden mit Abklebeband.
+      Schutz der angrenzenden Flächen.
+    einheit: "m2"
+    gewerk: "Malerarbeiten"
+    din: "DIN 18363, DIN EN 13300"
+    aufwandswert_key: "malerarbeiten.waende_streichen"
+    tags: ["streichen", "Wandfarbe", "Dispersion", "Innenfarbe"]
+
+  MAL-002:
+    kurztext: "Decken streichen"
+    langtext: >
+      Deckenflächen mit Innen-Dispersionsfarbe 2× streichen, Farbe {{farbe}},
+      Deckkraft Klasse 1. Einschl. Grundierung wo erforderlich. Arbeit von
+      Rollgerüst oder Leiter.
+    einheit: "m2"
+    gewerk: "Malerarbeiten"
+    din: "DIN 18363"
+    aufwandswert_key: "malerarbeiten.decke_streichen"
+    maschinen_keys: ["gerueste.rollgeruest"]
+    tags: ["Decke", "streichen", "Überkopf"]
+
+  MAL-003:
+    kurztext: "Türblätter und Zargen lackieren"
+    langtext: >
+      Holztürzargen und Türblätter ({{stueck}} Stück) anlaugen, anschleifen
+      und 2× mit Acryllack {{farbe}} streichen. Beschläge demontieren und
+      nach dem Lackieren wieder montieren. Abdecken der angrenzenden Flächen.
+    einheit: "St"
+    gewerk: "Malerarbeiten"
+    din: "DIN 18363"
+    aufwandswert_key: "malerarbeiten.lackieren_tuer"
+    tags: ["lackieren", "Tür", "Zarge", "Türblatt"]
+
+  MAL-004:
+    kurztext: "Fassade streichen"
+    langtext: >
+      Fassadenflächen mit Silikonharzfarbe 2× streichen. Farbe {{farbe}} nach
+      Bemusterung. Einschl. Grundierung, Abkleben von Fenstern und Türen.
+      Arbeit vom Gerüst (nach gesonderter Position).
+    einheit: "m2"
+    gewerk: "Malerarbeiten"
+    din: "DIN 18363"
+    aufwandswert_key: "malerarbeiten.fassade_streichen"
+    tags: ["Fassade", "Außenanstrich", "Silikonharzfarbe"]
+
+# ============================================================================
+# 16 — BODENBELAG
+# ============================================================================
+boden:
+
+  BOD-001:
+    kurztext: "Designboden Vinyl-Klick"
+    langtext: >
+      Designboden als Vinyl-Klick-Belag liefern und verlegen. Nutzschicht ≥ 0,55 mm,
+      Gesamtdicke 5 mm, Klasse 33/42. Dekor {{material}} nach Bemusterung.
+      Schwimmend auf PE-Schaumunterlage 2 mm. Randfuge 8 mm umlaufend.
+      Übergangsschienen an Türschwellen. Sockelleisten geklipst.
+    einheit: "m2"
+    gewerk: "Bodenbelag"
+    aufwandswert_key: "bodenbelag.designboden"
+    tags: ["Vinyl", "Designboden", "Klickboden", "LVT"]
+
+# ============================================================================
+# 17 — ABBRUCH / RÜCKBAU
+# ============================================================================
+abbruch:
+
+  ABR-001:
+    kurztext: "Leichtbauwände abbrechen"
+    langtext: >
+      Vorhandene Leichtbauwände (GK auf Metallständerwerk) abbrechen und
+      entsorgen. Wände d={{dicke_cm}} cm, Höhe ca. {{hoehe_m}} m.
+      Elektroinstallationen vorher freischalten lassen (bauseitig).
+      Bestandsdecke und -boden dürfen nicht beschädigt werden.
+    einheit: "m2"
+    gewerk: "Abbruch"
+    aufwandswert_key: "abbruch.mauerwerk_abbrechen"
+    tags: ["abbrechen", "Trennwand", "Rückbau", "Leichtbau"]
+
+  ABR-002:
+    kurztext: "Asphaltschichten aufnehmen"
+    langtext: >
+      Gebundene Tragschicht und Deckschicht aufnehmen, Gesamtstärke ca.
+      {{dicke_cm}} cm, laden und abfahren. Einschl. Schneiden der Nähte.
+    einheit: "m2"
+    gewerk: "Abbruch"
+    aufwandswert_key: "abbruch.asphalt_aufnehmen"
+    maschinen_keys: ["strassenbau_maschinen.kaltfraese", "schneiden.fugenschneider"]
+    tags: ["aufnehmen", "Asphalt", "Deckschicht"]
+
+  ABR-003:
+    kurztext: "Bodenbelag aufnehmen"
+    langtext: >
+      Vorhandenen Bodenbelag ({{material}}) aufnehmen und entsorgen. Einschl.
+      Kleberreste maschinell abfräsen. Estrichoberfläche sauber und eben
+      hinterlassen. Entsorgungsnachweis.
+    einheit: "m2"
+    gewerk: "Abbruch"
+    aufwandswert_key: "abbruch.boden_aufnehmen"
+    tags: ["Bodenbelag", "PVC", "Teppich", "Parkett", "aufnehmen"]
+
+  ABR-004:
+    kurztext: "Bordsteine ausbauen"
+    langtext: >
+      Vorhandene Bordsteine ausbauen, einschl. Rückenstütze und Fundament,
+      laden und abfahren. Bordsteine sind nicht zur Wiederverwendung vorgesehen.
+    einheit: "m"
+    gewerk: "Abbruch"
+    aufwandswert_key: "abbruch.bordstein_ausbauen"
+    tags: ["Bordstein", "ausbauen", "demontieren"]
+
+# ============================================================================
+# 18 — SANITÄRINSTALLATION (DIN 18381)
+# ============================================================================
+sanitaer:
+
+  SAN-001:
+    kurztext: "Trinkwasserleitung verlegen"
+    langtext: >
+      Trinkwasserleitung aus vernetztem Polyethylen (PE-X) im Schutzrohr
+      verlegen. Kalt- und Warmwasser {{dn}}. Pressfitting-System, DVGW-zugelassen.
+      Einschl. Wandscheiben, T-Stücke, Absperrarmaturen. Druckprüfung nach
+      DIN EN 806-4 (10 bar, 30 min).
+    einheit: "m"
+    gewerk: "Sanitär"
+    din: "DIN 18381, DIN EN 806"
+    aufwandswert_key: "sanitaer.wasserleitung_verlegen"
+    tags: ["Wasserleitung", "PE-X", "Trinkwasser", "Pressfitting"]
+
+  SAN-002:
+    kurztext: "Abwasserleitung verlegen"
+    langtext: >
+      Abwasserleitung aus HT-Rohr (Polypropylen), {{dn}}, Steckmuffen-System.
+      Gefälle mind. 1% (DN 50) bzw. 0,5% (DN 100). Einschl. Bögen, Abzweige,
+      Reduktionen. Schallschutzisolierung an Fallleitung im Wohnbereich.
+    einheit: "m"
+    gewerk: "Sanitär"
+    din: "DIN 18381"
+    aufwandswert_key: "sanitaer.abwasserleitung_verlegen"
+    tags: ["Abwasser", "HT-Rohr", "Fallleitung", "Entwässerung"]
+
+  SAN-003:
+    kurztext: "Vorwandinstallation WC"
+    langtext: >
+      Vorwandinstallationselement für Wand-WC liefern und montieren. Bauhöhe
+      112 cm, Spülkasten 2-Mengen-Technik (3/6 l). Einschl. Befestigungsmaterial,
+      Anschluss Wasser und Abwasser, Drückerplatte {{farbe}}.
+    einheit: "St"
+    gewerk: "Sanitär"
+    aufwandswert_key: "sanitaer.vorwand_wc"
+    din: "DIN 18381"
+    tags: ["Vorwand", "WC-Element", "Spülkasten", "Geberit"]
+
+  SAN-004:
+    kurztext: "Wand-WC montieren"
+    langtext: >
+      Wand-WC aus Sanitärkeramik, Tiefspüler, {{farbe}}, liefern und auf
+      Vorwandelement montieren. Einschl. WC-Sitz mit Absenkautomatik,
+      Befestigungsset, Anschluss. Silikon-Anschluss an Wandfliesen.
+    einheit: "St"
+    gewerk: "Sanitär"
+    din: "DIN 18381"
+    aufwandswert_key: "sanitaer.wc_montieren"
+    tags: ["WC", "Toilette", "Wand-WC"]
+
+  SAN-005:
+    kurztext: "Waschtisch montieren"
+    langtext: >
+      Waschtisch aus Sanitärkeramik, Breite {{breite_m}} cm, {{farbe}}, liefern
+      und an die Wand montieren. Einschl. Einhebel-Waschtischmischer (Chrom),
+      Eckventile, Flexschläuche, Ab-/Überlaufgarnitur, Röhren-Siphon (Chrom).
+    einheit: "St"
+    gewerk: "Sanitär"
+    din: "DIN 18381"
+    aufwandswert_key: "sanitaer.waschbecken_montieren"
+    tags: ["Waschtisch", "Waschbecken", "Armatur"]
+
+  SAN-006:
+    kurztext: "Dusche bodengleich"
+    langtext: >
+      Bodengleiche Dusche herstellen. Duschwanne flach {{breite_m}}×{{laenge_m}} cm
+      mit Ablaufgarnitur DN 50. Einschl. Wannenträger, Anschluss an Abwasser.
+      Duscharmatur Aufputz mit Regenbrause und Handbrause (Chrom).
+      Duschabtrennung Glas 8 mm ESG, Pendeltür.
+    einheit: "St"
+    gewerk: "Sanitär"
+    aufwandswert_key: "sanitaer.dusche_bodengleich"
+    din: "DIN 18381"
+    tags: ["Dusche", "bodengleich", "Duschwanne", "Duschabtrennung"]
+
+  SAN-007:
+    kurztext: "Sanitärobjekt demontieren"
+    langtext: >
+      Vorhandenes Sanitärobjekt ({{material}}) demontieren. Wasser- und
+      Abwasseranschlüsse fachgerecht verschließen. Entsorgen.
+    einheit: "St"
+    gewerk: "Sanitär"
+    aufwandswert_key: "sanitaer.sanitaerobjekt_demontieren"
+    tags: ["demontieren", "Badewanne", "WC", "Waschtisch"]
+
+# ============================================================================
+# 19 — ELEKTROINSTALLATION (DIN 18382)
+# ============================================================================
+elektro:
+
+  ELE-001:
+    kurztext: "Kabelrinne montieren"
+    langtext: >
+      Kabelrinne aus Stahlblech feuerverzinkt, Breite {{breite_m}} mm,
+      Höhe 60 mm, mit Deckel, an der Rohdecke montieren. Befestigung mit
+      Gewindestangen und Profilschienen. Einschl. Formteile, Verbinder, Erdung.
+    einheit: "m"
+    gewerk: "Elektro"
+    aufwandswert_key: "elektro.kabelrinne"
+    din: "DIN 18382"
+    tags: ["Kabelrinne", "Kabeltrasse", "Kabelpritsche"]
+
+  ELE-002:
+    kurztext: "Installationsrohr in Wand"
+    langtext: >
+      Elektro-Installationsrohr M20 in vorbereitete Wandschlitze verlegen und
+      fixieren. Einschl. Verbindungsmuffen. Einziehdraht einlegen. Von
+      Kabelrinne/Verteiler bis zu den Installationspunkten.
+    einheit: "m"
+    gewerk: "Elektro"
+    din: "DIN 18382"
+    aufwandswert_key: "elektro.leerrohr_verlegen"
+    maschinen_keys: ["schneiden.mauernutfraese"]
+    tags: ["Leerrohr", "Installationsrohr", "M20"]
+
+  ELE-003:
+    kurztext: "Gerätedosen setzen"
+    langtext: >
+      UP-Gerätedosen Ø 68 mm in Mauerwerk/Trockenbau setzen. Einschl.
+      Bohren/Fräsen der Dosenöffnung, Dose einsetzen. Für Steckdosen,
+      Schalter, Datenanschlüsse. {{stueck}} Stück.
+    einheit: "St"
+    gewerk: "Elektro"
+    aufwandswert_key: "elektro.geraetedose"
+    din: "DIN 18382"
+    tags: ["Gerätedose", "Unterputzdose", "UP-Dose"]
+
+  ELE-004:
+    kurztext: "Mantelleitung NYM-J verlegen"
+    langtext: >
+      Mantelleitung NYM-J {{material}} für Beleuchtungs-/Steckdosenstromkreise
+      verlegen. In Leerrohren und auf Kabelrinne. Einschl. Abisolieren,
+      Adernendhülsen, Anschluss an Verteiler und Endstellen. Prüfung nach
+      DIN VDE 0100-600.
+    einheit: "m"
+    gewerk: "Elektro"
+    aufwandswert_key: "elektro.nym_kabel"
+    din: "DIN 18382, DIN VDE 0100"
+    tags: ["NYM", "Mantelleitung", "Stromkabel", "Verkabelung"]
+
+  ELE-005:
+    kurztext: "Datenkabel Cat.6A verlegen"
+    langtext: >
+      Datenkabel Cat.6A S/FTP AWG23, halogenfrei, verlegen. Einschl. Auflegen
+      auf Cat.6A-Keystones, Beschriften, Messen und Dokumentieren aller Links
+      nach DIN EN 50173 (Permanent Link).
+    einheit: "m"
+    gewerk: "Elektro"
+    aufwandswert_key: "elektro.datenkabel"
+    din: "DIN EN 50173"
+    tags: ["Datenkabel", "Cat6A", "Netzwerk", "LAN", "Patchfeld"]
+
+  ELE-006:
+    kurztext: "Unterverteilung einbauen"
+    langtext: >
+      Unterverteilung UP, {{stueck}}-reihig. Einschl. Einbau, Verdrahtung,
+      Beschriftung. Bestückung: FI/LS-Kombination 30mA je Stromkreis,
+      Hauptschalter, Überspannungsschutz Typ 2.
+    einheit: "St"
+    gewerk: "Elektro"
+    din: "DIN 18382, DIN VDE 0100"
+    aufwandswert_key: "elektro.verteilung_einbauen"
+    tags: ["Verteilung", "Sicherungskasten", "UV", "FI"]
+
+  ELE-007:
+    kurztext: "Schutzkontakt-Steckdose"
+    langtext: >
+      Schutzkontakt-Steckdose als UP-Einsatz mit Abdeckrahmen liefern und
+      einbauen. Designserie nach Bemusterung, Farbe {{farbe}}. Einschl.
+      Anschluss der Zuleitung.
+    einheit: "St"
+    gewerk: "Elektro"
+    din: "DIN 18382"
+    aufwandswert_key: "elektro.steckdose_setzen"
+    tags: ["Steckdose", "Schuko", "Schalter"]
+
+  ELE-008:
+    kurztext: "Lichtschalter"
+    langtext: >
+      Lichtschalter als UP-Einsatz (Aus-/Wechselschalter), gleiche Designserie
+      wie Steckdosen, liefern und einbauen. Einschl. Anschluss.
+    einheit: "St"
+    gewerk: "Elektro"
+    din: "DIN 18382"
+    aufwandswert_key: "elektro.steckdose_setzen"
+    tags: ["Schalter", "Lichtschalter", "Wechselschalter", "Taster"]
+
+# ============================================================================
+# 20 — ENTWÄSSERUNG AUSSEN
+# ============================================================================
+entwaesserung:
+
+  ENT-001:
+    kurztext: "Hofablauf"
+    langtext: >
+      Hofablauf aus Betonfertigteil DN 300 mit Schlammfang, Rohrrahmen und
+      Gussrost Klasse D 400. Anschluss {{dn}} an Grundleitung.
+    einheit: "St"
+    gewerk: "Entwässerung"
+    aufwandswert_key: "kanalbau.hofablauf"
+    tags: ["Hofablauf", "Bodenablauf", "Gully"]
+
+  ENT-002:
+    kurztext: "Gehweg wiederherstellen"
+    langtext: >
+      Gehwegflächen wiederherstellen mit Betonpflaster 20/10/{{dicke_cm}} cm
+      auf Splittbett, Bettungsdicke 4 cm, auf Schottertragschicht 0/32
+      d={{dicke_cm}} cm. Einschl. Randeinfassung.
+    einheit: "m2"
+    gewerk: "Straßenbau"
+    aufwandswert_key: "strassenbau.gehweg_wiederherstellen"
+    tags: ["Gehweg", "wiederherstellen", "Betonpflaster"]
+
+# ============================================================================
+# 21 — DACHDURCHFÜHRUNGEN / SONDERPOSITIONEN
+# ============================================================================
+sonder:
+
+  SON-001:
+    kurztext: "Dachdurchführung Lüftungsrohr"
+    langtext: >
+      Dachdurchführung für Lüftungsrohr {{dn}} herstellen. Einschl.
+      Durchgangsziegel, Bleieinfassung und Stutzen. Regendichte Ausführung.
+      {{stueck}} Stück.
+    einheit: "St"
+    gewerk: "Dachdeckerarbeiten"
+    aufwandswert_key: "dacharbeiten.dachdurchfuehrung"
+    tags: ["Dachdurchführung", "Lüftung", "Dunstabzug", "Entlüftung"]
+
+  SON-002:
+    kurztext: "Ortgangblech"
+    langtext: >
+      Ortgangblech (Windblech) aus Titanzink 0,7 mm, Abwicklung ca. 33 cm,
+      an den Ortgängen montieren. Befestigung mit Edelstahlschrauben.
+      Überlappung mind. 5 cm.
+    einheit: "m"
+    gewerk: "Klempnerarbeiten"
+    aufwandswert_key: "dacharbeiten.ortgangblech"
+    din: "DIN 18339"
+    tags: ["Ortgang", "Windblech", "Ortgangblech"]

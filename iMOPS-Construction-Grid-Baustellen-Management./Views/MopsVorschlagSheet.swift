@@ -126,7 +126,7 @@ struct MopsVorschlagSheet: View {
         let helper = MopsKalkulationsHelper.shared
         let leistung = "\(position.menge.formatted()) \(position.einheit ?? "") \(position.bezeichnung ?? "")"
         Task {
-            let a = await helper.aufwandswertVorschlag(leistung: leistung)
+            let a = await helper.aufwandswertVorschlag(leistung: leistung, langtext: position.langtext)
             await MainActor.run {
                 aufwandVorschlag = a
                 if let a { antwort = "Aufwand: Maurer \(fmt(a.maurer)) / Helfer \(fmt(a.helfer)) h/\(einheit)" }

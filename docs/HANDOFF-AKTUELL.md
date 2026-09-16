@@ -2,6 +2,27 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 16.09.2026 (Abend) — Text→Rezept DETERMINISTISCH: STLB-Bausteine + Kataloge + Rollenpreise (PR #171)
+
+Der eigentliche Durchbruch: aus dem KI-Raten wird eine nachvollziehbare Kette. **An 10 echten Ausschreibungen (109 Positionen): 95% erkannt UND bepreist** (vorher 66%).
+
+**Die Kette:** Position → **STLB-Baustein** (`STLBKatalog.finde`, Match über kurztext + `tags` die Synonyme tragen) → `aufwandswert_key` → **`AufwandswerteKatalog.eintrag(key:)` deterministisch** → `maschinen_keys` → `MaschinenKatalog.maschinen(ids:)`. Der Baustein trägt auch den **X83-Langtext** (fertig für Export).
+
+**Drei verzahnte Wissens-YAMLs** (alle in `Resources/Knowledge/`, kein Verweis ins Leere):
+- `aufwandswerte.yaml` — 109 Richtwerte (min/mittel/max h je Einheit + echte **Kolonne**), öffentliche Quellen, KEINE geschützten ARH-Tabellen; +20 von Raffi (quelle „RAFFI" = firmeneigen, Vorrang).
+- `maschinenkatalog.yaml` — 45 Maschinen (Leistung + Tagesmiete), verzahnt über `einsatz_bei`.
+- `stlb_bausteine.yaml` — 94 Mops-eigene Textbausteine (KEINE lizenzierten STLB-Bau-Texte), jeder mit auflösbarem `aufwandswert_key`.
+
+**Services (neu):** `BauTextMatcher` (gemeinsame Stichwort-Logik: Einzel-Vokal-Normalisierung + leichtes Plural-Stemming + Synonyme + Flächen-Nomen-Demotion), `STLBKatalog`, `AufwandswerteKatalog`, `MaschinenKatalog`. **Matcher matcht NUR den Titel** — an echten LVs erwiesen: der Langtext ist zu verrauscht (Füllwörter „seitlich"/„entsorgen" ziehen auf falsche Einträge). Lieber ehrlich ROT als selbstsicher falsch.
+
+**Verdrahtet:** „Mops fass" (`AutoKalkulationsService.bewerte`) + Rezept-Assistent gehen ZUERST über den STLB; ROT→GELB mit echter Kolonne + Quelle, `finde()` (fuzzy) nur Fallback.
+
+**Rollenpreise:** Aufwandswert wird nach der Kolonne nach Kopfzahl auf die Rollen verteilt und je Rolle mit ihrem Tarif bepreist — **Baggerfahrer→Maschinist, Helfer→Helfer, Rest→Facharbeiter** (`LeistungskatalogService.parseKolonne`/`tarifgruppe`/`schreibeAufwandAusKolonne`; `bruttoEK` rollenfähig, per Lohnsatz-Stammdaten überschreibbar). Rohrgraben 0,30 h/m: statt ~14,11 €/m (alles Maurer) jetzt ~11,73 €/m. Gesamtstunden unverändert.
+
+**Tests:** 389 / 65 Suiten grün. ⚠️ Testlauf-Fallen: iMOPS nutzt **Swift Testing** (Ausgabe `◇`/`✔`/`✘`, NICHT „Test case") + volle Suite parallel crasht bei wenig Platte → `-parallel-testing-enabled NO`.
+
+**🔴 OFFEN:** (a) Rest-5% ROT = Matcher-Edge-Cases (Komposita „Außenwandmauerwerk", Kurz-Tokens „WC"/„NYM") — lösen sich beim Match per **STLB-Nummer**, wenn die Aufträge die IDs tragen. (b) **Maschine-pro-Tag-Preismodell** (Miete wird pro angefangenem Tag abgerechnet, nicht €/h) — Katalog schlägt vor, eigener Park hat Vorrang. (c) Rezept-Assistent zeigt die echte Kolonne, sein manueller Preis nutzt aber noch die zwei Felder Maurer/Helfer (nicht Kolonne-gesplittet) — Angleichen optional. (d) GAEB menschenlesbar bei „Pläne & Unterlagen". Repo bleibt PRIVAT.
+
 ## Delta 16.09.2026 (Nachmittag) — alles GEMERGT auf `main`, Repo ist PRIVAT
 
 **Repo auf PRIVAT gestellt** (Andreas' Entscheidung) — DSGVO an der Wurzel gelöst (Preise/Rezepte dürfen jetzt auf `main`). Ehrlich: schützt künftig, macht die frühere öffentliche Phase nicht rückgängig.
