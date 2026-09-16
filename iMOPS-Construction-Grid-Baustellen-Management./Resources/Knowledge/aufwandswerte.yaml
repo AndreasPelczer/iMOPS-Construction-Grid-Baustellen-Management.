@@ -1,0 +1,1192 @@
+# ============================================================================
+# AUFWANDSWERTE BAU — Arbeitszeit-Richtwerte für den Mops
+# ============================================================================
+#
+# Format: Std pro Einheit (h/m², h/m³, h/lfm, h/St, h/t)
+# Werte: min / mittel / max (Bandbreite je nach Schwierigkeitsgrad)
+#
+# WICHTIG: Diese Werte sind RICHTWERTE aus öffentlichen Quellen,
+# NICHT die geschützten ARH-Tabellen des Zeittechnik-Verlags.
+# Sie ersetzen KEINE firmeninternen Kalkulationsansätze.
+# Der Mops nutzt sie als Startpunkt — Raffi korrigiert aus Erfahrung.
+#
+# Prinzip: "mittel" ist der Normalfall bei durchschnittlichen Bedingungen.
+# "min" bei optimalen Bedingungen (großflächig, repetitiv, gute Zugänglichkeit).
+# "max" bei erschwerten Bedingungen (beengt, komplex, Altbau, Winter).
+#
+# Quellen:
+#   [ARH]     Arbeitszeit-Richtwerte Hochbau/Tiefbau (Zeittechnik-Verlag) — öffentl. Bandbreiten
+#   [HOF]     Hofstadler, C. (2008): Schalarbeiten / Bauablaufplanung, Springer
+#   [BNW]     BauNetz Wissen (baunetzwissen.de)
+#   [PAK]     pak-immo.at — Aufwandswert und Leistungswert (2026)
+#   [BUB]     bubiza.de — DaviD WIKI Aufwandswerte Mauerwerk
+#   [FSG]     Fachschule Gotha, Baubetrieb Teil 1 (2024)
+#   [CIV]     clean-invoice.com — Baukosten-Ratgeber (2026)
+#   [ART-P]   ART Pflasterarbeiten (Zeittechnik-Verlag, öffentl. Leseprobe)
+#   [REFA]    REFA Verband, Fachauss. Bauwesen — Zeitartengliederung
+#   [PRAXIS]  Allgemeine Baupraxis-Erfahrungswerte
+#
+# Letzte Aktualisierung: September 2026
+# ============================================================================
+
+meta:
+  version: "1.0.0"
+  stand: "2026-09"
+  waehrung: "EUR"
+  hinweis: >
+    Richtwerte aus öffentlichen Quellen. Keine geschützten ARH-Tabellen.
+    Firmeninterne Werte haben immer Vorrang. Der Mops zeigt diese Werte
+    als Vorschlag an (GELB), nie als Fakt (GRÜN) — es sei denn, die Firma
+    hat eigene Werte hinterlegt.
+
+# ============================================================================
+# 01 — ERDARBEITEN (DIN 18300)
+# ============================================================================
+erdarbeiten:
+
+  oberboden_abtragen:
+    bezeichnung: "Oberboden abtragen und seitlich lagern"
+    einheit: "m3"
+    aufwandswert:
+      min: 0.02
+      mittel: 0.04
+      max: 0.08
+    kolonne: "1 Baggerfahrer + 1 Helfer"
+    hinweis: "Maschinell mit Bagger; Handarbeit ca. 0.8-1.5 h/m³"
+    quellen: ["PAK", "FSG"]
+
+  baugrube_ausheben_bagger:
+    bezeichnung: "Baugrube ausheben mit Bagger"
+    einheit: "m3"
+    leistungswert:
+      minibagger_3t:
+        m3_pro_h: 4.4
+        quelle: "PRAXIS — iMOPS Erdbauleistung.swift"
+      mittelbagger_14t:
+        m3_pro_h: 20.0
+        quelle: "PAK"
+      grossbagger_25t:
+        m3_pro_h: 40.0
+        quelle: "PAK"
+    aufwandswert:
+      min: 0.025    # Großbagger, weicher Boden
+      mittel: 0.05  # Mittelbagger, Kl. 3-4
+      max: 0.23     # Minibagger, Kl. 5
+    kolonne: "1 Baggerfahrer"
+    hinweis: "Bodenklasse 3-5; inkl. Laden, ohne Transport"
+    quellen: ["PAK", "PRAXIS"]
+
+  baugrube_hand:
+    bezeichnung: "Handschachtung"
+    einheit: "m3"
+    aufwandswert:
+      min: 0.7
+      mittel: 1.0
+      max: 1.5
+    kolonne: "1 Facharbeiter"
+    hinweis: "Nur für kleine Mengen oder unzugängliche Stellen"
+    quellen: ["FSG", "PRAXIS"]
+
+  boden_verdichten:
+    bezeichnung: "Planum/Baugrubensohle verdichten"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.01
+      mittel: 0.03
+      max: 0.06
+    kolonne: "1 Baggerfahrer/Walzenfahrer + 1 Helfer"
+    hinweis: "Rüttelplatte oder Walze; EV2-Prüfung separat"
+    quellen: ["PRAXIS"]
+
+  boden_laden_transport:
+    bezeichnung: "Boden laden und transportieren"
+    einheit: "m3"
+    aufwandswert:
+      min: 0.03
+      mittel: 0.06
+      max: 0.10
+    kolonne: "1 Baggerfahrer + 1 LKW-Fahrer"
+    hinweis: "Entfernung bis 15 km; darüber Zuschlag"
+    quellen: ["PRAXIS"]
+
+  frostschutzschicht:
+    bezeichnung: "Frostschutzschicht einbauen und verdichten"
+    einheit: "m3"
+    aufwandswert:
+      min: 0.05
+      mittel: 0.08
+      max: 0.12
+    kolonne: "1 Baggerfahrer + 1 Helfer"
+    hinweis: "Kies-Sand-Gemisch 0/32 oder Schotter 0/45"
+    quellen: ["PRAXIS"]
+
+  graben_ausheben:
+    bezeichnung: "Rohrgraben/Kabelgraben ausheben"
+    einheit: "m"
+    aufwandswert:
+      min: 0.15
+      mittel: 0.30
+      max: 0.50
+    kolonne: "1 Baggerfahrer + 1 Helfer"
+    hinweis: "Tiefe 0.8-1.5 m, maschinell; tiefer = mehr Aufwand"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 02 — BETON- UND STAHLBETONARBEITEN (DIN 18331)
+# ============================================================================
+betonarbeiten:
+
+  sauberkeitsschicht:
+    bezeichnung: "Sauberkeitsschicht C12/15, d=5cm"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.08
+      mittel: 0.12
+      max: 0.18
+    kolonne: "2 Betonbauer"
+    quellen: ["HOF", "PRAXIS"]
+
+  betonieren_allgemein:
+    bezeichnung: "Beton einbringen und verdichten"
+    einheit: "m3"
+    aufwandswert:
+      min: 0.30
+      mittel: 0.50
+      max: 0.80
+    kolonne: "2-3 Betonbauer"
+    hinweis: "Mit Betonpumpe; Krankübel ca. 30% mehr"
+    quellen: ["HOF", "PAK"]
+
+  bodenplatte:
+    bezeichnung: "Bodenplatte StB, d=20-25cm, komplett"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.60
+      mittel: 0.90
+      max: 1.30
+    kolonne: "3-4 Betonbauer"
+    hinweis: "Inkl. Schalung Rand, Bewehrung, Betonieren, Abziehen"
+    quellen: ["HOF", "BNW"]
+
+  stahlbeton_wand:
+    bezeichnung: "Stahlbetonwand, d=20-25cm, komplett"
+    einheit: "m2"
+    aufwandswert:
+      min: 1.20
+      mittel: 1.80
+      max: 2.50
+    kolonne: "3-4 Betonbauer"
+    hinweis: "Inkl. Schalung beidseitig, Bewehrung, Betonieren"
+    quellen: ["HOF", "BNW"]
+
+  stahlbeton_decke:
+    bezeichnung: "Stahlbetondecke, d=18-22cm, komplett"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.80
+      mittel: 1.20
+      max: 1.80
+    kolonne: "3-4 Betonbauer"
+    hinweis: "Inkl. Schalung+Stützen, Bewehrung, Betonieren"
+    quellen: ["HOF", "BNW"]
+
+  stuetze:
+    bezeichnung: "Stahlbetonstütze, komplett"
+    einheit: "m3"
+    aufwandswert:
+      min: 3.00
+      mittel: 5.00
+      max: 8.00
+    kolonne: "2-3 Betonbauer"
+    hinweis: "Hoher Schalungsaufwand pro m³; je kleiner desto mehr"
+    quellen: ["HOF"]
+
+  treppe:
+    bezeichnung: "Treppenläufe Stahlbeton"
+    einheit: "m"
+    aufwandswert:
+      min: 2.00
+      mittel: 3.50
+      max: 5.00
+    kolonne: "3-4 Betonbauer"
+    hinweis: "Hoher Schalungsaufwand; lfm Treppenlauf"
+    quellen: ["HOF", "PRAXIS"]
+
+# ============================================================================
+# 03 — SCHALARBEITEN (Teil von Stahlbeton)
+# ============================================================================
+schalarbeiten:
+
+  schalung_fundament:
+    bezeichnung: "Fundamentschalung, einseitig"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.30
+      mittel: 0.50
+      max: 0.80
+    kolonne: "2 Schalungsbauer"
+    quellen: ["HOF", "ARH"]
+
+  schalung_wand_rahmenschalung:
+    bezeichnung: "Wandschalung, Rahmenschalung"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.35
+      mittel: 0.55
+      max: 0.85
+    kolonne: "2 Schalungsbauer + Kran"
+    hinweis: "Großflächenschalung; konventionell +50-100%"
+    quellen: ["HOF", "ARH", "BNW"]
+
+  schalung_wand_konventionell:
+    bezeichnung: "Wandschalung, konventionell (Bretter/Kanthölzer)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.70
+      mittel: 1.00
+      max: 1.50
+    kolonne: "2 Schalungsbauer"
+    quellen: ["HOF", "ARH"]
+
+  schalung_decke:
+    bezeichnung: "Deckenschalung mit Stützen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.25
+      mittel: 0.45
+      max: 0.70
+    kolonne: "2-3 Schalungsbauer"
+    hinweis: "Fallkopfschalung; konventionell mehr"
+    quellen: ["HOF", "ARH"]
+
+  schalung_stuetze:
+    bezeichnung: "Stützenschalung"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.60
+      mittel: 0.90
+      max: 1.20
+    kolonne: "2 Schalungsbauer"
+    quellen: ["HOF"]
+
+# ============================================================================
+# 04 — BEWEHRUNGSARBEITEN
+# ============================================================================
+bewehrungsarbeiten:
+
+  bewehrung_stabstahl:
+    bezeichnung: "Bewehrung Stabstahl verlegen"
+    einheit: "t"
+    aufwandswert:
+      min: 8.0
+      mittel: 15.0
+      max: 25.0
+    kolonne: "2 Eisenflechter"
+    hinweis: "Stark abhängig vom Durchmesser: Ø6=25h/t, Ø20=10h/t, Ø28=8h/t"
+    quellen: ["HOF", "PAK"]
+
+  bewehrung_matten:
+    bezeichnung: "Bewehrungsmatten verlegen"
+    einheit: "t"
+    aufwandswert:
+      min: 4.0
+      mittel: 7.0
+      max: 12.0
+    kolonne: "2 Eisenflechter"
+    hinweis: "Lagermatten ca. 45% schneller als Stabstahl"
+    quellen: ["HOF"]
+
+# ============================================================================
+# 05 — MAUERARBEITEN (DIN 18330)
+# ============================================================================
+mauerarbeiten:
+
+  mauerwerk_ks_planstein:
+    bezeichnung: "Kalksandstein-Planstein Mauerwerk"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.50
+      mittel: 0.70
+      max: 1.00
+    kolonne: "1 Maurer + 1 Helfer"
+    hinweis: "Dünnbettmörtel; d=11.5-24 cm"
+    quellen: ["BUB", "ARH"]
+
+  mauerwerk_poroton:
+    bezeichnung: "Poroton-Planziegel Mauerwerk"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.40
+      mittel: 0.60
+      max: 0.90
+    kolonne: "1 Maurer + 1 Helfer"
+    hinweis: "Dünnbettmörtel; d=30-42.5 cm; großformatig = schneller"
+    quellen: ["BUB", "PRAXIS"]
+
+  mauerwerk_porenbeton:
+    bezeichnung: "Porenbetonsteine (Ytong)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.30
+      mittel: 0.50
+      max: 0.80
+    kolonne: "1 Maurer + 1 Helfer"
+    hinweis: "Leicht, großformatig, Dünnbettmörtel"
+    quellen: ["BUB", "PRAXIS"]
+
+  mauerwerk_klinker:
+    bezeichnung: "Klinker-Verblendmauerwerk"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.80
+      mittel: 1.20
+      max: 1.80
+    kolonne: "1 Maurer + 1 Helfer"
+    hinweis: "Kleinformatig, Sichtqualität, aufwändiger"
+    quellen: ["BUB", "CIV"]
+
+  sturz_einbauen:
+    bezeichnung: "Fertigteilsturz einbauen"
+    einheit: "St"
+    aufwandswert:
+      min: 0.20
+      mittel: 0.35
+      max: 0.50
+    kolonne: "1 Maurer + 1 Helfer"
+    hinweis: "Je nach Länge und Gewicht; Kran bei > 2.50m"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 06 — PFLASTERARBEITEN (DIN 18318)
+# ============================================================================
+pflasterarbeiten:
+
+  verbundpflaster_verlegen:
+    bezeichnung: "Betonverbundpflaster verlegen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.32
+      mittel: 0.45
+      max: 0.65
+    kolonne: "2 Pflasterer"
+    hinweis: "d=6-10cm, auf Splittbett; Muster erhöht Aufwand deutlich"
+    quellen: ["ART-P", "PRAXIS"]
+
+  natursteinpflaster:
+    bezeichnung: "Natursteinpflaster/Reihenpflaster"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.65
+      mittel: 0.85
+      max: 1.20
+    kolonne: "2 Pflasterer"
+    hinweis: "Handverlegt; Mosaikpflaster bis 1.60 h/m²"
+    quellen: ["ART-P"]
+
+  pflaster_mosaik:
+    bezeichnung: "Mosaikpflaster"
+    einheit: "m2"
+    aufwandswert:
+      min: 1.20
+      mittel: 1.60
+      max: 2.40
+    kolonne: "2 Pflasterer"
+    hinweis: "Kleinsteinpflaster, sehr aufwändig"
+    quellen: ["ART-P"]
+
+  bordstein_setzen:
+    bezeichnung: "Bordsteine/Randsteine setzen"
+    einheit: "m"
+    aufwandswert:
+      min: 0.20
+      mittel: 0.35
+      max: 0.55
+    kolonne: "1 Pflasterer + 1 Helfer"
+    hinweis: "Inkl. Betonfundament und Rückenstütze"
+    quellen: ["ART-P", "PRAXIS"]
+
+  splittbett_herstellen:
+    bezeichnung: "Splittbett 3/5 herstellen, d=4cm"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.03
+      mittel: 0.05
+      max: 0.08
+    kolonne: "1-2 Helfer"
+    quellen: ["PRAXIS"]
+
+  fugen_einsanden:
+    bezeichnung: "Pflasterfugen einsanden und abrütteln"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.02
+      mittel: 0.04
+      max: 0.06
+    kolonne: "1-2 Helfer"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 07 — STRASSENARBEITEN / ASPHALT (DIN 18315/18316/18317)
+# ============================================================================
+strassenbau:
+
+  asphaltdecke_fraesen:
+    bezeichnung: "Asphaltdecke fräsen"
+    einheit: "m2"
+    leistungswert:
+      m2_pro_h: 200
+    aufwandswert:
+      min: 0.003
+      mittel: 0.005
+      max: 0.010
+    kolonne: "1 Fräsenfahrer + 2 Helfer"
+    hinweis: "Maschinelle Kaltfräse; Frästiefe 4-8cm"
+    quellen: ["PRAXIS"]
+
+  schottertragschicht:
+    bezeichnung: "Schottertragschicht 0/32 einbauen"
+    einheit: "m3"
+    aufwandswert:
+      min: 0.04
+      mittel: 0.08
+      max: 0.12
+    kolonne: "1 Baggerfahrer + 1 Walzenfahrer + 2 Helfer"
+    hinweis: "Profilgerecht, verdichtet auf EV2 ≥ 150"
+    quellen: ["PRAXIS"]
+
+  asphalttragschicht:
+    bezeichnung: "Asphalttragschicht AC 22 T, d=8cm"
+    einheit: "m2"
+    leistungswert:
+      m2_pro_h: 250
+    aufwandswert:
+      min: 0.003
+      mittel: 0.005
+      max: 0.008
+    kolonne: "1 Fertigerfahrer + 1 Walzenfahrer + 3 Helfer"
+    hinweis: "Fertigereinbau; Handeinbau ca. 10x langsamer"
+    quellen: ["PRAXIS"]
+
+  asphaltdeckschicht:
+    bezeichnung: "Asphaltdeckschicht AC 11 D, d=4cm"
+    einheit: "m2"
+    leistungswert:
+      m2_pro_h: 300
+    aufwandswert:
+      min: 0.002
+      mittel: 0.004
+      max: 0.007
+    kolonne: "1 Fertigerfahrer + 1 Walzenfahrer + 3 Helfer"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 08 — KANALBAU / ROHRLEITUNGEN (DIN 18306)
+# ============================================================================
+kanalbau:
+
+  kanalrohr_verlegen:
+    bezeichnung: "Kanalrohr verlegen (DN 200-400)"
+    einheit: "m"
+    aufwandswert:
+      min: 0.30
+      mittel: 0.50
+      max: 0.80
+    kolonne: "1 Baggerfahrer + 2 Rohrleger"
+    hinweis: "In offener Bauweise; inkl. Bettung und Verfüllung"
+    quellen: ["PRAXIS"]
+
+  schacht_setzen:
+    bezeichnung: "Schachtbauwerk DN 1000 setzen"
+    einheit: "St"
+    aufwandswert:
+      min: 4.0
+      mittel: 6.0
+      max: 10.0
+    kolonne: "1 Baggerfahrer + 2 Kanalbauer"
+    hinweis: "Betonfertigteile; inkl. Gerinne, Konus, Abdeckung"
+    quellen: ["PRAXIS"]
+
+  hausanschluss:
+    bezeichnung: "Hausanschluss an Kanal"
+    einheit: "St"
+    aufwandswert:
+      min: 2.0
+      mittel: 3.5
+      max: 6.0
+    kolonne: "2 Kanalbauer"
+    hinweis: "Inkl. Kernbohrung, Stutzen, Dichtung"
+    quellen: ["PRAXIS"]
+
+  strassenablauf:
+    bezeichnung: "Straßenablauf setzen"
+    einheit: "St"
+    aufwandswert:
+      min: 1.5
+      mittel: 2.5
+      max: 4.0
+    kolonne: "2 Kanalbauer"
+    hinweis: "Typ I mit Schlammfang, inkl. Anschlussleitung"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 09 — DACHARBEITEN
+# ============================================================================
+dacharbeiten:
+
+  dach_abdecken:
+    bezeichnung: "Altes Dach abdecken und entsorgen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.10
+      mittel: 0.18
+      max: 0.30
+    kolonne: "2 Dachdecker"
+    hinweis: "Betondachsteine; Naturschiefer aufwändiger"
+    quellen: ["PRAXIS"]
+
+  unterspannbahn:
+    bezeichnung: "Unterspannbahn/Unterdeckbahn verlegen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.03
+      mittel: 0.06
+      max: 0.10
+    kolonne: "2 Dachdecker"
+    quellen: ["PRAXIS"]
+
+  lattung_konterlattung:
+    bezeichnung: "Konterlattung + Traglattung"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.10
+      mittel: 0.15
+      max: 0.25
+    kolonne: "2 Dachdecker/Zimmerer"
+    quellen: ["PRAXIS"]
+
+  dacheindeckung_tondachziegel:
+    bezeichnung: "Dacheindeckung Tondachziegel"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.15
+      mittel: 0.25
+      max: 0.40
+    kolonne: "2 Dachdecker"
+    hinweis: "Flachdachpfanne; Biberschwanz +30%"
+    quellen: ["PRAXIS"]
+
+  dachrinne_montieren:
+    bezeichnung: "Dachrinne halbrund montieren"
+    einheit: "m"
+    aufwandswert:
+      min: 0.15
+      mittel: 0.25
+      max: 0.40
+    kolonne: "1-2 Spengler"
+    hinweis: "Titanzink; inkl. Rinnenhalter"
+    quellen: ["PRAXIS"]
+
+  fallrohr_montieren:
+    bezeichnung: "Fallrohr rund montieren"
+    einheit: "m"
+    aufwandswert:
+      min: 0.15
+      mittel: 0.25
+      max: 0.35
+    kolonne: "1-2 Spengler"
+    hinweis: "DN 80-100; inkl. Rohrschellen"
+    quellen: ["PRAXIS"]
+
+  daemmung_zwischensparren:
+    bezeichnung: "Zwischensparrendämmung einbauen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.08
+      mittel: 0.15
+      max: 0.25
+    kolonne: "1-2 Dachdecker/Zimmerer"
+    hinweis: "Mineralfaser WLG 035, d=16-22cm; inkl. Dampfbremse"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 10 — ZIMMERARBEITEN / HOLZBAU (DIN 18334)
+# ============================================================================
+zimmerarbeiten:
+
+  dachstuhl_aufstellen:
+    bezeichnung: "Dachstuhl aufstellen (Satteldach)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.30
+      mittel: 0.50
+      max: 0.80
+    kolonne: "2-3 Zimmerer + Kran"
+    hinweis: "Grundfläche; Walmdach +20%, Gauben separat"
+    quellen: ["CIV", "PRAXIS"]
+
+  holzbalkendecke:
+    bezeichnung: "Holzbalkendecke einbauen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.20
+      mittel: 0.35
+      max: 0.50
+    kolonne: "2-3 Zimmerer"
+    quellen: ["PRAXIS"]
+
+  carport_holz:
+    bezeichnung: "Carport Holzkonstruktion aufstellen"
+    einheit: "St"
+    aufwandswert:
+      min: 12.0
+      mittel: 18.0
+      max: 28.0
+    kolonne: "2 Zimmerer"
+    hinweis: "Einfacher Carport 3x6m; Doppelcarport +60%"
+    quellen: ["CIV", "PRAXIS"]
+
+# ============================================================================
+# 11 — PUTZARBEITEN (DIN 18350)
+# ============================================================================
+putzarbeiten:
+
+  innenputz_maschinenputz:
+    bezeichnung: "Innenputz Maschinenputz (Gips)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.06
+      mittel: 0.10
+      max: 0.18
+    kolonne: "2-3 Putzer"
+    hinweis: "Gipsmaschinenputz d=10-15mm; Handputz ca. doppelt"
+    quellen: ["CIV", "PRAXIS"]
+
+  innenputz_hand:
+    bezeichnung: "Innenputz Handputz (Kalk-Zement)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.15
+      mittel: 0.25
+      max: 0.40
+    kolonne: "1-2 Putzer"
+    quellen: ["PRAXIS"]
+
+  aussenputz:
+    bezeichnung: "Außenputz (Kalk-Zement, 2-lagig)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.20
+      mittel: 0.35
+      max: 0.55
+    kolonne: "2-3 Putzer"
+    hinweis: "Inkl. Grundierung, Armierungsgewebe bei WDVS"
+    quellen: ["CIV", "PRAXIS"]
+
+# ============================================================================
+# 12 — TROCKENBAUARBEITEN (DIN 18340)
+# ============================================================================
+trockenbau:
+
+  staenderwand_einfach:
+    bezeichnung: "Ständerwand einfach beplankt (GK 12.5mm)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.25
+      mittel: 0.40
+      max: 0.60
+    kolonne: "2 Trockenbauer"
+    hinweis: "CW/UW-Profil + 1x GK je Seite; ohne Spachteln"
+    quellen: ["ARH", "CIV"]
+
+  staenderwand_doppelt:
+    bezeichnung: "Ständerwand doppelt beplankt + Dämmung"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.40
+      mittel: 0.60
+      max: 0.90
+    kolonne: "2 Trockenbauer"
+    hinweis: "CW/UW + 2x GK je Seite + Mineralwolle"
+    quellen: ["ARH", "CIV"]
+
+  decke_abhaengen:
+    bezeichnung: "Decke abhängen (GK auf Metallunterkonstruktion)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.30
+      mittel: 0.50
+      max: 0.80
+    kolonne: "2 Trockenbauer"
+    hinweis: "CD/UD-Profil + GK; Abhängehöhe > 50cm aufwändiger"
+    quellen: ["ARH", "CIV"]
+
+  spachteln_q2:
+    bezeichnung: "Spachteln Qualitätsstufe Q2"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.05
+      mittel: 0.10
+      max: 0.15
+    kolonne: "1 Trockenbauer/Maler"
+    hinweis: "Fugen + Schrauben; Q3/Q4 +50-100%"
+    quellen: ["CIV"]
+
+# ============================================================================
+# 13 — ESTRICHARBEITEN (DIN 18353)
+# ============================================================================
+estricharbeiten:
+
+  zementestrich:
+    bezeichnung: "Zementestrich CT-C25, d=5-7cm"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.04
+      mittel: 0.08
+      max: 0.12
+    kolonne: "2-3 Estrichleger"
+    hinweis: "Maschinell mit Pumpe; Hand ca. 0.15-0.25 h/m²"
+    quellen: ["PRAXIS"]
+
+  fliessestrich:
+    bezeichnung: "Fließestrich (Calciumsulfat)"
+    einheit: "m2"
+    leistungswert:
+      m2_pro_h: 120
+    aufwandswert:
+      min: 0.02
+      mittel: 0.04
+      max: 0.06
+    kolonne: "2 Estrichleger + Pumpe"
+    hinweis: "Selbstnivellierend; sehr schnell aber Trocknungszeit 28 Tage"
+    quellen: ["PRAXIS"]
+
+  trockenestrich:
+    bezeichnung: "Trockenestrich (Fermacell/Knauf)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.10
+      mittel: 0.18
+      max: 0.28
+    kolonne: "2 Trockenbauer"
+    hinweis: "Keine Trocknungszeit; sofort belegbar"
+    quellen: ["CIV", "PRAXIS"]
+
+# ============================================================================
+# 14 — FLIESENARBEITEN (DIN 18352)
+# ============================================================================
+fliesenarbeiten:
+
+  wandfliesen:
+    bezeichnung: "Wandfliesen verlegen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.40
+      mittel: 0.65
+      max: 1.00
+    kolonne: "1 Fliesenleger"
+    hinweis: "30x60cm Format; Mosaik oder Naturstein deutlich mehr"
+    quellen: ["CIV", "PRAXIS"]
+
+  bodenfliesen:
+    bezeichnung: "Bodenfliesen verlegen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.35
+      mittel: 0.55
+      max: 0.85
+    kolonne: "1 Fliesenleger"
+    hinweis: "60x60cm Format; diagonal +30%; Großformat 120x60 ähnlich"
+    quellen: ["CIV", "PRAXIS"]
+
+  fliesen_verfugen:
+    bezeichnung: "Fliesen verfugen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.05
+      mittel: 0.10
+      max: 0.18
+    kolonne: "1 Fliesenleger"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 15 — MALER- UND LACKIERARBEITEN (DIN 18363)
+# ============================================================================
+malerarbeiten:
+
+  waende_streichen:
+    bezeichnung: "Innenwände streichen (2x Dispersionsfarbe)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.04
+      mittel: 0.08
+      max: 0.15
+    kolonne: "1 Maler"
+    hinweis: "Glatte Wände; Raufaser vorher tapezieren = extra"
+    quellen: ["CIV", "PRAXIS"]
+
+  decke_streichen:
+    bezeichnung: "Decken streichen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.06
+      mittel: 0.10
+      max: 0.18
+    kolonne: "1 Maler"
+    hinweis: "Überkopfarbeit = langsamer als Wand"
+    quellen: ["PRAXIS"]
+
+  tapezieren:
+    bezeichnung: "Raufaser tapezieren"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.08
+      mittel: 0.14
+      max: 0.22
+    kolonne: "1 Maler"
+    quellen: ["CIV", "PRAXIS"]
+
+  lackieren_tuer:
+    bezeichnung: "Türblatt lackieren (beidseitig)"
+    einheit: "St"
+    aufwandswert:
+      min: 0.80
+      mittel: 1.20
+      max: 2.00
+    kolonne: "1 Maler"
+    hinweis: "Inkl. Schleifen, Grundieren, 2x Lack"
+    quellen: ["PRAXIS"]
+
+  fassade_streichen:
+    bezeichnung: "Fassade streichen (2x Silikonharzfarbe)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.06
+      mittel: 0.12
+      max: 0.20
+    kolonne: "1-2 Maler + Gerüst"
+    hinweis: "Glatte Fassade; Strukturputz langsamer"
+    quellen: ["CIV", "PRAXIS"]
+
+# ============================================================================
+# 16 — ABBRUCH / RÜCKBAU
+# ============================================================================
+abbruch:
+
+  mauerwerk_abbrechen:
+    bezeichnung: "Mauerwerk abbrechen (maschinell)"
+    einheit: "m3"
+    aufwandswert:
+      min: 0.30
+      mittel: 0.60
+      max: 1.20
+    kolonne: "1 Baggerfahrer + 1 Helfer"
+    hinweis: "Abbruchbagger; Hand ca. 2-4 h/m³"
+    quellen: ["PRAXIS"]
+
+  beton_abbrechen:
+    bezeichnung: "Stahlbeton abbrechen"
+    einheit: "m3"
+    aufwandswert:
+      min: 1.00
+      mittel: 2.00
+      max: 4.00
+    kolonne: "1 Baggerfahrer + 1-2 Helfer"
+    hinweis: "Abbruchhammer; bewehrt = langsamer"
+    quellen: ["PRAXIS"]
+
+  boden_aufnehmen:
+    bezeichnung: "Bodenbelag aufnehmen (Fliesen/PVC/Parkett)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.05
+      mittel: 0.12
+      max: 0.25
+    kolonne: "1-2 Helfer"
+    hinweis: "Stark abhängig vom Belag und Kleber"
+    quellen: ["PRAXIS"]
+
+  wand_schlitzen:
+    bezeichnung: "Wand schlitzen für Elektro/Sanitär"
+    einheit: "m"
+    aufwandswert:
+      min: 0.05
+      mittel: 0.10
+      max: 0.20
+    kolonne: "1 Facharbeiter"
+    hinweis: "Mauernutfräse; Stahlbeton mit Kernbohrung"
+    quellen: ["PRAXIS"]
+
+  asphalt_aufnehmen:
+    bezeichnung: "Asphaltschichten aufnehmen und laden"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.02
+      mittel: 0.05
+      max: 0.10
+    kolonne: "1 Baggerfahrer + 1-2 Helfer"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 17 — BAUSTELLENEINRICHTUNG / ALLGEMEIN
+# ============================================================================
+baustelleneinrichtung:
+
+  bauzaun_aufstellen:
+    bezeichnung: "Bauzaun aufstellen"
+    einheit: "m"
+    aufwandswert:
+      min: 0.05
+      mittel: 0.08
+      max: 0.12
+    kolonne: "2 Helfer"
+    quellen: ["PRAXIS"]
+
+  geruest_aufstellen:
+    bezeichnung: "Fassadengerüst aufstellen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.06
+      mittel: 0.10
+      max: 0.16
+    kolonne: "3-4 Gerüstbauer"
+    hinweis: "Systemgerüst; m² Gerüstfläche"
+    quellen: ["ARH", "PRAXIS"]
+
+  geruest_abbauen:
+    bezeichnung: "Fassadengerüst abbauen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.04
+      mittel: 0.07
+      max: 0.12
+    kolonne: "3-4 Gerüstbauer"
+    hinweis: "Ca. 30% schneller als Aufbau"
+    quellen: ["ARH", "PRAXIS"]
+
+  container_aufstellen:
+    bezeichnung: "Baucontainer anliefern und aufstellen"
+    einheit: "St"
+    aufwandswert:
+      min: 0.50
+      mittel: 1.00
+      max: 2.00
+    kolonne: "1 LKW-Fahrer + 1-2 Helfer"
+    quellen: ["PRAXIS"]
+
+  vermessung_absteckung:
+    bezeichnung: "Baufeld abstecken / Schnurgerüst"
+    einheit: "St"
+    aufwandswert:
+      min: 2.0
+      mittel: 4.0
+      max: 8.0
+    kolonne: "1 Vermesser + 1 Helfer"
+    hinweis: "Pro Gebäude/Baugrube; einfaches EFH = 2-4h"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 18 — ABDICHTUNG / DRAINAGE
+# ============================================================================
+abdichtung:
+
+  abdichtung_bodenplatte:
+    bezeichnung: "Abdichtung Bodenplatte (Bitumenbahn)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.08
+      mittel: 0.15
+      max: 0.25
+    kolonne: "1-2 Abdichter"
+    hinweis: "1-lagig aufgeschweißt; 2-lagig ca. +60%"
+    quellen: ["PRAXIS"]
+
+  abdichtung_kellerwand:
+    bezeichnung: "Abdichtung Kellerwand (Bitumendickbeschichtung)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.10
+      mittel: 0.18
+      max: 0.30
+    kolonne: "1-2 Abdichter"
+    hinweis: "2x Auftrag mit Vlieseinlage; Perimeterdämmung separat"
+    quellen: ["PRAXIS"]
+
+  drainage_verlegen:
+    bezeichnung: "Drainage DN 100 verlegen"
+    einheit: "m"
+    aufwandswert:
+      min: 0.15
+      mittel: 0.25
+      max: 0.40
+    kolonne: "1-2 Facharbeiter"
+    hinweis: "Inkl. Filterkies, Vlies, Gefälle prüfen"
+    quellen: ["PRAXIS"]
+
+  trennvlies_verlegen:
+    bezeichnung: "Trennvlies/Geotextil verlegen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.01
+      mittel: 0.03
+      max: 0.05
+    kolonne: "1-2 Helfer"
+    hinweis: "Bahnen längs, 30cm überlappen, Wannenprinzip"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 19 — ELEKTROINSTALLATION (vereinfacht)
+# ============================================================================
+elektro:
+
+  leerrohr_verlegen:
+    bezeichnung: "Leerrohr verlegen (Unterputz)"
+    einheit: "m"
+    aufwandswert:
+      min: 0.05
+      mittel: 0.10
+      max: 0.18
+    kolonne: "1 Elektriker"
+    hinweis: "In vorgeschlitzte Wand; Aufputz schneller"
+    quellen: ["PRAXIS"]
+
+  steckdose_setzen:
+    bezeichnung: "Steckdose/Schalter setzen"
+    einheit: "St"
+    aufwandswert:
+      min: 0.20
+      mittel: 0.35
+      max: 0.50
+    kolonne: "1 Elektriker"
+    hinweis: "Inkl. Dose setzen, Kabel anschließen, Abdeckung"
+    quellen: ["PRAXIS"]
+
+  verteilung_einbauen:
+    bezeichnung: "Unterverteilung einbauen"
+    einheit: "St"
+    aufwandswert:
+      min: 3.0
+      mittel: 5.0
+      max: 8.0
+    kolonne: "1 Elektriker"
+    hinweis: "EFH 1x UV mit 12-24 Modulen; Verdrahtung separat"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 20 — SANITÄRINSTALLATION (vereinfacht)
+# ============================================================================
+sanitaer:
+
+  wasserleitung_verlegen:
+    bezeichnung: "Wasserleitung verlegen (Kupfer/PE-X)"
+    einheit: "m"
+    aufwandswert:
+      min: 0.10
+      mittel: 0.20
+      max: 0.35
+    kolonne: "1 Installateur"
+    hinweis: "DN 15-25; Press- oder Löttechnik"
+    quellen: ["PRAXIS"]
+
+  abwasserleitung_verlegen:
+    bezeichnung: "Abwasserleitung verlegen (HT-Rohr)"
+    einheit: "m"
+    aufwandswert:
+      min: 0.08
+      mittel: 0.15
+      max: 0.25
+    kolonne: "1 Installateur"
+    hinweis: "DN 50-110; Steckmuffe"
+    quellen: ["PRAXIS"]
+
+  waschbecken_montieren:
+    bezeichnung: "Waschbecken komplett montieren"
+    einheit: "St"
+    aufwandswert:
+      min: 1.0
+      mittel: 1.5
+      max: 2.5
+    kolonne: "1 Installateur"
+    hinweis: "Inkl. Armatur, Ab-/Zulauf, Befestigung"
+    quellen: ["PRAXIS"]
+
+  wc_montieren:
+    bezeichnung: "WC komplett montieren (Wand-WC)"
+    einheit: "St"
+    aufwandswert:
+      min: 1.5
+      mittel: 2.5
+      max: 4.0
+    kolonne: "1 Installateur"
+    hinweis: "Inkl. Vorwandelement; Stand-WC einfacher"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# 21 — GERÄTELEISTUNGSWERTE (Ergänzung zu Erdarbeiten)
+# ============================================================================
+geraete:
+
+  minibagger_3t:
+    bezeichnung: "Minibagger 3t"
+    leistung_m3_pro_h: 4.4
+    einsatzgebiet: "Enge Verhältnisse, kleine Baugruben, Gärten"
+    tagesleistung_8h: 35
+    quelle: "iMOPS Erdbauleistung.swift"
+
+  mittelbagger_14t:
+    bezeichnung: "Kettenbagger 14t"
+    leistung_m3_pro_h: 20.0
+    einsatzgebiet: "Standardbaugruben, Kanalgräben"
+    tagesleistung_8h: 160
+    quelle: "PAK"
+
+  grossbagger_25t:
+    bezeichnung: "Kettenbagger 25t"
+    leistung_m3_pro_h: 40.0
+    einsatzgebiet: "Große Baugruben, Massenerdarbeiten"
+    tagesleistung_8h: 320
+    quelle: "PAK"
+
+  radlader_1m3:
+    bezeichnung: "Radlader 1m³ Schaufel"
+    leistung_m3_pro_h: 30.0
+    einsatzgebiet: "Laden, Umschlagen, kurze Transporte"
+    quelle: "PRAXIS"
+
+  rüttelplatte_200kg:
+    bezeichnung: "Rüttelplatte 200kg"
+    leistung_m2_pro_h: 80.0
+    einsatzgebiet: "Verdichten Pflasterflächen, Gräben"
+    quelle: "PRAXIS"
+
+  walze_5t:
+    bezeichnung: "Walzenzug 5t"
+    leistung_m2_pro_h: 200.0
+    einsatzgebiet: "Verdichten Tragschichten, Planum"
+    quelle: "PRAXIS"
+
+  betonpumpe:
+    bezeichnung: "Autobetonpumpe"
+    leistung_m3_pro_h: 30.0
+    einsatzgebiet: "Betonieren Bodenplatten, Wände, Decken"
+    hinweis: "Netto-Förderleistung; Einbau/Verdichten limitiert"
+    quelle: "PRAXIS"
+
+  asphaltfertiger:
+    bezeichnung: "Asphaltfertiger"
+    leistung_m2_pro_h: 250.0
+    einsatzgebiet: "Einbau Asphaltschichten"
+    hinweis: "Bei 3m Einbaubreite; breiter = mehr m²/h"
+    quelle: "PRAXIS"
+
+  kaltfraese:
+    bezeichnung: "Kaltfräse 1m Breite"
+    leistung_m2_pro_h: 200.0
+    einsatzgebiet: "Fräsen Asphaltdecken"
+    quelle: "PRAXIS"
+
+  kran_mobilkran_50t:
+    bezeichnung: "Mobilkran 50t"
+    hub_pro_h: 8
+    einsatzgebiet: "Montage Fertigteile, Schachtbauwerke, Stahlbau"
+    hinweis: "Hübe/Stunde stark abhängig von Entfernung/Höhe"
+    quelle: "PRAXIS"

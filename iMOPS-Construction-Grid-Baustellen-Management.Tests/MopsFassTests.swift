@@ -81,6 +81,19 @@ struct MopsFassTests {
         #expect(LeistungskatalogService.finde(leistung: "Betonwände herstellen", einheit: "m²", in: ctx) != nil)
     }
 
+    @Test @MainActor func richtwertKatalogMachtRotZuGelb() throws {
+        // Kein gelerntes Rezept, ABER der Aufwandswerte-Katalog kennt den Rohrgraben:
+        // → GELB statt ROT, mit Richtwert-Meldung und echten Lohnstunden (kein 0-Preis).
+        let pos = position("Rohrgraben ausheben", "m", menge: 320)
+        let e = AutoKalkulationsService.bewerte(pos, in: ctx)
+        #expect(e.status == .gelb)
+        #expect(e.meldungen.contains { $0.contains("Richtwert") })
+        #expect(e.meldungen.contains { $0.contains("Baggerfahrer") })
+        // 0,30 h/m × 320 m = 96 Lohnstunden geschrieben → Preis > 0
+        #expect(LVKalkulator.kalkuliere(position: pos).stundenGesamt == 96)
+        #expect(e.einheitspreisVK > 0)
+    }
+
     @Test @MainActor func exportBereitWennKeinRot() throws {
         LeistungskatalogService.merke(leistung: "Betonwände herstellen", einheit: "m²",
                                       maurer: 0.8, helfer: 0.4, in: ctx)

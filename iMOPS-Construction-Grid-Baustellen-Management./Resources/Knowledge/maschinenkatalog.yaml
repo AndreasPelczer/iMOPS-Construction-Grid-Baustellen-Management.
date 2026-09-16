@@ -1,0 +1,929 @@
+# ============================================================================
+# MASCHINENKATALOG BAU — Geräte, Einsatzgebiete & Mietkosten für den Mops
+# ============================================================================
+#
+# Zweck: Der Mops liest eine LV-Position ("Baugrube ausheben 2400 m³"),
+# erkennt die Tätigkeit, schlägt die passende(n) Maschine(n) vor,
+# berechnet die Einsatzdauer und trägt die Gerätekosten ins LV ein.
+#
+# Aufbau pro Maschine:
+#   - bezeichnung: Klartext
+#   - kategorie: Erdbau / Verdichtung / Beton / Transport / Heben / ...
+#   - gewichtsklasse: leicht / mittel / schwer
+#   - leistung: Was die Maschine pro Stunde schafft (m³/h, m²/h, etc.)
+#   - miete: Tages-/Wochen-/Monatssätze (netto, Stand 2026)
+#   - diesel: Verbrauch l/h (für Kostenrechnung)
+#   - einsatz_bei: Liste von Tätigkeiten aus aufwandswerte_bau.yaml
+#   - braucht_schein: Führerschein / Baggerschein / ohne
+#   - transport: Wie kommt die Maschine auf die Baustelle
+#
+# Quellen:
+#   [BIBERGER]   biberger.de Mietkosten Baumaschinen (2026)
+#   [MIET24]     miet24.de Preisvergleich (2026)
+#   [STAIB]      staib-baumaschinen.de Mietpreisliste 01/2026
+#   [FRANKEN]    franken-baumaschinen.de Mietkatalog 2026
+#   [BNG]        bng-schlueter.de Mietpreisbroschüre
+#   [FIENE]      baggerverleih-schwerte-fiene.de Preise
+#   [PRAXIS]     Allgemeine Marktpreise / Erfahrungswerte
+#
+# WICHTIG: Mietpreise sind Richtwerte und schwanken regional ±20%.
+# Der Mops zeigt sie als Vorschlag (GELB). Firmeninterne Sätze oder
+# eigene Maschinen haben immer Vorrang.
+#
+# Letzte Aktualisierung: September 2026
+# ============================================================================
+
+meta:
+  version: "1.0.0"
+  stand: "2026-09"
+  waehrung: "EUR"
+  mietpreise_basis: "netto pro Arbeitstag (8h), Deutschland Mitte"
+  hinweis: >
+    Mietpreise sind Durchschnittswerte 2026 aus öffentlichen Preislisten.
+    Regional ±20%. Versicherung (ca. 10% Aufschlag) und Transport nicht
+    enthalten, sofern nicht anders angegeben. Bei eigenen Maschinen:
+    Vorhaltekosten nach BGL (Baugeräteliste) verwenden.
+
+# ============================================================================
+# ERDBAUMASCHINEN
+# ============================================================================
+erdbau:
+
+  microbagger_1t:
+    bezeichnung: "Microbagger 0.8-1.0 t"
+    kategorie: "Erdbau"
+    gewichtsklasse: "leicht"
+    leistung:
+      grabtiefe_m: 1.7
+      m3_pro_h: 3.0
+    miete:
+      tag: 75
+      woche: 360
+      monat: 1210
+      versicherung_tag: 7
+    diesel_l_pro_h: 2.5
+    breite_mm: 700
+    einsatz_bei:
+      - "erdarbeiten.graben_ausheben"
+      - "kanalbau.hausanschluss"
+      - "abdichtung.drainage_verlegen"
+    braucht_schein: "keinen — unter 1t ohne Schein"
+    transport: "PKW-Anhänger (Führerschein BE)"
+    quellen: ["FIENE", "MIET24"]
+
+  minibagger_1_8t:
+    bezeichnung: "Minibagger 1.7-2.0 t"
+    kategorie: "Erdbau"
+    gewichtsklasse: "leicht"
+    leistung:
+      grabtiefe_m: 2.5
+      m3_pro_h: 4.4
+    miete:
+      tag: 95
+      woche: 420
+      monat: 1430
+      versicherung_tag: 8
+    diesel_l_pro_h: 3.5
+    breite_mm: 1000
+    einsatz_bei:
+      - "erdarbeiten.oberboden_abtragen"
+      - "erdarbeiten.baugrube_ausheben_bagger"
+      - "erdarbeiten.graben_ausheben"
+      - "erdarbeiten.frostschutzschicht"
+      - "kanalbau.kanalrohr_verlegen"
+      - "abdichtung.drainage_verlegen"
+    braucht_schein: "Baggerschein empfohlen"
+    transport: "Anhänger 2.5t (Führerschein BE)"
+    quellen: ["FIENE", "MIET24", "STAIB"]
+
+  minibagger_3t:
+    bezeichnung: "Minibagger 2.5-3.5 t"
+    kategorie: "Erdbau"
+    gewichtsklasse: "leicht"
+    leistung:
+      grabtiefe_m: 3.2
+      m3_pro_h: 6.0
+    miete:
+      tag: 130
+      woche: 580
+      monat: 1800
+      versicherung_tag: 10
+    diesel_l_pro_h: 5.0
+    einsatz_bei:
+      - "erdarbeiten.oberboden_abtragen"
+      - "erdarbeiten.baugrube_ausheben_bagger"
+      - "erdarbeiten.graben_ausheben"
+      - "erdarbeiten.frostschutzschicht"
+      - "kanalbau.kanalrohr_verlegen"
+      - "kanalbau.schacht_setzen"
+      - "abbruch.mauerwerk_abbrechen"
+    braucht_schein: "Baggerschein"
+    transport: "Tieflader oder großer Anhänger"
+    quellen: ["STAIB", "FRANKEN"]
+
+  kettenbagger_8t:
+    bezeichnung: "Kettenbagger 7-9 t"
+    kategorie: "Erdbau"
+    gewichtsklasse: "mittel"
+    leistung:
+      grabtiefe_m: 4.5
+      m3_pro_h: 15.0
+    miete:
+      tag: 220
+      woche: 1000
+      monat: 3200
+      versicherung_tag: 15
+    diesel_l_pro_h: 10.0
+    einsatz_bei:
+      - "erdarbeiten.baugrube_ausheben_bagger"
+      - "erdarbeiten.boden_laden_transport"
+      - "kanalbau.kanalrohr_verlegen"
+      - "kanalbau.schacht_setzen"
+      - "abbruch.mauerwerk_abbrechen"
+      - "abbruch.beton_abbrechen"
+    braucht_schein: "Baggerschein"
+    transport: "Tieflader"
+    quellen: ["FRANKEN", "BNG"]
+
+  kettenbagger_14t:
+    bezeichnung: "Kettenbagger 13-16 t"
+    kategorie: "Erdbau"
+    gewichtsklasse: "mittel"
+    leistung:
+      grabtiefe_m: 5.5
+      m3_pro_h: 20.0
+    miete:
+      tag: 300
+      woche: 1400
+      monat: 4200
+      versicherung_tag: 20
+    diesel_l_pro_h: 15.0
+    einsatz_bei:
+      - "erdarbeiten.baugrube_ausheben_bagger"
+      - "erdarbeiten.boden_laden_transport"
+      - "kanalbau.kanalrohr_verlegen"
+      - "kanalbau.schacht_setzen"
+      - "abbruch.mauerwerk_abbrechen"
+      - "abbruch.beton_abbrechen"
+      - "strassenbau.schottertragschicht"
+    braucht_schein: "Baggerschein"
+    transport: "Tieflader"
+    quellen: ["FRANKEN", "BNG"]
+
+  kettenbagger_25t:
+    bezeichnung: "Kettenbagger 22-28 t"
+    kategorie: "Erdbau"
+    gewichtsklasse: "schwer"
+    leistung:
+      grabtiefe_m: 7.0
+      m3_pro_h: 40.0
+    miete:
+      tag: 450
+      woche: 2100
+      monat: 6500
+      versicherung_tag: 30
+    diesel_l_pro_h: 22.0
+    einsatz_bei:
+      - "erdarbeiten.baugrube_ausheben_bagger"
+      - "erdarbeiten.boden_laden_transport"
+      - "abbruch.beton_abbrechen"
+    braucht_schein: "Baggerschein"
+    transport: "Tieflader (Schwertransport bei > 25t)"
+    quellen: ["FRANKEN", "PRAXIS"]
+
+  mobilbagger_10t:
+    bezeichnung: "Mobilbagger (Radbagger) 9-11 t"
+    kategorie: "Erdbau"
+    gewichtsklasse: "mittel"
+    leistung:
+      grabtiefe_m: 4.5
+      m3_pro_h: 15.0
+    miete:
+      tag: 250
+      woche: 1150
+      monat: 3600
+      versicherung_tag: 18
+    diesel_l_pro_h: 12.0
+    einsatz_bei:
+      - "erdarbeiten.baugrube_ausheben_bagger"
+      - "erdarbeiten.graben_ausheben"
+      - "kanalbau.kanalrohr_verlegen"
+      - "strassenbau.schottertragschicht"
+    braucht_schein: "Baggerschein + Fahrerlaubnis (Straße)"
+    transport: "fährt selbst (straßenzugelassen)"
+    hinweis: "Vorteil: fährt selbst zur Baustelle, kein Tieflader"
+    quellen: ["FRANKEN", "PRAXIS"]
+
+# ============================================================================
+# RADLADER / LADER
+# ============================================================================
+lader:
+
+  radlader_klein:
+    bezeichnung: "Radlader klein (0.3-0.5 m³ Schaufel)"
+    kategorie: "Laden/Transport"
+    gewichtsklasse: "leicht"
+    leistung:
+      m3_pro_h: 15.0
+      hubkraft_kg: 1500
+    miete:
+      tag: 110
+      woche: 500
+      monat: 1600
+    diesel_l_pro_h: 5.0
+    einsatz_bei:
+      - "erdarbeiten.boden_laden_transport"
+      - "erdarbeiten.frostschutzschicht"
+      - "pflasterarbeiten.splittbett_herstellen"
+      - "strassenbau.schottertragschicht"
+    braucht_schein: "Radladerschein"
+    transport: "Anhänger oder Tieflader"
+    quellen: ["BIBERGER", "FIENE"]
+
+  radlader_mittel:
+    bezeichnung: "Radlader mittel (0.7-1.0 m³ Schaufel)"
+    kategorie: "Laden/Transport"
+    gewichtsklasse: "mittel"
+    leistung:
+      m3_pro_h: 30.0
+      hubkraft_kg: 2800
+    miete:
+      tag: 200
+      woche: 900
+      monat: 2800
+    diesel_l_pro_h: 8.0
+    einsatz_bei:
+      - "erdarbeiten.boden_laden_transport"
+      - "erdarbeiten.frostschutzschicht"
+      - "strassenbau.schottertragschicht"
+      - "baustelleneinrichtung.container_aufstellen"
+    braucht_schein: "Radladerschein + Fahrerlaubnis"
+    transport: "fährt selbst (oft straßenzugelassen)"
+    quellen: ["BIBERGER", "FIENE"]
+
+  kompaktlader_bobcat:
+    bezeichnung: "Kompaktlader (Bobcat/Skid-Steer)"
+    kategorie: "Laden/Transport"
+    gewichtsklasse: "leicht"
+    leistung:
+      m3_pro_h: 12.0
+      hubkraft_kg: 900
+    miete:
+      tag: 120
+      woche: 550
+      monat: 1700
+    diesel_l_pro_h: 5.0
+    einsatz_bei:
+      - "erdarbeiten.oberboden_abtragen"
+      - "erdarbeiten.frostschutzschicht"
+      - "pflasterarbeiten.splittbett_herstellen"
+      - "abbruch.boden_aufnehmen"
+    braucht_schein: "keinen (kein öffentlicher Verkehr)"
+    transport: "Anhänger"
+    hinweis: "Extrem wendig; viele Anbaugeräte (Schaufel, Gabel, Besen, Fräse)"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# VERDICHTUNGSGERÄTE
+# ============================================================================
+verdichtung:
+
+  ruettelplatte_leicht:
+    bezeichnung: "Rüttelplatte 50-80 kg"
+    kategorie: "Verdichtung"
+    gewichtsklasse: "leicht"
+    leistung:
+      m2_pro_h: 60.0
+      verdichtungstiefe_cm: 15
+    miete:
+      tag: 30
+      woche: 135
+      monat: 400
+    diesel_l_pro_h: 1.0
+    einsatz_bei:
+      - "pflasterarbeiten.verbundpflaster_verlegen"
+      - "pflasterarbeiten.fugen_einsanden"
+      - "erdarbeiten.boden_verdichten"
+    braucht_schein: "keinen"
+    transport: "PKW (ins Auto oder Anhänger)"
+    quellen: ["BIBERGER", "FIENE"]
+
+  ruettelplatte_mittel:
+    bezeichnung: "Rüttelplatte 100-200 kg"
+    kategorie: "Verdichtung"
+    gewichtsklasse: "mittel"
+    leistung:
+      m2_pro_h: 80.0
+      verdichtungstiefe_cm: 30
+    miete:
+      tag: 45
+      woche: 200
+      monat: 600
+    diesel_l_pro_h: 1.5
+    einsatz_bei:
+      - "erdarbeiten.boden_verdichten"
+      - "erdarbeiten.frostschutzschicht"
+      - "pflasterarbeiten.verbundpflaster_verlegen"
+      - "strassenbau.schottertragschicht"
+    braucht_schein: "keinen"
+    transport: "Anhänger (schwer zum Tragen!)"
+    quellen: ["BIBERGER", "FIENE"]
+
+  ruettelplatte_schwer:
+    bezeichnung: "Rüttelplatte 300-500 kg (reversierbar)"
+    kategorie: "Verdichtung"
+    gewichtsklasse: "schwer"
+    leistung:
+      m2_pro_h: 120.0
+      verdichtungstiefe_cm: 50
+    miete:
+      tag: 70
+      woche: 320
+      monat: 950
+    diesel_l_pro_h: 2.5
+    einsatz_bei:
+      - "erdarbeiten.boden_verdichten"
+      - "erdarbeiten.frostschutzschicht"
+      - "strassenbau.schottertragschicht"
+    braucht_schein: "keinen"
+    transport: "Anhänger oder Radlader"
+    quellen: ["BIBERGER"]
+
+  stampfer:
+    bezeichnung: "Vibrationsstampfer 60-80 kg"
+    kategorie: "Verdichtung"
+    gewichtsklasse: "leicht"
+    leistung:
+      m2_pro_h: 20.0
+      verdichtungstiefe_cm: 40
+    miete:
+      tag: 35
+      woche: 155
+      monat: 470
+    diesel_l_pro_h: 1.0
+    einsatz_bei:
+      - "erdarbeiten.graben_ausheben"
+      - "kanalbau.kanalrohr_verlegen"
+    braucht_schein: "keinen"
+    transport: "PKW (passt in Kofferraum)"
+    hinweis: "Ideal für Gräben wo Rüttelplatte nicht reinpasst"
+    quellen: ["FIENE", "PRAXIS"]
+
+  walzenzug_klein:
+    bezeichnung: "Walzenzug 1.5-3 t"
+    kategorie: "Verdichtung"
+    gewichtsklasse: "mittel"
+    leistung:
+      m2_pro_h: 150.0
+      verdichtungstiefe_cm: 40
+    miete:
+      tag: 120
+      woche: 550
+      monat: 1700
+    diesel_l_pro_h: 5.0
+    einsatz_bei:
+      - "erdarbeiten.boden_verdichten"
+      - "strassenbau.schottertragschicht"
+    braucht_schein: "Walzenführerschein"
+    transport: "Anhänger oder Tieflader"
+    quellen: ["PRAXIS"]
+
+  walzenzug_gross:
+    bezeichnung: "Walzenzug 5-8 t"
+    kategorie: "Verdichtung"
+    gewichtsklasse: "schwer"
+    leistung:
+      m2_pro_h: 250.0
+      verdichtungstiefe_cm: 60
+    miete:
+      tag: 220
+      woche: 1000
+      monat: 3100
+    diesel_l_pro_h: 10.0
+    einsatz_bei:
+      - "erdarbeiten.boden_verdichten"
+      - "strassenbau.schottertragschicht"
+      - "strassenbau.asphalttragschicht"
+      - "strassenbau.asphaltdeckschicht"
+    braucht_schein: "Walzenführerschein"
+    transport: "Tieflader"
+    quellen: ["PRAXIS"]
+
+  tandemwalze:
+    bezeichnung: "Tandemwalze 2-4 t (Asphalt)"
+    kategorie: "Verdichtung"
+    gewichtsklasse: "mittel"
+    leistung:
+      m2_pro_h: 200.0
+    miete:
+      tag: 180
+      woche: 820
+      monat: 2500
+    diesel_l_pro_h: 6.0
+    einsatz_bei:
+      - "strassenbau.asphalttragschicht"
+      - "strassenbau.asphaltdeckschicht"
+    braucht_schein: "Walzenführerschein"
+    transport: "Tieflader"
+    hinweis: "Speziell für Asphalt — glatte Bandagen"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# BETONGERÄTE
+# ============================================================================
+beton:
+
+  betonpumpe_auto:
+    bezeichnung: "Autobetonpumpe (Schwenkarm)"
+    kategorie: "Beton"
+    leistung:
+      m3_pro_h: 30.0
+      reichweite_m: 28
+    miete:
+      pauschal_pro_einsatz: 450
+      plus_pro_m3: 8
+    einsatz_bei:
+      - "betonarbeiten.bodenplatte"
+      - "betonarbeiten.stahlbeton_wand"
+      - "betonarbeiten.stahlbeton_decke"
+      - "betonarbeiten.betonieren_allgemein"
+    braucht_schein: "Pumpenführer (stellt Vermieter)"
+    transport: "fährt selbst"
+    hinweis: "Wird meist vom Betonwerk mitbestellt; ab ca. 5 m³ wirtschaftlich"
+    quellen: ["PRAXIS"]
+
+  betonmischer_230l:
+    bezeichnung: "Betonmischer 230 l (Zwangsmischer)"
+    kategorie: "Beton"
+    leistung:
+      m3_pro_h: 0.8
+    miete:
+      tag: 35
+      woche: 155
+      monat: 450
+    einsatz_bei:
+      - "betonarbeiten.sauberkeitsschicht"
+      - "pflasterarbeiten.bordstein_setzen"
+      - "mauerarbeiten.sturz_einbauen"
+    braucht_schein: "keinen"
+    transport: "PKW-Anhänger"
+    hinweis: "Nur für kleine Mengen; ab 1m³ Transportbeton bestellen"
+    quellen: ["FIENE", "PRAXIS"]
+
+  innenruettler:
+    bezeichnung: "Innenrüttler (Flaschenrüttler) Ø 38-58mm"
+    kategorie: "Beton"
+    leistung:
+      m3_pro_h: 10.0
+    miete:
+      tag: 25
+      woche: 110
+      monat: 330
+    einsatz_bei:
+      - "betonarbeiten.betonieren_allgemein"
+      - "betonarbeiten.stahlbeton_wand"
+      - "betonarbeiten.stuetze"
+    braucht_schein: "keinen"
+    transport: "PKW"
+    hinweis: "MUSS bei Stahlbeton — ohne Rüttler kein dichter Beton"
+    quellen: ["PRAXIS"]
+
+  gleitschalung:
+    bezeichnung: "Glättmaschine / Flügelglätter"
+    kategorie: "Beton"
+    leistung:
+      m2_pro_h: 50.0
+    miete:
+      tag: 55
+      woche: 250
+      monat: 750
+    einsatz_bei:
+      - "betonarbeiten.bodenplatte"
+      - "estricharbeiten.zementestrich"
+    braucht_schein: "keinen"
+    transport: "Transporter"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# HEBEZEUGE / KRANE
+# ============================================================================
+heben:
+
+  mobilkran_30t:
+    bezeichnung: "Mobilkran 30 t"
+    kategorie: "Heben"
+    gewichtsklasse: "schwer"
+    leistung:
+      hub_pro_h: 8
+      max_last_kg: 30000
+      max_hoehe_m: 30
+    miete:
+      tag: 800
+      halbtag: 500
+    einsatz_bei:
+      - "zimmerarbeiten.dachstuhl_aufstellen"
+      - "betonarbeiten.stuetze"
+      - "kanalbau.schacht_setzen"
+    braucht_schein: "Kranführerschein (stellt Vermieter)"
+    transport: "fährt selbst"
+    hinweis: "Wird mit Kranführer gemietet; Stundensatz ca. 100-120€"
+    quellen: ["PRAXIS"]
+
+  turmdrehkran:
+    bezeichnung: "Turmdrehkran (Obendreher)"
+    kategorie: "Heben"
+    gewichtsklasse: "schwer"
+    leistung:
+      hub_pro_h: 10
+      max_last_kg: 6000
+      max_hoehe_m: 40
+      ausladung_m: 35
+    miete:
+      monat: 3500
+      auf_ab_bau: 4000
+    einsatz_bei:
+      - "schalarbeiten.schalung_wand_rahmenschalung"
+      - "schalarbeiten.schalung_decke"
+      - "betonarbeiten.stahlbeton_wand"
+      - "betonarbeiten.stahlbeton_decke"
+      - "zimmerarbeiten.dachstuhl_aufstellen"
+      - "mauerarbeiten.mauerwerk_ks_planstein"
+    braucht_schein: "Kranführerschein"
+    transport: "Tieflader (Auf-/Abbau durch Spezialfirma)"
+    hinweis: "Erst ab Rohbau > 3 Geschosse wirtschaftlich; Baugenehmigung für Kran nötig"
+    quellen: ["PRAXIS"]
+
+  teleskoplader:
+    bezeichnung: "Teleskoplader 3-4 t (Manitou/Merlo)"
+    kategorie: "Heben"
+    gewichtsklasse: "mittel"
+    leistung:
+      hubkraft_kg: 3500
+      hubhoehe_m: 7
+    miete:
+      tag: 180
+      woche: 820
+      monat: 2500
+    diesel_l_pro_h: 6.0
+    einsatz_bei:
+      - "mauerarbeiten.mauerwerk_ks_planstein"
+      - "mauerarbeiten.mauerwerk_poroton"
+      - "dacharbeiten.dacheindeckung_tondachziegel"
+      - "zimmerarbeiten.dachstuhl_aufstellen"
+      - "baustelleneinrichtung.container_aufstellen"
+    braucht_schein: "Teleskoplader-Schein"
+    transport: "fährt selbst oder Tieflader"
+    hinweis: "Ersetzt oft den Kran bei EFH/Reihenhäusern — günstiger und flexibler"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# STRASSENBAUMASCHINEN
+# ============================================================================
+strassenbau_maschinen:
+
+  asphaltfertiger:
+    bezeichnung: "Asphaltfertiger (Straßenfertiger)"
+    kategorie: "Straßenbau"
+    gewichtsklasse: "schwer"
+    leistung:
+      m2_pro_h: 250
+      einbaubreite_m: 3.0
+    miete:
+      tag: 600
+      hinweis: "Meist Subunternehmer mit Fertiger + Kolonne"
+    einsatz_bei:
+      - "strassenbau.asphalttragschicht"
+      - "strassenbau.asphaltdeckschicht"
+    braucht_schein: "Fertigerführer (Spezialausbildung)"
+    transport: "Tieflader"
+    hinweis: "Wird fast nie allein gemietet — kommt als Paket mit Walzen und Kolonne"
+    quellen: ["PRAXIS"]
+
+  kaltfraese:
+    bezeichnung: "Kaltfräse 0.5-1.0 m Breite"
+    kategorie: "Straßenbau"
+    gewichtsklasse: "schwer"
+    leistung:
+      m2_pro_h: 200
+    miete:
+      tag: 500
+      hinweis: "Mit Bediener ca. 800-1000€/Tag"
+    einsatz_bei:
+      - "strassenbau.asphaltdecke_fraesen"
+      - "abbruch.asphalt_aufnehmen"
+    braucht_schein: "Fräsenführer"
+    transport: "Tieflader"
+    quellen: ["PRAXIS"]
+
+  fugenvergussgeraet:
+    bezeichnung: "Fugenvergussgerät (Heißbitumen)"
+    kategorie: "Straßenbau"
+    gewichtsklasse: "leicht"
+    miete:
+      tag: 80
+    einsatz_bei:
+      - "strassenbau.asphaltdeckschicht"
+    braucht_schein: "keinen"
+    transport: "Anhänger"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# SCHNEID- UND TRENNGERÄTE
+# ============================================================================
+schneiden:
+
+  fugenschneider:
+    bezeichnung: "Fugenschneider / Fugenfräse"
+    kategorie: "Schneiden"
+    gewichtsklasse: "leicht"
+    leistung:
+      m_pro_h: 30
+      schnitttiefe_mm: 150
+    miete:
+      tag: 60
+      woche: 270
+    einsatz_bei:
+      - "strassenbau.asphaltdecke_fraesen"
+      - "abbruch.asphalt_aufnehmen"
+      - "betonarbeiten.bodenplatte"
+    braucht_schein: "keinen"
+    transport: "PKW/Transporter"
+    quellen: ["PRAXIS"]
+
+  nassschneidetisch:
+    bezeichnung: "Nassschneidetisch (Fliesen/Pflaster)"
+    kategorie: "Schneiden"
+    gewichtsklasse: "leicht"
+    miete:
+      tag: 35
+      woche: 155
+    einsatz_bei:
+      - "fliesenarbeiten.wandfliesen"
+      - "fliesenarbeiten.bodenfliesen"
+      - "pflasterarbeiten.verbundpflaster_verlegen"
+    braucht_schein: "keinen"
+    transport: "PKW"
+    quellen: ["FIENE"]
+
+  kernbohrgeraet:
+    bezeichnung: "Kernbohrgerät Ø 50-250 mm"
+    kategorie: "Schneiden"
+    gewichtsklasse: "leicht"
+    leistung:
+      bohrungen_pro_h: 2
+    miete:
+      tag: 65
+      woche: 290
+    einsatz_bei:
+      - "kanalbau.hausanschluss"
+      - "kanalbau.schacht_setzen"
+      - "abbruch.wand_schlitzen"
+    braucht_schein: "keinen (Unterweisung empfohlen)"
+    transport: "PKW"
+    hinweis: "Für Durchbrüche in Stahlbeton; Wasseranschluss nötig"
+    quellen: ["PRAXIS"]
+
+  mauernutfraese:
+    bezeichnung: "Mauernutfräse / Schlitzfräse"
+    kategorie: "Schneiden"
+    gewichtsklasse: "leicht"
+    leistung:
+      m_pro_h: 15
+    miete:
+      tag: 45
+      woche: 200
+    einsatz_bei:
+      - "abbruch.wand_schlitzen"
+      - "elektro.leerrohr_verlegen"
+    braucht_schein: "keinen"
+    transport: "PKW"
+    hinweis: "Doppelblatt-Fräse; Staubabsaugung MUSS"
+    quellen: ["PRAXIS"]
+
+  winkelschleifer_230:
+    bezeichnung: "Winkelschleifer / Flex Ø 230 mm"
+    kategorie: "Schneiden"
+    gewichtsklasse: "leicht"
+    miete:
+      tag: 15
+      woche: 65
+    einsatz_bei:
+      - "bewehrungsarbeiten.bewehrung_stabstahl"
+      - "abbruch.beton_abbrechen"
+      - "abbruch.asphalt_aufnehmen"
+    braucht_schein: "keinen"
+    transport: "Werkzeugkoffer"
+    hinweis: "Trenn-/Schleifscheiben separat; PSA Pflicht!"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# PUMPEN / WASSERHALTUNG
+# ============================================================================
+wasserhaltung:
+
+  schmutzwasserpumpe:
+    bezeichnung: "Schmutzwasserpumpe 400 l/min"
+    kategorie: "Wasserhaltung"
+    gewichtsklasse: "leicht"
+    miete:
+      tag: 25
+      woche: 110
+    einsatz_bei:
+      - "erdarbeiten.baugrube_ausheben_bagger"
+      - "kanalbau.kanalrohr_verlegen"
+    braucht_schein: "keinen"
+    transport: "PKW"
+    hinweis: "Für offene Wasserhaltung in Baugruben"
+    quellen: ["PRAXIS"]
+
+  estrichpumpe:
+    bezeichnung: "Estrich-Förderpumpe"
+    kategorie: "Beton/Estrich"
+    leistung:
+      m3_pro_h: 6.0
+    miete:
+      tag: 150
+      hinweis: "Meist inkl. Bediener vom Estrichleger"
+    einsatz_bei:
+      - "estricharbeiten.zementestrich"
+      - "estricharbeiten.fliessestrich"
+    braucht_schein: "keinen"
+    transport: "Transporter/Anhänger"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# GERÜSTE
+# ============================================================================
+gerueste:
+
+  fassadengeruest:
+    bezeichnung: "Fassadengerüst (Systemgerüst)"
+    kategorie: "Gerüst"
+    miete:
+      pro_m2_monat: 8
+      auf_ab_bau_pro_m2: 12
+    einsatz_bei:
+      - "baustelleneinrichtung.geruest_aufstellen"
+      - "putzarbeiten.aussenputz"
+      - "malerarbeiten.fassade_streichen"
+      - "dacharbeiten.dacheindeckung_tondachziegel"
+      - "dacharbeiten.dachrinne_montieren"
+    braucht_schein: "Gerüstbauer-Schein (Auf-/Abbau)"
+    transport: "LKW (Gerüstbaufirma)"
+    hinweis: "Auf-/Abbau durch Fachfirma; Standzeit oft 4-8 Wochen"
+    quellen: ["BIBERGER", "PRAXIS"]
+
+  rollgeruest:
+    bezeichnung: "Rollgerüst / Fahrgerüst AH 6-8 m"
+    kategorie: "Gerüst"
+    miete:
+      tag: 25
+      woche: 110
+      monat: 330
+    einsatz_bei:
+      - "putzarbeiten.innenputz_maschinenputz"
+      - "malerarbeiten.decke_streichen"
+      - "trockenbau.decke_abhaengen"
+      - "elektro.leerrohr_verlegen"
+    braucht_schein: "keinen (Unterweisung)"
+    transport: "Transporter"
+    quellen: ["PRAXIS"]
+
+# ============================================================================
+# TRANSPORT
+# ============================================================================
+transport:
+
+  lkw_3achser:
+    bezeichnung: "LKW 3-Achser Kipper 18-20 t"
+    kategorie: "Transport"
+    leistung:
+      nutzlast_t: 13
+      mulde_m3: 10
+    miete:
+      tag: 350
+      hinweis: "Inkl. Fahrer ca. 65-80€/h"
+    einsatz_bei:
+      - "erdarbeiten.boden_laden_transport"
+      - "erdarbeiten.frostschutzschicht"
+      - "strassenbau.schottertragschicht"
+    braucht_schein: "CE Führerschein"
+    quellen: ["PRAXIS"]
+
+  dumper_3t:
+    bezeichnung: "Dumper / Baustellenkipper 3 t"
+    kategorie: "Transport"
+    leistung:
+      nutzlast_t: 3
+    miete:
+      tag: 100
+      woche: 450
+      monat: 1400
+    diesel_l_pro_h: 4.0
+    einsatz_bei:
+      - "erdarbeiten.boden_laden_transport"
+      - "erdarbeiten.frostschutzschicht"
+    braucht_schein: "keinen (kein öffentlicher Verkehr)"
+    transport: "Tieflader"
+    hinweis: "Ideal für kurze Strecken auf der Baustelle"
+    quellen: ["PRAXIS"]
+
+  anhaenger_pkw:
+    bezeichnung: "PKW-Anhänger 750-2000 kg"
+    kategorie: "Transport"
+    miete:
+      tag: 25
+      woche: 100
+    einsatz_bei:
+      - "baustelleneinrichtung.container_aufstellen"
+    braucht_schein: "BE Führerschein (ab 750 kg)"
+    quellen: ["FIENE"]
+
+# ============================================================================
+# KLEINGERÄTE / WERKZEUGE (häufig auf jeder Baustelle)
+# ============================================================================
+kleingeraete:
+
+  laser_rotationslaser:
+    bezeichnung: "Rotationslaser mit Empfänger"
+    kategorie: "Vermessung"
+    miete:
+      tag: 25
+      woche: 110
+    einsatz_bei:
+      - "baustelleneinrichtung.vermessung_absteckung"
+      - "erdarbeiten.boden_verdichten"
+      - "estricharbeiten.zementestrich"
+    braucht_schein: "keinen"
+    transport: "Koffer (PKW)"
+    quellen: ["PRAXIS"]
+
+  nivellierlaser:
+    bezeichnung: "Nivellierlaser / Baulaser"
+    kategorie: "Vermessung"
+    miete:
+      tag: 15
+      woche: 65
+    einsatz_bei:
+      - "baustelleneinrichtung.vermessung_absteckung"
+      - "kanalbau.kanalrohr_verlegen"
+    braucht_schein: "keinen"
+    transport: "Koffer"
+    quellen: ["PRAXIS"]
+
+  stromerzeuger:
+    bezeichnung: "Stromerzeuger 5-10 kVA"
+    kategorie: "Energie"
+    miete:
+      tag: 40
+      woche: 180
+      monat: 540
+    diesel_l_pro_h: 2.5
+    einsatz_bei:
+      - "baustelleneinrichtung.container_aufstellen"
+    braucht_schein: "keinen"
+    transport: "PKW-Anhänger"
+    hinweis: "Wenn kein Baustrom verfügbar"
+    quellen: ["PRAXIS"]
+
+  ruettelflasche:
+    bezeichnung: "Betonrüttler / Rüttelflasche Ø 38mm"
+    kategorie: "Beton"
+    miete:
+      tag: 20
+      woche: 90
+    einsatz_bei:
+      - "betonarbeiten.betonieren_allgemein"
+      - "betonarbeiten.stahlbeton_wand"
+      - "betonarbeiten.stuetze"
+      - "betonarbeiten.treppe"
+    braucht_schein: "keinen"
+    transport: "PKW"
+    quellen: ["PRAXIS"]
+
+  steinknacker:
+    bezeichnung: "Steinknacker / Pflastersteinschneider"
+    kategorie: "Schneiden"
+    miete:
+      tag: 10
+      woche: 45
+    einsatz_bei:
+      - "pflasterarbeiten.verbundpflaster_verlegen"
+      - "pflasterarbeiten.natursteinpflaster"
+    braucht_schein: "keinen"
+    transport: "PKW"
+    quellen: ["FIENE"]
+
+  steinzange:
+    bezeichnung: "Steinzange / Pflasterzange 650 kg"
+    kategorie: "Heben"
+    miete:
+      tag: 10
+      woche: 45
+    einsatz_bei:
+      - "pflasterarbeiten.bordstein_setzen"
+      - "mauerarbeiten.mauerwerk_ks_planstein"
+    braucht_schein: "keinen"
+    transport: "PKW"
+    hinweis: "Am Bagger oder Teleskoplader; für schwere Steine/Bordsteine"
+    quellen: ["FIENE"]

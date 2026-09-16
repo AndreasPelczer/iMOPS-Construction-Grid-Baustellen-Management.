@@ -58,9 +58,22 @@ enum AutoKalkulationsService {
 
         // 1) Rezept-Treffer? (schreibt bei Treffer Lohn/Material/Gerät auf die Position)
         guard LeistungskatalogService.autoMatch(position: pos, in: ctx) else {
+            // Kein gelerntes Rezept — aber vielleicht ein Richtwert im Aufwandswerte-Katalog?
+            // Findet er einen, wird die Zeit als GELB-Schätzung geschrieben (echte Kolonne + Quelle),
+            // statt die Position blind auf ROT zu lassen.
+            if let t = AufwandswerteKatalog.shared.finde(leistung: bez, langtext: pos.langtext) {
+                LeistungskatalogService.schreibeAufwandAlsLohn(maurer: t.mittel, helfer: 0, auf: pos, in: ctx)
+                let kalk = LVKalkulator.kalkuliere(position: pos)
+                let g = String(format: "%g", t.mittel), lo = String(format: "%g", t.min), hi = String(format: "%g", t.max)
+                let msg = "🟡 Richtwert \(g) h/\(t.einheit) (Spanne \(lo)–\(hi)) · Mannschaft: "
+                        + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz). "
+                        + "Schätzung — Rollen/Preis prüfen; Material fehlt noch."
+                return Ergebnis(position: pos, status: .gelb, meldungen: [msg],
+                                einheitspreisVK: kalk.einheitspreisVK)
+            }
             return Ergebnis(
                 position: pos, status: .rot,
-                meldungen: ["Kein gelerntes Rezept für „\(bez)“ (\(einheit.isEmpty ? "?" : einheit)). "
+                meldungen: ["Kein gelerntes Rezept und kein Richtwert für „\(bez)“ (\(einheit.isEmpty ? "?" : einheit)). "
                           + "Aus dem Katalog wählen, eine Aufwandswert-Schätzung übernehmen oder Stammdaten ergänzen."],
                 einheitspreisVK: 0)
         }
