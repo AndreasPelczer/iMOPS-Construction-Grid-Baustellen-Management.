@@ -271,12 +271,24 @@ struct RezeptAssistentView: View {
     private func ladeVorschlag() async {
         // 1) Lokaler Richtwert-Katalog zuerst — deterministisch, mit echter Kolonne + Quelle.
         //    Ersetzt das nicht-deterministische KI-Raten als Startpunkt.
+        // Weg über den STLB: Position → Baustein → aufwandswert_key → Richtwert (deterministisch),
+        // Maschinen direkt aus den maschinen_keys des Bausteins.
+        if let b = STLBKatalog.shared.finde(leistung: leistung),
+           let key = b.aufwandswertKey,
+           let t = AufwandswerteKatalog.shared.eintrag(key: key) {
+            richtwert = t
+            maurer = t.mittel; helfer = 0
+            vorschlagMaurer = maurer; vorschlagHelfer = helfer
+            vorschlagStatus = "🟡 STLB \(b.id) → Richtwert (\(t.quelleKurz)) — Schätzung, bitte prüfen."
+            maschinenVorschlaege = MaschinenKatalog.shared.maschinen(ids: b.maschinenKeys)
+            return
+        }
+        // Fallback: direkter Stichwort-Treffer im Aufwandswerte-Katalog.
         if let t = AufwandswerteKatalog.shared.finde(leistung: leistung, langtext: position.langtext) {
             richtwert = t
             maurer = t.mittel; helfer = 0        // Gesamt-Arbeitszeit je Einheit — Kolonne siehe Karte
             vorschlagMaurer = maurer; vorschlagHelfer = helfer
             vorschlagStatus = "🟡 Richtwert aus dem Katalog (\(t.quelleKurz)) — Schätzung, bitte prüfen."
-            // passende Maschinen zur selben Tätigkeit (verzahnt über einsatz_bei)
             maschinenVorschlaege = MaschinenKatalog.shared.fuerTaetigkeit("\(t.gewerk).\(t.key)")
             return
         }

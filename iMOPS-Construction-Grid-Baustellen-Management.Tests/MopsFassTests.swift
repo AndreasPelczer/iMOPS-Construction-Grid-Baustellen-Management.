@@ -68,9 +68,10 @@ struct MopsFassTests {
     }
 
     @Test @MainActor func rezeptAssistentSpeichertMachtPositionGruen() throws {
-        // Position ohne Rezept → ROT
+        // Ohne gelerntes Rezept ist die Position NICHT grün (kein voller Preis).
+        // (Seit dem STLB-Katalog kann sie GELB sein — Richtwert statt blind ROT.)
         let pos = position("Betonwände herstellen", "m²")
-        #expect(AutoKalkulationsService.bewerte(pos, in: ctx).status == .rot)
+        #expect(AutoKalkulationsService.bewerte(pos, in: ctx).status != .gruen)
         // Rezept über den Assistenten-Speicherweg anlegen (Aufwandswert)
         LeistungskatalogService.speichereRezept(auf: pos, maurer: 0.8, helfer: 0.4,
                                                 quelle: "schätzung", in: ctx)

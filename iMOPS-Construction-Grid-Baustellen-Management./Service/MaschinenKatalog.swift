@@ -68,6 +68,15 @@ final class MaschinenKatalog: @unchecked Sendable {
             .sorted { ($0.hauptLeistung?.wert ?? 0) > ($1.hauptLeistung?.wert ?? 0) }
     }
 
+    /// Maschinen zu einer Liste von IDs („sektion.key", z. B. „erdbau.minibagger_3t").
+    /// Der Weg über den STLB-Baustein, der die maschinen_keys direkt nennt.
+    func maschinen(ids: [String]) -> [Maschine] {
+        ladeFallsNoetig()
+        let set = Set(ids)
+        return maschinen.filter { set.contains($0.id) }
+            .sorted { ($0.hauptLeistung?.wert ?? 0) > ($1.hauptLeistung?.wert ?? 0) }
+    }
+
     func alle() -> [Maschine] {
         ladeFallsNoetig()
         return maschinen

@@ -301,6 +301,17 @@ bewehrungsarbeiten:
 # ============================================================================
 mauerarbeiten:
 
+  ringbalken:
+    bezeichnung: "Ringbalken/Ringanker"
+    einheit: "m"
+    aufwandswert:
+      min: 0.2
+      mittel: 0.35
+      max: 0.5
+    kolonne: "1 Maurer + 1 Helfer"
+    hinweis: "U-Schalen setzen, Bewehrung einlegen, Beton verfüllen"
+    quellen: ["RAFFI"]
+
   mauerwerk_ks_planstein:
     bezeichnung: "Kalksandstein-Planstein Mauerwerk"
     einheit: "m2"
@@ -430,6 +441,39 @@ pflasterarbeiten:
 # ============================================================================
 strassenbau:
 
+  decke_wiederherstellen:
+    bezeichnung: "Asphaltdecke wiederherstellen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.01
+      mittel: 0.02
+      max: 0.04
+    kolonne: "1 Fertigerfahrer + 1 Walzenfahrer + 3 Helfer"
+    hinweis: "Kombi-Position (Schotter+Trag+Deck); Fertigereinbau"
+    quellen: ["RAFFI"]
+
+  gehweg_wiederherstellen:
+    bezeichnung: "Gehweg wiederherstellen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.25
+      mittel: 0.4
+      max: 0.6
+    kolonne: "2 Pflasterer"
+    hinweis: "Kombi: Tragschicht + Pflaster; wie Verbundpflaster mit Unterbau"
+    quellen: ["RAFFI"]
+
+  naehte_vergiessen:
+    bezeichnung: "Nähte vergießen"
+    einheit: "m"
+    aufwandswert:
+      min: 0.01
+      mittel: 0.02
+      max: 0.03
+    kolonne: "1-2 Straßenbauer"
+    hinweis: "Längs-/Anschlussnähte mit Heißbitumen, ZTV Fug-StB"
+    quellen: ["RAFFI"]
+
   asphaltdecke_fraesen:
     bezeichnung: "Asphaltdecke fräsen"
     einheit: "m2"
@@ -484,6 +528,28 @@ strassenbau:
 # ============================================================================
 kanalbau:
 
+  entwaesserungsrinne:
+    bezeichnung: "Entwässerungsrinne"
+    einheit: "m"
+    aufwandswert:
+      min: 0.25
+      mittel: 0.4
+      max: 0.6
+    kolonne: "2 Tiefbauer"
+    hinweis: "Polymerbeton-Rinne auf Betonfundament setzen, ausrichten"
+    quellen: ["RAFFI"]
+
+  hofablauf:
+    bezeichnung: "Hofablauf"
+    einheit: "St"
+    aufwandswert:
+      min: 1.0
+      mittel: 1.5
+      max: 2.5
+    kolonne: "1-2 Tiefbauer"
+    hinweis: "Betonfertigteil setzen, Rost, Anschlussleitung"
+    quellen: ["RAFFI"]
+
   kanalrohr_verlegen:
     bezeichnung: "Kanalrohr verlegen (DN 200-400)"
     einheit: "m"
@@ -532,6 +598,39 @@ kanalbau:
 # 09 — DACHARBEITEN
 # ============================================================================
 dacharbeiten:
+
+  dachdurchfuehrung:
+    bezeichnung: "Dachdurchführung Lüftungsrohr"
+    einheit: "St"
+    aufwandswert:
+      min: 0.5
+      mittel: 0.8
+      max: 1.5
+    kolonne: "1 Dachdecker/Klempner"
+    hinweis: "Durchgangsziegel, Bleieinfassung, Stutzen; regendicht"
+    quellen: ["RAFFI"]
+
+  ortgangblech:
+    bezeichnung: "Ortgangblech"
+    einheit: "m"
+    aufwandswert:
+      min: 0.12
+      mittel: 0.2
+      max: 0.3
+    kolonne: "1 Spengler"
+    hinweis: "Titanzink zuschneiden, biegen, montieren; inkl. Unterkonstruktion"
+    quellen: ["RAFFI"]
+
+  aufsparrendaemmung:
+    bezeichnung: "Aufsparrendämmung PUR/PIR"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.12
+      mittel: 0.2
+      max: 0.3
+    kolonne: "2 Dachdecker/Zimmerer"
+    hinweis: "PUR/PIR WLG 024, Nut-Feder, auf Sparren"
+    quellen: ["RAFFI"]
 
   dach_abdecken:
     bezeichnung: "Altes Dach abdecken und entsorgen"
@@ -872,6 +971,17 @@ malerarbeiten:
 # ============================================================================
 abbruch:
 
+  bordstein_ausbauen:
+    bezeichnung: "Bordsteine ausbauen"
+    einheit: "m"
+    aufwandswert:
+      min: 0.1
+      mittel: 0.2
+      max: 0.35
+    kolonne: "1 Baggerfahrer + 1 Helfer"
+    hinweis: "Maschinell mit Bagger; inkl. Fundament aufnehmen"
+    quellen: ["RAFFI"]
+
   mauerwerk_abbrechen:
     bezeichnung: "Mauerwerk abbrechen (maschinell)"
     einheit: "m3"
@@ -931,6 +1041,17 @@ abbruch:
 # ============================================================================
 baustelleneinrichtung:
 
+  verkehrssicherung:
+    bezeichnung: "Verkehrssicherung"
+    einheit: "psch"
+    aufwandswert:
+      min: 4.0
+      mittel: 8.0
+      max: 16.0
+    kolonne: "1 Facharbeiter + 1 Helfer"
+    hinweis: "Stark projektabhängig; Schilder, Absperrungen, Abstimmung Behörden"
+    quellen: ["RAFFI"]
+
   bauzaun_aufstellen:
     bezeichnung: "Bauzaun aufstellen"
     einheit: "m"
@@ -989,6 +1110,17 @@ baustelleneinrichtung:
 # ============================================================================
 abdichtung:
 
+  perimeterdaemmung:
+    bezeichnung: "Perimeterdämmung"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.1
+      mittel: 0.18
+      max: 0.28
+    kolonne: "1-2 Abdichter"
+    hinweis: "XPS aufkleben + Noppenbahn; auf fertige Abdichtung"
+    quellen: ["RAFFI"]
+
   abdichtung_bodenplatte:
     bezeichnung: "Abdichtung Bodenplatte (Bitumenbahn)"
     einheit: "m2"
@@ -1038,6 +1170,50 @@ abdichtung:
 # ============================================================================
 elektro:
 
+  kabelrinne:
+    bezeichnung: "Kabelrinne montieren"
+    einheit: "m"
+    aufwandswert:
+      min: 0.1
+      mittel: 0.18
+      max: 0.3
+    kolonne: "1 Elektriker + 1 Helfer"
+    hinweis: "Inkl. Gewindestangen, Profilschiene, Formteile; Deckenmontage"
+    quellen: ["RAFFI"]
+
+  geraetedose:
+    bezeichnung: "Gerätedosen setzen"
+    einheit: "St"
+    aufwandswert:
+      min: 0.08
+      mittel: 0.15
+      max: 0.25
+    kolonne: "1 Elektriker"
+    hinweis: "Bohren + einsetzen; GK schneller als Mauerwerk"
+    quellen: ["RAFFI"]
+
+  nym_kabel:
+    bezeichnung: "Mantelleitung NYM-J"
+    einheit: "m"
+    aufwandswert:
+      min: 0.02
+      mittel: 0.04
+      max: 0.08
+    kolonne: "1 Elektriker"
+    hinweis: "In Leerrohr einziehen oder auf Rinne; Anschluss separat"
+    quellen: ["RAFFI"]
+
+  datenkabel:
+    bezeichnung: "Datenkabel Cat.6A"
+    einheit: "m"
+    aufwandswert:
+      min: 0.03
+      mittel: 0.06
+      max: 0.1
+    kolonne: "1 Elektriker/Netzwerktechniker"
+    hinweis: "Inkl. Auflegen Keystones und Messen; aufwändiger als NYM"
+    quellen: ["RAFFI"]
+
   leerrohr_verlegen:
     bezeichnung: "Leerrohr verlegen (Unterputz)"
     einheit: "m"
@@ -1075,6 +1251,39 @@ elektro:
 # 20 — SANITÄRINSTALLATION (vereinfacht)
 # ============================================================================
 sanitaer:
+
+  vorwand_wc:
+    bezeichnung: "Vorwandinstallation WC"
+    einheit: "St"
+    aufwandswert:
+      min: 1.5
+      mittel: 2.5
+      max: 4.0
+    kolonne: "1 Installateur"
+    hinweis: "Element montieren, ausrichten, Wasser+Abwasser anschließen; ohne Verkleidung"
+    quellen: ["RAFFI"]
+
+  dusche_bodengleich:
+    bezeichnung: "Dusche bodengleich"
+    einheit: "St"
+    aufwandswert:
+      min: 3.0
+      mittel: 5.0
+      max: 8.0
+    kolonne: "1 Installateur"
+    hinweis: "Wanne, Ablauf, Armatur, Duschabtrennung; komplett ohne Fliesen"
+    quellen: ["RAFFI"]
+
+  sanitaerobjekt_demontieren:
+    bezeichnung: "Sanitärobjekt demontieren"
+    einheit: "St"
+    aufwandswert:
+      min: 0.3
+      mittel: 0.5
+      max: 1.0
+    kolonne: "1 Installateur"
+    hinweis: "Wasser absperren, Anschlüsse lösen, Objekt abtragen; Badewanne schwerer"
+    quellen: ["RAFFI"]
 
   wasserleitung_verlegen:
     bezeichnung: "Wasserleitung verlegen (Kupfer/PE-X)"
@@ -1190,3 +1399,20 @@ geraete:
     einsatzgebiet: "Montage Fertigteile, Schachtbauwerke, Stahlbau"
     hinweis: "Hübe/Stunde stark abhängig von Entfernung/Höhe"
     quelle: "PRAXIS"
+
+# ============================================================================
+# 22 — BODENBELAG
+# ============================================================================
+bodenbelag:
+
+  designboden:
+    bezeichnung: "Designboden Vinyl-Klick"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.08
+      mittel: 0.15
+      max: 0.25
+    kolonne: "1-2 Bodenleger"
+    hinweis: "Schwimmend verlegen; inkl. Sockelleisten +30%"
+    quellen: ["RAFFI"]
+
