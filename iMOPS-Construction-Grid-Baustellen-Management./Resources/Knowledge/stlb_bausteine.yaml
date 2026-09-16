@@ -158,7 +158,7 @@ erdarbeiten:
     din: "DIN 18300, ZTVE-StB"
     aufwandswert_key: "erdarbeiten.boden_verdichten"
     maschinen_keys: ["verdichtung.ruettelplatte_mittel", "verdichtung.walzenzug_klein"]
-    tags: ["Planum", "verdichten", "Sohle", "EV2"]
+    tags: ["Planum", "Erdplanum", "verdichten", "Sohle", "EV2"]
 
   ERD-004:
     kurztext: "Kapillarbrechende Schicht / Kiespolster"
@@ -229,6 +229,16 @@ erdarbeiten:
 # 03 — BETON- UND STAHLBETONARBEITEN (DIN 18331)
 # ============================================================================
 beton:
+
+  BET-009:
+    kurztext: "Fundamentbeton"
+    langtext: >
+      Beton {{betonguete}} für Fundamente/Einfassungen liefern, einbauen und verdichten. Einschl. Schalung wo erforderlich.
+    einheit: "m3"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "betonarbeiten.betonieren_allgemein"
+    tags: ["Fundamentbeton", "Beton", "Einfassung", "Ortbeton"]
 
   BET-001:
     kurztext: "Sauberkeitsschicht"
@@ -430,6 +440,15 @@ mauer:
 # ============================================================================
 abdichtung:
 
+  ABD-006:
+    kurztext: "PE-Folie / Trennlage"
+    langtext: >
+      PE-Folie als Trennlage unter Bodenplatte/Pflasterbett verlegen, Stöße mind. 20 cm überlappen.
+    einheit: "m2"
+    gewerk: "Abdichtung"
+    aufwandswert_key: "abdichtung.trennvlies_verlegen"
+    tags: ["PE-Folie", "Trennlage", "Folie", "Trennschicht"]
+
   ABD-001:
     kurztext: "Abdichtung Bodenplatte"
     langtext: >
@@ -499,6 +518,26 @@ abdichtung:
 # 06 — PFLASTERARBEITEN (DIN 18318)
 # ============================================================================
 pflaster:
+
+  PFL-006:
+    kurztext: "Bettungsmaterial liefern und einbauen"
+    langtext: >
+      Bettungsmaterial (Edelsplitt 2/5) für die Pflasterfläche liefern und profilgerecht einbauen.
+    einheit: "m3"
+    gewerk: "Pflasterarbeiten"
+    din: "DIN 18318"
+    aufwandswert_key: "pflasterarbeiten.splittbett_herstellen"
+    tags: ["Bettungsmaterial", "Splitt", "Bettung"]
+
+  PFL-007:
+    kurztext: "Verfug-/Fugenmaterial einbringen"
+    langtext: >
+      Fugenmaterial (Brechsand/Fugensand) einbringen, einkehren und abrütteln.
+    einheit: "m2"
+    gewerk: "Pflasterarbeiten"
+    din: "DIN 18318"
+    aufwandswert_key: "pflasterarbeiten.fugen_einsanden"
+    tags: ["Verfugmaterial", "Fugensand", "verfugen", "einsanden"]
 
   PFL-001:
     kurztext: "Pflasterbett herstellen"
@@ -570,6 +609,15 @@ pflaster:
 # 07 — STRASSENBAU / ASPHALT (DIN 18315-18317)
 # ============================================================================
 strasse:
+
+  STR-007:
+    kurztext: "Schnittfuge herstellen"
+    langtext: >
+      Schnittfuge/Anschlussnaht mit Fugenschneider herstellen (Asphalt/Beton), Durchschnitt Bitumenkies.
+    einheit: "m"
+    gewerk: "Straßenbau"
+    aufwandswert_key: "strassenbau.fugenschnitt"
+    tags: ["Schnittfuge", "Fuge", "schneiden", "Bitumenkies", "Naht"]
 
   STR-006:
     kurztext: "Längsnähte und Anschlussnähte vergießen"
@@ -1068,6 +1116,42 @@ boden:
 # ============================================================================
 abbruch:
 
+  ABR-005:
+    kurztext: "Asphalt ausbauen"
+    langtext: >
+      Vorhandene Asphaltbefestigung aufnehmen, laden und abfahren. Einschl. Entsorgungsnachweis.
+    einheit: "m2"
+    gewerk: "Abbruch"
+    aufwandswert_key: "abbruch.asphalt_aufnehmen"
+    tags: ["Asphalt", "ausbauen", "aufnehmen", "Fahrbahn"]
+
+  ABR-006:
+    kurztext: "Betonpflaster aufnehmen"
+    langtext: >
+      Vorhandenes Betonpflaster aufnehmen, reinigen und sortenrein stapeln bzw. entsorgen. Bettung mit aufnehmen.
+    einheit: "m2"
+    gewerk: "Abbruch"
+    aufwandswert_key: "abbruch.pflaster_aufnehmen"
+    tags: ["Betonpflaster", "Pflaster", "aufnehmen", "ausbauen"]
+
+  ABR-007:
+    kurztext: "Unterbau/Tragschicht ausbauen"
+    langtext: >
+      Ungebundene bzw. gebundene Trag- und Unterbauschicht der Pflasterfläche ausbauen, laden und abfahren.
+    einheit: "m2"
+    gewerk: "Abbruch"
+    aufwandswert_key: "abbruch.tragschicht_ausbauen"
+    tags: ["Unterbau", "Tragschicht", "ausbauen", "Schotter"]
+
+  ABR-008:
+    kurztext: "Einbauteile abbrechen"
+    langtext: >
+      Vorhandene Einbauteile (Fundamente, Einfassungen, Kleinbauteile) abbrechen, laden und entsorgen.
+    einheit: "St"
+    gewerk: "Abbruch"
+    aufwandswert_key: "abbruch.einbauteil_abbrechen"
+    tags: ["Einbauteil", "Abbruch", "Fundament", "abbrechen"]
+
   ABR-001:
     kurztext: "Leichtbauwände abbrechen"
     langtext: >
@@ -1356,3 +1440,51 @@ sonder:
     aufwandswert_key: "dacharbeiten.ortgangblech"
     din: "DIN 18339"
     tags: ["Ortgang", "Windblech", "Ortgangblech"]
+
+# ============================================================================
+# 22 — BEWEHRUNGSARBEITEN
+# ============================================================================
+bewehrung:
+
+  BEW-001:
+    kurztext: "Betonstabstahl"
+    langtext: >
+      Betonstabstahl B500B nach Bewehrungsplan liefern, schneiden, biegen und verlegen. Einschl. Abstandhalter und Rödeldraht.
+    einheit: "t"
+    gewerk: "Bewehrungsarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "bewehrungsarbeiten.bewehrung_stabstahl"
+    tags: ["Betonstabstahl", "Bewehrung", "Stabstahl", "Moniereisen", "B500"]
+
+  BEW-002:
+    kurztext: "Betonstahlmatten"
+    langtext: >
+      Betonstahlmatten (Lagermatten) nach Bewehrungsplan liefern und verlegen. Einschl. Übergreifungsstöße und Abstandhalter.
+    einheit: "t"
+    gewerk: "Bewehrungsarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "bewehrungsarbeiten.bewehrung_matten"
+    tags: ["Betonstahlmatten", "Bewehrungsmatten", "Matten", "Q-Matten", "Bewehrung"]
+
+# ============================================================================
+# 24 — AUSSTATTUNG / STADTMOBILIAR
+# ============================================================================
+ausstattung:
+
+  AUS-001:
+    kurztext: "Poller setzen"
+    langtext: >
+      Poller (fest oder herausnehmbar) liefern und in Betonfundament setzen, ausrichten. {{stueck}} Stück.
+    einheit: "St"
+    gewerk: "Ausstattung"
+    aufwandswert_key: "ausstattung.poller_setzen"
+    tags: ["Poller", "Absperrpfosten", "herausnehmbar", "Stadtmobiliar"]
+
+  AUS-002:
+    kurztext: "Fahrradanlehnbügel montieren"
+    langtext: >
+      Kernbohrungen herstellen und Fahrradanlehnbügel montieren, verdübeln bzw. einbetonieren. {{stueck}} Stück.
+    einheit: "St"
+    gewerk: "Ausstattung"
+    aufwandswert_key: "ausstattung.bohrung_montage"
+    tags: ["Fahrradanlehnbügel", "Fahrradbügel", "Bohrung", "Anlehnbügel"]

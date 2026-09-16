@@ -177,6 +177,20 @@ struct LVPositionRow: View {
                 .padding(.top, 2)
             }
 
+            // Der volle LV-Langtext — klappbar. Auf der Baustelle die ganze
+            // Leistungsbeschreibung (Tiefe/Boden/Verbau/Umfang) nachlesen.
+            if let lt = position.langtext?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !lt.isEmpty, lt != (position.bezeichnung ?? "") {
+                DisclosureGroup("📄 Langtext") {
+                    Text(lt)
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
+                }
+                .font(.caption2).tint(.secondary)
+            }
+
             ZeilenFortschritt(
                 wert: position.displayedFortschritt(
                     manuellerProzent: fortStore.fortschritt(for: positionID)?.prozent

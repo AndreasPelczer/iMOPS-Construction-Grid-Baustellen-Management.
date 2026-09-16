@@ -72,8 +72,25 @@ struct MopsFassReviewView: View {
                                 Text("—").foregroundStyle(.secondary)
                             }
                         }
+                        // Zeilen-Tap nur auf der Kopfzeile — sonst schluckt er den Klapp-Klick.
+                        .contentShape(Rectangle())
+                        .onTapGesture { if e.status != .gruen { rezeptPosition = e.position } }
+
                         ForEach(e.meldungen, id: \.self) { m in
                             Text(m).font(.caption2).foregroundStyle(farbe(e.status))
+                        }
+                        // Der volle LV-Langtext — klappbar, damit man auf der Baustelle
+                        // die ganze Leistungsbeschreibung (Tiefe/Boden/Verbau) lesen kann.
+                        if let lt = e.position.langtext?.trimmingCharacters(in: .whitespacesAndNewlines),
+                           !lt.isEmpty, lt != (e.position.bezeichnung ?? "") {
+                            DisclosureGroup("📄 Langtext (LV)") {
+                                Text(lt)
+                                    .font(.caption2).foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, 2)
+                            }
+                            .font(.caption2).tint(.secondary)
                         }
                         if e.status != .gruen {
                             Text("🐕 Antippen: Rezept mit dem Mops erstellen")
@@ -81,8 +98,6 @@ struct MopsFassReviewView: View {
                         }
                     }
                     .padding(.vertical, 2)
-                    .contentShape(Rectangle())
-                    .onTapGesture { if e.status != .gruen { rezeptPosition = e.position } }
                 }
             }
             .navigationTitle("Kalkulations-Review")
