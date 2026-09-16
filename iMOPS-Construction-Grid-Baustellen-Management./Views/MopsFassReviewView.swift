@@ -13,27 +13,28 @@ import CoreData
 // Position ROT ist — das Vier-Augen-Prinzip bleibt beim Menschen.
 struct MopsFassReviewView: View {
 
-    @State private var ergebnisse: [AutoKalkulationsService.Ergebnis]
+    let ergebnisse: [AutoKalkulationsService.Ergebnis]
     let event: Event
     var onFertig: () -> Void = {}
-
-    init(ergebnisse: [AutoKalkulationsService.Ergebnis], event: Event, onFertig: @escaping () -> Void = {}) {
-        _ergebnisse = State(initialValue: ergebnisse)
-        self.event = event
-        self.onFertig = onFertig
-    }
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var ctx
     @State private var zeigeExport = false
     @State private var exportDoc: GAEBTextDocument?
     @State private var rezeptPosition: LVPosition?   // Position für den Rezept-Assistenten
+    @State private var updates: [NSManagedObjectID: AutoKalkulationsService.Ergebnis] = [:]
 
-    private var bilanz: AutoKalkulationsService.Bilanz { AutoKalkulationsService.bilanz(ergebnisse) }
+    // Anzeige immer aus dem FRISCHEN Parameter ableiten (kein State(initialValue:)-Anti-Muster,
+    // das eine alte, leere Momentaufnahme festhielt), die Assistent-Updates als Overlay drüber.
+    private var angezeigt: [AutoKalkulationsService.Ergebnis] {
+        ergebnisse.map { updates[$0.position.objectID] ?? $0 }
+    }
+
+    private var bilanz: AutoKalkulationsService.Bilanz { AutoKalkulationsService.bilanz(angezeigt) }
 
     private var sortiert: [AutoKalkulationsService.Ergebnis] {
         let rang: [AutoKalkulationsService.Status: Int] = [.rot: 0, .gelb: 1, .gruen: 2]
-        return ergebnisse.sorted { (rang[$0.status] ?? 3) < (rang[$1.status] ?? 3) }
+        return angezeigt.sorted { (rang[$0.status] ?? 3) < (rang[$1.status] ?? 3) }
     }
 
     var body: some View {
@@ -109,9 +110,7 @@ struct MopsFassReviewView: View {
 
     /// Nach dem Rezept-Assistenten die betroffene Zeile neu bewerten → sie wird grün/gelb.
     private func aktualisiere(_ pos: LVPosition) {
-        if let i = ergebnisse.firstIndex(where: { $0.position.objectID == pos.objectID }) {
-            ergebnisse[i] = AutoKalkulationsService.bewerte(pos, in: ctx)
-        }
+        updates[pos.objectID] = AutoKalkulationsService.bewerte(pos, in: ctx)
     }
 
     private func starteExport() {
