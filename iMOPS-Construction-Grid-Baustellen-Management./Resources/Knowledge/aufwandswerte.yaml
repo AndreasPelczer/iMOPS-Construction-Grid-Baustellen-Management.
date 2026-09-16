@@ -441,6 +441,17 @@ pflasterarbeiten:
 # ============================================================================
 strassenbau:
 
+  fugenschnitt:
+    bezeichnung: "Fuge/Naht schneiden"
+    einheit: "m"
+    aufwandswert:
+      min: 0.02
+      mittel: 0.04
+      max: 0.08
+    kolonne: "1-2 Straßenbauer"
+    hinweis: "Asphalt/Beton mit Fugenschneider trennen"
+    quellen: ["PRAXIS"]
+
   decke_wiederherstellen:
     bezeichnung: "Asphaltdecke wiederherstellen"
     einheit: "m2"
@@ -971,6 +982,39 @@ malerarbeiten:
 # ============================================================================
 abbruch:
 
+  pflaster_aufnehmen:
+    bezeichnung: "Pflaster aufnehmen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.15
+      mittel: 0.25
+      max: 0.4
+    kolonne: "1-2 Helfer"
+    hinweis: "Steine aufnehmen, stapeln/laden; sortenrein für Wiederverwendung"
+    quellen: ["PRAXIS"]
+
+  tragschicht_ausbauen:
+    bezeichnung: "Trag-/Unterbauschicht ausbauen"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.05
+      mittel: 0.1
+      max: 0.18
+    kolonne: "1 Baggerfahrer + 1 Helfer"
+    hinweis: "Gebundene/ungebundene Tragschicht lösen, laden, abfahren"
+    quellen: ["PRAXIS"]
+
+  einbauteil_abbrechen:
+    bezeichnung: "Einbauteil abbrechen"
+    einheit: "St"
+    aufwandswert:
+      min: 0.3
+      mittel: 0.6
+      max: 1.5
+    kolonne: "1 Baggerfahrer + 1 Helfer"
+    hinweis: "Fundament/Einbauteil ausbauen und entsorgen; stark objektabhängig"
+    quellen: ["PRAXIS"]
+
   bordstein_ausbauen:
     bezeichnung: "Bordsteine ausbauen"
     einheit: "m"
@@ -1415,4 +1459,31 @@ bodenbelag:
     kolonne: "1-2 Bodenleger"
     hinweis: "Schwimmend verlegen; inkl. Sockelleisten +30%"
     quellen: ["RAFFI"]
+
+# ============================================================================
+# 23 — AUSSTATTUNG / STADTMOBILIAR
+# ============================================================================
+ausstattung:
+
+  poller_setzen:
+    bezeichnung: "Poller setzen"
+    einheit: "St"
+    aufwandswert:
+      min: 0.5
+      mittel: 1.0
+      max: 2.0
+    kolonne: "1-2 Facharbeiter"
+    hinweis: "Fundament, Poller (fest/herausnehmbar) versetzen und ausrichten"
+    quellen: ["PRAXIS"]
+
+  bohrung_montage:
+    bezeichnung: "Bohrung + Ausstattung montieren"
+    einheit: "St"
+    aufwandswert:
+      min: 0.3
+      mittel: 0.5
+      max: 1.0
+    kolonne: "1 Facharbeiter"
+    hinweis: "Kernbohrung, Dübel, Element (z.B. Fahrradbügel) montieren"
+    quellen: ["PRAXIS"]
 
