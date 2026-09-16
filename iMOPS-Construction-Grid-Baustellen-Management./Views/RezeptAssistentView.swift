@@ -63,12 +63,15 @@ struct RezeptAssistentView: View {
     @ViewBuilder private var schrittZeit: some View {
         Section {
             Text(leistung).font(.headline)
-            Text("je \(einheit) · Lass uns das Rezept zusammen kochen.")
+            Text("LV-Eintrag: \(fmtH(position.menge)) \(einheit) · braucht Arbeit, Maschine und Material.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         Section("⏱ Die Zeit — wie lange braucht der Maurer für 1 \(einheit)?") {
             stundenZeile("Maurer", $maurer)
             stundenZeile("Helfer", $helfer)
+            if maurer > 0 || helfer > 0 {
+                Text(zeitBriefing).font(.footnote)
+            }
             Text(vorschlagStatus).font(.caption).foregroundStyle(.orange)
         }
         Section {
@@ -238,6 +241,19 @@ struct RezeptAssistentView: View {
                                                 material: mat, geraet: ger, quelle: quelle, in: ctx)
         try? ctx.save()
         onFertig(); dismiss()
+    }
+
+    // Lesbarer Zeit-Briefing: „Maurer braucht ~X h für 320 m — schafft ~Y m/h · zusammen ~Z Mannstunden"
+    private var zeitBriefing: String {
+        let m = position.menge
+        var teile: [String] = []
+        if maurer > 0 {
+            teile.append("Maurer: ~\(fmtH(maurer * m)) h für \(fmtH(m)) \(einheit) — schafft ~\(fmtH(1 / maurer)) \(einheit)/h")
+        }
+        if helfer > 0 { teile.append("Helfer: ~\(fmtH(helfer * m)) h") }
+        let gesamt = (maurer + helfer) * m
+        if gesamt > 0 { teile.append("zusammen ~\(fmtH(gesamt)) Mannstunden") }
+        return "→ " + teile.joined(separator: " · ")
     }
 
     private func euro(_ d: Double) -> String { String(format: "%.2f €", d) }
