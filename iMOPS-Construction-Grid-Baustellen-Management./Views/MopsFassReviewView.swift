@@ -13,13 +13,21 @@ import CoreData
 // Position ROT ist — das Vier-Augen-Prinzip bleibt beim Menschen.
 struct MopsFassReviewView: View {
 
-    let ergebnisse: [AutoKalkulationsService.Ergebnis]
+    @State private var ergebnisse: [AutoKalkulationsService.Ergebnis]
     let event: Event
     var onFertig: () -> Void = {}
 
+    init(ergebnisse: [AutoKalkulationsService.Ergebnis], event: Event, onFertig: @escaping () -> Void = {}) {
+        _ergebnisse = State(initialValue: ergebnisse)
+        self.event = event
+        self.onFertig = onFertig
+    }
+
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.managedObjectContext) private var ctx
     @State private var zeigeExport = false
     @State private var exportDoc: GAEBTextDocument?
+    @State private var rezeptPosition: LVPosition?   // Position für den Rezept-Assistenten
 
     private var bilanz: AutoKalkulationsService.Bilanz { AutoKalkulationsService.bilanz(ergebnisse) }
 
@@ -66,8 +74,14 @@ struct MopsFassReviewView: View {
                         ForEach(e.meldungen, id: \.self) { m in
                             Text(m).font(.caption2).foregroundStyle(farbe(e.status))
                         }
+                        if e.status != .gruen {
+                            Text("🐕 Antippen: Rezept mit dem Mops erstellen")
+                                .font(.caption2).foregroundStyle(.blue)
+                        }
                     }
                     .padding(.vertical, 2)
+                    .contentShape(Rectangle())
+                    .onTapGesture { if e.status != .gruen { rezeptPosition = e.position } }
                 }
             }
             .navigationTitle("Kalkulations-Review")
@@ -86,6 +100,17 @@ struct MopsFassReviewView: View {
             .fileExporter(isPresented: $zeigeExport, document: exportDoc,
                           contentType: .xml,
                           defaultFilename: "Angebot_\(event.eventNumber ?? "LV")_X84") { _ in }
+            .sheet(item: $rezeptPosition) { pos in
+                RezeptAssistentView(position: pos, onFertig: { aktualisiere(pos) })
+                    .environment(\.managedObjectContext, ctx)
+            }
+        }
+    }
+
+    /// Nach dem Rezept-Assistenten die betroffene Zeile neu bewerten → sie wird grün/gelb.
+    private func aktualisiere(_ pos: LVPosition) {
+        if let i = ergebnisse.firstIndex(where: { $0.position.objectID == pos.objectID }) {
+            ergebnisse[i] = AutoKalkulationsService.bewerte(pos, in: ctx)
         }
     }
 

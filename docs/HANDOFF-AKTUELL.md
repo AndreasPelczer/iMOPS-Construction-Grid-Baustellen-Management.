@@ -2,15 +2,20 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
-## Delta 16.09.2026 — „Mops fass" (AutoKalkulationsService) — Branch `feature/material-preise-zentral`, LOKAL (nicht committet/gepusht)
+## Delta 16.09.2026 — „Mops fass" + Rezept-Assistent + LV↔Canvas-Brücke — Branch `feature/material-preise-zentral`
 
-Der Orchestrator für die automatische GAEB-Bepreisung. **KEIN neuer Motor** — nutzt den vorhandenen `LeistungskatalogService.autoMatch` + `LVKalkulator`. (Die Opus-Spec wollte einen 500-Zeilen-`AutoKalkulationsService` mit `berechneEP`/`versucheMatch`/`einheitspreis` — die gibt es so NICHT; der Motor war schon da. Kühlhaus-Check hat's gefangen.)
+Der komplette Kalkulations-Bogen: **GAEB rein → auf den Canvas → Knoten kalkulieren (Rezept entsteht) → „Mops fass" wird grün → X84 raus.** Alles auf dem vorhandenen Motor (`LeistungskatalogService.autoMatch` + `LVKalkulator`) — KEIN neuer Rechenkern (die Opus-Spec wollte 500 Zeilen `berechneEP`/`versucheMatch`/`einheitspreis` — gibt's so nicht; Kühlhaus-Check hat's gefangen).
 
-- **`Service/AutoKalkulationsService.swift`** — `fass(positionen:in:)` läuft über alle Positionen: `autoMatch` (schreibt Rezept) → `LVKalkulator.kalkuliere` → Ampel-Diagnose. **GRÜN** = Rezept-Treffer + Preis>0 (mit Quelle Lohn/Material/Gerät); **GELB** = Rezept da, aber Preis 0 (Aufwandswert fehlt) oder Material ohne Stammdaten-Preis; **ROT** = kein Rezept (keine erfundene Zahl). `Bilanz` + `exportBereit` (Export gesperrt solange ROT). Synchron/offline — der Mops erfindet nichts, GELB nutzt die vorhandene „Schätzung"-Übernahme als per-Position-Aktion.
-- **`Views/MopsFassReviewView.swift`** — Ampel-Karte (🟢🟡🔴) + Positionsliste (ROT zuerst) mit „was fehlt"-Meldungen + Preis; **X84-Export** (via `GAEBExporter`, unsere Preise über den `hatKalkulation`-Fallback) — Button gesperrt bis ROT==0. Enthält `GAEBTextDocument` (FileDocument für `.fileExporter`).
-- **Integration:** `GAEBImportView.importSelected()` sammelt die erstellten Positionen; nach einem **X83**-Import läuft „Mops fass" automatisch → `MopsFassReviewView`-Sheet. X84 (Angebotsimport) unverändert.
-- **Tests `MopsFassTests` (5): grün** (grün/gelb/rot + Bilanz + Export-Gate). Voller App-Build SUCCEEDED. `clean` gemacht (Sync-Ordner-Falle), neue Suite lief.
-- **🔴 OFFEN:** (a) in der Review pro GELB/ROT-Zeile direkt zur Aufwandswert-Schätzung (`MopsVorschlagSheet`) / Stammdaten springen — Sheets verdrahten. (b) Integrationstest mit Andreas' echten `.x83` (liegen im Downloads, Pfade noch offen). (c) volle Suite noch nicht durchlaufen (nur MopsFassTests + App-Build); vorbestehender flaky `RechnungPDFExporterTests` beachten. (d) Commit/Push steht aus (Andreas entscheidet).
+**Commit 1 (`97600af`):** `Service/AutoKalkulationsService.swift` (`fass` → Ampel-Diagnose GRÜN/GELB/ROT, `Bilanz`+`exportBereit`), `Views/MopsFassReviewView.swift` (Ampel + „was fehlt" + X84-Export via `GAEBExporter`, gesperrt bis ROT==0), Integration in `GAEBImportView` (X83-Import → Auto-Review). `MopsFassTests`.
+
+**Commit 2 (dieser Batch):**
+- **`Views/LVView.swift`** — „🐕 Mops fass" + „Auf den Canvas holen" als Knöpfe **oben in der LV-Liste** (Andreas' Wunsch: eine Ebene über der Einzel-Kalkulation). Review als `.fullScreenCover` (mehrere `.sheet` in LVView präsentierten nicht zuverlässig).
+- **`Service/LVCanvasBruecke.swift`** — Brücke LV ↔ Grap8-Canvas, **beide Richtungen**, idempotent über die vorhandene Beziehung `Auftrag.lvPosition`. `lvAufDenCanvas` / `canvasInsLV`. Pflichtfelder gesetzt (`statusRawValue`,`storageNote` — sonst crasht `save()`). Knopf in `Grap8View` (⋯-Menü „Knoten ins LV übernehmen"). `LVCanvasBrueckeTests` (3).
+- **Rezept-Assistent `Views/RezeptAssistentView.swift`** — geführt, Schritt für Schritt, Küchensprache: Mops **schlägt vor, User bestätigt/korrigiert**. Zeit (Prof-Vorschlag, offline→Erfahrungswert) · Material (Preis aus Stammdaten) · **Gerät = Auswahl aus dem Maschinenpark** (`Geraet.kostenProStunde`). Startet aus jeder 🔴/🟡-Zeile der Review; Zeile wird danach grün. Speichert über neu `LeistungskatalogService.speichereRezept(...)` (Aufwandswert + Material + Gerät → Position + Baustein gelernt). Test in `MopsFassTests`.
+- **`Views/MopsVorschlagSheet.swift`** — Reiter-Umschalter raus, **eine Ansicht, nur Aufwandswert** (die einzige Frage, die echte Zahlen liefert; Material-Alt/Positionstext lieferten generischen KI-Rohtext → aus der UI raus, Helper-Methoden bleiben im Code). Zeigt **pro Einheit UND Gesamtzeit** (× Menge).
+
+**Stand:** volle Unit-Suite grün (16.9.), App-Build SUCCEEDED. Beide Commits auf `feature/material-preise-zentral`, **lokal** — Andreas pusht + merged selbst.
+**🔴 OFFEN / nächste Schritte:** (a) der Assistent soll Positionen wie „Rohrgraben DN 400" **erst erklären + die fehlenden Fragen stellen** (Tiefe/Boden aus dem Plan) statt gleich nach Stunden — Andreas' großer Wunsch, noch offen. (b) **Bei „Pläne und Unterlagen" das eingelesene GAEB menschenlesbar anzeigen** (das LV, mit dem auf der Baustelle gearbeitet wird — die Positionen als lesbare Liste, nicht das rohe XML). Andreas' Wunsch 16.9. (c) Integrationstest mit echten `.x83`. (d) vorbestehender flaky `RechnungPDFExporterTests` beachten.
 
 ## Delta 15.09.2026 (Nacht) — Rezepte für den Matcher (Ytong + Tiefbau), Goldschmitt-Fotos
 

@@ -67,6 +67,20 @@ struct MopsFassTests {
         #expect(b.exportBereit == false)   // solange ROT existiert: kein Export
     }
 
+    @Test @MainActor func rezeptAssistentSpeichertMachtPositionGruen() throws {
+        // Position ohne Rezept → ROT
+        let pos = position("Betonwände herstellen", "m²")
+        #expect(AutoKalkulationsService.bewerte(pos, in: ctx).status == .rot)
+        // Rezept über den Assistenten-Speicherweg anlegen (Aufwandswert)
+        LeistungskatalogService.speichereRezept(auf: pos, maurer: 0.8, helfer: 0.4,
+                                                quelle: "schätzung", in: ctx)
+        // jetzt GRÜN mit Preis, und der Baustein ist gelernt (nächster gleiche Import trifft)
+        let e = AutoKalkulationsService.bewerte(pos, in: ctx)
+        #expect(e.status == .gruen)
+        #expect(e.einheitspreisVK > 0)
+        #expect(LeistungskatalogService.finde(leistung: "Betonwände herstellen", einheit: "m²", in: ctx) != nil)
+    }
+
     @Test @MainActor func exportBereitWennKeinRot() throws {
         LeistungskatalogService.merke(leistung: "Betonwände herstellen", einheit: "m²",
                                       maurer: 0.8, helfer: 0.4, in: ctx)
