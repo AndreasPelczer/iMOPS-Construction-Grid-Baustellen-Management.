@@ -29,11 +29,16 @@ final class MopsKalkulationsHelper {
 
     /// Fragt den Prof nach REFA-Aufwandswerten fuer eine Leistung.
     /// Returns: (Maurer-Stunden, Helfer-Stunden) oder nil wenn offline/Fehler.
-    func aufwandswertVorschlag(leistung: String) async -> (maurer: Double, helfer: Double)? {
+    func aufwandswertVorschlag(leistung: String, langtext: String? = nil) async -> (maurer: Double, helfer: Double)? {
         guard isConnected else { return nil }
 
-        let frage = "Aufwandswert REFA für: \(leistung). " +
-            "Antworte NUR in diesem Format: MAURER=X.XX HELFER=X.XX (Stunden pro Einheit)"
+        var frage = "Aufwandswert REFA für: \(leistung)."
+        if let lt = langtext?.trimmingCharacters(in: .whitespacesAndNewlines), !lt.isEmpty {
+            // Der volle LV-Langtext trägt Tiefe, Bodenklasse, Verbau, Wasserhaltung usw. —
+            // ohne den schätzt der Prof für den nackten Titel ins Blaue.
+            frage += " Vollständige Leistungsbeschreibung (Tiefe, Bodenklasse, Verbau, Umfang beachten): \(lt)."
+        }
+        frage += " Antworte NUR in diesem Format: MAURER=X.XX HELFER=X.XX (Stunden pro Einheit)"
 
         do {
             let response = try await client.ask(question: frage, useProf: true)

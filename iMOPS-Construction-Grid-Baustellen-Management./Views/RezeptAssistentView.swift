@@ -65,6 +65,10 @@ struct RezeptAssistentView: View {
     @ViewBuilder private var schrittZeit: some View {
         Section {
             Text(leistung).font(.headline)
+            if let lt = position.langtext?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !lt.isEmpty, lt != leistung {
+                Text(lt).font(.caption)   // der VOLLE Auftrag: Tiefe, Boden, Verbau, Umfang
+            }
             Text("LV-Eintrag: \(fmtH(position.menge)) \(einheit) · braucht Arbeit, Maschine und Material.")
                 .font(.caption).foregroundStyle(.secondary)
         }
@@ -195,7 +199,7 @@ struct RezeptAssistentView: View {
 
     private func ladeVorschlag() async {
         let helper = MopsKalkulationsHelper.shared
-        if let v = await helper.aufwandswertVorschlag(leistung: leistung) {
+        if let v = await helper.aufwandswertVorschlag(leistung: leistung, langtext: position.langtext) {
             maurer = v.maurer; helfer = v.helfer
             vorschlagMaurer = v.maurer; vorschlagHelfer = v.helfer
             vorschlagStatus = "🟡 Vorschlag vom Prof (Schätzung) — passt das, oder ändern?"

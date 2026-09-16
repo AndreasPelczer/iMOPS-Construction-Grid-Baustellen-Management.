@@ -158,6 +158,7 @@
         <attribute name="verwendungen" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
     </entity>
     <entity name="LVPosition" representedClassName="LVPosition" syncable="YES">
+        <attribute name="langtext" optional="YES" attributeType="String"/>
         <attribute name="artikelNummer" optional="YES" attributeType="String"/>
         <attribute name="bezeichnung" optional="YES" attributeType="String"/>
         <attribute name="bgkProzent" optional="YES" attributeType="Double" defaultValueString="0.12" usesScalarValueType="YES"/>

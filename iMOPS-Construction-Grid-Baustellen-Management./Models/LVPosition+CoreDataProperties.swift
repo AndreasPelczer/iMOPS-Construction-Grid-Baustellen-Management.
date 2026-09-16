@@ -9,6 +9,7 @@ extension LVPosition {
     @NSManaged public var quellDatei: String?
     @NSManaged var posNr: String?
     @NSManaged var bezeichnung: String?
+    @NSManaged var langtext: String?      // voller GAEB-Langtext (Tiefe/Boden/Umfang) — für die Kalkulation
     @NSManaged var menge: Double
     @NSManaged var einheit: String?
     @NSManaged var kostenGruppeNummer: String?

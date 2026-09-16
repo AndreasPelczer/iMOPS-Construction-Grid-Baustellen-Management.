@@ -282,6 +282,7 @@ struct GAEBImportView: View {
             let pos = LVPosition(context: viewContext)
             pos.posNr              = item.posNr
             pos.bezeichnung        = item.kurztext
+            pos.langtext           = item.langtext   // vollen Text behalten (Tiefe/Boden/Umfang)
             pos.menge              = item.menge
             pos.einheit            = item.einheit
             pos.kostenGruppeNummer = item.guessedKG
