@@ -2,6 +2,18 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 16.09.2026 (Nachmittag) — alles GEMERGT auf `main`, Repo ist PRIVAT
+
+**Repo auf PRIVAT gestellt** (Andreas' Entscheidung) — DSGVO an der Wurzel gelöst (Preise/Rezepte dürfen jetzt auf `main`). Ehrlich: schützt künftig, macht die frühere öffentliche Phase nicht rückgängig.
+
+**Gemergt (alle PRs zu, 0 offen):** PR #165 (Übergabe, Konflikt aufgelöst), PR #168 (Mops fass + Assistent + Brücke), PR #169 (Fixes + Lesbarkeit). `main` = alles.
+
+- **Fix (PR #169):** `MopsFassReviewView` zeigte leere Ampel (0/0/0) trotz Positionen → `State(initialValue:)`-Anti-Muster; jetzt `let ergebnisse` + Overlay-Map `updates`. **Merke: keine `@State(initialValue:)` aus einem Sheet-Parameter seeden — zeigt stale leere Momentaufnahme.**
+- **Rezept-Assistent lesbar:** Schritt 1 Zeit-Briefing („Für 320 lfm: 32 Std Maurer + 96 Std Helfer = 128 Mannstunden; Dauer hängt an der Kolonne (Brigade)"). Schritt 2 Material-Zeile: „im Katalog · dein Preis" (`materialPreis`), „auf Lager/bestellen" (neu `LeistungskatalogService.lagerBestand` = Name→`CDLexikonEntry.code`→`LagerStore.gesamtbestand`), „🌐 Markt-Orientierung (KI)" (neu `MopsKalkulationsHelper.marktpreisVorschlag`, über den Prof). **Regel dahinter (Andreas): offline-first ist eine BAUSTELLEN-Regel, keine BÜRO-Regel — Kalkulation/Angebot passiert online im Büro vor Baustellenbeginn; Markt-Preis klar als „KI-Schätzung", kein erfundener Marktpreis.**
+- **LV-Eintrag-Kalkulation (`LVTiefenkalkulationView`):** Einheit hinter jeder Zahl (`€/lfm`) + „geplant X Std" in der Summenzeile.
+
+**🔴 OFFEN / nächste Schritte:** (a) Andreas hat ein „da fehlt ein Knoten im Kopf, etwas stimmt noch nicht ganz"-Gefühl bei der Kalkulation/Mannstunden — noch nicht greifbar, dranbleiben. (b) generische Rollen „Maurer/Helfer" sauber benennen (bei Rohrgraben ist's Baggerfahrer/Facharbeiter). (c) „🌐 Markt-Preis übernehmen → in die Stammdaten (KalkMaterial) schreiben". (d) Assistent soll Positionen wie „Rohrgraben DN 400" ERST erklären + Tiefe/Boden fragen. (e) GAEB menschenlesbar bei „Pläne & Unterlagen". (f) mops-engine Python-Port (Codi-Auftrag) — Spec ist grün geprüft (Dateien/Formeln stimmen), ABER: Testdaten-Pfad ist Sandbox (echte Fixtures nutzen), und `mops_fass`/Katalog ist NICHT pure Mathe (braucht Store-Design). Orakel-Manifest bauen als Vorarbeit.
+
 ## Delta 16.09.2026 — „Mops fass" + Rezept-Assistent + LV↔Canvas-Brücke — Branch `feature/material-preise-zentral`
 
 Der komplette Kalkulations-Bogen: **GAEB rein → auf den Canvas → Knoten kalkulieren (Rezept entsteht) → „Mops fass" wird grün → X84 raus.** Alles auf dem vorhandenen Motor (`LeistungskatalogService.autoMatch` + `LVKalkulator`) — KEIN neuer Rechenkern (die Opus-Spec wollte 500 Zeilen `berechneEP`/`versucheMatch`/`einheitspreis` — gibt's so nicht; Kühlhaus-Check hat's gefangen).
