@@ -2,6 +2,16 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 16.09.2026 — „Mops fass" (AutoKalkulationsService) — Branch `feature/material-preise-zentral`, LOKAL (nicht committet/gepusht)
+
+Der Orchestrator für die automatische GAEB-Bepreisung. **KEIN neuer Motor** — nutzt den vorhandenen `LeistungskatalogService.autoMatch` + `LVKalkulator`. (Die Opus-Spec wollte einen 500-Zeilen-`AutoKalkulationsService` mit `berechneEP`/`versucheMatch`/`einheitspreis` — die gibt es so NICHT; der Motor war schon da. Kühlhaus-Check hat's gefangen.)
+
+- **`Service/AutoKalkulationsService.swift`** — `fass(positionen:in:)` läuft über alle Positionen: `autoMatch` (schreibt Rezept) → `LVKalkulator.kalkuliere` → Ampel-Diagnose. **GRÜN** = Rezept-Treffer + Preis>0 (mit Quelle Lohn/Material/Gerät); **GELB** = Rezept da, aber Preis 0 (Aufwandswert fehlt) oder Material ohne Stammdaten-Preis; **ROT** = kein Rezept (keine erfundene Zahl). `Bilanz` + `exportBereit` (Export gesperrt solange ROT). Synchron/offline — der Mops erfindet nichts, GELB nutzt die vorhandene „Schätzung"-Übernahme als per-Position-Aktion.
+- **`Views/MopsFassReviewView.swift`** — Ampel-Karte (🟢🟡🔴) + Positionsliste (ROT zuerst) mit „was fehlt"-Meldungen + Preis; **X84-Export** (via `GAEBExporter`, unsere Preise über den `hatKalkulation`-Fallback) — Button gesperrt bis ROT==0. Enthält `GAEBTextDocument` (FileDocument für `.fileExporter`).
+- **Integration:** `GAEBImportView.importSelected()` sammelt die erstellten Positionen; nach einem **X83**-Import läuft „Mops fass" automatisch → `MopsFassReviewView`-Sheet. X84 (Angebotsimport) unverändert.
+- **Tests `MopsFassTests` (5): grün** (grün/gelb/rot + Bilanz + Export-Gate). Voller App-Build SUCCEEDED. `clean` gemacht (Sync-Ordner-Falle), neue Suite lief.
+- **🔴 OFFEN:** (a) in der Review pro GELB/ROT-Zeile direkt zur Aufwandswert-Schätzung (`MopsVorschlagSheet`) / Stammdaten springen — Sheets verdrahten. (b) Integrationstest mit Andreas' echten `.x83` (liegen im Downloads, Pfade noch offen). (c) volle Suite noch nicht durchlaufen (nur MopsFassTests + App-Build); vorbestehender flaky `RechnungPDFExporterTests` beachten. (d) Commit/Push steht aus (Andreas entscheidet).
+
 ## Delta 15.09.2026 (Nacht) — Rezepte für den Matcher (Ytong + Tiefbau), Goldschmitt-Fotos
 
 **Branch `feature/ehrliche-kalkulation`** — Commits `0a8ac59` (Ytong), `f0b17cf` (Tiefbau). **LOKAL, NICHT gepusht** (Nachtschicht — Andreas entscheidet wach). Beide Suiten grün.
