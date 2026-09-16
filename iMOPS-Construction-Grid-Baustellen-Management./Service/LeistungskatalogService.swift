@@ -26,6 +26,19 @@ enum LeistungskatalogService {
         return alle.first { normalisiere($0.name) == ziel }?.preisProEinheit
     }
 
+    /// Lagerbestand zu einem Material über den Namen: Katalog-Eintrag (`CDLexikonEntry`) per
+    /// normalisiertem Namen finden → dessen Code → Gesamtbestand aus dem `LagerStore`.
+    /// nil = kein Katalog-Eintrag (nicht im Lager erfasst). 0 = erfasst, aber leer.
+    static func lagerBestand(fuer name: String, in ctx: NSManagedObjectContext) -> Double? {
+        let ziel = normalisiere(name)
+        guard !ziel.isEmpty else { return nil }
+        let req: NSFetchRequest<CDLexikonEntry> = CDLexikonEntry.fetchRequest()
+        let alle = (try? ctx.fetch(req)) ?? []
+        guard let code = alle.first(where: { normalisiere($0.name) == ziel })?.code,
+              !code.isEmpty else { return nil }
+        return LagerStore.shared.gesamtbestand(artikelCode: code)
+    }
+
     /// Vergleichsform: klein, ohne Diakritika, getrimmt. Dieselbe Regel für Leistung und Einheit.
     static func normalisiere(_ text: String?) -> String {
         (text ?? "")

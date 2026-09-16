@@ -25,6 +25,8 @@ struct RezeptAssistentView: View {
     @State private var vorschlagHelfer = 0.0
     @State private var vorschlagStatus = "Ich frage kurz den Prof …"
     @State private var zutaten: [Zutat] = []
+    @State private var marktpreise: [UUID: Double] = [:]   // Zutat.id → KI-Marktpreis (Orientierung)
+    @State private var marktLaden: Set<UUID> = []
     @State private var geraetWahl: Geraet?          // aus dem Maschinenpark (Stammdaten)
     @State private var geraetStunden = 0.0
     @FetchRequest(sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)])
@@ -63,12 +65,15 @@ struct RezeptAssistentView: View {
     @ViewBuilder private var schrittZeit: some View {
         Section {
             Text(leistung).font(.headline)
-            Text("je \(einheit) · Lass uns das Rezept zusammen kochen.")
+            Text("LV-Eintrag: \(fmtH(position.menge)) \(einheit) · braucht Arbeit, Maschine und Material.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         Section("⏱ Die Zeit — wie lange braucht der Maurer für 1 \(einheit)?") {
             stundenZeile("Maurer", $maurer)
             stundenZeile("Helfer", $helfer)
+            if maurer > 0 || helfer > 0 {
+                Text(zeitBriefing).font(.footnote)
+            }
             Text(vorschlagStatus).font(.caption).foregroundStyle(.orange)
         }
         Section {
@@ -87,11 +92,11 @@ struct RezeptAssistentView: View {
                             .frame(width: 70).multilineTextAlignment(.trailing)
                         TextField("Einheit", text: $z.einheit).frame(width: 60)
                         Spacer()
-                        Text(preisHinweis(z.name)).font(.caption).foregroundStyle(preisFarbe(z.name))
                     }
                     #if !os(macOS)
                     .keyboardType(.decimalPad)
                     #endif
+                    materialInfo(z)
                 }
             }
             .onDelete { zutaten.remove(atOffsets: $0) }
@@ -199,13 +204,53 @@ struct RezeptAssistentView: View {
         }
     }
 
-    private func preisHinweis(_ name: String) -> String {
-        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return "" }
-        if let p = LeistungskatalogService.materialPreis(fuer: name, in: ctx) { return "\(euro(p)) ✓" }
-        return "Preis fehlt"
+    // Lesbare Material-Info: Katalog/dein Preis · Lager · Markt-Orientierung (KI, Büro-Vorarbeit)
+    @ViewBuilder private func materialInfo(_ z: Zutat) -> some View {
+        let name = z.name.trimmingCharacters(in: .whitespaces)
+        let eh = z.einheit.isEmpty ? einheit : z.einheit
+        if !name.isEmpty {
+            VStack(alignment: .leading, spacing: 2) {
+                if let p = LeistungskatalogService.materialPreis(fuer: name, in: ctx) {
+                    Text("im Katalog ✓ · dein Preis: \(euro(p))/\(eh)")
+                        .font(.caption).foregroundStyle(.green)
+                } else {
+                    Text("nicht im Katalog — dein Preis fehlt (in Stammdaten ergänzen)")
+                        .font(.caption).foregroundStyle(.red)
+                }
+                if let bestand = LeistungskatalogService.lagerBestand(fuer: name, in: ctx) {
+                    Text(bestand > 0
+                         ? "auf Lager: \(fmtH(bestand)) \(eh)"
+                         : "Lager: leer — muss bestellt werden")
+                        .font(.caption).foregroundStyle(bestand > 0 ? Color.secondary : Color.orange)
+                } else {
+                    Text("nicht im Lager erfasst").font(.caption).foregroundStyle(.secondary)
+                }
+                if marktLaden.contains(z.id) {
+                    HStack(spacing: 6) { ProgressView().scaleEffect(0.7); Text("frage Markt …").font(.caption2).foregroundStyle(.secondary) }
+                } else if let mp = marktpreise[z.id] {
+                    Text("🌐 Markt-Orientierung (KI-Schätzung): ~\(euro(mp))/\(eh)")
+                        .font(.caption2).foregroundStyle(.blue)
+                } else {
+                    Button { marktFragen(z) } label: {
+                        Label("🌐 Marktpreis fragen (KI)", systemImage: "globe").font(.caption2)
+                    }.buttonStyle(.borderless)
+                }
+            }
+        }
     }
-    private func preisFarbe(_ name: String) -> Color {
-        LeistungskatalogService.materialPreis(fuer: name, in: ctx) == nil ? .red : .green
+
+    private func marktFragen(_ z: Zutat) {
+        let name = z.name.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        let eh = z.einheit.isEmpty ? einheit : z.einheit
+        marktLaden.insert(z.id)
+        Task {
+            let p = await MopsKalkulationsHelper.shared.marktpreisVorschlag(material: name, einheit: eh)
+            await MainActor.run {
+                marktLaden.remove(z.id)
+                if let p { marktpreise[z.id] = p }
+            }
+        }
     }
 
     private var lohnEK: Double {
@@ -238,6 +283,19 @@ struct RezeptAssistentView: View {
                                                 material: mat, geraet: ger, quelle: quelle, in: ctx)
         try? ctx.save()
         onFertig(); dismiss()
+    }
+
+    // Lesbarer Zeit-Briefing: zwei getrennte Arbeitsmengen, die sich zu Mannstunden summieren.
+    // Bewusst KEIN „schafft X/h" — das las sich wie ein Renn-Vergleich Maurer↔Helfer.
+    private var zeitBriefing: String {
+        let m = position.menge
+        let mStd = maurer * m, hStd = helfer * m, gesamt = mStd + hStd
+        var teile: [String] = []
+        if maurer > 0 { teile.append("\(fmtH(mStd)) Std Maurer") }
+        if helfer > 0 { teile.append("\(fmtH(hStd)) Std Helfer") }
+        let arbeit = teile.joined(separator: " + ")
+        return "Für \(fmtH(m)) \(einheit): \(arbeit) = \(fmtH(gesamt)) Mannstunden. "
+             + "Sie arbeiten zusammen — die Dauer in Tagen hängt von der Kolonnengröße ab (Brigade)."
     }
 
     private func euro(_ d: Double) -> String { String(format: "%.2f €", d) }

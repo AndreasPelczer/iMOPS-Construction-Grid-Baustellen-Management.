@@ -463,7 +463,7 @@ struct LVTiefenkalkulationView: View {
                     Text("Gesamtpreis")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "") × \(kalkulation.einheitspreisVK.formatted(.currency(code: "EUR")))")
+                    Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(einheitKurz) × \(kalkulation.einheitspreisVK.formatted(.currency(code: "EUR")))/\(einheitKurz) · geplant \(kalkulation.stundenGesamt.formatted(.number.precision(.fractionLength(0...1)))) Std")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -483,13 +483,16 @@ struct LVTiefenkalkulationView: View {
         }
     }
 
+    // Kurzform der Positionseinheit für die „/Einheit"-Suffixe (alle EK/EP-Werte sind je Einheit).
+    private var einheitKurz: String { (position.einheit?.isEmpty == false) ? position.einheit! : "Einheit" }
+
     private func ergebnisZeile(label: String, wert: Double, farbe: Color, bold: Bool = false) -> some View {
         HStack {
             Text(label)
                 .font(bold ? .subheadline.bold() : .subheadline)
                 .foregroundStyle(farbe)
             Spacer()
-            Text(wert.formatted(.currency(code: "EUR")))
+            Text("\(wert.formatted(.currency(code: "EUR")))/\(einheitKurz)")
                 .font(bold ? .subheadline.bold().monospacedDigit() : .subheadline.monospacedDigit())
         }
     }
