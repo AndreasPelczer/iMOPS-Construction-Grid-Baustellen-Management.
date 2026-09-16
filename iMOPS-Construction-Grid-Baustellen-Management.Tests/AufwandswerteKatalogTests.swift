@@ -45,6 +45,27 @@ struct AufwandswerteKatalogTests {
         #expect(t?.kolonne.contains("Maurer") == true)
     }
 
+    /// Plural/Umlaut: „Straßenabläufe" trifft den Singular-Eintrag `strassenablauf`.
+    @Test func pluralTrifftSingular() async {
+        #expect(AufwandswerteKatalog.shared.finde(leistung: "Straßenabläufe setzen")?.key == "strassenablauf")
+        #expect(AufwandswerteKatalog.shared.finde(leistung: "Stürze über Öffnungen")?.key == "sturz_einbauen")
+    }
+
+    /// Synonym: „Steinzeugrohr" ist ein Kanalrohr → kanalrohr_verlegen (Rohrleger).
+    @Test func synonymSteinzeugIstKanalrohr() async {
+        let t = AufwandswerteKatalog.shared.finde(leistung: "Steinzeugrohr DN 400 verlegen")
+        #expect(t?.key == "kanalrohr_verlegen")
+        #expect(t?.kolonne.contains("Rohrleger") == true)
+    }
+
+    /// Gewerks-Guard: „Mauerwerk Innenwände tragend" bleibt Maurer, wird NICHT zum Maler.
+    /// Das generische „Innenwände" darf das definierende „Mauerwerk" nicht überstimmen.
+    @Test func mauerwerkWirdNichtZumMaler() async {
+        let t = AufwandswerteKatalog.shared.finde(leistung: "Mauerwerk Innenwände tragend")
+        #expect(t?.gewerk == "mauerarbeiten")
+        #expect(t?.kolonne.lowercased().contains("maurer") == true)
+    }
+
     /// Kein plausibler Treffer → nil (kein erfundener Wert, Prof übernimmt).
     @Test func unbekanntesGibtNil() async {
         let t = AufwandswerteKatalog.shared.finde(leistung: "Spezialanfertigung Sonderposten XYZ", langtext: nil)
