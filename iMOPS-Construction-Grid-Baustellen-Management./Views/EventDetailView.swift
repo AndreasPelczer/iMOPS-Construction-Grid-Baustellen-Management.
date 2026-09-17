@@ -2085,6 +2085,10 @@ struct EventDetailView: View {
                     Text("Lege im Team-Tab aktive Leute an, um die Arbeitstage zu sehen.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+
+                // Über die Bauzeit verteilt (Baubeginn→Fertigstellung): Ø Kolonnenstärke/Tag + je Rolle.
+                // Ehrlich: keine erfundene Abfolge, sondern die Auslastung über die echten Arbeitstage.
+                bauzeitVerteilung(plan: plan, leute: leute)
             }
             if plan.unvollstaendig {
                 Text("⚠️ \(plan.positionenOhneAufwand) von \(plan.positionenGesamt) Positionen noch ohne Aufwandswert — die Summe wächst, wenn du sie ergänzt.")
@@ -2096,6 +2100,46 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// Personalbedarf über die Bauzeit gestreckt: Ø Leute/Tag, je Rolle, plus Team-Abgleich.
+    /// Braucht Baubeginn (eventStartTime) + Fertigstellung (eventEndTime) am Event.
+    @ViewBuilder private func bauzeitVerteilung(plan: BrigadePlanung, leute: Int) -> some View {
+        if let start = event.eventStartTime, let ende = event.eventEndTime {
+            let arbeitstage = BrigadePlanung.arbeitstageZwischen(start, ende)
+            if let v = plan.verteilung(arbeitstage: arbeitstage) {
+                let noetig = Int(v.besetzungProTag.rounded(.up))
+                Divider().padding(.vertical, 2)
+                Text("Über die Bauzeit — \(v.arbeitstage) Arbeitstag\(v.arbeitstage == 1 ? "" : "e") (Baubeginn→Fertigstellung)")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text("Ø \(v.besetzungProTag.formatted(.number.precision(.fractionLength(0...1)))) Leute/Tag → mind. \(noetig) im Team nötig, um in der Zeit fertig zu werden")
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(v.rollen) { r in
+                    HStack(spacing: 6) {
+                        Text(r.rolle).font(.caption)
+                        Spacer()
+                        Text("Ø \(r.personenProTag.formatted(.number.precision(.fractionLength(0...1))))/Tag  ·  \(r.manntage.formatted(.number.precision(.fractionLength(0...1)))) MT")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                }
+                if leute > 0 && leute < noetig {
+                    Text("⚠️ Team hat \(leute) aktive — für die Bauzeit gebraucht: \(noetig). Mehr Leute oder mehr Zeit.")
+                        .font(.caption2).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else if arbeitstage <= 0 {
+                Divider().padding(.vertical, 2)
+                Text("Fertigstellung liegt nicht nach dem Baubeginn — Zeitraum prüfen, dann verteilt der Mops den Bedarf über die Bauzeit.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } else {
+            Divider().padding(.vertical, 2)
+            Text("Setz oben Baubeginn und Fertigstellung — dann verteilt der Mops den Bedarf über die Bauzeit (Ø Leute/Tag je Rolle).")
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     // MARK: - MASCHINEN (Aushub → Bagger-Stunden, Nordstern-Stufe 3+4)

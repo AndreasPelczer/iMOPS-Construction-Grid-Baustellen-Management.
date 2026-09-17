@@ -68,4 +68,39 @@ struct BrigadePlanungTests {
         #expect(plan.positionenOhneAufwand == 0)
         #expect(!plan.unvollstaendig)
     }
+
+    // MARK: - B: Verteilung über die Bauzeit
+
+    /// Arbeitstage zählen nur Mo–Fr, beide Enden eingeschlossen.
+    @Test func arbeitstageNurWochentags() {
+        let cal = Calendar.current
+        func tag(_ y: Int, _ m: Int, _ d: Int) -> Date {
+            cal.date(from: DateComponents(year: y, month: m, day: d))!
+        }
+        // 5.1.2026 = Montag, 9.1. Freitag, 11.1. Sonntag, 12.1. Montag.
+        #expect(BrigadePlanung.arbeitstageZwischen(tag(2026, 1, 5), tag(2026, 1, 9)) == 5)   // Mo–Fr
+        #expect(BrigadePlanung.arbeitstageZwischen(tag(2026, 1, 5), tag(2026, 1, 11)) == 5)  // Sa/So zählen nicht
+        #expect(BrigadePlanung.arbeitstageZwischen(tag(2026, 1, 5), tag(2026, 1, 12)) == 6)  // + Montag
+        #expect(BrigadePlanung.arbeitstageZwischen(tag(2026, 1, 10), tag(2026, 1, 11)) == 0) // nur Wochenende
+        #expect(BrigadePlanung.arbeitstageZwischen(tag(2026, 1, 9), tag(2026, 1, 5)) == 0)   // Ende vor Anfang
+    }
+
+    /// Manntage über die Bauzeit gestreckt → Ø Kolonnenstärke/Tag, Rollen-Summe stimmt.
+    @Test @MainActor func verteilungUeberBauzeit() {
+        let pos = position("Pflaster", menge: 100, maurer: 0.3, helfer: 0.2)   // 50 h = 6,25 MT
+        let plan = BrigadePlanung.fuer(positionen: [pos])
+
+        let v = plan.verteilung(arbeitstage: 5)
+        #expect(v != nil)
+        guard let v else { return }
+        #expect(v.arbeitstage == 5)
+        #expect(abs(v.besetzungProTag - 6.25 / 5.0) < 0.001)               // 1,25 Leute/Tag
+        // Die Rollen-Auslastung summiert sich zur Gesamtbesetzung.
+        let summe = v.rollen.reduce(0.0) { $0 + $1.personenProTag }
+        #expect(abs(summe - v.besetzungProTag) < 0.001)
+        // Ohne Arbeitstage keine erfundene Verteilung.
+        #expect(plan.verteilung(arbeitstage: 0) == nil)
+        // Leeres LV → nil (kein Aufwand zu verteilen).
+        #expect(BrigadePlanung.fuer(positionen: []).verteilung(arbeitstage: 5) == nil)
+    }
 }
