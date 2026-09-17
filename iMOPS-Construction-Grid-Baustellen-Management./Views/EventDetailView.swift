@@ -170,6 +170,7 @@ struct EventDetailView: View {
     // Welle 5c: Wände aus Plan lesen
     @State private var showingWandLeser = false
     @State private var showingAblaufplan = false
+    @State private var showingCanvas = false      // Abkürzung zum Grap8-Canvas dieser Baustelle
     @State private var showingVerlegeplan = false
     @State private var showingErdmassen = false
     @State private var showingMaterialliste = false
@@ -441,6 +442,12 @@ struct EventDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showingCanvas = true } label: {
+                    Label("Canvas", systemImage: "point.3.connected.trianglepath.dotted")
+                }
+                .tint(.orange)
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showHelp = true } label: {
                     Image(systemName: "questionmark.circle")
                 }
@@ -496,6 +503,12 @@ struct EventDetailView: View {
             pinnedMaterials = fetchPinnedMaterials()
         }
         .sheet(isPresented: $showHelp) { EventDetailHelpView().presentationSizing(.page) }
+        .fullScreenCover(isPresented: $showingCanvas) {
+            // Direkt zum Canvas DIESER Baustelle — spart die 8 Klicks über den Canvas-Tab.
+            // Grap8View bringt NavigationStack + „Fertig"-Knopf selbst mit.
+            Grap8View(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
         .sheet(isPresented: $showingEditSheet, onDismiss: { refreshID = UUID() }) {
             EditEventView(event: event)
                 .presentationSizing(.page)
