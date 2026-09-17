@@ -212,6 +212,8 @@
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="kostenProStunde" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="stunden" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <attribute name="pauschal" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkGeraete" inverseEntity="LVPosition"/>
     </entity>
     <entity name="PositionLohn" representedClassName="PositionLohn" syncable="YES">

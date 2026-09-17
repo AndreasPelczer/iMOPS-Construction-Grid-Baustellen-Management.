@@ -178,6 +178,9 @@ struct LVTiefenkalkulationView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.orange)
                             }
+                            baustelleZeile(menge: pm.mengeProEinheit * position.menge,
+                                           einheit: pm.einheit ?? "",
+                                           gesamt: pm.kostenProEinheit * position.menge)
                         }
                         Spacer()
                         Text("\(pm.kostenProEinheit.formatted(.currency(code: "EUR")))/\(einheitKurz)")
@@ -225,6 +228,9 @@ struct LVTiefenkalkulationView: View {
                             Text("\(pl.stunden.formatted(.number.precision(.fractionLength(0...2)))) h/\(einheitKurz) × \(pl.stundenBruttoEK.formatted(.currency(code: "EUR")))/h")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                            baustelleZeile(menge: pl.stunden * position.menge,
+                                           einheit: "h",
+                                           gesamt: pl.kostenProEinheit * position.menge)
                         }
                         Spacer()
                         Text("\(pl.kostenProEinheit.formatted(.currency(code: "EUR")))/\(einheitKurz)")
@@ -306,9 +312,19 @@ struct LVTiefenkalkulationView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pg.geraetName ?? "–")
                                 .font(.subheadline)
-                            Text("\(pg.stunden.formatted(.number.precision(.fractionLength(0...2)))) h/\(einheitKurz) × \(pg.kostenProStunde.formatted(.currency(code: "EUR")))/h")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            if pg.pauschal {
+                                // Pauschal/Fahrten: Anzahl × Preis je Einheit = Gesamt (ehrlich, keine Stunden).
+                                Text("\(pg.stunden.formatted(.number.precision(.fractionLength(0...2)))) \(pg.zaehlEinheit) × \(pg.kostenProStunde.formatted(.currency(code: "EUR")))/\(pg.zaehlEinheit) = \(pg.kostenGesamt.formatted(.currency(code: "EUR"))) gesamt")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                baustelleZeile(menge: pg.stunden, einheit: pg.zaehlEinheit, gesamt: pg.kostenGesamt)
+                            } else {
+                                Text("\(pg.stunden.formatted(.number.precision(.fractionLength(0...2)))) h/\(einheitKurz) × \(pg.kostenProStunde.formatted(.currency(code: "EUR")))/h")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                baustelleZeile(menge: pg.stunden * position.menge, einheit: "h",
+                                               gesamt: pg.kostenProEinheit * position.menge)
+                            }
                         }
                         Spacer()
                         Text("\(pg.kostenProEinheit.formatted(.currency(code: "EUR")))/\(einheitKurz)")
@@ -522,6 +538,19 @@ struct LVTiefenkalkulationView: View {
 
     // Kurzform der Positionseinheit für die „/Einheit"-Suffixe (alle EK/EP-Werte sind je Einheit).
     private var einheitKurz: String { (position.einheit?.isEmpty == false) ? position.einheit! : "Einheit" }
+
+    private func zahl(_ d: Double) -> String { d.formatted(.number.precision(.fractionLength(0...1))) }
+
+    /// Die Relation zur Baustelle: was diese Zeile für die ECHTE Menge der Position bedeutet
+    /// (Gesamt-Menge in ihrer Einheit + Gesamtbetrag). Macht aus dem abstrakten „je Einheit" das Konkrete.
+    @ViewBuilder private func baustelleZeile(menge realMenge: Double, einheit mengeEinheit: String, gesamt: Double) -> some View {
+        if position.menge > 0 {
+            let eh = mengeEinheit.isEmpty ? "" : " \(mengeEinheit)"
+            Text("→ für \(zahl(position.menge)) \(einheitKurz): \(zahl(realMenge))\(eh) = \(gesamt.formatted(.currency(code: "EUR")))")
+                .font(.caption2.weight(.medium)).foregroundStyle(Color.accentColor)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
 
     private func ergebnisZeile(label: String, wert: Double, farbe: Color, bold: Bool = false) -> some View {
         HStack {

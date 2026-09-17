@@ -342,27 +342,28 @@ struct HofauffahrtSeederTests {
         #expect(text.lowercased().contains("bodenklasse"))
     }
 
-    /// **Lücke 3, bestätigt:** Die Fuhren fallen pro Fahrt an, `PositionGeraet`
-    /// rechnet aber `stunden × kostenProStunde`. Der Test hält fest, dass es im
-    /// Modell kein Feld für Stückzahl oder Pauschale gibt — die 720 € stehen als
-    /// „0,06 Stunden × 120 €" da, rechnerisch richtig, begrifflich schief.
-    @Test @MainActor func fuhrenRechnenImZeitModell() throws {
+    /// **Lücke 3 GESCHLOSSEN:** Die Fuhren fallen pro Fahrt an — `PositionGeraet` kann jetzt
+    /// `pauschal` (Anzahl × Preis je Einheit). Die 720 € stehen ehrlich als „6 Fahrt × 120 €",
+    /// nicht mehr als „0,06 Stunden × 120 €".
+    @Test @MainActor func fuhrenSindPauschal() throws {
         HofauffahrtSeeder.seedIfNeeded(context: ctx)
 
         let felder = PositionGeraet.entity().attributesByName.keys.sorted()
-        #expect(!felder.contains { $0.lowercased().contains("pauschal") },
-                "PositionGeraet hat plötzlich ein Pauschalfeld: \(felder)")
-        #expect(!felder.contains { $0.lowercased().contains("stueck") })
+        #expect(felder.contains { $0.lowercased().contains("pauschal") },
+                "PositionGeraet sollte jetzt ein Pauschalfeld haben: \(felder)")
 
         let geraete = (try position().kalkGeraete?.allObjects as? [PositionGeraet]) ?? []
         let fuhren = try #require(geraete.first { ($0.geraetName ?? "").contains("Fuhren") })
 
-        // Sechs Fahrten à 120 € = 720 € gesamt, hier als „Stunden" je m².
-        // Gegen `pos.menge` gerechnet, nicht gegen eine hart notierte 100 —
-        // sonst bricht der Test bei jeder Mengenkorrektur, ohne dass an den
-        // Fuhren etwas falsch waere. (Genau das ist in der DXF-Runde passiert.)
+        // 6 Fahrten ABSOLUT (nicht 0,06/m²), Preis je Fahrt, ehrlich als Pauschale.
+        #expect(fuhren.pauschal)
+        #expect(fuhren.zaehlEinheit == "Fahrt")
+        #expect(abs(fuhren.stunden - 6.0) < 0.0001)
+        #expect(abs(fuhren.kostenProStunde - 120.0) < 0.0001)
+        #expect(abs(fuhren.kostenGesamt - 720.0) < 0.01)              // 6 × 120
+
+        // kostenProEinheit teilt ÷ menge; das spätere × menge in der Engine hebt es auf → 720 €.
         let menge = try position().menge
-        #expect(abs(fuhren.stunden * menge - 6.0) < 0.0001)
         #expect(abs(fuhren.kostenProEinheit * menge - 720.00) < 0.01)
     }
 
