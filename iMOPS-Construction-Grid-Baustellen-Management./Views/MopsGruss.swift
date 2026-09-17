@@ -44,7 +44,8 @@ struct MopsGrussView: View {
     var abgeschlossen: () -> Void
 
     @State private var index = 0
-    @State private var drin = false
+    @State private var sichtbar = false     // Ein-/Ausblenden (Deckkraft + kurzer Pop)
+    @State private var xFrac = 0.60         // trottet von rechts (0.60) nach links (0.40)
     private let frames = MopsGrussBilder.frames
     private let fps: Double = 27
 
@@ -57,11 +58,10 @@ struct MopsGrussView: View {
                         .interpolation(.high)
                         .scaledToFit()
                         .frame(width: 180)
-                        .scaleEffect(drin ? 1 : 0.82)
-                        .opacity(drin ? 1 : 0)
+                        .scaleEffect(sichtbar ? 1 : 0.86)
+                        .opacity(sichtbar ? 1 : 0)
                         .shadow(color: .black.opacity(0.28), radius: 12, y: 8)
-                        .position(x: geo.size.width * (drin ? 0.56 : 0.44),
-                                  y: geo.size.height * 0.62)
+                        .position(x: geo.size.width * xFrac, y: geo.size.height * 0.62)
                 }
             }
         }
@@ -71,13 +71,15 @@ struct MopsGrussView: View {
 
     private func starte() {
         guard !frames.isEmpty else { abgeschlossen(); return }
-        withAnimation(.easeOut(duration: 0.9)) { drin = true }   // sanft rein + nach rechts
+        let laufDauer = Double(frames.count) / fps          // ~1 s
+        withAnimation(.easeOut(duration: 0.2)) { sichtbar = true }        // schnell rein, kein Mitwachsen
+        withAnimation(.linear(duration: laufDauer)) { xFrac = 0.40 }      // gleichmäßig nach links trotten
         Task { @MainActor in
             for i in frames.indices {
                 index = i
                 try? await Task.sleep(nanoseconds: UInt64(1_000_000_000 / fps))
             }
-            withAnimation(.easeIn(duration: 0.22)) { drin = false }
+            withAnimation(.easeIn(duration: 0.22)) { sichtbar = false }   // nur ausblenden, nicht zurückspringen
             try? await Task.sleep(nanoseconds: 240_000_000)
             abgeschlossen()
         }
