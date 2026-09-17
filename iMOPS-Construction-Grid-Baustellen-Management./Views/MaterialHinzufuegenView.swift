@@ -10,11 +10,17 @@ struct MaterialHinzufuegenView: View {
     @Environment(\.dismiss) private var dismiss
     let position: LVPosition
 
+    // Der GROSSE Katalog (~2500) zum Durchsuchen — reines Nachschlagewerk, ohne Preis.
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \CDLexikonEntry.name, ascending: true)]
+    ) private var katalog: FetchedResults<CDLexikonEntry>
+
+    // Die bepreisten Stammdaten — hier holen wir den Preis, wo einer hinterlegt ist.
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \KalkMaterial.name, ascending: true)]
-    ) private var stammdaten: FetchedResults<KalkMaterial>
+    ) private var preise: FetchedResults<KalkMaterial>
 
-    @State private var selectedMaterial: KalkMaterial?
+    @State private var gewaehlt = false
     @State private var materialName = ""
     @State private var mengeProEinheit = ""
     @State private var einzelpreis = ""
@@ -27,12 +33,20 @@ struct MaterialHinzufuegenView: View {
     private let einheiten = ["Stk", "m²", "m³", "lfm", "kg", "t", "l"]
 
     /// Treffer der Katalog-Suche (in-memory, gekappt) — 2500 Einträge alle zu rendern ist zäh.
-    private var gefiltert: [KalkMaterial] {
+    private var gefiltert: [CDLexikonEntry] {
         let q = suche.trimmingCharacters(in: .whitespaces).lowercased()
         guard !q.isEmpty else { return [] }
-        return stammdaten.filter {
-            ($0.name ?? "").lowercased().contains(q) || ($0.einheit ?? "").lowercased().contains(q)
+        return katalog.filter {
+            ($0.name ?? "").lowercased().contains(q) ||
+            ($0.kategorie ?? "").lowercased().contains(q) ||
+            ($0.code ?? "").lowercased().contains(q)
         }
+    }
+
+    /// Der bepreiste Stammdaten-Satz zu einem Namen (für Preis + Einheit), falls hinterlegt.
+    private func preisSatz(_ name: String) -> KalkMaterial? {
+        let z = name.lowercased().trimmingCharacters(in: .whitespaces)
+        return preise.first { ($0.name ?? "").lowercased().trimmingCharacters(in: .whitespaces) == z }
     }
 
     private var isValid: Bool {
@@ -48,7 +62,7 @@ struct MaterialHinzufuegenView: View {
                     stammdatenSection
                 }
 
-                if manuellMode || selectedMaterial != nil {
+                if manuellMode || gewaehlt {
                     detailSection
                 }
             }
@@ -73,17 +87,18 @@ struct MaterialHinzufuegenView: View {
 
     private var stammdatenSection: some View {
         Section {
-            if stammdaten.isEmpty {
-                Text("Keine Stammdaten vorhanden")
+            if katalog.isEmpty {
+                Text("Katalog ist leer")
                     .foregroundStyle(.secondary)
             } else if suche.trimmingCharacters(in: .whitespaces).isEmpty {
-                Text("Tippe oben ins Suchfeld — der Katalog hat \(stammdaten.count) Einträge.")
+                Text("Tippe oben ins Suchfeld — der Katalog hat \(katalog.count) Einträge.")
                     .font(.caption).foregroundStyle(.secondary)
             } else if gefiltert.isEmpty {
                 Text("Nichts gefunden für „\(suche)\u{201C}. Nutz die manuelle Eingabe unten.")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
                 ForEach(gefiltert.prefix(60), id: \.objectID) { mat in
+                    let k = preisSatz(mat.name ?? "")
                     Button {
                         selectFromStamm(mat)
                     } label: {
@@ -92,12 +107,16 @@ struct MaterialHinzufuegenView: View {
                                 Text(mat.name ?? "–")
                                     .font(.subheadline)
                                     .foregroundStyle(.primary)
-                                Text("\(mat.preisProEinheit.formatted(.currency(code: "EUR")))/\(mat.einheit ?? "")")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                if let k, k.preisProEinheit > 0 {
+                                    Text("\(k.preisProEinheit.formatted(.currency(code: "EUR")))/\(k.einheit ?? "") · Preis hinterlegt")
+                                        .font(.caption).foregroundStyle(.green)
+                                } else {
+                                    Text("\(mat.kategorie ?? "Katalog") · kein Preis — du trägst ihn ein")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
                             }
                             Spacer()
-                            if selectedMaterial?.objectID == mat.objectID {
+                            if !materialName.isEmpty && materialName == (mat.name ?? "") {
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundStyle(.orange)
                             }
@@ -112,7 +131,8 @@ struct MaterialHinzufuegenView: View {
 
             Button {
                 manuellMode = true
-                selectedMaterial = nil
+                gewaehlt = false
+                materialName = ""
             } label: {
                 Label("Manuell eingeben", systemImage: "pencil")
                     .font(.subheadline)
@@ -180,8 +200,8 @@ struct MaterialHinzufuegenView: View {
                 Text(eingabeGesamt
                      ? "Gesamt-Materialmenge für die ganze Position (\(mengeText) \(position.einheit ?? "Einheit")) — die App rechnet auf „je Einheit\u{201C} um und speichert das."
                      : "Menge für **eine** \(position.einheit ?? "Einheit") — nicht für die ganze Position. Die Vorschau multipliziert mit der Menge (\(mengeText) \(position.einheit ?? "Einheit")).")
-                if let mat = selectedMaterial, mat.verbrauchProM2 > 0 {
-                    Text("Richtwert: \(mat.verbrauchProM2.formatted(.number.precision(.fractionLength(0...1)))) \(mat.einheit ?? "") pro m²")
+                if let k = preisSatz(materialName), k.verbrauchProM2 > 0 {
+                    Text("Richtwert: \(k.verbrauchProM2.formatted(.number.precision(.fractionLength(0...1)))) \(k.einheit ?? "") pro m²")
                 }
             }
         }
@@ -194,28 +214,33 @@ struct MaterialHinzufuegenView: View {
 
     // MARK: - Actions
 
-    private func selectFromStamm(_ mat: KalkMaterial) {
-        selectedMaterial = mat
+    private func selectFromStamm(_ eintrag: CDLexikonEntry) {
+        gewaehlt = true
         manuellMode = false
         eingabeGesamt = false   // Richtwert ist je Einheit → Modus zurücksetzen, sonst falsch interpretiert
-        materialName = mat.name ?? ""
-        einheit = mat.einheit ?? "Stk"
-        einzelpreis = String(format: "%.2f", mat.preisProEinheit).replacingOccurrences(of: ".", with: ",")
-        if mat.verbrauchProM2 > 0 {
-            mengeProEinheit = String(format: "%.1f", mat.verbrauchProM2).replacingOccurrences(of: ".", with: ",")
+        materialName = eintrag.name ?? ""
+        if let k = preisSatz(materialName) {          // Preis + Einheit aus den bepreisten Stammdaten
+            einheit = k.einheit ?? "Stk"
+            einzelpreis = String(format: "%.2f", k.preisProEinheit).replacingOccurrences(of: ".", with: ",")
+            if k.verbrauchProM2 > 0 {
+                mengeProEinheit = String(format: "%.1f", k.verbrauchProM2).replacingOccurrences(of: ".", with: ",")
+            }
+            verschnittProzent = String(Int(k.verschnittProzent * 100))
+        } else {
+            einzelpreis = ""                          // kein Preis hinterlegt → du trägst ihn ein (wird „dein Wert")
         }
-        verschnittProzent = String(Int(mat.verschnittProzent * 100))
     }
 
     private func hinzufuegen() {
         let pm = PositionMaterial(context: viewContext)
         pm.id = UUID()
         pm.materialName = materialName
-        pm.einheit = manuellMode ? einheit : (selectedMaterial?.einheit ?? einheit)
+        pm.einheit = einheit
         pm.mengeProEinheit = AufwandEingabeFeld.jeEinheit(text: mengeProEinheit, gesamt: eingabeGesamt, menge: position.menge)
         pm.einzelpreis = Double(einzelpreis.replacingOccurrences(of: ",", with: ".")) ?? 0
         pm.verschnittProzent = (Double(verschnittProzent) ?? 5) / 100.0
-        pm.quelle = "eigen"
+        // Hinterlegter Firmenpreis → Firmenwert; selbst eingetippt → dein Wert.
+        pm.quelle = ((preisSatz(materialName)?.preisProEinheit ?? 0) > 0) ? "raffi" : "eigen"
         pm.position = position
         try? viewContext.save()
         dismiss()

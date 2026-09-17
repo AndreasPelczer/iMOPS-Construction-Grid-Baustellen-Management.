@@ -236,6 +236,31 @@ Sanitaer OG – Baeder + Kueche
             neu += 1
         }
 
+        // DEMOPREISE der Testhofeinfahrt in den BEPREISTEN Katalog (KalkMaterial), damit die
+        // Material-Suche gleich Preise zeigt. Ehrlich als „Demo" markiert (lieferant), idempotent
+        // per Name. Namen = die generischen Lexikon-Namen oben, damit der Preis-Lookup greift.
+        let preisReq: NSFetchRequest<KalkMaterial> = KalkMaterial.fetchRequest()
+        let vorhandeneNamen = Set((try? context.fetch(preisReq))?.compactMap { ($0.name ?? "").lowercased() } ?? [])
+        let demoPreise: [(name: String, einheit: String, preis: Double)] = [
+            ("Schotter 0/32 (Tragschicht)",   "to",  10.00),
+            ("Trennvlies (Geotextil)",        "m²",   5.11),
+            ("Betonpflaster Verbundstein",    "Stk",  3.04),
+            ("Pflastersplitt 2/8 (Bettung)",  "to",   8.50),
+            ("Randstein / Tiefbord (Beton)",  "Stk",  8.00),
+            ("Fugensand 0/2",                 "to",   3.00),
+            ("Beton C16/20 (Randstuetze)",    "m³", 110.00),
+        ]
+        for p in demoPreise where !vorhandeneNamen.contains(p.name.lowercased()) {
+            let km = KalkMaterial(context: context)
+            km.id = UUID()
+            km.name = p.name
+            km.einheit = p.einheit
+            km.preisProEinheit = p.preis
+            km.lieferant = "Demo (Testhofeinfahrt)"
+            km.letzteAktualisierung = Date()
+            neu += 1
+        }
+
         guard neu > 0 else { return }
         do {
             try context.save()
