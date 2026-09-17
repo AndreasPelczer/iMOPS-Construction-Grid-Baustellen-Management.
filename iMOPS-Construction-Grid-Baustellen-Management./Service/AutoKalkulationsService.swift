@@ -127,15 +127,34 @@ enum AutoKalkulationsService {
     /// `baustein` = STLB-ID falls über den STLB gefunden (transparent in der Meldung).
     private static func gelbAusRichtwert(_ t: AufwandsTreffer, baustein: String?,
                                          pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
+        let posEinheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let stbQuelle = baustein.map { "STLB \($0) · " } ?? ""
+
+        // Der Aufwandswert steht je Katalog-Einheit (z. B. h/t). Die Position rechnet in
+        // IHRER Einheit (z. B. kg). Erst umrechnen — sonst wäre der Lohn grob falsch
+        // (t↔kg = Faktor 1000, der Bewehrungs-Ausreißer). Nicht umrechenbar → ehrlich
+        // flaggen statt eine falsche Zahl zu setzen.
+        guard let faktor = EinheitenUmrechnung.proFaktor(von: t.einheit, nach: posEinheit) else {
+            let msg = "🟠 \(stbQuelle)Einheit prüfen: Aufwandswert in „\(t.einheit)“, Position in "
+                    + "„\(posEinheit.isEmpty ? "?" : posEinheit)“ — nicht umrechenbar. Kein Lohnpreis "
+                    + "gesetzt (er wäre sonst grob falsch). Einheit der Position anpassen oder von Hand bepreisen."
+            return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: 0)
+        }
+
+        let stundenProEinheit = t.mittel * faktor
+
         // Nach der ECHTEN Kolonne bepreisen: Baggerfahrer zum Maschinisten-Satz, Helfer zum
         // Helfer-Satz — nicht mehr alles als Maurer.
         LeistungskatalogService.schreibeAufwandAusKolonne(
-            mittelStunden: t.mittel, kolonne: t.kolonne, auf: pos, in: ctx,
+            mittelStunden: stundenProEinheit, kolonne: t.kolonne, auf: pos, in: ctx,
             quelle: LeistungskatalogService.herkunft(ausQuelle: t.quelleKurz))
         let kalk = LVKalkulator.kalkuliere(position: pos)
+
         let g = String(format: "%g", t.mittel), lo = String(format: "%g", t.min), hi = String(format: "%g", t.max)
-        let quelle = baustein.map { "STLB \($0) · " } ?? ""
-        let msg = "🟡 \(quelle)Richtwert \(g) h/\(t.einheit) (Spanne \(lo)–\(hi)) · Mannschaft: "
+        // Wenn umgerechnet wurde, transparent zeigen (h/t → h/kg), sonst schlicht h/Einheit.
+        let umHinweis = faktor == 1 ? ""
+            : " → \(String(format: "%g", stundenProEinheit)) h/\(posEinheit) (umgerechnet)"
+        let msg = "🟡 \(stbQuelle)Richtwert \(g) h/\(t.einheit)\(umHinweis) (Spanne \(lo)–\(hi)) · Mannschaft: "
                 + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz). "
                 + "Schätzung (Rollen bepreist); Material fehlt noch."
         return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: kalk.einheitspreisVK)
