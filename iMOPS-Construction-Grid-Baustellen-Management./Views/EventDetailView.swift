@@ -440,6 +440,16 @@ struct EventDetailView: View {
             }
         }
         .toolbar {
+            // Schritt zurück (Command-Z auf iPad-Tastatur, sonst der Knopf): holt eine
+            // versehentliche Löschung — oder die letzte Änderung — zurück.
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { rueckgaengig() } label: {
+                    Label("Rückgängig", systemImage: "arrow.uturn.backward")
+                }
+                .tint(.orange)
+                .disabled(!(viewContext.undoManager?.canUndo ?? false))
+                .keyboardShortcut("z", modifiers: .command)
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showHelp = true } label: {
                     Image(systemName: "questionmark.circle")
@@ -1860,6 +1870,15 @@ struct EventDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    /// Ein Schritt zurück: macht die letzte Änderung am Datenbestand rückgängig
+    /// (z. B. ein versehentlich gelöschtes Kästchen) und speichert den Stand danach.
+    private func rueckgaengig() {
+        guard let undo = viewContext.undoManager, undo.canUndo else { return }
+        undo.undo()
+        try? viewContext.save()
+        refreshID = UUID()
     }
 
     private func generateLVPDF() {

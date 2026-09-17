@@ -6,6 +6,8 @@ struct AuftragRowView: View {
     @ObservedObject var auftrag: Auftrag
     var onChanged: () -> Void
 
+    @State private var zeigeLoeschAbfrage = false
+
     private var extras: AuftragExtrasPayload { .from(auftrag.extras) }
     private var checklistDone: Int { extras.checklist.filter { $0.isDone }.count }
     private var checklistTotal: Int { extras.checklist.count }
@@ -102,9 +104,15 @@ struct AuftragRowView: View {
             Button("Pause") { setStatus(.onHold) }
             Button("Fertig") { setStatus(.completed) }
             Divider()
-            Button(role: .destructive) { delete() } label: {
+            Button(role: .destructive) { zeigeLoeschAbfrage = true } label: {
                 Label("Loeschen", systemImage: "trash")
             }
+        }
+        .confirmationDialog("Auftrag löschen?", isPresented: $zeigeLoeschAbfrage, titleVisibility: .visible) {
+            Button("Löschen", role: .destructive) { delete() }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            Text("„\(whatToDoText)“ und seine Kalkulation werden entfernt. Danach kannst du es mit Rückgängig zurückholen.")
         }
     }
 
