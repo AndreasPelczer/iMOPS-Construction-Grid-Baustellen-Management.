@@ -63,6 +63,18 @@ struct Maschine: Sendable, Equatable, Identifiable {
         let gesamt = Double(tage) * tag
         return Mietkosten(tage: tage, gesamt: gesamt, proEinheit: gesamt / menge, stunden: stunden)
     }
+
+    /// Die Miete als stundenbasierte Gerätekosten-Zeile für eine LVPosition (PositionGeraet-Schema):
+    /// Maschinenstunden je Einheit × effektiver €/h (Miete inkl. Tage-Aufrundung) = Miete je Einheit.
+    /// So landet das Tage-Modell verlustfrei im vorhandenen stunden×satz-Kostenmodell:
+    /// `stundenJeEinheit * satzProStunde * menge == mietkostenTageModell.gesamt`.
+    func mietAlsGeraetzeile(menge: Double, einheit: String, stundenJeTag: Double = 8)
+        -> (stundenJeEinheit: Double, satzProStunde: Double, tage: Int)? {
+        guard menge > 0,
+              let mk = mietkostenTageModell(menge: menge, einheit: einheit, stundenJeTag: stundenJeTag),
+              mk.stunden > 0 else { return nil }
+        return (mk.stunden / menge, mk.gesamt / mk.stunden, mk.tage)
+    }
 }
 
 // MARK: - MaschinenKatalog

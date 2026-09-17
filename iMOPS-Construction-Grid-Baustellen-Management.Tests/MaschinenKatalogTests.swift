@@ -61,4 +61,21 @@ struct MaschinenKatalogTests {
         // Einheit passt nicht zur Maschinenleistung → nil (keine erfundene Zahl).
         #expect(bagger?.mietkostenTageModell(menge: 5, einheit: "St") == nil)
     }
+
+    /// A: Verlustfreie Übersetzung ins PositionGeraet-Schema (stunden × satz × Menge == Miete gesamt).
+    /// Genau das rechnet die gespeicherte Gerätekosten-Zeile im Rezept-Assistenten.
+    @Test func mieteAlsGeraetzeileTrifftGesamt() async {
+        let bagger = MaschinenKatalog.shared.maschinen(ids: ["erdbau.minibagger_3t"]).first
+        guard let m = bagger,
+              let mk = m.mietkostenTageModell(menge: 100, einheit: "m3"),
+              let z = m.mietAlsGeraetzeile(menge: 100, einheit: "m3") else {
+            #expect(bagger != nil); return
+        }
+        // stundenJeEinheit × satzProStunde × menge muss die Tages-Miete exakt treffen.
+        let ausGeraetzeile = z.stundenJeEinheit * z.satzProStunde * 100
+        #expect(abs(ausGeraetzeile - mk.gesamt) < 0.01)
+        #expect(z.tage == mk.tage)
+        // Einheit passt nicht → keine Gerätezeile.
+        #expect(m.mietAlsGeraetzeile(menge: 5, einheit: "St") == nil)
+    }
 }
