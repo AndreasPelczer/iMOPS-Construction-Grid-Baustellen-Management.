@@ -249,23 +249,12 @@ struct RezeptAssistentView: View {
         }
     }
 
-    /// Grobe Dauer-/Mietschätzung für die ganze Position, wenn Einheit & Maschinenleistung passen.
+    /// Dauer + Mietkosten nach dem TAGE-Modell (Miete pro angefangenem Tag) für die ganze Position.
     private func dauerText(_ m: Maschine) -> String? {
-        guard position.menge > 0, let l = m.hauptLeistung, l.wert > 0 else { return nil }
-        let passt: Bool = {
-            switch einheit.lowercased() {
-            case "m3", "m³": return l.einheit == "m³/h"
-            case "m2", "m²": return l.einheit == "m²/h"
-            case "m", "lfm": return l.einheit == "m/h"
-            default: return false
-            }
-        }()
-        guard passt else { return nil }
-        let stunden = position.menge / l.wert
-        let tage = ceil(stunden / 8.0)
-        var s = "≈ \(fmtH((stunden * 10).rounded() / 10)) h für \(fmtH(position.menge)) \(einheit) (~\(fmtH(tage)) Tag\(tage == 1 ? "" : "e"))"
-        if let tag = m.mieteTag { s += " · Miete ~\(euro(tage * tag))" }
-        return s
+        guard let mk = m.mietkostenTageModell(menge: position.menge, einheit: einheit) else { return nil }
+        return "≈ \(fmtH((mk.stunden * 10).rounded() / 10)) h für \(fmtH(position.menge)) \(einheit)"
+             + " → \(mk.tage) angefangene\(mk.tage == 1 ? "r" : "") Tag\(mk.tage == 1 ? "" : "e")"
+             + " · Miete \(euro(mk.gesamt)) (\(euro(mk.proEinheit))/\(einheit))"
     }
 
     private func ladeVorschlag() async {

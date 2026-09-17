@@ -42,6 +42,27 @@ struct Maschine: Sendable, Equatable, Identifiable {
 
     /// Mietsatz je Stunde (Tagessatz / 8h) — grobe Umrechnung für die Kalkulation.
     var mieteProStunde: Double? { mieteTag.map { $0 / 8.0 } }
+
+    /// Mietkosten nach dem TAGE-Modell: Miete wird pro ANGEFANGENEM Tag abgerechnet, nicht je Stunde.
+    /// Einsatzdauer aus Menge ÷ Leistung → auf ganze Tage aufgerundet × Tagessatz. Ehrlicher als €/h,
+    /// weil ein halber Tag Bagger einen ganzen Miettag kostet. nil, wenn Einheit/Leistung nicht passen.
+    struct Mietkosten { let tage: Int; let gesamt: Double; let proEinheit: Double; let stunden: Double }
+
+    func mietkostenTageModell(menge: Double, einheit: String, stundenJeTag: Double = 8) -> Mietkosten? {
+        guard menge > 0, let tag = mieteTag, tag > 0, let l = hauptLeistung, l.wert > 0 else { return nil }
+        let passt: Bool
+        switch einheit.lowercased().trimmingCharacters(in: .whitespaces) {
+        case "m3", "m³": passt = l.einheit == "m³/h"
+        case "m2", "m²": passt = l.einheit == "m²/h"
+        case "m", "lfm", "lfdm": passt = l.einheit == "m/h"
+        default: passt = false
+        }
+        guard passt else { return nil }
+        let stunden = menge / l.wert
+        let tage = max(1, Int(ceil(stunden / stundenJeTag)))
+        let gesamt = Double(tage) * tag
+        return Mietkosten(tage: tage, gesamt: gesamt, proEinheit: gesamt / menge, stunden: stunden)
+    }
 }
 
 // MARK: - MaschinenKatalog

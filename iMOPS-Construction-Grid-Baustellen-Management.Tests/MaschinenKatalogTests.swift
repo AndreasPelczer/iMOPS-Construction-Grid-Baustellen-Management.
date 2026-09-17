@@ -46,4 +46,19 @@ struct MaschinenKatalogTests {
         let m = MaschinenKatalog.shared.fuerTaetigkeit("gibtes.nicht")
         #expect(m.isEmpty)
     }
+
+    /// Tage-Modell: Miete pro ANGEFANGENEM Tag, nicht je Stunde.
+    @Test func mietkostenNachTageModell() async {
+        let bagger = MaschinenKatalog.shared.maschinen(ids: ["erdbau.minibagger_3t"]).first
+        #expect(bagger != nil)
+        // 100 m³ ÷ 6 m³/h = 16,67 h → aufgerundet 3 angefangene Tage × Tagessatz.
+        let mk = bagger?.mietkostenTageModell(menge: 100, einheit: "m3")
+        #expect(mk?.tage == 3)
+        #expect((mk?.gesamt ?? 0) == Double(3) * (bagger?.mieteTag ?? 0))
+        #expect(abs((mk?.proEinheit ?? 0) - (mk?.gesamt ?? 0) / 100) < 0.001)
+        // Ein winziger Einsatz kostet trotzdem einen ganzen Tag.
+        #expect(bagger?.mietkostenTageModell(menge: 1, einheit: "m3")?.tage == 1)
+        // Einheit passt nicht zur Maschinenleistung → nil (keine erfundene Zahl).
+        #expect(bagger?.mietkostenTageModell(menge: 5, einheit: "St") == nil)
+    }
 }
