@@ -259,26 +259,39 @@ struct LVTiefenkalkulationView: View {
         }
     }
 
-    /// Sofort-Vergleich: derselbe Lohn (aus den gespeicherten Stunden) in beiden Firmenprofilen.
-    /// Zeigt „an welcher Schraube gedreht wird" — Goldschmitts echte Sätze vs. Mops neutral.
+    /// Sofort-Vergleich: die Lohn-KOSTEN je Einheit (aus den gespeicherten Stunden) — beide
+    /// Firmenprofile NEBENEINANDER. Kosten, nicht Verkauf: der Aufschlag kommt über die Zuschläge.
     @ViewBuilder private var profilVergleichFuss: some View {
         if !position.lohnArray.isEmpty, let ctx = position.managedObjectContext {
             let v = LeistungskatalogService.lohnVergleich(auf: position, in: ctx)
-            let delta = v.goldschmitt - v.mops
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Profil-Vergleich (Lohn je \(position.einheit ?? "Einheit")):")
+            let aktiv = Firmenprofil.aktiv
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Lohn-KOSTEN je \(position.einheit ?? "Einheit") — beide Profile:")
                     .font(.caption2.weight(.semibold))
-                HStack(spacing: 12) {
-                    Text("🏢 Goldschmitt \(v.goldschmitt.formatted(.currency(code: "EUR")))")
-                    Text("🐶 Mops \(v.mops.formatted(.currency(code: "EUR")))")
+                HStack(spacing: 8) {
+                    profilSpalte("🏢 Goldschmitt", v.goldschmitt, aktiv: aktiv == .goldschmitt)
+                    profilSpalte("🐶 Mops", v.mops, aktiv: aktiv == .mops)
                 }
-                .font(.caption2.monospacedDigit())
+                let delta = v.goldschmitt - v.mops
                 if abs(delta) > 0.005 {
-                    Text("Δ \(delta.formatted(.currency(code: "EUR").sign(strategy: .always()))) je \(position.einheit ?? "Einheit") — aktiv: \(Firmenprofil.aktiv.anzeige)")
+                    Text("Δ \(delta.formatted(.currency(code: "EUR").sign(strategy: .always()))) — Kosten, kein Verkauf. Gewinn/Aufschlag kommt über den Gewinn-Schieber.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }
+    }
+
+    private func profilSpalte(_ titel: String, _ wert: Double, aktiv: Bool) -> some View {
+        VStack(spacing: 2) {
+            Text(titel).font(.caption2)
+            Text(wert.formatted(.currency(code: "EUR")))
+                .font(.caption.monospacedDigit().weight(aktiv ? .bold : .regular))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+        .background(aktiv ? Color.orange.opacity(0.15) : Color.gray.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(aktiv ? RoundedRectangle(cornerRadius: 8).strokeBorder(Color.orange, lineWidth: 1) : nil)
     }
 
     // MARK: - Geraete
