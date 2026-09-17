@@ -254,6 +254,30 @@ struct LVTiefenkalkulationView: View {
                 Text(kalkulation.lohnKosten.formatted(.currency(code: "EUR")))
                     .font(.caption.monospacedDigit())
             }
+        } footer: {
+            profilVergleichFuss
+        }
+    }
+
+    /// Sofort-Vergleich: derselbe Lohn (aus den gespeicherten Stunden) in beiden Firmenprofilen.
+    /// Zeigt „an welcher Schraube gedreht wird" — Goldschmitts echte Sätze vs. Mops neutral.
+    @ViewBuilder private var profilVergleichFuss: some View {
+        if !position.lohnArray.isEmpty, let ctx = position.managedObjectContext {
+            let v = LeistungskatalogService.lohnVergleich(auf: position, in: ctx)
+            let delta = v.goldschmitt - v.mops
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Profil-Vergleich (Lohn je \(position.einheit ?? "Einheit")):")
+                    .font(.caption2.weight(.semibold))
+                HStack(spacing: 12) {
+                    Text("🏢 Goldschmitt \(v.goldschmitt.formatted(.currency(code: "EUR")))")
+                    Text("🐶 Mops \(v.mops.formatted(.currency(code: "EUR")))")
+                }
+                .font(.caption2.monospacedDigit())
+                if abs(delta) > 0.005 {
+                    Text("Δ \(delta.formatted(.currency(code: "EUR").sign(strategy: .always()))) je \(position.einheit ?? "Einheit") — aktiv: \(Firmenprofil.aktiv.anzeige)")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
         }
     }
 

@@ -50,6 +50,9 @@ struct SettingsView: View {
     @AppStorage(FirmenSettings.Keys.bgk)                 private var bgk                 = 0.12
     @AppStorage(FirmenSettings.Keys.wagnisGewinn)        private var wagnisGewinn        = 0.08
 
+    // Firmenprofil: mit welchen Sätzen rechnet der Mops? Goldschmitt (echt) ↔ Mops (neutral/Demo).
+    @AppStorage(Firmenprofil.defaultsKey) private var firmenprofilRaw = Firmenprofil.goldschmitt.rawValue
+
     // Kennwerte je m² Wohnfläche für die Grobkostenschätzung im Planer.
     // Vorgaben identisch zu FirmenSettings (siehe dort: es sind EURE Erfahrungswerte,
     // keine lizenzierten BKI-Daten).
@@ -252,6 +255,26 @@ struct SettingsView: View {
                             .foregroundStyle(.orange)
                     }
                 }
+            }
+
+            // --- Firmenprofil: mit welchen Sätzen rechnet der Mops? ---
+            Section {
+                Picker(selection: $firmenprofilRaw) {
+                    Text("🏢 Goldschmitt (echt)").tag(Firmenprofil.goldschmitt.rawValue)
+                    Text("🐶 Mops (neutral)").tag(Firmenprofil.mops.rawValue)
+                } label: {
+                    Label("Aktives Profil", systemImage: "arrow.left.arrow.right.circle")
+                }
+                .pickerStyle(.segmented)
+            } header: {
+                Text("Firmenprofil")
+            } footer: {
+                Text("""
+                Bestimmt, mit welchen Lohnsätzen der Mops rechnet: „Goldschmitt" = eure echten \
+                Sätze (ZG1 = 74 €/h), „Mops" = neutrale Bau-Tarif-Werte. Wirkt auf NEUE \
+                Kalkulationen; die Kalkulation zeigt beide Preise zum Vergleich. „Mops" ist \
+                zugleich der DSGVO-sichere Demo-Modus — keine Goldschmitt-Zahl im Spiel.
+                """)
             }
 
             // --- Kalkulations-Zuschläge (Firmenwerte) ---

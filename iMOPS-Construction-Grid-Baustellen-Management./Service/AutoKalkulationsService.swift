@@ -69,6 +69,18 @@ enum AutoKalkulationsService {
             if let t = AufwandswerteKatalog.shared.finde(leistung: bez, langtext: pos.langtext) {
                 return gelbAusRichtwert(t, baustein: nil, pos: pos, in: ctx)
             }
+            // Stundenlohn-/Regie-Position (Einheit = Stunde, z. B. „Meister"/„Facharbeiter"):
+            // direkt zum Satz des aktiven Firmenprofils bepreisen. Der EP IST der Stundensatz.
+            if istStundenlohn(einheit) {
+                let rolle = bez.isEmpty ? "Facharbeiter" : bez
+                let satz = Firmenprofil.aktiv.satz(fuer: LeistungskatalogService.tarifgruppe(fuer: rolle), in: ctx)
+                LeistungskatalogService.schreibeStundenlohn(qualifikation: rolle, satzProStunde: satz, auf: pos, in: ctx)
+                let kalk = LVKalkulator.kalkuliere(position: pos)
+                let msg = "🟡 Stundenlohn/Regie (\(Firmenprofil.aktiv.anzeige)): "
+                        + "\(String(format: "%.2f €", satz))/h für \(rolle). Satz aus dem Firmenprofil — prüfen."
+                return Ergebnis(position: pos, status: .gelb, meldungen: [msg],
+                                einheitspreisVK: kalk.einheitspreisVK)
+            }
             return Ergebnis(
                 position: pos, status: .rot,
                 meldungen: ["Kein gelerntes Rezept und kein Richtwert für „\(bez)“ (\(einheit.isEmpty ? "?" : einheit)). "
@@ -125,6 +137,12 @@ enum AutoKalkulationsService {
                 + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz). "
                 + "Schätzung (Rollen bepreist); Material fehlt noch."
         return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: kalk.einheitspreisVK)
+    }
+
+    /// Regie-/Stundenlohn-Einheit? (Std, h, Stunde …) — dann ist der EP der Stundensatz.
+    private static func istStundenlohn(_ einheit: String) -> Bool {
+        let e = einheit.lowercased().replacingOccurrences(of: ".", with: "").trimmingCharacters(in: .whitespaces)
+        return ["h", "std", "stunde", "stunden", "std", "akh", "mannstunde", "mannstunden"].contains(e)
     }
 
     private static func euro(_ d: Double) -> String { String(format: "%.2f €", d) }

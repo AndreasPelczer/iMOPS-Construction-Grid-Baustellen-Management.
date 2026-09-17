@@ -274,17 +274,46 @@ enum LeistungskatalogService {
         for pl in pos.lohnArray { ctx.delete(pl) }
         ctx.processPendingChanges()
 
+        let profil = Firmenprofil.aktiv
         let rollen = parseKolonne(kolonne)
         let kopf = rollen.reduce(0) { $0 + $1.anzahl }
         guard mittelStunden > 0, kopf > 0 else {
-            // Keine lesbare Kolonne → als generischer Facharbeiter (nie 0).
-            if mittelStunden > 0 { lohnEintrag("Facharbeiter", mittelStunden, pos, ctx) }
+            // Keine lesbare Kolonne → als generischer Facharbeiter (nie 0), im aktiven Profil.
+            if mittelStunden > 0 {
+                lohnEintragMitSatz("Facharbeiter", mittelStunden,
+                                   profil.satz(fuer: .facharbeiter, in: ctx), pos, ctx)
+            }
             return
         }
-        // Gleiche Rollen zusammenfassen, Stunden anteilig nach Kopfzahl.
+        // Gleiche Rollen zusammenfassen, Stunden anteilig nach Kopfzahl; Satz aus dem aktiven Profil.
         var proRolle: [String: Double] = [:]
         for r in rollen { proRolle[r.rolle, default: 0] += mittelStunden * Double(r.anzahl) / Double(kopf) }
-        for (rolle, stunden) in proRolle { lohnEintrag(rolle, stunden, pos, ctx) }
+        for (rolle, stunden) in proRolle {
+            let satz = profil.satz(fuer: tarifgruppe(fuer: rolle), in: ctx)
+            lohnEintragMitSatz(rolle, stunden, satz, pos, ctx)
+        }
+    }
+
+    /// Stundenlohn-/Regie-Position (Einheit = Stunde): schreibt genau 1 Lohn-Stunde je Einheit
+    /// mit dem gegebenen Satz. Damit ist der Einheitspreis = der Stundensatz (× Menge = Gesamt).
+    static func schreibeStundenlohn(qualifikation: String, satzProStunde: Double,
+                                    auf pos: LVPosition, in ctx: NSManagedObjectContext) {
+        for pl in pos.lohnArray { ctx.delete(pl) }
+        ctx.processPendingChanges()
+        lohnEintragMitSatz(qualifikation, 1.0, satzProStunde, pos, ctx)
+    }
+
+    /// Lohn je Einheit für BEIDE Firmenprofile — aus den GESPEICHERTEN Stunden (profil-unabhängig).
+    /// So sieht man an derselben Position sofort: Goldschmitt (echt) vs. Mops (neutral).
+    static func lohnVergleich(auf pos: LVPosition, in ctx: NSManagedObjectContext)
+        -> (goldschmitt: Double, mops: Double) {
+        var g = 0.0, m = 0.0
+        for pl in pos.lohnArray {
+            let gruppe = tarifgruppe(fuer: pl.qualifikation ?? "")
+            g += pl.stunden * Firmenprofil.goldschmitt.satz(fuer: gruppe, in: ctx)
+            m += pl.stunden * Firmenprofil.mops.satz(fuer: gruppe, in: ctx)
+        }
+        return (g, m)
     }
 
     /// Zerlegt eine Kolonnen-Beschreibung in (Anzahl, Rolle).
@@ -309,11 +338,17 @@ enum LeistungskatalogService {
 
     private static func lohnEintrag(_ qualifikation: String, _ stunden: Double,
                                     _ pos: LVPosition, _ ctx: NSManagedObjectContext) {
+        lohnEintragMitSatz(qualifikation, stunden, bruttoEK(fuer: qualifikation, in: ctx), pos, ctx)
+    }
+
+    /// Wie `lohnEintrag`, aber mit explizit vorgegebenem Satz (z. B. aus dem aktiven Firmenprofil).
+    private static func lohnEintragMitSatz(_ qualifikation: String, _ stunden: Double, _ satz: Double,
+                                           _ pos: LVPosition, _ ctx: NSManagedObjectContext) {
         let pl = PositionLohn(context: ctx)
         pl.id = UUID()
         pl.qualifikation = qualifikation
         pl.stunden = stunden
-        pl.stundenBruttoEK = bruttoEK(fuer: qualifikation, in: ctx)
+        pl.stundenBruttoEK = satz
         pl.position = pos
     }
 
