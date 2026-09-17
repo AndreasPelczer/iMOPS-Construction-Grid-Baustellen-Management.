@@ -170,7 +170,7 @@ struct LVTiefenkalkulationView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pm.materialName ?? "–")
                                 .font(.subheadline)
-                            Text("\(pm.mengeProEinheit.formatted(.number.precision(.fractionLength(0...3)))) \(pm.einheit ?? "") × \(pm.einzelpreis.formatted(.currency(code: "EUR")))")
+                            Text("\(pm.mengeProEinheit.formatted(.number.precision(.fractionLength(0...3)))) \(pm.einheit ?? "") × \(pm.einzelpreis.formatted(.currency(code: "EUR")))\((pm.einheit?.isEmpty == false) ? "/\(pm.einheit!)" : "")")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             if pm.verschnittProzent > 0 {
@@ -180,7 +180,7 @@ struct LVTiefenkalkulationView: View {
                             }
                         }
                         Spacer()
-                        Text(pm.kostenProEinheit.formatted(.currency(code: "EUR")))
+                        Text("\(pm.kostenProEinheit.formatted(.currency(code: "EUR")))/\(einheitKurz)")
                             .font(.subheadline.monospacedDigit())
                             .bold()
                         loeschButton { loeschZiel = LoeschZiel(objekt: pm, beschreibung: "Material: \(pm.materialName ?? "–")") }
@@ -204,7 +204,7 @@ struct LVTiefenkalkulationView: View {
             HStack {
                 Label("Material", systemImage: "shippingbox")
                 Spacer()
-                Text(kalkulation.materialKosten.formatted(.currency(code: "EUR")))
+                Text("\(kalkulation.materialKosten.formatted(.currency(code: "EUR")))/\(einheitKurz)")
                     .font(.caption.monospacedDigit())
             }
         }
@@ -222,12 +222,12 @@ struct LVTiefenkalkulationView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pl.qualifikation ?? "–")
                                 .font(.subheadline)
-                            Text("\(pl.stunden.formatted(.number.precision(.fractionLength(0...2)))) h × \(pl.stundenBruttoEK.formatted(.currency(code: "EUR")))/h")
+                            Text("\(pl.stunden.formatted(.number.precision(.fractionLength(0...2)))) h/\(einheitKurz) × \(pl.stundenBruttoEK.formatted(.currency(code: "EUR")))/h")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Text(pl.kostenProEinheit.formatted(.currency(code: "EUR")))
+                        Text("\(pl.kostenProEinheit.formatted(.currency(code: "EUR")))/\(einheitKurz)")
                             .font(.subheadline.monospacedDigit())
                             .bold()
                         loeschButton { loeschZiel = LoeschZiel(objekt: pl, beschreibung: "Lohn: \(pl.qualifikation ?? "–")") }
@@ -251,7 +251,7 @@ struct LVTiefenkalkulationView: View {
             HStack {
                 Label("Lohn", systemImage: "person.fill")
                 Spacer()
-                Text(kalkulation.lohnKosten.formatted(.currency(code: "EUR")))
+                Text("\(kalkulation.lohnKosten.formatted(.currency(code: "EUR")))/\(einheitKurz)")
                     .font(.caption.monospacedDigit())
             }
         } footer: {
@@ -306,12 +306,12 @@ struct LVTiefenkalkulationView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pg.geraetName ?? "–")
                                 .font(.subheadline)
-                            Text("\(pg.stunden.formatted(.number.precision(.fractionLength(0...2)))) h × \(pg.kostenProStunde.formatted(.currency(code: "EUR")))/h")
+                            Text("\(pg.stunden.formatted(.number.precision(.fractionLength(0...2)))) h/\(einheitKurz) × \(pg.kostenProStunde.formatted(.currency(code: "EUR")))/h")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Text(pg.kostenProEinheit.formatted(.currency(code: "EUR")))
+                        Text("\(pg.kostenProEinheit.formatted(.currency(code: "EUR")))/\(einheitKurz)")
                             .font(.subheadline.monospacedDigit())
                             .bold()
                         loeschButton { loeschZiel = LoeschZiel(objekt: pg, beschreibung: "Gerät: \(pg.geraetName ?? "–")") }
@@ -335,7 +335,7 @@ struct LVTiefenkalkulationView: View {
             HStack {
                 Label("Geräte", systemImage: "wrench.and.screwdriver")
                 Spacer()
-                Text(kalkulation.geraeteKosten.formatted(.currency(code: "EUR")))
+                Text("\(kalkulation.geraeteKosten.formatted(.currency(code: "EUR")))/\(einheitKurz)")
                     .font(.caption.monospacedDigit())
             }
         }
