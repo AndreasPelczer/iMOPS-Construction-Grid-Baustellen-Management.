@@ -14,6 +14,7 @@ extension PositionMaterial {
     @NSManaged var verschnittProzent: Double
     @NSManaged var einheit: String?
     @NSManaged var position: LVPosition?
+    @NSManaged var quelle: String?         // Herkunft: raffi/praxis/katalog/startwert/eigen
 
     // Kosten dieses Materials pro Positions-Einheit (inkl. Verschnitt)
     var kostenProEinheit: Double {

@@ -160,6 +160,7 @@ struct LohnHinzufuegenView: View {
         pl.qualifikation = qualifikation
         pl.stunden = AufwandEingabeFeld.jeEinheit(text: stunden, gesamt: eingabeGesamt, menge: position.menge)
         pl.stundenBruttoEK = Double(stundenBruttoEK.replacingOccurrences(of: ",", with: ".")) ?? 0
+        pl.quelle = "eigen"
         pl.position = position
         try? viewContext.save()
         dismiss()

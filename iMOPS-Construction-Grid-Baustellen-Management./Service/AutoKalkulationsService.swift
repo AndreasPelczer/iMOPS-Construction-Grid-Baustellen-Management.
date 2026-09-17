@@ -129,7 +129,9 @@ enum AutoKalkulationsService {
                                          pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
         // Nach der ECHTEN Kolonne bepreisen: Baggerfahrer zum Maschinisten-Satz, Helfer zum
         // Helfer-Satz — nicht mehr alles als Maurer.
-        LeistungskatalogService.schreibeAufwandAusKolonne(mittelStunden: t.mittel, kolonne: t.kolonne, auf: pos, in: ctx)
+        LeistungskatalogService.schreibeAufwandAusKolonne(
+            mittelStunden: t.mittel, kolonne: t.kolonne, auf: pos, in: ctx,
+            quelle: LeistungskatalogService.herkunft(ausQuelle: t.quelleKurz))
         let kalk = LVKalkulator.kalkuliere(position: pos)
         let g = String(format: "%g", t.mittel), lo = String(format: "%g", t.min), hi = String(format: "%g", t.max)
         let quelle = baustein.map { "STLB \($0) · " } ?? ""

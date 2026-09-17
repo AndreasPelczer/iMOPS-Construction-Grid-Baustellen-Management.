@@ -195,6 +195,7 @@ struct GeraetHinzufuegenView: View {
             pg.pauschal = false
             pg.einheit = "h"
         }
+        pg.quelle = "eigen"
         pg.position = position
         try? viewContext.save()
         dismiss()

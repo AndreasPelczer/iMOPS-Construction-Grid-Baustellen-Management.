@@ -16,6 +16,7 @@ extension PositionGeraet {
     // für die ganze Position und `kostenProStunde` der Preis JE Einheit (z.B. 120 €/Fahrt).
     @NSManaged var pauschal: Bool
     @NSManaged var einheit: String?        // Label der Anzahl-Einheit: "h" (Standard), "Fahrt", "Tag" …
+    @NSManaged var quelle: String?         // Herkunft des Werts: raffi/praxis/katalog/startwert/eigen
 
     /// Die Zähl-Einheit fürs Anzeigen ("h", "Fahrt", …).
     var zaehlEinheit: String { (einheit?.isEmpty == false) ? einheit! : "h" }
