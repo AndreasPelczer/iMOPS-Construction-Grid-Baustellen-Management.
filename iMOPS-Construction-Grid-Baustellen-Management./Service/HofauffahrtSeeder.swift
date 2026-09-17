@@ -520,6 +520,7 @@ enum HofauffahrtSeeder {
             pm.einheit = m.einheit
             pm.einzelpreis = m.preis
             pm.verschnittProzent = m.verschnitt
+            pm.quelle = "startwert"     // Demo-Platzhalter, unbelegt — ehrlich als solcher markiert
             pm.position = pos
         }
 
@@ -532,6 +533,7 @@ enum HofauffahrtSeeder {
         lohn.qualifikation = "Facharbeiter/Helfer (Mischsatz)"
         lohn.stunden = 70.0 / flaecheQm
         lohn.stundenBruttoEK = 74.0
+        lohn.quelle = "startwert"
         lohn.position = pos
 
         // --- Gerät [Schätzung] ---
@@ -563,6 +565,7 @@ enum HofauffahrtSeeder {
             pg.kostenProStunde = g.satz
             pg.pauschal = g.pauschal
             pg.einheit = g.einheit
+            pg.quelle = "startwert"
             pg.position = pos
         }
     }

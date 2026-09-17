@@ -19,6 +19,7 @@ struct LVTiefenkalkulationView: View {
     @State private var showMopsSheet = false
     @State private var mopsAntwort: String?
     @State private var loeschZiel: LoeschZiel?   // sichtbares Löschen (auch am Mac, wo Swipe nicht geht)
+    @State private var quelleInfo: String?       // Herkunfts-Hinweis beim Antippen eines Quelle-Badges
 
     /// Was gelöscht werden soll (mit Klartext für die Sicherheitsabfrage).
     private struct LoeschZiel: Identifiable {
@@ -66,6 +67,10 @@ struct LVTiefenkalkulationView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Kalkulation")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Woher kommt die Zahl?", isPresented: Binding(
+            get: { quelleInfo != nil }, set: { if !$0 { quelleInfo = nil } })) {
+            Button("OK", role: .cancel) { }
+        } message: { Text(quelleInfo ?? "") }
         .confirmationDialog("Zeile löschen?",
                             isPresented: Binding(get: { loeschZiel != nil },
                                                  set: { if !$0 { loeschZiel = nil } }),
@@ -181,6 +186,7 @@ struct LVTiefenkalkulationView: View {
                             baustelleZeile(menge: pm.mengeProEinheit * position.menge,
                                            einheit: pm.einheit ?? "",
                                            gesamt: pm.kostenProEinheit * position.menge)
+                            QuelleBadge(quelle: Kostenquelle(pm.quelle)) { quelleInfo = Kostenquelle(pm.quelle).hinweis }
                         }
                         Spacer()
                         Text("\(pm.kostenProEinheit.formatted(.currency(code: "EUR")))/\(einheitKurz)")
@@ -231,6 +237,7 @@ struct LVTiefenkalkulationView: View {
                             baustelleZeile(menge: pl.stunden * position.menge,
                                            einheit: "h",
                                            gesamt: pl.kostenProEinheit * position.menge)
+                            QuelleBadge(quelle: Kostenquelle(pl.quelle)) { quelleInfo = Kostenquelle(pl.quelle).hinweis }
                         }
                         Spacer()
                         Text("\(pl.kostenProEinheit.formatted(.currency(code: "EUR")))/\(einheitKurz)")
@@ -325,6 +332,7 @@ struct LVTiefenkalkulationView: View {
                                 baustelleZeile(menge: pg.stunden * position.menge, einheit: "h",
                                                gesamt: pg.kostenProEinheit * position.menge)
                             }
+                            QuelleBadge(quelle: Kostenquelle(pg.quelle)) { quelleInfo = Kostenquelle(pg.quelle).hinweis }
                         }
                         Spacer()
                         Text("\(pg.kostenProEinheit.formatted(.currency(code: "EUR")))/\(einheitKurz)")

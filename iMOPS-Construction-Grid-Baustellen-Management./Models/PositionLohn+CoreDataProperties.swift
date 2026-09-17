@@ -12,6 +12,7 @@ extension PositionLohn {
     @NSManaged var qualifikation: String?
     @NSManaged var stundenBruttoEK: Double
     @NSManaged var position: LVPosition?
+    @NSManaged var quelle: String?         // Herkunft: raffi/praxis/katalog/startwert/eigen
 
     // Lohnkosten dieses Eintrags pro Positions-Einheit
     var kostenProEinheit: Double {

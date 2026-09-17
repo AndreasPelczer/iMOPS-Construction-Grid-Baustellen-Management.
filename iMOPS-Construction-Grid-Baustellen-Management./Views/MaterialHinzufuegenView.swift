@@ -193,6 +193,7 @@ struct MaterialHinzufuegenView: View {
         pm.mengeProEinheit = AufwandEingabeFeld.jeEinheit(text: mengeProEinheit, gesamt: eingabeGesamt, menge: position.menge)
         pm.einzelpreis = Double(einzelpreis.replacingOccurrences(of: ",", with: ".")) ?? 0
         pm.verschnittProzent = (Double(verschnittProzent) ?? 5) / 100.0
+        pm.quelle = "eigen"
         pm.position = position
         try? viewContext.save()
         dismiss()
