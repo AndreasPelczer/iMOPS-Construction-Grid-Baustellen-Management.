@@ -336,6 +336,7 @@ private struct Grap8WebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let konfiguration = WKWebViewConfiguration()
         konfiguration.userContentController.addUserScript(Self.viewportSkript)
+        konfiguration.userContentController.addUserScript(Self.auswahlStil)
         // Die Leinwand meldet sich, sobald sie Daten annehmen kann.
         konfiguration.userContentController.add(context.coordinator, name: Self.bruecke)
 
@@ -427,6 +428,28 @@ private struct Grap8WebView: UIViewRepresentable {
           if (!m) { m = document.createElement('meta'); m.name = 'viewport'; document.head.appendChild(m); }
           m.setAttribute('content',
             'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+        })();
+        """,
+        injectionTime: .atDocumentEnd,
+        forMainFrameOnly: true
+    )
+
+    /// „Wo arbeite ich gerade?" — der angeklickte Knoten UND sein rechtes Detail-Panel
+    /// bekommen dieselbe warme Markierung: oranger Ring + heller Hintergrund am Knoten,
+    /// hell-oranges Panel mit oranger Kante. So gehören Kästchen und Fenster sichtbar
+    /// zusammen. Injiziert als `<style>`, weil das Bundle kompiliert ist (kein Quelltext);
+    /// die Hintergründe stehen inline (#fff), darum überall `!important`. Die Statusfarbe
+    /// am Knoten-Rahmen bleibt — wir legen nur einen Ring darum, statt sie zu überschreiben.
+    private static let auswahlStil = WKUserScript(
+        source: """
+        (function () {
+          if (document.getElementById('mops-auswahl-stil')) return;
+          var s = document.createElement('style');
+          s.id = 'mops-auswahl-stil';
+          s.textContent =
+            '.react-flow__node.selected .g8-node{background:#FFEDD5!important;box-shadow:0 0 0 3px #F97316!important;}'
+          + 'aside{background:#FFF7ED!important;border-left:3px solid #F97316!important;}';
+          document.head.appendChild(s);
         })();
         """,
         injectionTime: .atDocumentEnd,
