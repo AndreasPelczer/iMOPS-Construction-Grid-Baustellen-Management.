@@ -34,41 +34,45 @@ enum Firmenprofil: String, CaseIterable, Sendable {
         }
     }
 
-    // MARK: - Tarifsätze je Profil
+    // MARK: - Lohn-KOSTEN je Profil
+    //
+    // Wichtig: Das Profil führt **Kosten** — was eine Stunde den Betrieb KOSTET
+    // (Brutto-Lohn × Lohnnebenkosten), OHNE Gewinn/BGK/AGK. Der Verkaufspreis (z. B. Goldschmitts
+    // 74 €/h Verrechnungssatz) entsteht darüber über die Zuschläge / den Gewinn-Schieber und ist
+    // NICHT dieser Satz. So vergleichen Goldschmitt und Mops Äpfel mit Äpfeln (Kosten vs. Kosten).
 
-    // Neutrale Bau-Tarif-Orientierung (Mops) — dieselben Defaults wie in bruttoEK.
-    private func neutral(_ g: LeistungskatalogService.Tarifgruppe) -> Double {
+    /// Lohnnebenkosten-Faktor je Tarifgruppe (nur Nebenkosten, kein Aufschlag).
+    private func nebenkostenFaktor(_ g: LeistungskatalogService.Tarifgruppe) -> Double {
+        g == .helfer ? 1.55 : 1.65
+    }
+
+    /// Brutto-Stundenlohn je Tarifgruppe. Mops = neutraler Bau-Tarif; Goldschmitt = ihre ECHTEN
+    /// Löhne aus den Stammdaten (nur der Facharbeiter-Brutto ist als echte Zahl bekannt), sonst neutral.
+    private func bruttoLohn(fuer g: LeistungskatalogService.Tarifgruppe, in ctx: NSManagedObjectContext) -> Double {
+        let neutral: Double
         switch g {
-        case .helfer:       return 18.50 * 1.55   // ~28,68
-        case .facharbeiter: return 28.50 * 1.65   // ~47,03
-        case .maschinist:   return 30.00 * 1.65   // ~49,50
+        case .helfer:       neutral = 18.50
+        case .facharbeiter: neutral = 28.50
+        case .maschinist:   neutral = 30.00
         }
+        guard self == .goldschmitt, g == .facharbeiter else { return neutral }
+        // Goldschmitts echter Facharbeiter-Brutto (Lohnsatz.stundenlohn, NICHT der 74er-Kalkpreis).
+        return Self.stundenlohn("Facharbeiter (Raphael)", in: ctx)
+            ?? Self.stundenlohn("Spezialfacharbeiter", in: ctx)
+            ?? neutral
     }
 
-    /// Der Brutto-EK-Satz für eine Tarifgruppe im aktiven/gewählten Profil.
-    /// Goldschmitt liest seine echten Sätze aus den Stammdaten (`Lohnsatz`), sonst neutral.
+    /// Lohn-KOSTEN je Stunde für eine Tarifgruppe im gewählten Profil = Brutto × Nebenkosten.
     func satz(fuer gruppe: LeistungskatalogService.Tarifgruppe, in ctx: NSManagedObjectContext) -> Double {
-        switch self {
-        case .mops:
-            return neutral(gruppe)
-        case .goldschmitt:
-            // Goldschmitts echte Werte aus den Stammdaten (keine hartkodierten Vertrauensdaten).
-            let name: String
-            switch gruppe {
-            case .facharbeiter: name = "Facharbeiter (Raphael)"   // ZG1 → 74,00
-            case .maschinist:   name = "Maschinenf."               // 30,00 × 1,70 → 51,00
-            case .helfer:       name = "Helfer"                    // generischer Tarif → 28,68
-            }
-            return Self.lohnsatzWert(name, in: ctx) ?? neutral(gruppe)
-        }
+        bruttoLohn(fuer: gruppe, in: ctx) * nebenkostenFaktor(gruppe)
     }
 
-    /// Liest `Lohnsatz.berechnungBruttoEK` zu einer Qualifikation aus den Stammdaten.
-    private static func lohnsatzWert(_ qualifikation: String, in ctx: NSManagedObjectContext) -> Double? {
+    /// Liest `Lohnsatz.stundenlohn` (Brutto, ohne Faktor) zu einer Qualifikation aus den Stammdaten.
+    private static func stundenlohn(_ qualifikation: String, in ctx: NSManagedObjectContext) -> Double? {
         let req: NSFetchRequest<Lohnsatz> = Lohnsatz.fetchRequest()
         req.fetchLimit = 1
         req.predicate = NSPredicate(format: "qualifikation ==[c] %@", qualifikation)
-        guard let satz = (try? ctx.fetch(req))?.first else { return nil }
-        return satz.berechnungBruttoEK
+        guard let satz = (try? ctx.fetch(req))?.first, satz.stundenlohn > 0 else { return nil }
+        return satz.stundenlohn
     }
 }

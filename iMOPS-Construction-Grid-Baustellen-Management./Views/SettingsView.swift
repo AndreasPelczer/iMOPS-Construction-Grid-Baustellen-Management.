@@ -270,10 +270,11 @@ struct SettingsView: View {
                 Text("Firmenprofil")
             } footer: {
                 Text("""
-                Bestimmt, mit welchen Lohnsätzen der Mops rechnet: „Goldschmitt" = eure echten \
-                Sätze (ZG1 = 74 €/h), „Mops" = neutrale Bau-Tarif-Werte. Wirkt auf NEUE \
-                Kalkulationen; die Kalkulation zeigt beide Preise zum Vergleich. „Mops" ist \
-                zugleich der DSGVO-sichere Demo-Modus — keine Goldschmitt-Zahl im Spiel.
+                Bestimmt, mit welchen Lohn-KOSTEN der Mops rechnet: „Goldschmitt" = eure echten \
+                Löhne, „Mops" = neutrale Bau-Tarif-Werte. Das sind KOSTEN (Lohn + Nebenkosten) — \
+                der Verkaufspreis kommt über die Zuschläge/„Wo verdient der Boss?". In der \
+                Kalkulation stehen beide Profile nebeneinander zum Vergleich. „Mops" ist zugleich \
+                der DSGVO-sichere Demo-Modus — keine Goldschmitt-Zahl im Spiel.
                 """)
             }
 
