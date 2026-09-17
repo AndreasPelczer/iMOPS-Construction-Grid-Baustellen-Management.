@@ -97,6 +97,7 @@ struct RootTabView: View {
         }
         .tint(.orange)
         .environment(\.locale, session.locale)
+        .mopsGrussLauscht()   // Bau-Mops-Gruß, wenn iMOPS eine Datei umwandelt/einliest (MopsGruss.winke())
         .universalFileDropTarget { url in
             fileHandler.handleIncomingFile(url: url)
         }

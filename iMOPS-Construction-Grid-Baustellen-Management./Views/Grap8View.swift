@@ -184,6 +184,7 @@ struct Grap8View: View {
                 }
             }
         }
+        .mopsGrussBeiErscheinen()   // Bau-Mops trottet kurz ins Bild, wenn der Canvas aufgeht
     }
 
     /// Die bestehende Ansicht zum gewünschten Ziel — nichts Neues gebaut, nur geöffnet.

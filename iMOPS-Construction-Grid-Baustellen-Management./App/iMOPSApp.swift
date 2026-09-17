@@ -222,6 +222,7 @@ final class ImportedFileHandler {
             importedFileName = url.lastPathComponent
             lastImportedFileURL = destURL
             showFileInspection = true
+            MopsGruss.winke()   // Datei eingelesen → Bau-Mops grüßt
         } catch {
             print("Datei-Import Fehler: \(error)")
         }
