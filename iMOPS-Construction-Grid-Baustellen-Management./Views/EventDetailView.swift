@@ -169,6 +169,7 @@ struct EventDetailView: View {
     @State private var reportPDFURL: URL?
     // Welle 5c: Wände aus Plan lesen
     @State private var showingWandLeser = false
+    @State private var showingVerlegeplan = false
     @State private var showingMaterialliste = false
     @State private var showingGAEBImport = false
     @State private var showingWarmup = false
@@ -378,6 +379,7 @@ struct EventDetailView: View {
                     if zeigeImportKatalog {
                         gaebCard                  // Ausschreibung → LV (GAEB DA XML)
                         wandLeserCard             // Zeichnung → Wände (DXF/DWG)
+                        verlegeplanCard           // Zeichnung → Pflaster/Flächen-Mengen (DXF)
                         geländeCard               // Gelände → Aushub (DXF/DWG)
                         materiallisteCard         // Mengen aus Excel (.xlsx)
                         unterlagenCard            // Unterlagen (PDF) → Fakten
@@ -657,6 +659,32 @@ struct EventDetailView: View {
         .buttonStyle(.plain)
         .sheet(isPresented: $showingWandLeser) {
             WandLeserView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - VERLEGEPLAN CARD (Bogen 2: Pflaster/Flächen-Mengen aus DXF, offline)
+    private var verlegeplanCard: some View {
+        Button {
+            showingVerlegeplan = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.grid.3x3.fill").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Mengen aus Verlegeplan").font(.headline).foregroundStyle(.primary)
+                    Text("Pflasterfläche, Randsteine & Aufbau aus einem DXF-Verlegeplan (offline)")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingVerlegeplan) {
+            VerlegeplanLeserView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
     }
