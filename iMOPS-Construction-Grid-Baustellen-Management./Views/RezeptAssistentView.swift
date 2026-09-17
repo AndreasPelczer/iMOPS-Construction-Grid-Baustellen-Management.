@@ -31,6 +31,7 @@ struct RezeptAssistentView: View {
     @State private var marktLaden: Set<UUID> = []
     @State private var geraetWahl: Geraet?          // aus dem Maschinenpark (Stammdaten)
     @State private var geraetStunden = 0.0
+    @State private var katalogMaschineWahl: Maschine?   // Katalog-Miet-Maschine (Tage-Modell) → echte Kostenzeile
     @FetchRequest(sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)])
     private var geraetePark: FetchedResults<Geraet>
 
@@ -156,7 +157,12 @@ struct RezeptAssistentView: View {
         Section(leistung) {
             zeile("⏱ Arbeit", "\(fmtH(maurer)) + \(fmtH(helfer)) h", lohnEK)
             if materialEK > 0 { zeile("🧱 Material", "\(zutaten.count) Zutat\(zutaten.count == 1 ? "" : "en")", materialEK) }
-            if geraetEK > 0 { zeile("🔧 Gerät", geraetWahl?.name ?? "", geraetEK) }
+            if let g = geraetWahl, g.kostenProStunde * geraetStunden > 0 {
+                zeile("🔧 Gerät", g.name ?? "", g.kostenProStunde * geraetStunden)
+            }
+            if let m = katalogMaschineWahl, let mk = katalogMietkosten {
+                zeile("🚜 Miete", "\(m.bezeichnung) · \(mk.tage) Tag\(mk.tage == 1 ? "" : "e")", mk.proEinheit)
+            }
         }
         Section {
             HStack {
@@ -226,46 +232,51 @@ struct RezeptAssistentView: View {
     @ViewBuilder private var maschinenVorschlagBlock: some View {
         Section("🚜 Passende Maschinen (Katalog-Vorschlag)") {
             ForEach(maschinenVorschlaege.prefix(4)) { m in
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(m.bezeichnung).font(.subheadline.weight(.medium))
-                    HStack(spacing: 10) {
-                        if let l = m.hauptLeistung {
-                            Text("\(fmtH(l.wert)) \(l.einheit)").font(.caption.monospacedDigit())
+                let gewaehlt = katalogMaschineWahl == m
+                Button {
+                    katalogMaschineWahl = gewaehlt ? nil : m
+                } label: {
+                    HStack(alignment: .top, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(m.bezeichnung).font(.subheadline.weight(.medium))
+                            HStack(spacing: 10) {
+                                if let l = m.hauptLeistung {
+                                    Text("\(fmtH(l.wert)) \(l.einheit)").font(.caption.monospacedDigit())
+                                }
+                                if let tag = m.mieteTag {
+                                    Text("Miete ~\(euro(tag))/Tag").font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            if let d = dauerText(m) {
+                                Text(d).font(.caption2).foregroundStyle(.orange)
+                            }
+                            if let s = m.brauchtSchein, !s.isEmpty {
+                                Text("Schein: \(s)").font(.caption2).foregroundStyle(.secondary)
+                            }
                         }
-                        if let tag = m.mieteTag {
-                            Text("Miete ~\(euro(tag))/Tag").font(.caption).foregroundStyle(.secondary)
-                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: gewaehlt ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(gewaehlt ? .orange : .secondary)
                     }
-                    if let d = dauerText(m) {
-                        Text(d).font(.caption2).foregroundStyle(.orange)
-                    }
-                    if let s = m.brauchtSchein, !s.isEmpty {
-                        Text("Schein: \(s)").font(.caption2).foregroundStyle(.secondary)
-                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
-            Text("Richtwerte (regional ±20%). Eigene Maschine aus deinem Park hat Vorrang.")
+            if katalogMaschineWahl != nil {
+                Text("✓ Wird als Mietkosten (Tage-Modell) in die Position übernommen — landet im Einheitspreis.")
+                    .font(.caption2).foregroundStyle(.green)
+            }
+            Text("Richtwerte (regional ±20%). Eigene Maschine aus deinem Park hat Vorrang — Miete zum Antippen.")
                 .font(.caption2).foregroundStyle(.secondary)
         }
     }
 
-    /// Grobe Dauer-/Mietschätzung für die ganze Position, wenn Einheit & Maschinenleistung passen.
+    /// Dauer + Mietkosten nach dem TAGE-Modell (Miete pro angefangenem Tag) für die ganze Position.
     private func dauerText(_ m: Maschine) -> String? {
-        guard position.menge > 0, let l = m.hauptLeistung, l.wert > 0 else { return nil }
-        let passt: Bool = {
-            switch einheit.lowercased() {
-            case "m3", "m³": return l.einheit == "m³/h"
-            case "m2", "m²": return l.einheit == "m²/h"
-            case "m", "lfm": return l.einheit == "m/h"
-            default: return false
-            }
-        }()
-        guard passt else { return nil }
-        let stunden = position.menge / l.wert
-        let tage = ceil(stunden / 8.0)
-        var s = "≈ \(fmtH((stunden * 10).rounded() / 10)) h für \(fmtH(position.menge)) \(einheit) (~\(fmtH(tage)) Tag\(tage == 1 ? "" : "e"))"
-        if let tag = m.mieteTag { s += " · Miete ~\(euro(tage * tag))" }
-        return s
+        guard let mk = m.mietkostenTageModell(menge: position.menge, einheit: einheit) else { return nil }
+        return "≈ \(fmtH((mk.stunden * 10).rounded() / 10)) h für \(fmtH(position.menge)) \(einheit)"
+             + " → \(mk.tage) angefangene\(mk.tage == 1 ? "r" : "") Tag\(mk.tage == 1 ? "" : "e")"
+             + " · Miete \(euro(mk.gesamt)) (\(euro(mk.proEinheit))/\(einheit))"
     }
 
     private func ladeVorschlag() async {
@@ -359,9 +370,15 @@ struct RezeptAssistentView: View {
     private var materialEK: Double {
         zutaten.reduce(0) { $0 + $1.menge * (LeistungskatalogService.materialPreis(fuer: $1.name, in: ctx) ?? 0) * (1 + $1.verschnitt / 100) }
     }
+    /// Miete der ausgewählten Katalog-Maschine nach dem Tage-Modell (für die ganze Position).
+    private var katalogMietkosten: Maschine.Mietkosten? {
+        katalogMaschineWahl?.mietkostenTageModell(menge: position.menge, einheit: einheit)
+    }
     private var geraetEK: Double {
-        guard let g = geraetWahl else { return 0 }
-        return g.kostenProStunde * geraetStunden
+        var s = 0.0
+        if let g = geraetWahl { s += g.kostenProStunde * geraetStunden }   // eigene Maschine (€/h)
+        if let mk = katalogMietkosten { s += mk.proEinheit }               // Miete je Einheit
+        return s
     }
     private var ekGesamt: Double { lohnEK + materialEK + geraetEK }
 
@@ -372,11 +389,18 @@ struct RezeptAssistentView: View {
                 name: $0.name, menge: $0.menge, verschnitt: $0.verschnitt,
                 einheit: $0.einheit.isEmpty ? (position.einheit ?? "") : $0.einheit)
         }
-        let ger: [LeistungskatalogService.RezeptGeraet]
+        var ger: [LeistungskatalogService.RezeptGeraet] = []
         if let g = geraetWahl {
-            ger = [LeistungskatalogService.RezeptGeraet(name: g.name ?? "", stunden: geraetStunden, satz: g.kostenProStunde)]
-        } else {
-            ger = []
+            ger.append(LeistungskatalogService.RezeptGeraet(name: g.name ?? "", stunden: geraetStunden, satz: g.kostenProStunde))
+        }
+        // Katalog-Miet-Maschine (Tage-Modell) → stundenbasierte PositionGeraet-Zeile.
+        // Ehrlich abgebildet: Maschinenstunden je Einheit × effektiver €/h (inkl. Tage-Aufrundung)
+        // ergibt genau die Miete je Einheit → × Menge = Miete gesamt.
+        if let m = katalogMaschineWahl,
+           let z = m.mietAlsGeraetzeile(menge: position.menge, einheit: einheit) {
+            ger.append(LeistungskatalogService.RezeptGeraet(
+                name: "\(m.bezeichnung) · Miete \(z.tage) Tag\(z.tage == 1 ? "" : "e")",
+                stunden: z.stundenJeEinheit, satz: z.satzProStunde))
         }
         LeistungskatalogService.speichereRezept(auf: position, maurer: maurer, helfer: helfer,
                                                 material: mat, geraet: ger, quelle: quelle, in: ctx)
