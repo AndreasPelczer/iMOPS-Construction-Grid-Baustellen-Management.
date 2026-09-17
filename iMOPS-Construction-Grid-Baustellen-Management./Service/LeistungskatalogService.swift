@@ -182,6 +182,8 @@ enum LeistungskatalogService {
         }
         struct Geraet: Codable {
             var name: String; var stunden: Double; var kostenProStunde: Double
+            // OPTIONAL, damit alte rezeptJSON-Blobs ohne diese Felder weiter dekodieren.
+            var pauschal: Bool? = nil; var einheit: String? = nil
         }
         var material: [Material] = []
         var geraet: [Geraet] = []
@@ -198,7 +200,8 @@ enum LeistungskatalogService {
                       einheit: $0.einheit ?? "")
             },
             geraet: pos.geraeteArray.map {
-                .init(name: $0.geraetName ?? "", stunden: $0.stunden, kostenProStunde: $0.kostenProStunde)
+                .init(name: $0.geraetName ?? "", stunden: $0.stunden, kostenProStunde: $0.kostenProStunde,
+                      pauschal: $0.pauschal, einheit: $0.einheit)
             })
         if rezept.istLeer { baustein.rezeptJSON = nil; return }
         if let data = try? JSONEncoder().encode(rezept) {
@@ -244,6 +247,8 @@ enum LeistungskatalogService {
             pg.geraetName = g.name
             pg.stunden = g.stunden
             pg.kostenProStunde = g.kostenProStunde
+            pg.pauschal = g.pauschal ?? false
+            pg.einheit = g.einheit
             pg.position = pos
         }
     }

@@ -536,32 +536,33 @@ enum HofauffahrtSeeder {
 
         // --- Gerät [Schätzung] ---
         //
-        // ⚠️ **Lücke 3:** Die Fuhren sind eine Stückzahl, keine Zeit. Sechs
-        // Fahrten zum Recyclinghof à 120 € stehen hier als „0,06 Stunden × 120 €"
-        // — rechnerisch ergibt das die richtigen 720 €, begrifflich ist es
-        // falsch. `PositionGeraet` kennt nur `stunden × kostenProStunde`; eine
-        // Pauschale oder einen Preis pro Stück gibt es im Modell nicht.
-        // Kleine Schwester der Fremdleistungs-Lücke.
+        // ✅ **Lücke 3 GESCHLOSSEN (17.9.):** Die Fuhren sind eine Stückzahl, keine Zeit.
+        // `PositionGeraet` kann jetzt `pauschal` (Anzahl × Preis je Einheit) — die 6 Fahrten
+        // à 120 € stehen ehrlich als „6 Fahrt × 120 €/Fahrt = 720 €", nicht mehr als 0,06 Stunden.
         // Bagger-Stunden HERGELEITET: Aushubmenge ÷ Leistung (Richtwert), nicht
         // geraten. Planum-Aushub ≈ Fläche × 0,35 m. Bei 4,4 m³/h ergibt das ~8 h wie
         // bisher — ändert man den Richtwert (Erdbauleistung.minibagger), wandert die
         // Zahl mit. Das ist der „woher die Stunden"-Nachweis aus der Bagger-Frage.
         let aushubM3 = flaecheQm * 0.35
         let baggerStunden = Erdbauleistung.stunden(menge: aushubM3, leistung: Erdbauleistung.minibagger)
-        let geraete: [(name: String, stunden: Double, satz: Double)] = [
+        // (name, anzahl, satz, pauschal, einheit). Zeit-Geräte: anzahl = Stunden JE Einheit.
+        // Pauschal (Fuhren): anzahl = ABSOLUTE Stückzahl, satz = Preis je Einheit, einheit = "Fahrt".
+        let geraete: [(name: String, anzahl: Double, satz: Double, pauschal: Bool, einheit: String)] = [
             // 35,11 m³ ÷ 4,4 m³/h ≈ 8 h Bagger (Menge ÷ Leistung, siehe oben)
-            ("Minibagger inkl. Bediener",                  baggerStunden / flaecheQm, 65.00),
+            ("Minibagger inkl. Bediener",  baggerStunden / flaecheQm, 65.00, false, "h"),
             // 10 h Rüttelplatte — Tragschicht lagenweise, Pflaster abrütteln
-            ("Rüttelplatte / Verdichter",                 10.0 / flaecheQm, 12.00),
-            // 6 Fuhren à 120 € — siehe Hinweis oben: Stückzahl im Zeit-Modell
-            ("LKW-Fuhren Aushub (6 Fahrten, je 120 €)",    6.0 / flaecheQm, 120.00),
+            ("Rüttelplatte / Verdichter",  10.0 / flaecheQm,          12.00, false, "h"),
+            // 6 Fuhren à 120 € — jetzt EHRLICH pauschal (Lücke 3 geschlossen): 6 Fahrten × 120 €.
+            ("LKW-Fuhren Aushub",          6.0,                       120.00, true,  "Fahrt"),
         ]
         for g in geraete {
             let pg = PositionGeraet(context: context)
             pg.id = UUID()
             pg.geraetName = g.name
-            pg.stunden = g.stunden
+            pg.stunden = g.anzahl
             pg.kostenProStunde = g.satz
+            pg.pauschal = g.pauschal
+            pg.einheit = g.einheit
             pg.position = pos
         }
     }
