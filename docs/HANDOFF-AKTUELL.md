@@ -2,6 +2,21 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 17.09.2026 — Nordstern-Bögen gemergt: Gelände→Aushub→Bagger→Brigade + Verlegeplan-Leser + Firmenprofil-Übersicht
+
+**Alles auf `main` (`485ec8e`), volle Suite grün (411 Tests / 69 Suiten). NOCH NICHT gepusht** (Push tippt Andreas selbst, `! git push`; Rollback-Tag `pre-merge-nordstern`).
+
+Fünf Stücke, in einer Session gebaut, getestet, gemergt (Feature-Branches danach gelöscht):
+- **A — Katalog-Miete wird echte Kostenzeile** (`MaschinenKatalog`, `RezeptAssistentView`): der Maschinen-Vorschlag ist antippbar (Häkchen) → beim Speichern schreibt `Maschine.mietAlsGeraetzeile` das Tage-Miet-Modell verlustfrei als `PositionGeraet` (stunden×satz), landet im Einheitspreis EK+VK.
+- **B — Brigade über die Bauzeit** (`BrigadePlanung`, `EventDetailView.brigadeCard`): `verteilung(arbeitstage:)` + `arbeitstageZwischen(Mo–Fr)` streckt die Rollen-Manntage über `eventStartTime→eventEndTime` → „Ø N Leute/Tag, mind. M im Team nötig" je Rolle. KEINE erfundene Abfolge (das wäre Bauablauf-Topologie = Bogen 3).
+- **Bogen 2 — Verlegeplan-Leser** (`Service/VerlegeplanLeser.swift`, `VerlegeplanLeserView` + Karte): OFFLINE-DXF-Leser für Pflaster-VERLEGEPLÄNE (nicht Wände): Fläche aus INSERT-Steinzählung × Maß im Blocknamen (`39x19_5x8cm`), Randsteine als Stück, Schotter/Splitt-Layer als Aufbau-Hinweis. An echter `Testhofeinfahrt.dxf`: 100,3 m². **FALLE:** Swift sieht `\r\n` als EIN Grapheme → CRLF erst normalisieren, sonst wird eine echte DXF gar nicht in Zeilen zerlegt.
+- **Bogen 1 — Erdmassen Cut & Fill** (`Service/Erdmassen.swift`, `ErdmassenView` + Karte): DGM1-Höhenraster gegen Planum → Abtrag/Auftrag/Massenausgleich (mittlere Höhe = Cut=Fill) + DGM1-XYZ-Parser. Der Abtrag = Aushub → läuft durch die vorhandene Kette `MaschinenPlanung`→Bagger→A→B. Braucht echte DGM1-XYZ (Box-Fetch-Pipeline).
+- **C — Firmenprofil-Übersicht** (`Views/FirmenprofilUebersichtView.swift`, NavigationLink in `SettingsView`): zwei Spalten Goldschmitt|Mops·Echtzahl, Zeilen Lohn/Material/Geräte → **Selbstkosten (fett, sichtbar gemacht)** → Rechnung. Goldschmitt-Lohn über Verrechnungssatz=Orakel (`firma_verrechnungssatz_orakel` 74), Lücke zu den Kosten (44,40) = Firmenzuschlag; Mops = Selbstkosten + FirmenSettings-Zuschläge. Editierbares Beispiel.
+
+**Die Kette schließt sich:** aus einer Adresse/Zeichnung → Mengen (Bogen 1/2) → Preis mit echten Rollen + Maschinen-Miete (A) → Personalbedarf über die Bauzeit (B). C macht den Selbstkostenpreis sichtbar.
+
+**🔴 OFFEN:** (a) Bogen 3 = Ablauf/Terminplan (`Bauablauf`-Topologie + `BauzeitenplanView`-Gantt auf echte Event-Daten + Brigade — alles vorhanden, nur verbinden). (b) Bogen 4 = „Mops-Spion in SketchUp" (Ruby-Extension mit Mops-Icon, redet über Tailscale mit der Box, schreibt LV-Info als Bauteil-Attribut → Zeichnung trägt die Wahrheit selbst; Memory `mops-spion-sketchup-plugin`). (c) LV-Eintrag-Kalkulation (`LVTiefenkalkulationView`) verständlicher machen — die „Rechnung mit Zahl hinten" hat für Andreas keine klare Bedeutung auf den ersten Blick (Einheiten). (d) INTENSO-Platte per macOS-TCC gesperrt → Terminal braucht Festplattenvollzugriff.
+
 ## Delta 16.09.2026 (Spätabend) — Langtext klappbar + Bausteine + Raphael pullt (PR #172); Firmenprofil GEPARKT
 
 **Auf `main` (PR #172, `8784fa2`):**
