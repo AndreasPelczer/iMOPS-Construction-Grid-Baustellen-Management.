@@ -22,8 +22,18 @@ struct MaterialHinzufuegenView: View {
     @State private var einheit = "Stk"
     @State private var manuellMode = false
     @State private var eingabeGesamt = false   // false = Menge je Einheit, true = Gesamt-Materialmenge
+    @State private var suche = ""
 
     private let einheiten = ["Stk", "m²", "m³", "lfm", "kg", "t", "l"]
+
+    /// Treffer der Katalog-Suche (in-memory, gekappt) — 2500 Einträge alle zu rendern ist zäh.
+    private var gefiltert: [KalkMaterial] {
+        let q = suche.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return [] }
+        return stammdaten.filter {
+            ($0.name ?? "").lowercased().contains(q) || ($0.einheit ?? "").lowercased().contains(q)
+        }
+    }
 
     private var isValid: Bool {
         !materialName.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -44,6 +54,8 @@ struct MaterialHinzufuegenView: View {
             }
             .navigationTitle("Material hinzufügen")
             .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $suche, placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: "Material im Katalog suchen …")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") { dismiss() }
@@ -64,8 +76,14 @@ struct MaterialHinzufuegenView: View {
             if stammdaten.isEmpty {
                 Text("Keine Stammdaten vorhanden")
                     .foregroundStyle(.secondary)
+            } else if suche.trimmingCharacters(in: .whitespaces).isEmpty {
+                Text("Tippe oben ins Suchfeld — der Katalog hat \(stammdaten.count) Einträge.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else if gefiltert.isEmpty {
+                Text("Nichts gefunden für „\(suche)\u{201C}. Nutz die manuelle Eingabe unten.")
+                    .font(.caption).foregroundStyle(.secondary)
             } else {
-                ForEach(stammdaten, id: \.objectID) { mat in
+                ForEach(gefiltert.prefix(60), id: \.objectID) { mat in
                     Button {
                         selectFromStamm(mat)
                     } label: {
@@ -86,6 +104,10 @@ struct MaterialHinzufuegenView: View {
                         }
                     }
                 }
+                if gefiltert.count > 60 {
+                    Text("… \(gefiltert.count - 60) weitere — Suche verfeinern.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
             }
 
             Button {
@@ -97,7 +119,7 @@ struct MaterialHinzufuegenView: View {
             }
             .tint(.orange)
         } header: {
-            Text("Aus Stammdaten wählen")
+            Text("Aus dem Katalog suchen")
         }
     }
 
