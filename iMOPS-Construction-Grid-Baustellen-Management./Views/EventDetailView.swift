@@ -170,6 +170,7 @@ struct EventDetailView: View {
     // Welle 5c: Wände aus Plan lesen
     @State private var showingWandLeser = false
     @State private var showingVerlegeplan = false
+    @State private var showingErdmassen = false
     @State private var showingMaterialliste = false
     @State private var showingGAEBImport = false
     @State private var showingWarmup = false
@@ -380,6 +381,7 @@ struct EventDetailView: View {
                         gaebCard                  // Ausschreibung → LV (GAEB DA XML)
                         wandLeserCard             // Zeichnung → Wände (DXF/DWG)
                         verlegeplanCard           // Zeichnung → Pflaster/Flächen-Mengen (DXF)
+                        erdmassenCard             // Gelände (DGM1) → Aushub-Mengen (Cut & Fill)
                         geländeCard               // Gelände → Aushub (DXF/DWG)
                         materiallisteCard         // Mengen aus Excel (.xlsx)
                         unterlagenCard            // Unterlagen (PDF) → Fakten
@@ -685,6 +687,32 @@ struct EventDetailView: View {
         .buttonStyle(.plain)
         .sheet(isPresented: $showingVerlegeplan) {
             VerlegeplanLeserView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - ERDMASSEN CARD (Bogen 1: Gelände DGM1 → Aushub Cut & Fill)
+    private var erdmassenCard: some View {
+        Button {
+            showingErdmassen = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "mountain.2.fill").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Erdmassen aus Gelände").font(.headline).foregroundStyle(.primary)
+                    Text("Abtrag/Auftrag aus einem DGM1-Höhenraster (XYZ) → Aushub ins LV")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingErdmassen) {
+            ErdmassenView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
     }
