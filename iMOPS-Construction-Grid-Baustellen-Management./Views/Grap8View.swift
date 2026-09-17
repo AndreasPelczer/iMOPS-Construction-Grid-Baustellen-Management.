@@ -114,12 +114,20 @@ struct Grap8View: View {
                 if let ladefehler {
                     fehlerbox(ladefehler)
                 } else if let event = gewaehlt {
-                    Grap8WebView(graph: Grap8Graph.aus(event),
-                                 steuerung: steuerung,
-                                 kontext: viewContext,
-                                 ladefehler: $ladefehler,
-                                 aktualisierung: aktualisierung)
-                        .ignoresSafeArea(edges: .bottom)
+                    ZStack(alignment: .bottomTrailing) {
+                        Grap8WebView(graph: Grap8Graph.aus(event),
+                                     steuerung: steuerung,
+                                     kontext: viewContext,
+                                     ladefehler: $ladefehler,
+                                     aktualisierung: aktualisierung)
+                            .ignoresSafeArea(edges: .bottom)
+
+                        // Kleine Gesamtrechnung der Baustelle — unten rechts, überm Canvas.
+                        CanvasRechnungBox(event: event)
+                            .padding(.trailing, 16)
+                            .padding(.bottom, 24)
+                            .id(aktualisierung)   // nach neuem Knoten neu rechnen
+                    }
                 } else {
                     Baustellenwahl(gewaehlt: $gewaehlt)
                 }

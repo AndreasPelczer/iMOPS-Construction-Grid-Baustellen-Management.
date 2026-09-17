@@ -191,6 +191,35 @@ enum LVKalkulator {
         }
     }
 
+    /// Die ganze Baustelle in Klartext-Bloecken: Material + Lohn + Geraet ergeben die
+    /// Selbstkosten, darauf die Aufschlaege (BGK · AGK · Wagnis&Gewinn …), zusammen der
+    /// Netto-Gesamtpreis. Alle Teile summieren sich exakt auf (kein Angebots-Fremdpreis),
+    /// damit die kleine Rechnung im Canvas nicht auseinanderlaeuft.
+    struct Gesamtaufschluesselung {
+        var material  = 0.0
+        var lohn      = 0.0
+        var geraet    = 0.0
+        var aufschlag = 0.0
+
+        var selbstkosten: Double { material + lohn + geraet }
+        var gesamtNetto:  Double { selbstkosten + aufschlag }
+    }
+
+    /// Summiert die Tiefenkalkulation ueber die zaehlbaren Positionen (Unterpunkte und
+    /// doppelte Bewehrung fallen raus). Element vor Baustein — `kalkulationFuer` waehlt
+    /// den richtigen Weg, damit nichts doppelt zaehlt.
+    static func gesamtAufschluesselung(positionen: [LVPosition]) -> Gesamtaufschluesselung {
+        var g = Gesamtaufschluesselung()
+        for pos in positionen.zaehlbarePositionen() {
+            let k = kalkulationFuer(pos)
+            g.material  += k.materialKosten * k.menge
+            g.lohn      += k.lohnKosten     * k.menge
+            g.geraet    += k.geraeteKosten  * k.menge
+            g.aufschlag += k.zuschlagGesamt * k.menge
+        }
+        return g
+    }
+
     /// Lohnstunden des ganzen LV. Sagt, wie viele Mannstunden hinter einem Angebot
     /// stecken — die Groesse, an der Termine und Mannschaftsstaerke haengen.
     /// Geraetestunden zaehlen NICHT mit; sie sind eine eigene Groesse.

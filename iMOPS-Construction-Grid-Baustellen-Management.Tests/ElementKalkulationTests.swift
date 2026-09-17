@@ -455,4 +455,29 @@ struct ElementKalkulationTests {
         #expect(!el.istElement)      // ohne Kinder kein Element
         #expect(abs(LVKalkulator.kalkuliereElement(el).einheitspreisVK - 0) < 0.001)
     }
+
+    // MARK: - Gesamtaufschlüsselung (die kleine Rechnung im Canvas)
+
+    /// Die Blöcke der Canvas-Rechnung müssen sich exakt zur Netto-Gesamtsumme addieren
+    /// und mit `gesamtKalkulation` übereinstimmen — sonst lügt die Box.
+    @Test @MainActor
+    func gesamtaufschluesselungSummiertSichAuf() throws {
+        // 100 m²: Material 42,50 · Lohn 27,50 · Gerät 2,50 = 72,50 EK/m²; +20 % = 87 VK/m².
+        let el = makeVollesRezept()
+        let alle = [el] + el.unterPositionenArray   // Bausteine sind Unterpunkte, zählen nicht doppelt
+
+        let g = LVKalkulator.gesamtAufschluesselung(positionen: alle)
+
+        #expect(abs(g.material  - 4_250.0) < 0.01)
+        #expect(abs(g.lohn      - 2_750.0) < 0.01)
+        #expect(abs(g.geraet    -   250.0) < 0.01)
+        #expect(abs(g.selbstkosten - 7_250.0) < 0.01)
+        #expect(abs(g.aufschlag - 1_450.0) < 0.01)   // (87 − 72,50) × 100
+        #expect(abs(g.gesamtNetto  - 8_700.0) < 0.01)
+
+        // Dieselbe Wahrheit wie der Gesamtpreis-Summierer.
+        #expect(abs(g.gesamtNetto - LVKalkulator.gesamtKalkulation(positionen: alle)) < 0.01)
+        // Und die Teile ergeben wirklich das Ganze.
+        #expect(abs(g.selbstkosten + g.aufschlag - g.gesamtNetto) < 0.001)
+    }
 }
