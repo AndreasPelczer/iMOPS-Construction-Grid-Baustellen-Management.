@@ -468,7 +468,9 @@ private struct Grap8WebView: UIViewRepresentable {
           s.id = 'mops-auswahl-stil';
           s.textContent =
             '.react-flow__node.selected .g8-node{background:#FFEDD5!important;box-shadow:0 0 0 3px #F97316!important;}'
-          + 'aside{background:#FFF7ED!important;border-left:3px solid #F97316!important;}';
+          + 'aside{background:#FFF7ED!important;border-left:3px solid #F97316!important;}'
+          // Verbindungspunkte 50% größer (6px → 9px), damit man sie auf einen Blick sieht.
+          + '.react-flow__handle{width:9px!important;height:9px!important;min-width:9px!important;min-height:9px!important;}';
           document.head.appendChild(s);
         })();
         """,
