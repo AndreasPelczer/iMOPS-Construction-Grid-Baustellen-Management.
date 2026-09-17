@@ -2034,6 +2034,16 @@ struct EventDetailView: View {
         req.predicate = NSPredicate(format: "isActive == YES")
         return (try? viewContext.count(for: req)) ?? 0
     }
+    private func aktiveLeute() -> [Employee] {
+        let req: NSFetchRequest<Employee> = Employee.fetchRequest()
+        req.predicate = NSPredicate(format: "isActive == YES")
+        return (try? viewContext.fetch(req)) ?? []
+    }
+    /// Wie viele aktive Leute passen (über die Tarifgruppe) zu einer gebrauchten Rolle?
+    private func imTeam(fuerRolle rolle: String) -> Int {
+        let ziel = LeistungskatalogService.tarifgruppe(fuer: rolle)
+        return aktiveLeute().filter { LeistungskatalogService.tarifgruppe(fuer: $0.rolle ?? "") == ziel }.count
+    }
 
     /// Wie viele Mannstunden/-tage stecken in dieser Baustelle — aus den Aufwandswerten
     /// des LV. Ehrlich: zeigt an, wenn noch Aufwandswerte fehlen (Summe unvollständig).
@@ -2050,6 +2060,24 @@ struct EventDetailView: View {
                     .font(.subheadline.weight(.semibold))
                 Text("(bei \(Int(BrigadePlanung.stundenJeTag)) h je Person und Tag)")
                     .font(.caption2).foregroundStyle(.secondary)
+
+                // Wer wird gebraucht — nach Rolle (Nordstern: aus dem LV zur Brigade).
+                if !plan.rollen.isEmpty {
+                    Divider().padding(.vertical, 2)
+                    Text("Wer wird gebraucht").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    ForEach(plan.rollen) { r in
+                        HStack(spacing: 6) {
+                            Text(r.rolle).font(.caption)
+                            Spacer()
+                            Text("\(r.stunden.formatted(.number.precision(.fractionLength(0...1)))) h · \(r.manntage.formatted(.number.precision(.fractionLength(0...1)))) MT")
+                                .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            let n = imTeam(fuerRolle: r.rolle)
+                            Text(n > 0 ? "· \(n) im Team" : "· niemand im Team")
+                                .font(.caption2).foregroundStyle(n > 0 ? .green : .orange)
+                        }
+                    }
+                }
+
                 if leute > 0, let tage = plan.arbeitstage(beiLeuten: leute) {
                     Text("Bei \(leute) aktiven Leuten ≈ \(tage.formatted(.number.precision(.fractionLength(0...1)))) Arbeitstage")
                         .font(.subheadline)

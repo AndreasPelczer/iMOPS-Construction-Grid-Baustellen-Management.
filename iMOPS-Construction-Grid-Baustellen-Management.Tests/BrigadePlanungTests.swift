@@ -25,6 +25,22 @@ struct BrigadePlanungTests {
         return p
     }
 
+    /// Rollen-Aufschlüsselung: die Brigade weiß jetzt WER gebraucht wird (echte Kolonne).
+    @Test @MainActor func rollenAufschluesselung() {
+        // Rohrgraben: 320 m × 0,30 h/m, Kolonne „1 Baggerfahrer + 1 Helfer" → je 0,15 h/m.
+        let pos = LVPosition(context: ctx)
+        pos.bezeichnung = "Rohrgraben"; pos.einheit = "m"; pos.menge = 320
+        LeistungskatalogService.schreibeAufwandAusKolonne(mittelStunden: 0.30, kolonne: "1 Baggerfahrer + 1 Helfer", auf: pos, in: ctx)
+
+        let plan = BrigadePlanung.fuer(positionen: [pos])
+        let rollen = Dictionary(uniqueKeysWithValues: plan.rollen.map { ($0.rolle, $0.stunden) })
+        // 0,15 h/m × 320 m = 48 Mannstunden je Rolle
+        #expect(abs((rollen["Baggerfahrer"] ?? 0) - 48) < 0.01)
+        #expect(abs((rollen["Helfer"] ?? 0) - 48) < 0.01)
+        // Summe der Rollen = Gesamt-Mannstunden
+        #expect(abs(plan.rollen.reduce(0) { $0 + $1.stunden } - 96) < 0.01)
+    }
+
     @Test @MainActor func mannstundenManntageArbeitstage() {
         // 100 m² × (0,3 + 0,2) h/m² = 50 Mannstunden
         let pos = position("Pflaster", menge: 100, maurer: 0.3, helfer: 0.2)
