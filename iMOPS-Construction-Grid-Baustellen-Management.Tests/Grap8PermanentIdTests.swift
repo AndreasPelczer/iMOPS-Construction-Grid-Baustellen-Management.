@@ -107,4 +107,37 @@ struct Grap8PermanentIdTests {
         #expect(abs(knotenMit.position.x - 512.5) < 0.001)
         #expect(abs(knotenMit.position.y - 333.0) < 0.001)
     }
+
+    // MARK: - Von Hand verbinden ergibt eine Kante im Graph
+
+    @Test @MainActor func verknuepfteAuftraegeErgebenEineKante() throws {
+        let event = Event(context: ctx)
+        event.name = "Testbaustelle"
+
+        func auftrag(_ text: String) -> Auftrag {
+            let a = Auftrag(context: ctx)
+            a.processingDetails = text
+            a.status = .pending
+            a.storageNote = ""
+            a.event = event
+            return a
+        }
+        let fundament = auftrag("Fundament")
+        let estrich = auftrag("Estrich")
+
+        // Ohne Verbindung: keine Kante.
+        #expect(Grap8Graph.aus(event).edges.isEmpty)
+
+        // „Fundament muss vor Estrich fertig sein" — genau das, was die Verbinden-Ansicht ruft.
+        try Kausalkette.verknuepfe(estrich, brauchtVorher: fundament, in: ctx)
+
+        let graph = Grap8Graph.aus(event)
+        let kante = try #require(graph.edges.first, "Nach dem Verknüpfen muss eine Kante da sein.")
+        // Kennungen der beiden Knoten holen und die Richtung prüfen (source → target).
+        let idFundament = try #require(graph.nodes.first { $0.data.title.hasPrefix("Fundament") }).id
+        let idEstrich = try #require(graph.nodes.first { $0.data.title.hasPrefix("Estrich") }).id
+        #expect(kante.source == idFundament)
+        #expect(kante.target == idEstrich)
+        #expect(graph.edges.count == 1)
+    }
 }

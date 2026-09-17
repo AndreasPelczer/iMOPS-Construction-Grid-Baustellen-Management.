@@ -91,6 +91,8 @@ struct Grap8View: View {
     @State private var ladefehler: String?
     // Nativer „+"-Weg: einen echten Auftrag anlegen, ohne die (nur lesende) Leinwand.
     @State private var zeigeNeuerAuftrag = false
+    // Nativer Verbinden-Weg: zwei Aufträge verketten (die Kante zeichnet die Leinwand).
+    @State private var zeigeVerbinden = false
     // Steigt bei jedem neu angelegten Auftrag → die Leinwand bekommt den Graphen neu.
     @State private var aktualisierung = 0
 
@@ -144,6 +146,14 @@ struct Grap8View: View {
                         .environment(\.managedObjectContext, viewContext)
                 }
             }
+            // Nativer „Verbinden": zwei Aufträge verketten. `onDismiss` schickt den Graphen
+            // neu → die neue Kante erscheint (Kanten kommen aus `Voraussetzung`).
+            .sheet(isPresented: $zeigeVerbinden, onDismiss: { aktualisierung += 1 }) {
+                if let event = gewaehlt {
+                    KnotenVerbindenView(event: event)
+                        .environment(\.managedObjectContext, viewContext)
+                }
+            }
             .navigationTitle(gewaehlt.flatMap { $0.title ?? $0.name } ?? "Grap8")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -153,6 +163,15 @@ struct Grap8View: View {
                 }
                 // Neuer Auftrag = neuer Knoten. Nativ, weil die Leinwand nur liest;
                 // nach dem Sichern wird der Graph neu geschickt und der Knoten erscheint.
+                // Zwei Knoten verketten (nativ; die Kante zeichnet die Leinwand danach).
+                if gewaehlt != nil {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { zeigeVerbinden = true } label: {
+                            Label("Verbinden", systemImage: "arrow.triangle.branch")
+                        }
+                        .tint(.orange)
+                    }
+                }
                 if gewaehlt != nil {
                     ToolbarItem(placement: .primaryAction) {
                         Button { zeigeNeuerAuftrag = true } label: {
