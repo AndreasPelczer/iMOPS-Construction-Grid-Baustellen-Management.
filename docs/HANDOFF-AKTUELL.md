@@ -2,6 +2,20 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 17.09.2026 (Abend) — Canvas wird der zweite Arbeitsplatz: Knoten-Preise, Gesamtrechnung, Markierung, Positionen bleiben + Bau-Mops-Gruß
+
+**Alles auf `main`, jede Änderung einzeln gebaut+committet, NICHT gepusht** (Push tippt Andreas selbst, `! git push`). Commits: `0634cb6` (Gesamtrechnung), `fc5365e` (Mops-Gruß), `467853a` (Knoten-Preise + Animation), `ff5474f` (Markierung), `8a36552` (Positionen). Auslöser: Andreas — der Canvas ist nach dem LV das meistgenutzte Stück; „langsam alles mit dem Mops verbinden".
+
+- **LVView-Knopf toggelt** (`c76b0cb`): „Auf den Canvas holen" → nach dem Anlegen „Canvas ansehen" (öffnet Grap8View direkt, spart 8 Klicks). EventDetailView-Toolbar-Knopf wieder zurückgebaut.
+- **Gesamtrechnung unten rechts im Canvas** (`CanvasRechnungBox`, `Grap8View` ZStack-Overlay): Material+Lohn+Gerät = Selbstkosten, dann Aufschläge, = Netto-Gesamt der ganzen Baustelle; „?" erklärt BGK/AGK/W&G in Klartext. Motor: neu `LVKalkulator.gesamtAufschluesselung(positionen:)` (summiert `kalkulationFuer` über `zaehlbarePositionen`; Test `ElementKalkulationTests.gesamtaufschluesselungSummiertSichAuf` beweist: Teile = Ganzes).
+- **Preis je Knoten** (`Grap8Graph.titelMitPreis`): jedes Kästchen trägt „Name · 8.700 €" (Preis der LV-Position dahinter) → Ausreißer auf einen Blick. Angehängt an den **Titel** (der `kg`-String speist ein Dropdown → unberührt lassen).
+- **Gemeinsame Markierung** (`Grap8View.auswahlStil`, WKUserScript-`<style>`): angeklickter Knoten = oranger Ring + heller Hintergrund, sein rechtes Detail-Panel dieselbe Farbe + orange Kante → „wo arbeite ich gerade". Injiziert per CSS `!important` (Bundle ist kompiliert; Panel-`<aside>` hat keine Klasse → Element-Selektor, evtl. enger ziehen falls was Falsches färbt).
+- **Positionen bleiben gespeichert** (`8a36552`): Canvas ist keine Einbahnstraße mehr. `Auftrag.posX/posY` (optional Double, additive Lightweight-Migration, Test grün); `Grap8Graph` nimmt gespeicherte Position, sonst Auto-Layout; **Rückkanal** `Grap8View.positionsRueckkanal` (WKUserScript: pointerup nach echtem Ziehen → liest Flow-Koords per DOMMatrix → `postMessage{action:'positionen'}`); Coordinator-Fall `positionen` löst je Kennung den Auftrag auf und speichert (nur bei echter Änderung). Test `Grap8PermanentIdTests.gespeichertePositionWirdBenutzt`.
+- **🐶 Bau-Mops-Gruß** (`Views/MopsGruss.swift`): 1-Sek-Laufanimation aus Andreas' rigged GLB (`bau-mops … Walking.glb`), im Browser zu 28 transparenten PNG-Frames gerendert (kein Blender/ffmpeg → headless Chrome + three.js, `Resources/MopsGruss/`, ~1,1 MB). Trottet nach links (passt zur Beinbewegung). Hook `MopsGruss.winke()` (eine Zeile) + Root-Lauscher `.mopsGrussLauscht()` (RootTabView) + `.mopsGrussBeiErscheinen()` (Canvas). Verdrahtet: Canvas-Öffnen, `ImportedFileHandler` (Einlesen), `SKPConversionService` (Umwandeln). Memory [[mops-gruss-animation]].
+- **Bedienungshilfe** nachgezogen: `app_bedienung.yaml` neuer Eintrag `App_Grap8_Canvas` (Preis/Rechnung/Markierung/Positionen).
+
+**🔴 OFFEN / als Nächstes:** **(a) Knoten per Hand verbinden** (zwei Aufträge auf dem Canvas mit Pfeil verketten = `Voraussetzung` anlegen; braucht Rückkanal + Schreiben — Andreas' nächster gewählter Bogen, JETZT dran). (b) **Umbenennen auf der Leinwand** bleibt noch nicht (hängt am Preis-im-Titel). (c) **Mannschaft/Maschine pro Knoten** fehlt im Modell (Auftrag↔Ressource-Beziehung; heute nur baustellenweit). (d) „Pausiert" (onHold) hat kein Canvas-Gegenstück (braucht Frontend-Neubau des Bundles). Bestandsaufnahme des ganzen Canvas-Stapels (DA vs. FEHLT) steckt im Session-Verlauf.
+
 ## Delta 17.09.2026 — Nordstern-Bögen gemergt: Gelände→Aushub→Bagger→Brigade + Verlegeplan-Leser + Firmenprofil-Übersicht
 
 **Alles auf `main` (`485ec8e`), volle Suite grün (411 Tests / 69 Suiten). NOCH NICHT gepusht** (Push tippt Andreas selbst, `! git push`; Rollback-Tag `pre-merge-nordstern`).
