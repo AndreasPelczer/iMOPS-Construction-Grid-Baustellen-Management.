@@ -34,16 +34,17 @@ enum Kostenquelle {
         case .katalog:   return "Katalog"
         case .startwert: return "Startwert – prüfen"
         case .eigen:     return "dein Wert"
-        case .unbekannt: return "Quelle prüfen"
+        case .unbekannt: return "Herkunft offen"
         }
     }
 
     var farbe: Color {
         switch self {
-        case .raffi:                 return .green
-        case .praxis, .katalog:      return .blue
-        case .startwert, .unbekannt: return .orange
-        case .eigen:                 return .purple
+        case .raffi:            return .green
+        case .praxis, .katalog: return .blue
+        case .startwert:        return .orange   // echter Platzhalter → Warnung
+        case .eigen:            return .purple
+        case .unbekannt:        return .gray      // Alt-Daten ohne Herkunft → ruhig, kein Alarm
         }
     }
 
@@ -57,9 +58,9 @@ enum Kostenquelle {
         case .raffi:     return "Firmeneigener Erfahrungswert (RAFFI) aus der Wissensbasis — von euch belegt."
         case .praxis:    return "Öffentlicher Praxis-Richtwert aus der Wissensbasis (aufwandswerte.yaml) — Quelle nachvollziehbar."
         case .katalog:   return "Aus dem Maschinenkatalog (maschinenkatalog.yaml) mit Quellenangabe."
-        case .startwert: return "Demo-/Startwert — von der App als Platzhalter gesetzt, NICHT belegt. Bitte mit deinem echten Wert überschreiben (Zeile antippen)."
+        case .startwert: return "Demo-/Startwert — als Platzhalter gesetzt, NICHT belegt. Zum Ändern: Zeile nach links wischen → löschen, dann mit deinem Wert neu hinzufügen."
         case .eigen:     return "Von dir selbst eingetragen — dein Wert."
-        case .unbekannt: return "Herkunft nicht hinterlegt. Prüf den Wert und trag deinen echten ein."
+        case .unbekannt: return "Herkunft (noch) nicht hinterlegt — diese Position wurde angelegt, bevor der Mops die Quelle mitgeführt hat. Der Wert ist nicht falsch, nur unbeschriftet. Neu berechnen (Mops fass) trägt die Quelle nach; ändern: Zeile wischen → löschen → neu."
         }
     }
 }

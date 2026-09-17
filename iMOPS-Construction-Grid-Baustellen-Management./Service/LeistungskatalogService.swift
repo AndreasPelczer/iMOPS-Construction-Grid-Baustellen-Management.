@@ -275,7 +275,8 @@ enum LeistungskatalogService {
     /// Kolonne verteilt und je Rolle mit ihrem Tarif bepreist. Idempotent (alte Lohnzeilen weg).
     /// z. B. „1 Baggerfahrer + 1 Helfer", 0,30 h → Baggerfahrer 0,15 h + Helfer 0,15 h.
     static func schreibeAufwandAusKolonne(mittelStunden: Double, kolonne: String,
-                                          auf pos: LVPosition, in ctx: NSManagedObjectContext) {
+                                          auf pos: LVPosition, in ctx: NSManagedObjectContext,
+                                          quelle: String? = nil) {
         for pl in pos.lohnArray { ctx.delete(pl) }
         ctx.processPendingChanges()
 
@@ -286,7 +287,7 @@ enum LeistungskatalogService {
             // Keine lesbare Kolonne → als generischer Facharbeiter (nie 0), im aktiven Profil.
             if mittelStunden > 0 {
                 lohnEintragMitSatz("Facharbeiter", mittelStunden,
-                                   profil.satz(fuer: .facharbeiter, in: ctx), pos, ctx)
+                                   profil.satz(fuer: .facharbeiter, in: ctx), pos, ctx, quelle: quelle)
             }
             return
         }
@@ -295,7 +296,7 @@ enum LeistungskatalogService {
         for r in rollen { proRolle[r.rolle, default: 0] += mittelStunden * Double(r.anzahl) / Double(kopf) }
         for (rolle, stunden) in proRolle {
             let satz = profil.satz(fuer: tarifgruppe(fuer: rolle), in: ctx)
-            lohnEintragMitSatz(rolle, stunden, satz, pos, ctx)
+            lohnEintragMitSatz(rolle, stunden, satz, pos, ctx, quelle: quelle)
         }
     }
 
@@ -348,13 +349,20 @@ enum LeistungskatalogService {
 
     /// Wie `lohnEintrag`, aber mit explizit vorgegebenem Satz (z. B. aus dem aktiven Firmenprofil).
     private static func lohnEintragMitSatz(_ qualifikation: String, _ stunden: Double, _ satz: Double,
-                                           _ pos: LVPosition, _ ctx: NSManagedObjectContext) {
+                                           _ pos: LVPosition, _ ctx: NSManagedObjectContext,
+                                           quelle: String? = nil) {
         let pl = PositionLohn(context: ctx)
         pl.id = UUID()
         pl.qualifikation = qualifikation
         pl.stunden = stunden
         pl.stundenBruttoEK = satz
+        pl.quelle = quelle
         pl.position = pos
+    }
+
+    /// Aufwandswert-Quelle (z.B. "RAFFI", "PRAXIS, …") → Badge-Herkunft.
+    static func herkunft(ausQuelle quelleKurz: String?) -> String {
+        (quelleKurz ?? "").uppercased().contains("RAFFI") ? "raffi" : "praxis"
     }
 
     /// Brutto-EK-Stundensatz aus den Stammdaten (`Lohnsatz`), Rückfall über die Tarifgruppe.
