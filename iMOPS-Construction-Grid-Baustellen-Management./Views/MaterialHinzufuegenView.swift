@@ -297,8 +297,37 @@ struct MaterialHinzufuegenView: View {
         // Hinterlegter Firmenpreis → Firmenwert; selbst eingetippt → dein Wert.
         pm.quelle = ((preisSatz(materialName)?.preisProEinheit ?? 0) > 0) ? "raffi" : "eigen"
         pm.position = position
+        lerneInKatalog()          // neues Material in den Katalog aufnehmen (suchbar + Preis merken)
         try? viewContext.save()
         dismiss()
+    }
+
+    /// Nimmt ein neu eingetragenes Material in den Katalog auf, damit es beim nächsten Mal
+    /// gefunden wird — in den Such-Katalog (CDLexikonEntry) und, mit Preis, in den bepreisten
+    /// Katalog (KalkMaterial). Idempotent: legt nur an, was noch fehlt.
+    private func lerneInKatalog() {
+        let name = materialName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        let z = name.lowercased()
+        let preis = Double(einzelpreis.replacingOccurrences(of: ",", with: ".")) ?? 0
+
+        // Preis merken (KalkMaterial), wenn ein Preis da ist und noch keiner hinterlegt.
+        if preis > 0 && preisSatz(name) == nil {
+            let km = KalkMaterial(context: viewContext)
+            km.id = UUID()
+            km.name = name
+            km.einheit = einheit
+            km.preisProEinheit = preis
+            km.lieferant = "selbst angelegt"
+            km.letzteAktualisierung = Date()
+        }
+        // Suchbar machen (CDLexikonEntry), wenn noch nicht im Katalog.
+        if !katalog.contains(where: { ($0.name ?? "").lowercased() == z }) {
+            let e = CDLexikonEntry(context: viewContext)
+            e.name = name
+            e.kategorie = "Selbst angelegt"
+            e.code = "EIGEN-\(UUID().uuidString.prefix(6))"
+        }
     }
 
     private func berechneVorschau() -> Double {
