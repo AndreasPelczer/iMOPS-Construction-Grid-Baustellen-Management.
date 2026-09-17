@@ -108,7 +108,10 @@ struct AuftragRowView: View {
                 Label("Loeschen", systemImage: "trash")
             }
         }
-        .confirmationDialog("Auftrag löschen?", isPresented: $zeigeLoeschAbfrage, titleVisibility: .visible) {
+        // .alert statt .confirmationDialog: die confirmationDialog rendert am iPad als
+        // Popover und blendet „Abbrechen" aus (bewusstes Behalten unmöglich) — am Gerät
+        // belegt, siehe destructive-delete-safety. Der Alert zeigt beide Knöpfe klar.
+        .alert("Auftrag löschen?", isPresented: $zeigeLoeschAbfrage) {
             Button("Löschen", role: .destructive) { delete() }
             Button("Abbrechen", role: .cancel) { }
         } message: {
