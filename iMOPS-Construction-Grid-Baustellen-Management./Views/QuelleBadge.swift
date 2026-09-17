@@ -29,22 +29,21 @@ enum Kostenquelle {
 
     var kurz: String {
         switch self {
-        case .raffi:     return "RAFFI"
-        case .praxis:    return "Praxis"
-        case .katalog:   return "Katalog"
-        case .startwert: return "Startwert – prüfen"
+        case .raffi:     return "Firmenwert"
+        case .praxis:    return "Richtwert"
+        case .katalog:   return "Richtwert"
+        case .startwert: return "Startwert"
         case .eigen:     return "dein Wert"
-        case .unbekannt: return "Herkunft offen"
+        case .unbekannt: return "offen"
         }
     }
 
     var farbe: Color {
         switch self {
-        case .raffi:            return .green
-        case .praxis, .katalog: return .blue
-        case .startwert:        return .orange   // echter Platzhalter → Warnung
-        case .eigen:            return .purple
-        case .unbekannt:        return .gray      // Alt-Daten ohne Herkunft → ruhig, kein Alarm
+        case .raffi, .eigen:    return .green     // euer eigener Wert — der Mops hat ihn
+        case .praxis, .katalog: return .blue      // geliehener Richtwert, nicht eurer
+        case .startwert:        return .orange    // Platzhalter, ausgedacht → Warnung
+        case .unbekannt:        return .gray      // (noch) nicht hinterlegt → ruhig, kein Alarm
         }
     }
 
@@ -55,9 +54,9 @@ enum Kostenquelle {
 
     var hinweis: String {
         switch self {
-        case .raffi:     return "Firmeneigener Erfahrungswert (RAFFI) aus der Wissensbasis — von euch belegt."
-        case .praxis:    return "Öffentlicher Praxis-Richtwert aus der Wissensbasis (aufwandswerte.yaml) — Quelle nachvollziehbar."
-        case .katalog:   return "Aus dem Maschinenkatalog (maschinenkatalog.yaml) mit Quellenangabe."
+        case .raffi:     return "Firmenwert — euer eigener Wert, in der Wissensbasis hinterlegt. Der Mops hat ihn."
+        case .praxis:    return "Richtwert — ein öffentlicher Orientierungswert, nicht euer eigener. Quelle nachvollziehbar. Wenn ihr's besser wisst: überschreiben."
+        case .katalog:   return "Richtwert aus dem Maschinenkatalog (mit Quellenangabe) — Orientierung, nicht euer eigener."
         case .startwert: return "Demo-/Startwert — als Platzhalter gesetzt, NICHT belegt. Zum Ändern: Zeile nach links wischen → löschen, dann mit deinem Wert neu hinzufügen."
         case .eigen:     return "Von dir selbst eingetragen — dein Wert."
         case .unbekannt: return "Herkunft (noch) nicht hinterlegt — diese Position wurde angelegt, bevor der Mops die Quelle mitgeführt hat. Der Wert ist nicht falsch, nur unbeschriftet. Neu berechnen (Mops fass) trägt die Quelle nach; ändern: Zeile wischen → löschen → neu."
