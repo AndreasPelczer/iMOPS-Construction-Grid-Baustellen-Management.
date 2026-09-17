@@ -57,21 +57,19 @@ struct MaterialHinzufuegenView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                kontextSection      // wofür suche ich? — der LV-Langtext, damit der Kontext nicht verloren geht
-
-                if !manuellMode {
-                    stammdatenSection
-                }
-
-                if manuellMode || gewaehlt {
-                    detailSection
+            VStack(spacing: 0) {
+                kopfBereich          // Google-artige Suchbox + Kontext (LV-Langtext) oben, prominent
+                Form {
+                    if !manuellMode {
+                        stammdatenSection
+                    }
+                    if manuellMode || gewaehlt {
+                        detailSection
+                    }
                 }
             }
             .navigationTitle("Material hinzufügen")
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $suche, placement: .navigationBarDrawer(displayMode: .always),
-                        prompt: "Material im Katalog suchen …")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") { dismiss() }
@@ -85,26 +83,58 @@ struct MaterialHinzufuegenView: View {
         }
     }
 
-    // MARK: - Kontext (wofür suche ich?)
+    // MARK: - Kopfbereich: Google-artige Suchbox + Kontext
 
-    private var kontextSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(position.bezeichnung ?? "LV-Position")
-                    .font(.subheadline.weight(.semibold))
-                if let lt = position.langtext?.trimmingCharacters(in: .whitespacesAndNewlines),
-                   !lt.isEmpty, lt != (position.bezeichnung ?? "") {
-                    // Der volle Auftragstext — hier stehen die Infos zum Suchen (z.B. „Bauzaun …").
-                    Text(lt)
-                        .font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .textSelection(.enabled)   // Begriff markieren → in die Suche kopieren
+    private var kopfBereich: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if !manuellMode { suchbox }
+            kontextHinweis
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemGroupedBackground))
+    }
+
+    /// Das große, abgerundete Suchfeld — vertraut wie eine Google-Suche: prominent, oben, mit Lupe.
+    /// Bewusst IM Inhalt (nicht die native `.searchable`, die die Navileiste kapert und den
+    /// „Hinzufügen"-Knopf verdeckt).
+    private var suchbox: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("Material im Katalog suchen …", text: $suche)
+                .textFieldStyle(.plain)
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+            if !suche.isEmpty {
+                Button { suche = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
                 }
-                Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "Einheit")")
-                    .font(.caption2).foregroundStyle(.secondary)
+                .buttonStyle(.plain)
             }
-        } header: {
-            Text("Wofür suchst du Material?")
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 48)
+        .background(Capsule().fill(Color(.secondarySystemBackground)))
+        .overlay(Capsule().strokeBorder(Color(.separator), lineWidth: 1))
+        .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
+    }
+
+    /// Der Kontext: was diese Position braucht — Titel + Langtext (die Info zum Suchen).
+    private var kontextHinweis: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(position.bezeichnung ?? "LV-Position")
+                .font(.subheadline.weight(.semibold))
+            if let lt = position.langtext?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !lt.isEmpty, lt != (position.bezeichnung ?? "") {
+                Text(lt)
+                    .font(.caption).foregroundStyle(.secondary)
+                    .lineLimit(4)
+                    .textSelection(.enabled)   // Begriff markieren → in die Suche kopieren
+            }
+            Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "Einheit")")
+                .font(.caption2).foregroundStyle(.secondary)
         }
     }
 
