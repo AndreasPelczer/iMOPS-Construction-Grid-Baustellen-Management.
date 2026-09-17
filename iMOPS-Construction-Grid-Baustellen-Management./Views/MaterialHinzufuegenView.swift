@@ -58,6 +58,8 @@ struct MaterialHinzufuegenView: View {
     var body: some View {
         NavigationStack {
             Form {
+                kontextSection      // wofür suche ich? — der LV-Langtext, damit der Kontext nicht verloren geht
+
                 if !manuellMode {
                     stammdatenSection
                 }
@@ -80,6 +82,29 @@ struct MaterialHinzufuegenView: View {
                         .tint(.orange)
                 }
             }
+        }
+    }
+
+    // MARK: - Kontext (wofür suche ich?)
+
+    private var kontextSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(position.bezeichnung ?? "LV-Position")
+                    .font(.subheadline.weight(.semibold))
+                if let lt = position.langtext?.trimmingCharacters(in: .whitespacesAndNewlines),
+                   !lt.isEmpty, lt != (position.bezeichnung ?? "") {
+                    // Der volle Auftragstext — hier stehen die Infos zum Suchen (z.B. „Bauzaun …").
+                    Text(lt)
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)   // Begriff markieren → in die Suche kopieren
+                }
+                Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "Einheit")")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Wofür suchst du Material?")
         }
     }
 
