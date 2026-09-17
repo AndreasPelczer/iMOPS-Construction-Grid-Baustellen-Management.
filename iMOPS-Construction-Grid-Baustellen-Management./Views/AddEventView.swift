@@ -1,9 +1,17 @@
 import SwiftUI
 import CoreData
+import UniformTypeIdentifiers
 
 struct AddEventView: View {
     @Environment(\.managedObjectContext) var viewContext
     @Environment(\.dismiss) var dismiss
+
+    // --- Baustelle aus GAEB: die Datei gebiert die Baustelle ---
+    @State private var gaebItems: [GAEBImportItem] = []
+    @State private var gaebProjektName: String = ""
+    @State private var gaebDateiName: String = ""
+    @State private var zeigeGAEBPicker = false
+    @State private var gaebFehler: String?
     
     // --- Initialisierungs-Helfer ---
     private static func nextFullHour() -> Date {
@@ -43,6 +51,33 @@ struct AddEventView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // --- Aus GAEB anlegen: die Ausschreibung gebiert die Baustelle ---
+                Section {
+                    Button {
+                        gaebFehler = nil
+                        zeigeGAEBPicker = true
+                    } label: {
+                        Label(gaebItems.isEmpty ? "Aus GAEB-Datei anlegen" : "Andere GAEB-Datei",
+                              systemImage: "doc.badge.plus")
+                    }
+                    .tint(.orange)
+
+                    if !gaebItems.isEmpty {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("📄 \(gaebDateiName)").font(.caption).foregroundStyle(.secondary)
+                            Text("\(gaebItems.count) Positionen — werden beim Speichern als LV angelegt")
+                                .font(.caption2).foregroundStyle(.green)
+                        }
+                    }
+                    if let f = gaebFehler {
+                        Text(f).font(.caption).foregroundStyle(.red)
+                    }
+                } header: {
+                    Text("Aus Ausschreibung (GAEB)")
+                } footer: {
+                    Text("Titel, Auftraggeber und das ganze LV kommen aus der Datei. Nimmst du den Auftrag nicht an, löschst du die Baustelle einfach wieder — das LV verschwindet mit.")
+                }
+
                 Section(header: Text("Baustelle")) {
                     TextField("Bezeichnung", text: $title)
                     TextField("Baustellennummer", text: $eventNumber)
@@ -107,6 +142,16 @@ struct AddEventView: View {
                 }
             }
             .navigationTitle("Neue Baustelle")
+            .fileImporter(isPresented: $zeigeGAEBPicker,
+                          allowedContentTypes: [.data, .xml],
+                          allowsMultipleSelection: false) { ergebnis in
+                switch ergebnis {
+                case .success(let urls):
+                    if let url = urls.first { ladeGAEB(url) }
+                case .failure(let err):
+                    gaebFehler = "Datei konnte nicht geöffnet werden: \(err.localizedDescription)"
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") { dismiss() }
@@ -121,6 +166,33 @@ struct AddEventView: View {
         } // Ende NavigationView
     } // Ende body
     
+    /// GAEB laden: Titel/Auftraggeber vorbefüllen, Positionen für den Speichern-Schritt merken.
+    /// Der Picker liefert eine security-scoped URL — Zugriff muss explizit geöffnet werden.
+    private func ladeGAEB(_ url: URL) {
+        let brauchtScope = url.startAccessingSecurityScopedResource()
+        defer { if brauchtScope { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let result = try GAEBImporter.parse(url: url)
+            guard !result.items.isEmpty else {
+                gaebFehler = "Keine Positionen in der Datei erkannt."
+                return
+            }
+            gaebItems = result.items
+            gaebDateiName = url.lastPathComponent
+            gaebProjektName = result.projectName
+            gaebFehler = nil
+            // Vorbefüllen, aber nichts überschreiben, was schon eingetippt wurde.
+            if title.trimmingCharacters(in: .whitespaces).isEmpty {
+                title = result.projectName.isEmpty ? result.projectLabel : result.projectName
+            }
+            if bauherr.trimmingCharacters(in: .whitespaces).isEmpty {
+                bauherr = result.ownerName
+            }
+        } catch {
+            gaebFehler = "GAEB konnte nicht gelesen werden: \(error.localizedDescription)"
+        }
+    }
+
     private func saveEvent() {
         let newEvent = Event(context: viewContext)
         newEvent.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -140,6 +212,20 @@ struct AddEventView: View {
         newEvent.umfang = Double(umfang.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)) ?? 0
         newEvent.geschosse = Int16(geschosse.trimmingCharacters(in: .whitespaces)) ?? 0
         newEvent.timeStamp = Date()
+
+        // Aus GAEB angelegt? → das ganze LV als Positionen anhängen (wie beim GAEB-Import).
+        // Kein Preis: der kommt später über „Mops fass". Löschen der Baustelle nimmt das LV
+        // per Cascade (Event.lvPositionen) mit.
+        for item in gaebItems {
+            let pos = LVPosition(context: viewContext)
+            pos.posNr              = item.posNr
+            pos.bezeichnung        = item.kurztext
+            pos.langtext           = item.langtext
+            pos.menge              = item.menge
+            pos.einheit            = item.einheit
+            pos.kostenGruppeNummer = item.guessedKG
+            pos.event              = newEvent
+        }
 
         do {
             try viewContext.save()
