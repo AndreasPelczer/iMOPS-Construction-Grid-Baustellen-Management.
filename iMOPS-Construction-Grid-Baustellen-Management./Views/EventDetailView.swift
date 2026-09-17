@@ -169,6 +169,7 @@ struct EventDetailView: View {
     @State private var reportPDFURL: URL?
     // Welle 5c: Wände aus Plan lesen
     @State private var showingWandLeser = false
+    @State private var showingAblaufplan = false
     @State private var showingVerlegeplan = false
     @State private var showingErdmassen = false
     @State private var showingMaterialliste = false
@@ -399,6 +400,7 @@ struct EventDetailView: View {
                     SchichtUebergabeCard(event: event)
                     brigadeCard
                     maschinenCard
+                    ablaufplanCard
                     lehrlingWarmupCard
                     jobsCard
                         .sheet(isPresented: $showingWarmup) {
@@ -2229,6 +2231,35 @@ struct EventDetailView: View {
             .padding()
             .background(Color(.secondarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    // MARK: - ABLAUFPLAN CARD (Bogen 3: Aufträge in Bauablauf-Reihenfolge über die Bauzeit)
+    private var ablaufplanCard: some View {
+        Button {
+            showingAblaufplan = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "calendar.day.timeline.left").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Ablaufplan").font(.headline).foregroundStyle(.primary)
+                    Text("Aufträge in Bauablauf-Reihenfolge über die Bauzeit (Gantt)")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingAblaufplan) {
+            NavigationStack {
+                AblaufplanView(event: event)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { showingAblaufplan = false } } }
+            }
+            .environment(\.managedObjectContext, viewContext)
         }
     }
 
