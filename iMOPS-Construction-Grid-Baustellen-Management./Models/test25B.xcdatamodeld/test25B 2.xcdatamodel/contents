@@ -18,6 +18,8 @@
         <attribute name="kostenGruppeBezeichnung" optional="YES" attributeType="String"/>
         <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
         <attribute name="lastStartTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="posX" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="posY" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
         <attribute name="processingDetails" optional="YES" attributeType="String"/>
         <attribute name="statusRawValue" attributeType="String"/>
         <attribute name="storageLocation" optional="YES" attributeType="String"/>

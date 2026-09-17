@@ -86,12 +86,20 @@ extension Grap8Graph {
 
         let knoten: [Knoten] = auftraege.compactMap { auftrag in
             guard let id = kennung[ObjectIdentifier(auftrag)] else { return nil }
-            let platz = spalten[ObjectIdentifier(auftrag)] ?? (0, 0)
+            // Hat der Auftrag eine gespeicherte Leinwand-Position (weil er schon einmal
+            // verschoben wurde), gilt die. Sonst legt das Auto-Layout ihn ins Raster.
+            let position: Position
+            if let px = auftrag.posX?.doubleValue, let py = auftrag.posY?.doubleValue {
+                position = Position(x: px, y: py)
+            } else {
+                let platz = spalten[ObjectIdentifier(auftrag)] ?? (0, 0)
+                position = Position(x: 40 + Double(platz.spalte) * 260,
+                                    y: 40 + Double(platz.zeile) * 180)
+            }
             return Knoten(
                 id: id,
                 type: "auftrag",
-                position: Position(x: 40 + Double(platz.spalte) * 260,
-                                   y: 40 + Double(platz.zeile) * 180),
+                position: position,
                 data: Daten(
                     title: titelMitPreis(auftrag),
                     kg: kostengruppe(auftrag),

@@ -337,6 +337,7 @@ private struct Grap8WebView: UIViewRepresentable {
         let konfiguration = WKWebViewConfiguration()
         konfiguration.userContentController.addUserScript(Self.viewportSkript)
         konfiguration.userContentController.addUserScript(Self.auswahlStil)
+        konfiguration.userContentController.addUserScript(Self.positionsRueckkanal)
         // Die Leinwand meldet sich, sobald sie Daten annehmen kann.
         konfiguration.userContentController.add(context.coordinator, name: Self.bruecke)
 
@@ -456,6 +457,44 @@ private struct Grap8WebView: UIViewRepresentable {
         forMainFrameOnly: true
     )
 
+    /// Rückkanal für verschobene Knoten: das kompilierte Bundle funkt von sich aus nur
+    /// „ready" und „verwaltung". Damit gezogene Positionen bleiben, hängt sich dieses
+    /// Skript ans Loslassen (pointerup nach echtem Ziehen), liest die Flow-Koordinaten
+    /// jedes Knotens aus seinem eigenen `transform` (DOMMatrix, kein Regex) und schickt
+    /// `{action:'positionen', nodes:[{id,x,y}]}`. Swift speichert sie am `Auftrag`.
+    private static let positionsRueckkanal = WKUserScript(
+        source: """
+        (function () {
+          if (window.__mopsPosHook) return;
+          window.__mopsPosHook = true;
+          var bewegt = false;
+          document.addEventListener('pointerdown', function () { bewegt = false; }, true);
+          document.addEventListener('pointermove', function () { bewegt = true; }, true);
+          document.addEventListener('pointerup', function () {
+            if (!bewegt) return;
+            bewegt = false;
+            setTimeout(function () {
+              var knoten = document.querySelectorAll('.react-flow__node[data-id]');
+              var liste = [];
+              knoten.forEach(function (n) {
+                var id = n.getAttribute('data-id');
+                var cs = getComputedStyle(n).transform;
+                if (id && cs && cs !== 'none') {
+                  var m = new DOMMatrixReadOnly(cs);
+                  liste.push({ id: id, x: m.m41, y: m.m42 });
+                }
+              });
+              if (liste.length && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.grap8) {
+                window.webkit.messageHandlers.grap8.postMessage({ action: 'positionen', nodes: liste });
+              }
+            }, 140);
+          }, true);
+        })();
+        """,
+        injectionTime: .atDocumentEnd,
+        forMainFrameOnly: true
+    )
+
     // MARK: Coordinator
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
@@ -487,8 +526,35 @@ private struct Grap8WebView: UIViewRepresentable {
             switch aktion {
             case "ready":       schickeGraph()
             case "verwaltung":  oeffneVerwaltung(inhalt)
+            case "positionen":  speicherePositionen(inhalt)
             default:
                 logger.info("Grap8: unbekannte Aktion \(aktion, privacy: .public) — ignoriert.")
+            }
+        }
+
+        /// Verschobene Knoten festhalten: für jede Kennung den `Auftrag` auflösen und
+        /// seine Leinwand-Position setzen. Nur speichern, wenn sich wirklich etwas geändert
+        /// hat (der Rückkanal feuert nach jedem Ziehen; identische Werte sparen wir uns).
+        private func speicherePositionen(_ inhalt: [String: Any]) {
+            guard let liste = inhalt["nodes"] as? [[String: Any]] else { return }
+            var geaendert = false
+            for eintrag in liste {
+                guard let kennung = eintrag["id"] as? String,
+                      let x = (eintrag["x"] as? NSNumber)?.doubleValue,
+                      let y = (eintrag["y"] as? NSNumber)?.doubleValue,
+                      let auftrag = eltern.auftrag(zu: kennung) else { continue }
+                if auftrag.posX?.doubleValue != x || auftrag.posY?.doubleValue != y {
+                    auftrag.posX = NSNumber(value: x)
+                    auftrag.posY = NSNumber(value: y)
+                    geaendert = true
+                }
+            }
+            guard geaendert else { return }
+            do {
+                try eltern.kontext.save()
+                logger.info("Grap8: Knoten-Positionen gespeichert.")
+            } catch {
+                eltern.melde("Die neue Anordnung ließ sich nicht speichern.")
             }
         }
 
