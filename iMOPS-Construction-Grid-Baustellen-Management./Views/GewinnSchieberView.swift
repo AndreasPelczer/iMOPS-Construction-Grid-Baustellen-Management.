@@ -185,8 +185,15 @@ struct GewinnSchieberView: View {
     // MARK: - Bausteine
 
     private func euroFeld(_ wert: Binding<Double>, platzhalter: Double) -> some View {
-        HStack(spacing: 4) {
-            TextField(euro(platzhalter), value: wert,
+        // Leerbar: 0 ⟷ nil. Ein value:-gebundenes Double-Feld verwirft leere Eingaben und
+        // springt auf den letzten Wert zurück — mit optionaler Bindung bleibt „leer" = 0
+        // (dann greift der Richtwert-Platzhalter), statt an der alten Zahl zu kleben.
+        let leerbar = Binding<Double?>(
+            get: { wert.wrappedValue == 0 ? nil : wert.wrappedValue },
+            set: { wert.wrappedValue = $0 ?? 0 }
+        )
+        return HStack(spacing: 4) {
+            TextField(euro(platzhalter), value: leerbar,
                       format: .number.precision(.fractionLength(2)))
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
