@@ -220,6 +220,32 @@ enum LVKalkulator {
         return g
     }
 
+    /// Was jede Position zu Material/Lohn/Gerät beiträgt — damit man eine Summe aufmachen
+    /// und sehen kann, wo die großen Zahlen herkommen (Ausreißer sofort oben).
+    struct Kostenbeitrag: Identifiable {
+        let id = UUID()
+        let name: String
+        let einheit: String
+        let menge: Double
+        let material: Double
+        let lohn: Double
+        let geraet: Double
+    }
+
+    static func kostenbeitraege(positionen: [LVPosition]) -> [Kostenbeitrag] {
+        positionen.zaehlbarePositionen().map { pos in
+            let k = kalkulationFuer(pos)
+            return Kostenbeitrag(
+                name: (pos.bezeichnung?.isEmpty == false ? pos.bezeichnung! : "Ohne Namen"),
+                einheit: pos.einheit ?? "",
+                menge: k.menge,
+                material: k.materialKosten * k.menge,
+                lohn: k.lohnKosten * k.menge,
+                geraet: k.geraeteKosten * k.menge
+            )
+        }
+    }
+
     /// Lohnstunden des ganzen LV. Sagt, wie viele Mannstunden hinter einem Angebot
     /// stecken — die Groesse, an der Termine und Mannschaftsstaerke haengen.
     /// Geraetestunden zaehlen NICHT mit; sie sind eine eigene Groesse.
