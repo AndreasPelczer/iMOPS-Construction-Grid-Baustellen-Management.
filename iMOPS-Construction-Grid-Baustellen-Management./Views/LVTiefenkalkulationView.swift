@@ -153,15 +153,18 @@ struct LVTiefenkalkulationView: View {
             pm.position = position
         }
         if let s = einbau, s.mittel > 0 {
-            // Einbau als EIN Geräte-Posten je Einheit — bewusst nicht als Lohn (das triebe
-            // den Firmenprofil-Vergleich in die Irre). Arbeitswert = Mitte, Spanne im Namen.
+            // Einbau als PAUSCHALER Geräte-Posten für die ganze Position — bewusst NICHT als
+            // Stunden-Zeile (die erfände „70 Stunden" und ein Gerät, das die KI nie geschätzt
+            // hat) und NICHT als Lohn (das triebe den Firmenprofil-Vergleich in die Irre).
+            // Pauschal = ein ehrlicher Klumpen „Einbau, geschätzt: X € für die Position".
+            // Gesamt = Mitte × Menge; kostenProEinheit rechnet das je Einheit zurück.
             let pg = PositionGeraet(context: viewContext)
             pg.id = UUID()
             pg.geraetName = "Einbau (Lohn + Gerät), geschätzt (\(spanneText(s)))"
-            pg.stunden = 1
-            pg.kostenProStunde = s.mittel
-            pg.einheit = eh
-            pg.pauschal = false
+            pg.pauschal = true
+            pg.stunden = 1                                 // 1 × Gesamtbetrag
+            pg.kostenProStunde = s.mittel * position.menge // Gesamt für die Position
+            pg.einheit = "pauschal"
             pg.quelle = "ki"
             pg.position = position
         }
