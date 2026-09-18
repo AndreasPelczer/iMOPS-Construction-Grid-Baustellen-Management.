@@ -148,6 +148,28 @@ struct MopsFassTests {
         #expect(!pos.lohnArray.isEmpty, "Der Vorschlag muss Lohn eingelegt haben.")
     }
 
+    /// SICHERHEIT: eine geratene KI-Zahl sperrt den Export, bis ein Mensch sie bestätigt.
+    @Test @MainActor func kiSchaetzungSperrtExportBisBestaetigt() throws {
+        let pos = position("Sonderbordstein Radius", "lfm")
+        let m = PositionMaterial(context: ctx)
+        m.id = UUID(); m.materialName = "KI-Schätzung: Sonderbordstein"; m.einzelpreis = 42
+        m.mengeProEinheit = 1; m.verschnittProzent = 0; m.einheit = "lfm"
+        m.quelle = "ki"; m.position = pos
+
+        let e = AutoKalkulationsService.bewerte(pos, in: ctx)
+        #expect(e.enthaeltKI == true)
+        #expect(e.status == .gelb)                                  // nie grün, solange KI ungeprüft
+        #expect(e.einheitspreisVK > 0)                              // Preis ist trotzdem da (Material zählt)
+        #expect(AutoKalkulationsService.bilanz([e]).exportBereit == false)   // gesperrt
+
+        // Bestätigen = Quelle „eigen"
+        m.quelle = "eigen"
+        let e2 = AutoKalkulationsService.bewerte(pos, in: ctx)
+        #expect(e2.enthaeltKI == false)
+        #expect(e2.status == .gruen)
+        #expect(AutoKalkulationsService.bilanz([e2]).exportBereit == true)   // jetzt frei
+    }
+
     /// SICHERHEIT: eine Position mit von Hand eingetragenem Lohn wird NIE überschrieben.
     @Test @MainActor func vorfuellenLaesstBestehendeWerteInRuhe() throws {
         let pos = position("Sonderposition", "psch")

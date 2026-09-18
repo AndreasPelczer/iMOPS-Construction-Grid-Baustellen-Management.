@@ -24,6 +24,8 @@ enum AutoKalkulationsService {
         let status: Status
         let meldungen: [String]
         let einheitspreisVK: Double
+        /// Trägt einen von der KI geratenen Wert, der noch nicht bestätigt wurde.
+        var enthaeltKI: Bool = false
     }
 
     /// Bilanz für die Ampel-Karte oben in der Review.
@@ -31,16 +33,20 @@ enum AutoKalkulationsService {
         let gruen: Int
         let gelb: Int
         let rot: Int
+        /// Positionen mit einer ungeprüften KI-Schätzung — die sperren den Export mit.
+        let kiUngeprueft: Int
         var gesamt: Int { gruen + gelb + rot }
-        /// Export erst erlaubt, wenn keine Position mehr ROT ist (Vier-Augen bleibt separat).
-        var exportBereit: Bool { rot == 0 && gesamt > 0 }
+        /// Export erst erlaubt, wenn keine Position mehr ROT ist UND keine ungeprüfte
+        /// KI-Schätzung drinsteht — eine geratene Zahl darf nicht an die Stadt (Vier-Augen bleibt separat).
+        var exportBereit: Bool { rot == 0 && kiUngeprueft == 0 && gesamt > 0 }
     }
 
     static func bilanz(_ ergebnisse: [Ergebnis]) -> Bilanz {
         Bilanz(
             gruen: ergebnisse.filter { $0.status == .gruen }.count,
             gelb: ergebnisse.filter { $0.status == .gelb }.count,
-            rot: ergebnisse.filter { $0.status == .rot }.count)
+            rot: ergebnisse.filter { $0.status == .rot }.count,
+            kiUngeprueft: ergebnisse.filter { $0.enthaeltKI }.count)
     }
 
     /// „Mops fass": über alle Positionen matchen + rechnen + diagnostizieren.
@@ -67,10 +73,37 @@ enum AutoKalkulationsService {
         return true
     }
 
-    /// Eine Position bewerten. Reine Ableitung aus dem echten Modell — keine Schätzung.
+    /// Eine Position bewerten. Trägt sie eine ungeprüfte KI-Schätzung, bleibt sie GELB und
+    /// gesperrt — eine geratene Zahl darf nicht als „fertig" ins Angebot, bis ein Mensch sie
+    /// bestätigt (Badge antippen → bestätigen, oder überschreiben).
     static func bewerte(_ pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
+        let e = bewerteRoh(pos, in: ctx)
+        guard hatKIWert(pos) else { return e }
+        let hinweis = "🟣 KI geraten — Startwert ohne Quelle. Prüfen und bestätigen, bevor das Angebot rausgeht."
+        return Ergebnis(position: pos, status: .gelb,
+                        meldungen: [hinweis] + e.meldungen,
+                        einheitspreisVK: e.einheitspreisVK, enthaeltKI: true)
+    }
+
+    /// Trägt die Position einen von der KI geratenen, noch nicht bestätigten Wert?
+    private static func hatKIWert(_ pos: LVPosition) -> Bool {
+        pos.materialArray.contains { Kostenquelle($0.quelle) == .ki }
+            || pos.lohnArray.contains { Kostenquelle($0.quelle) == .ki }
+            || pos.geraeteArray.contains { Kostenquelle($0.quelle) == .ki }
+    }
+
+    /// Die reine Bewertung aus dem Modell — keine Schätzung.
+    private static func bewerteRoh(_ pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
         let bez = (pos.bezeichnung ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let einheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 0) Trägt die Position schon eigene Kosten (von Hand, KI-Schätzung, früher gefüllt)?
+        //    Dann bewerten, WAS DA IST — nicht neu matchen: autoMatch/Richtwert würde den Lohn
+        //    löschen bzw. den Hand-/KI-Preis ignorieren. Elemente rechnen über ihre Bausteine.
+        let hatEigeneKosten = !(pos.materialArray.isEmpty && pos.lohnArray.isEmpty && pos.geraeteArray.isEmpty)
+        if !pos.istElement, hatEigeneKosten {
+            return bewerteVorhandenen(pos)
+        }
 
         // 1) Rezept-Treffer? (schreibt bei Treffer Lohn/Material/Gerät auf die Position)
         guard LeistungskatalogService.autoMatch(position: pos, in: ctx) else {
@@ -105,10 +138,17 @@ enum AutoKalkulationsService {
         }
 
         // 2) Aus dem Rezept rechnen und auf Vollständigkeit prüfen.
+        return bewerteVorhandenen(pos)
+    }
+
+    /// Bewertet die Position aus ihren VORHANDENEN Kosten (Rezept, Hand oder KI) — rechnet
+    /// den Preis und prüft auf Lücken. Ändert nichts, matcht nicht neu.
+    private static func bewerteVorhandenen(_ pos: LVPosition) -> Ergebnis {
+        let einheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let kalk = LVKalkulator.kalkuliere(position: pos)
         var meldungen: [String] = []
 
-        // Material im Rezept, aber ohne Stammdaten-Preis?
+        // Material da, aber ohne Preis?
         let unbepreist = pos.materialArray.filter {
             ($0.materialName?.isEmpty == false) && $0.einzelpreis <= 0
         }
@@ -122,7 +162,7 @@ enum AutoKalkulationsService {
                 meldungen.append("Kein Aufwandswert (Lohn) hinterlegt — Prof/KI-Schätzung übernehmen oder Erfahrungswert eintragen.")
             }
             return Ergebnis(position: pos, status: .gelb,
-                            meldungen: meldungen.isEmpty ? ["Rezept unvollständig — Preis 0. Bitte prüfen."] : meldungen,
+                            meldungen: meldungen.isEmpty ? ["Preis 0 — bitte prüfen."] : meldungen,
                             einheitspreisVK: kalk.einheitspreisVK)
         }
 
