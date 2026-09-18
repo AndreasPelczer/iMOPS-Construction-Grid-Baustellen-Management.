@@ -14,8 +14,10 @@ struct AddJobView: View {
     @State private var viewModel: AddJobViewModel
     @State private var showHelp = false
 
-    init(event: Event, viewContext: NSManagedObjectContext) {
-        _viewModel = State(initialValue: AddJobViewModel(event: event, context: viewContext))
+    init(event: Event, viewContext: NSManagedObjectContext, vorgabeAufgabe: String = "") {
+        var vm = AddJobViewModel(event: event, context: viewContext)
+        if !vorgabeAufgabe.isEmpty { vm.taskSummary = vorgabeAufgabe }
+        _viewModel = State(initialValue: vm)
     }
 
     var body: some View {
