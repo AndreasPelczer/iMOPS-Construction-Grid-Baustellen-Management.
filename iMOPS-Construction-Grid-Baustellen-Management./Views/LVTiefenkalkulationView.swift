@@ -149,15 +149,19 @@ struct LVTiefenkalkulationView: View {
             pm.position = position
         }
         if let e = einbau, e > 0 {
-            // Einbau als EIN Lohn-Posten je Einheit (1 „Einheit" × Satz = der geschätzte
-            // Einbaupreis). Lohn+Gerät zusammengefasst — grob, klar als KI markiert.
-            let pl = PositionLohn(context: viewContext)
-            pl.id = UUID()
-            pl.qualifikation = "Einbau (Lohn + Gerät), geschätzt"
-            pl.stunden = 1
-            pl.stundenBruttoEK = e
-            pl.quelle = "ki"
-            pl.position = position
+            // Einbau als EIN Geräte-Posten je Einheit (1 Einheit × geschätzter Preis).
+            // Bewusst NICHT als Lohn: die Lohn-Zeile rechnet Stunden × echten Tarif und
+            // triebe den Firmenprofil-Vergleich in die Irre. Als Gerät liest es sich wie
+            // das Material („1 t × 6 €/t") und der geschätzte Preis bleibt der Preis.
+            let pg = PositionGeraet(context: viewContext)
+            pg.id = UUID()
+            pg.geraetName = "Einbau (Lohn + Gerät), geschätzt"
+            pg.stunden = 1
+            pg.kostenProStunde = e
+            pg.einheit = eh          // zeigt „1 t × 6 €/t" statt einer Schein-Stunde
+            pg.pauschal = false
+            pg.quelle = "ki"
+            pg.position = position
         }
         try? viewContext.save()
     }
