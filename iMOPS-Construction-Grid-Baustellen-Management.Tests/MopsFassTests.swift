@@ -40,9 +40,10 @@ struct MopsFassTests {
         let e = AutoKalkulationsService.bewerte(pos, in: ctx)
         let splitt = pos.materialArray.first { ($0.materialName ?? "").contains("Edelsplitt") }
         #expect(splitt != nil)
-        #expect(splitt?.einzelpreis == 45)
-        // m³-Position, m³-Material → 1:1 (50 m³ Splitt für 50 m³ Bettung).
-        #expect(splitt?.mengeProEinheit == 1)
+        #expect(splitt?.einheit == "t")            // Handel in t (so kauft SHB), Position in m³
+        #expect(splitt?.einzelpreis == 30)         // €/t Richtwert
+        // 50 m³ Bettung × 1,5 t/m³ = 75 t Splitt → mengeProEinheit = 75/50 = 1,5 t je m³.
+        #expect(abs((splitt?.mengeProEinheit ?? 0) - 1.5) < 1e-9)
         #expect(e.meldungen.first?.contains("Edelsplitt") == true)
     }
 

@@ -31,9 +31,11 @@ struct STLBBaustein: Sendable, Equatable, Identifiable {
     /// Material — den bei Schüttgütern GRÖSSTEN Posten — über den Katalog statt gar nicht.
     struct MaterialLink: Sendable, Equatable {
         let text: String        // "Schotter 0/32" → materialPreis + lagerBestand (per Name)
-        let einheit: String     // Handelseinheit des Materials ("t")
+        let einheit: String     // Handelseinheit des Materials ("t") — so wird's eingekauft
         let richtpreis: Double? // €/Einheit Praxis-Richtwert, falls keine Stammdaten
         let verschnitt: Double  // Anteil (0,05 = 5 %), bei Schüttgut meist 0
+        let dichte: Double?     // t/m³ des MATERIALS — überbrückt eine m³-Position auf t-Handel,
+                                // wenn der Positionstext (z. B. „Bettungsmaterial") keine Dichte verrät
     }
 
     /// Vorhaltung eines wiederverwendbaren Betriebsmittels (Schalung): NICHT verbrauchtes
@@ -143,7 +145,8 @@ final class STLBKatalog: @unchecked Sendable {
                         text: text,
                         einheit: (mb["einheit"] as? String) ?? "",
                         richtpreis: zahlAus(mb["richtpreis"]),
-                        verschnitt: zahlAus(mb["verschnitt"]) ?? 0)
+                        verschnitt: zahlAus(mb["verschnitt"]) ?? 0,
+                        dichte: zahlAus(mb["dichte"]))
                 }
                 var vorhaltung: STLBBaustein.VorhaltungLink? = nil
                 if let vb = b["vorhaltung"] as? [String: Any],

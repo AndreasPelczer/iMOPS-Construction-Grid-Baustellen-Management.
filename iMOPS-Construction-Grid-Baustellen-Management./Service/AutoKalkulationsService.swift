@@ -331,9 +331,13 @@ enum AutoKalkulationsService {
         let matEinheit = link.einheit.isEmpty ? posEinheit : link.einheit
 
         // Menge des Materials in seiner Handelseinheit (z. B. 70 t Schotter für 70 t Position;
-        // bei einer m³-Position über die Dichte in t). Klappt die Umrechnung nicht → Menge = 1:1.
+        // bei einer m³-Position über die Dichte in t). Das Material bringt seine EIGENE Dichte
+        // mit (falls gesetzt) — die überschreibt die aus dem Positionstext, denn „Bettungsmaterial"
+        // verrät keine Dichte, „Edelsplitt 2/5" ist aber 1,5 t/m³. Klappt nicht → Menge = 1:1.
+        var matBruecke = bruecke
+        if let d = link.dichte, d > 0 { matBruecke.dichteTproM3 = d }
         let matMenge = MopsUmrechner.mengeUmrechnen(pos.menge, von: posEinheit, nach: matEinheit,
-                                                    bruecke: bruecke) ?? pos.menge
+                                                    bruecke: matBruecke) ?? pos.menge
         let mengeProEinheit = matMenge / pos.menge   // Material je Positions-Einheit
 
         // Preis: Stammdaten vor Richtwert.
