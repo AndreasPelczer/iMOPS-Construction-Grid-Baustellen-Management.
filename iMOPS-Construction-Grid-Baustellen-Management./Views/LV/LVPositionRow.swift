@@ -37,6 +37,15 @@ struct LVPositionRow: View {
     private var positionID: String { position.objectID.uriRepresentation().absoluteString }
     private var isAlt: Bool { LVPositionHelper.isAlternative(position) }
 
+    /// Trägt die Position einen von der KI geratenen, noch nicht bestätigten Wert?
+    /// Gleiche Prüfung wie in der Tiefenkalkulation — sichtbar auch in der LV-Liste,
+    /// damit eine geratene Zahl nicht unbemerkt durchrutscht.
+    private var enthaeltKI: Bool {
+        position.materialArray.contains { Kostenquelle($0.quelle) == .ki }
+            || position.lohnArray.contains { Kostenquelle($0.quelle) == .ki }
+            || position.geraeteArray.contains { Kostenquelle($0.quelle) == .ki }
+    }
+
     @State private var direktPreis: String = ""
 
     var onOpenSourceDocument: ((URL) -> Void)? = nil
@@ -57,6 +66,16 @@ struct LVPositionRow: View {
                 Text(position.bezeichnung ?? "–")
                     .font(.body).lineLimit(2)
                     .foregroundStyle(isAlt ? .secondary : .primary)
+
+                if enthaeltKI {
+                    HStack(spacing: 2) {
+                        Image(systemName: "sparkles").font(.system(size: 8, weight: .bold))
+                        Text("KI").font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 5).padding(.vertical, 2)
+                    .background(Color.purple).clipShape(Capsule())
+                }
 
                 Spacer()
 
