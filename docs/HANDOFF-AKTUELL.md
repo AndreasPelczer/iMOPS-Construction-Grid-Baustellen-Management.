@@ -2,6 +2,21 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 18.09.2026 (Nachmittag) — MopsUmrechner: EIN Umrechner (die Leiter) räumt die verstreuten Brücken auf + löst die Schalung (Höhe). Nächster Bogen: „der Mops lernt Schalung"
+
+**Branch `feature/mops-umrechner`, gebaut+getestet, Andreas mergt im Browser.** Antwort auf Andreas' Frage „haben wir keine Vorlage für die t↔m³/m↔m²-Umrechnungen?".
+
+- **`Service/MopsUmrechner.swift` (neu):** die eine Leiter `Länge —(×Höhe/Breite)→ Fläche —(×Dicke)→ Volumen —(×Dichte)→ Masse`. `umrechnung(von:nach:bruecke:)` liefert proFaktor + mengeFaktor + Klartext-Hinweis; gleiche Größenart über `EinheitenUmrechnung` (kein zweites Register); fehlt eine Sprosse → nil (Aufrufer flaggt). 3 Brückenmaße statt dutzender Sonderfälle; Länge↔Volumen (Graben), Länge↔Masse (Bewehrung), Fläche↔Masse = Ketten.
+- **`AutoKalkulationsService` aufgeräumt:** Lohn, Maschine UND Material rechnen jetzt über den EINEN Umrechner (die alten `mengeFuerLeistung`/`proFaktorMitDichte`-Sonderpfade raus). Brückenmaße einmal in `brueckeFuer(pos)`: Dichte (`DichteKatalog`), Dicke + Höhe aus dem Text; Text gewinnt, sonst Bauteil-Richtmaß vom Baustein.
+- **Neue Höhe-Sprosse (Länge↔Fläche):** `hoeheMeter`-Parser („h= 0,50 m", `\b` vor dem Kürzel gegen Fehlgriffe), + `STLBBaustein.hoeheM`/`dickeM` aus einem `geometrie:`-Block. Neuer Baustein **`BET-010 „Schalung Fundamente"`** (m², `schalarbeiten.schalung_fundament`, Richthöhe 0,5 m) → m(lfm)→m² Schalfläche, bepreist statt KI. **Live bestätigt:** Schalung 115 m → Lohn 2 Schalungsbauer 0,25 h/m, ~1.352 € (Herkunft „über Höhe 0,5 m (Richtwert, prüfen)").
+- Tests grün: `MopsUmrechnerTests` (7), `STLBKatalogTests` (Schalungs-Baustein), voller Preis-Pfad ohne Regression.
+
+**🔴 NÄCHSTER BOGEN: „der Mops lernt Schalung" (Andreas' Punkt — Schalung ist KEIN Schüttgut).** Die Schalung ist bisher nur mit LOHN bepreist (GELB, „Material fehlt"). Gemessen, was das Bau-Wiki schon hat:
+- **`scharpegge_katalog.csv` HAT Schalung**, aber (a) **KEINE Preisspalte** (Kopf: `artikelnummer;name;kategorie;beschreibung;gebinde` → überall „kein Preis — du trägst ihn ein"), (b) nur **Schalöl/Trennmittel** (Z. 68–70, das Verbrauchsmaterial JEDER Schalung) + **verlorene Schalung** LOHR für **Decke/Ringanker/Sturz** (Z. 159–180) — **KEINE Fundamentschalung**.
+- **`aufwandswerte.yaml` kennt die Varianten:** `schalung_fundament`, `schalung_wand_rahmenschalung` (System, wenig h), `schalung_wand_konventionell` (Bretter, viel h).
+- **`maschinenkatalog.yaml` hat das Modell „pauschal_pro_einsatz"** (Betonpumpe Z. 443) — genau die **Vorhaltungs-Mechanik**, die die (wiederverwendbare) Fundamentschalung braucht.
+- **Erkenntnis:** Schalung = **Lohn** (✅) + **Vorhaltung** der Schalung (Gerät, €/m² je Einsatz — FEHLT als Katalog-Eintrag) + **Schalöl** (Material, im Katalog aber ohne Preis). Kein einzelnes Schüttgut. **Plan:** Schalung als eigener Positionstyp — Variante fragen (System/konventionell/verloren) → Aufwand-Variante + Vorhaltung-Gerät + Schalöl-Material. Allgemeiner Querschläger: **Scharpegge-Katalog braucht Preise** (Stammdaten/Richtwerte), sonst bleibt „du trägst ihn ein" bei sehr vielen Positionen.
+
 ## Delta 18.09.2026 (Mittag) — Die Einheiten-Brücken: eine Position rechnet sich VOLLSTÄNDIG (Mann + Maschine + Material + Lager). Nächster Bogen: EIN zentraler MopsUmrechner (Leiter)
 
 **Branch `feature/dichte-bruecke-m3-tonne`, 4 Commits + HANDOFF, gebaut+getestet, Andreas mergt im Browser.** Auslöser: der Leitsatz „Katalog vor KI, Einheiten sind der Engpass" — die Auto-Bepreisung füllte nur den Lohn, Material+Maschine blieben 0, weil die Katalog-Einheiten (h/m³, m³/h, m²/h) nicht an t-Positionen kamen.
