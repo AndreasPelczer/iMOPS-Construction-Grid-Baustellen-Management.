@@ -91,6 +91,11 @@ struct Grap8View: View {
     @State private var ladefehler: String?
     // Nativer „+"-Weg: einen echten Auftrag anlegen, ohne die (nur lesende) Leinwand.
     @State private var zeigeNeuerAuftrag = false
+    // Vorbelegung fürs Anlegen — ein Baustein-Typ startet eine eigene (parallele) Kausalkette.
+    @State private var vorgabeAufgabe = ""
+    /// Ersetzt die (nicht verdrahtete) Bundle-Palette nativ: jeder Typ legt einen echten,
+    /// freistehenden Auftrag an = ein Ketten-Start, der neben den anderen läuft und bleibt.
+    private let kettenStartTypen = ["Fundament", "Wände", "Decke", "Dach", "Estrich", "Pflaster", "Pfosten", "Leerrohre"]
     // Nativer Verbinden-Weg: zwei Aufträge verketten (die Kante zeichnet die Leinwand).
     @State private var zeigeVerbinden = false
     // Steigt bei jedem neu angelegten Auftrag → die Leinwand bekommt den Graphen neu.
@@ -142,7 +147,7 @@ struct Grap8View: View {
             // `onDismiss` erhöht `aktualisierung` → die Leinwand bekommt den Graphen neu.
             .sheet(isPresented: $zeigeNeuerAuftrag, onDismiss: { aktualisierung += 1 }) {
                 if let event = gewaehlt {
-                    AddJobView(event: event, viewContext: viewContext)
+                    AddJobView(event: event, viewContext: viewContext, vorgabeAufgabe: vorgabeAufgabe)
                         .environment(\.managedObjectContext, viewContext)
                 }
             }
@@ -174,7 +179,20 @@ struct Grap8View: View {
                 }
                 if gewaehlt != nil {
                     ToolbarItem(placement: .primaryAction) {
-                        Button { zeigeNeuerAuftrag = true } label: {
+                        Menu {
+                            Button {
+                                vorgabeAufgabe = ""
+                                zeigeNeuerAuftrag = true
+                            } label: { Label("Freier Auftrag", systemImage: "plus") }
+                            Section("Ketten-Start (Baustein)") {
+                                ForEach(kettenStartTypen, id: \.self) { typ in
+                                    Button {
+                                        vorgabeAufgabe = typ
+                                        zeigeNeuerAuftrag = true
+                                    } label: { Text(typ) }
+                                }
+                            }
+                        } label: {
                             Label("Auftrag", systemImage: "plus")
                         }
                         .tint(.orange)
