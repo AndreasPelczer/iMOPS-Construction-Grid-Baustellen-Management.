@@ -1,0 +1,48 @@
+# BKI-Marktpreise — Referenz/Orakel, NICHT Kalkulationsgrundlage.
+# ============================================================================
+# Der Mops rechnet WEITER von unten auf (Material + Lohn + Gerät = deine echten
+# Kosten + Aufschlag). Diese Datei ist nur der MARKT-VERGLEICH daneben: BKI-
+# Baupreise aus abgerechneten Objekten (min–von–mittel–bis–max). So siehst du,
+# ob dein Einheitspreis plausibel liegt — ohne dass eine fremde Zahl deine
+# Kalkulation überschreibt.
+#
+# NACHWEIS: jeder Eintrag trägt seine BKI-Position + Leistungsbereich. Kein Raten,
+# kein Internet — Baudatenbank der Deutschen Architektenkammern, mit Abo lizenziert.
+#
+# PFLEGE: nach der BKI-Demo die echten Werte eintragen und `platzhalter: true`
+# entfernen. Einmal im Jahr aktualisieren (neues BKI-Jahr). Schlüssel = STLB-
+# Baustein-ID (wie in stlb_bausteine.yaml), damit der Vergleich automatisch findet.
+
+meta:
+  quelle: "BKI Baupreise Online — Neubau"
+  regionalfaktor: "Main-Tauber-Kreis"   # in BKI einstellbar
+  stand: "PLATZHALTER — noch keine echten BKI-Daten eingepflegt"
+  aktualisierung: "jährlich (BKI-Abo)"
+  hinweis: "Marktpreise als Referenz. Jeder Preis trägt quelle: BKI."
+
+# Schlüssel = STLB-Baustein-ID. Werte je Baustein: BKI-Position (Nachweis),
+# Einheit, und die fünf Preise. `platzhalter: true` = noch KEIN echter BKI-Wert.
+marktpreise:
+
+  # ---- BEISPIELE (Struktur) — durch echte BKI-Werte ersetzen, dann platzhalter raus ----
+  STR-002:
+    bki_position: "PLATZHALTER — Schottertragschicht 0/32, profilgerecht einbauen"
+    bki_lb: "LB 002 Erdarbeiten / Straßenbau"
+    einheit: "m3"
+    min: 22
+    von: 26
+    mittel: 30
+    bis: 35
+    max: 42
+    platzhalter: true
+
+  BET-010:
+    bki_position: "PLATZHALTER — Fundamentschalung, Schalfläche"
+    bki_lb: "LB 013 Betonarbeiten"
+    einheit: "m2"
+    min: 25
+    von: 32
+    mittel: 40
+    bis: 48
+    max: 60
+    platzhalter: true

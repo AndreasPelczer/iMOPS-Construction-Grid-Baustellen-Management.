@@ -426,6 +426,17 @@ enum AutoKalkulationsService {
             dichteTproM3: DichteKatalog.dichte(fuer: pos.bezeichnung))
     }
 
+    /// Rechnet einen „pro Einheit"-Preis (z. B. BKI-Marktpreis €/m³) in die Einheit der
+    /// Position um — über dieselben Brückenmaße wie die Kalkulation (die Leiter). Für einen
+    /// fairen EP-Vergleich. nil, wenn nicht überbrückbar (dann in der BKI-Einheit vergleichen).
+    static func preisInPositionsEinheit(_ preis: Double, vonEinheit: String, pos: LVPosition) -> Double? {
+        let posEinheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let f = MopsUmrechner.proFaktor(von: vonEinheit, nach: posEinheit, bruecke: brueckeFuer(pos)) else {
+            return nil
+        }
+        return preis * f
+    }
+
     /// Schichtdicke in Metern aus einem Positionstext („d= 10cm", „d=0,10 m", „10 cm").
     static func schichtdickeMeter(aus texte: [String?]) -> Double? {
         masszahlMeter(aus: texte, praefix: "d", mitBlankerCm: true)
