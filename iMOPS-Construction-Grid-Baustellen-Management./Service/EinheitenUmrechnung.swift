@@ -70,4 +70,21 @@ enum EinheitenUmrechnung {
         }
         return nil
     }
+
+    /// Eine ABSOLUTE Menge von `von` in `nach` umrechnen (kein „pro"-Wert): 70 t → kg = 70000.
+    ///
+    /// Anders als `proFaktor` (das einen je-Einheit-Wert umrechnet und sich dabei umgekehrt
+    /// verhält) — hier geht es um die Menge selbst. Beispiel Maschinen-Brücke: die Position
+    /// hat 70 t Schotter, der Bagger schafft m³/h → wie viele m³ sind das? Gleiche Größenart
+    /// direkt, Volumen↔Masse über die Dichte. nil, wenn nicht umrechenbar.
+    ///
+    /// Zusammenhang: absolute Menge A_nach = A_von × (Basisgröße von / Basisgröße nach)
+    /// = A_von × proFaktor(nach, von) — daher sind die Argumente hier vertauscht.
+    static func mengeUmrechnen(_ menge: Double, von: String, nach: String, dichteTproM3: Double? = nil) -> Double? {
+        if let f = proFaktor(von: nach, nach: von) { return menge * f }
+        if let d = dichteTproM3, let f = proFaktorMitDichte(von: nach, nach: von, dichteTproM3: d) {
+            return menge * f
+        }
+        return nil
+    }
 }

@@ -74,4 +74,37 @@ struct EinheitenUmrechnungTests {
         #expect(DichteKatalog.dichte(fuer: "Betonstahlmatten verlegen") == nil)
         #expect(DichteKatalog.dichte(fuer: "") == nil)
     }
+
+    // MARK: - Absolute Menge (für die Maschinen-Brücke)
+
+    @Test func mengeUmrechnenGleicheGroessenart() {
+        // 70 t Schotter → kg = 70000 (absolute Menge, nicht „pro").
+        #expect(EinheitenUmrechnung.mengeUmrechnen(70, von: "t", nach: "kg") == 70000)
+        // 5 m³ → l = 5000.
+        #expect(EinheitenUmrechnung.mengeUmrechnen(5, von: "m3", nach: "l") == 5000)
+        // Nicht umrechenbar ohne Dichte: Masse → Volumen.
+        #expect(EinheitenUmrechnung.mengeUmrechnen(70, von: "t", nach: "m3") == nil)
+    }
+
+    @Test func mengeUmrechnenUeberDichte() {
+        // 70 t Schotter (1,9 t/m³) → m³ = 70/1,9 ≈ 36,84 — genau was der Bagger (m³/h) braucht.
+        let m3 = try? #require(EinheitenUmrechnung.mengeUmrechnen(70, von: "t", nach: "m3", dichteTproM3: 1.9))
+        #expect(m3 != nil)
+        #expect(abs((m3 ?? 0) - 70.0 / 1.9) < 1e-6)
+        // Rückweg: die m³ wieder zu t = 70.
+        let zurueck = EinheitenUmrechnung.mengeUmrechnen(m3 ?? 0, von: "m3", nach: "t", dichteTproM3: 1.9) ?? 0
+        #expect(abs(zurueck - 70) < 1e-6)
+    }
+
+    @Test func schichtdickeAusPositionstext() {
+        // „d= 10cm" → 0,10 m.
+        #expect(AutoKalkulationsService.schichtdickeMeter(aus: ["Schottertragschicht 0/62mm, d= 10cm"]) == 0.10)
+        // „d=0,10 m" → 0,10 m.
+        #expect(AutoKalkulationsService.schichtdickeMeter(aus: ["Frostschutz d=0,10 m"]) == 0.10)
+        // Ohne „d", aber „<zahl> cm" → greift der zweite Weg.
+        #expect(AutoKalkulationsService.schichtdickeMeter(aus: ["Tragschicht 15 cm einbauen"]) == 0.15)
+        // Keine Dicke → nil (dann kann eine flächenbezogene Maschine nicht umrechnen).
+        #expect(AutoKalkulationsService.schichtdickeMeter(aus: ["Schottertragschicht 0/32 einbauen"]) == nil)
+        #expect(AutoKalkulationsService.schichtdickeMeter(aus: [nil]) == nil)
+    }
 }
