@@ -73,6 +73,7 @@ struct LVView: View {
     @State private var showBausteine = false
     @State private var droppedGAEBURL: URL?
     @State private var showHelp = false
+    @State private var zeigeDuplikatBestaetigung = false
     @State private var exportURL: URL?
     @State private var gruppierung: LVGruppierung = .kostenGruppe
 
@@ -257,6 +258,37 @@ struct LVView: View {
     /// (`zaehlbarePositionen`), die auch GAEB/PDF/Kostenübersicht verwenden.
     private func ohneDuplikate(_ liste: [LVPosition]) -> [LVPosition] {
         liste.zaehlbarePositionen()
+    }
+
+    // MARK: - Allgemeine Duplikate (ganze Datei doppelt importiert)
+
+    /// Schlüssel für „exakt gleiche Position": Bezeichnung + Einheit + Menge. Anders als
+    /// `dedupKey` (nur Bewehrung, fürs Summieren) greift das für ALLE Positionen — genau
+    /// der Fall „dieselbe GAEB nochmal eingelesen".
+    private func allgDedupKey(_ p: LVPosition) -> String {
+        let bez = (p.bezeichnung ?? "").trimmingCharacters(in: .whitespaces).lowercased()
+        let einh = (p.einheit ?? "").lowercased()
+        return "\(bez)|\(einh)|\((p.menge * 100).rounded())"
+    }
+
+    /// Gruppen exakt gleicher Positionen (≥2).
+    private var duplikatGruppen: [[LVPosition]] {
+        let echte = Array(positionen).filter { !$0.istUnterpunkt && !LVPositionHelper.isAlternative($0) }
+        return Dictionary(grouping: echte, by: allgDedupKey).values.filter { $0.count > 1 }.map { $0 }
+    }
+
+    /// Wie viele Positionen der Knopf entfernen würde (je Gruppe bleibt eine).
+    private var duplikatAnzahl: Int { duplikatGruppen.reduce(0) { $0 + ($1.count - 1) } }
+
+    /// Je Gruppe eine behalten (die kalkulierte gewinnt, sonst die erste), die Kopien löschen.
+    private func duplikateEntfernen() {
+        for gruppe in duplikatGruppen {
+            let behalten = gruppe.first(where: { $0.hatKalkulation }) ?? gruppe.first
+            for pos in gruppe where pos.objectID != behalten?.objectID {
+                viewContext.delete(pos)
+            }
+        }
+        do { try viewContext.save() } catch { speicherFehler = error.localizedDescription }
     }
 
     private func mengeText(_ p: LVPosition?) -> String {
@@ -763,6 +795,12 @@ struct LVView: View {
         } message: {
             Text(speicherFehler ?? "")
         }
+        .alert("Duplikate entfernen?", isPresented: $zeigeDuplikatBestaetigung) {
+            Button("Entfernen", role: .destructive) { duplikateEntfernen() }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            Text("\(duplikatAnzahl) doppelte Position(en) werden gelöscht. Je Position bleibt eine erhalten (die kalkulierte). Rückgängig mit ⌘Z / Rückgängig.")
+        }
         .gaebDropTarget { url in
             droppedGAEBURL = url
             showGAEBImport = true
@@ -846,6 +884,12 @@ struct LVView: View {
 
                     Button { showStammdaten = true } label: {
                         Label("Stammdaten pflegen", systemImage: "slider.horizontal.3")
+                    }
+
+                    if duplikatAnzahl > 0 {
+                        Button(role: .destructive) { zeigeDuplikatBestaetigung = true } label: {
+                            Label("Duplikate entfernen (\(duplikatAnzahl))", systemImage: "square.on.square.dashed")
+                        }
                     }
 
                     Divider()
