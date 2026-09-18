@@ -69,10 +69,34 @@ final class MopsKalkulationsHelper {
     }
 
     private func parsePreis(_ text: String) -> Double? {
+        parseZahl("PREIS", text)
+    }
+
+    /// Grobe KI-Schätzung für eine GANZE Bauleistung: Material- UND Einbauanteil
+    /// (Lohn + Gerät) je Einheit. So bekommt eine „herstellen"-Position (liefern + einbauen
+    /// + verdichten) gleich den ganzen Preis, nicht nur das Material.
+    /// KI-Schätzung, KEIN Angebot — immer als „geraten" markieren, Mensch prüft.
+    func leistungsSchaetzung(leistung: String, einheit: String) async -> (material: Double?, einbau: Double?) {
+        guard isConnected else { return (nil, nil) }
+        let frage = "Für die Bauleistung \(leistung) (Deutschland, grobe Orientierung, kein verbindliches Angebot), "
+            + "je \(einheit): ungefährer Materialanteil und ungefährer Einbauanteil (Lohn + Gerät) in EUR. "
+            + "Ist es reine Materiallieferung, setze EINBAU=0. "
+            + "Antworte NUR in diesem Format: MATERIAL=X.XX EINBAU=Y.YY"
+        do {
+            let response = try await client.ask(question: frage, useProf: true)
+            return (parseZahl("MATERIAL", response.answer), parseZahl("EINBAU", response.answer))
+        } catch {
+            logger.warning("Leistungs-Schätzung fehlgeschlagen: \(error.localizedDescription)")
+            return (nil, nil)
+        }
+    }
+
+    private func parseZahl(_ schluessel: String, _ text: String) -> Double? {
         let upper = text.uppercased()
-        guard let r = upper.range(of: #"PREIS\s*=?\s*(\d+[.,]?\d*)"#, options: .regularExpression) else { return nil }
+        let muster = "\(schluessel.uppercased())\\s*=?\\s*(\\d+[.,]?\\d*)"
+        guard let r = upper.range(of: muster, options: .regularExpression) else { return nil }
         let num = String(upper[r])
-            .replacingOccurrences(of: "PREIS", with: "")
+            .replacingOccurrences(of: schluessel.uppercased(), with: "")
             .replacingOccurrences(of: "=", with: "")
             .replacingOccurrences(of: ",", with: ".")
             .trimmingCharacters(in: .whitespaces)

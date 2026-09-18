@@ -131,20 +131,34 @@ struct LVTiefenkalkulationView: View {
         defer { kiLaeuft = false }
         let name = position.bezeichnung ?? ""
         let eh = position.einheit ?? ""
-        guard let wert = await MopsKalkulationsHelper.shared.marktpreisVorschlag(material: name, einheit: eh),
-              wert > 0 else {
+        // Ganze Leistung schätzen: Material UND Einbau (Lohn+Gerät).
+        let (material, einbau) = await MopsKalkulationsHelper.shared.leistungsSchaetzung(leistung: name, einheit: eh)
+        guard (material ?? 0) > 0 || (einbau ?? 0) > 0 else {
             quelleInfo = "Der Mops hat gerade keine Schätzung — offline, oder er weiß nichts dazu. Trag den Wert von Hand ein."
             return
         }
-        let m = PositionMaterial(context: viewContext)
-        m.id = UUID()
-        m.materialName = "KI-Schätzung: \(name)"
-        m.einzelpreis = wert
-        m.mengeProEinheit = 1
-        m.verschnittProzent = 0
-        m.einheit = eh
-        m.quelle = "ki"
-        m.position = position
+        if let m = material, m > 0 {
+            let pm = PositionMaterial(context: viewContext)
+            pm.id = UUID()
+            pm.materialName = "KI-Schätzung: \(name)"
+            pm.einzelpreis = m
+            pm.mengeProEinheit = 1
+            pm.verschnittProzent = 0
+            pm.einheit = eh
+            pm.quelle = "ki"
+            pm.position = position
+        }
+        if let e = einbau, e > 0 {
+            // Einbau als EIN Lohn-Posten je Einheit (1 „Einheit" × Satz = der geschätzte
+            // Einbaupreis). Lohn+Gerät zusammengefasst — grob, klar als KI markiert.
+            let pl = PositionLohn(context: viewContext)
+            pl.id = UUID()
+            pl.qualifikation = "Einbau (Lohn + Gerät), geschätzt"
+            pl.stunden = 1
+            pl.stundenBruttoEK = e
+            pl.quelle = "ki"
+            pl.position = position
+        }
         try? viewContext.save()
     }
 
