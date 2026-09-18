@@ -633,7 +633,16 @@ struct EventDetailView: View {
         }
         .sheet(isPresented: $zeigeHauslagePlatzieren) {
             if let d = gelaendeDXFData {
-                HauslagePlatzierenView(dxfData: d, dateiname: gelaendeDateiname)
+                HauslagePlatzierenView(
+                    dxfData: d,
+                    dateiname: gelaendeDateiname,
+                    fixOkbp: Double(manualOkbp.replacingOccurrences(of: ",", with: ".")),
+                    onErgebnis: { result in
+                        gelaendeResult = result       // Karte zeigt Aushub/Schotter/LKW + „ins LV"
+                        gelaendeError = ""            // Sackgassen-Fehler weg
+                        zeigeHauslagePlatzieren = false
+                    }
+                )
             }
         }
     }
