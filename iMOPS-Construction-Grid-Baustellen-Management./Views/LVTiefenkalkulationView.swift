@@ -22,6 +22,7 @@ struct LVTiefenkalkulationView: View {
     @State private var quelleInfo: String?       // Herkunfts-Hinweis beim Antippen eines Quelle-Badges
     @State private var hatVorgefuellt = false     // der Mops-Vorschlag wird beim Öffnen EINMAL versucht
     @State private var kiLaeuft = false           // läuft gerade eine KI-Schätzung?
+    @State private var herkunft: AutoKalkulationsService.Ergebnis?  // Befund des Vorfüllens: hat der Katalog gegriffen?
 
     /// Was gelöscht werden soll (mit Klartext für die Sicherheitsabfrage).
     private struct LoeschZiel: Identifiable {
@@ -67,8 +68,56 @@ struct LVTiefenkalkulationView: View {
     private func vorfuellen() {
         guard !hatVorgefuellt else { return }
         hatVorgefuellt = true
-        if AutoKalkulationsService.vorfuellenWennLeer(position, in: viewContext) {
-            try? viewContext.save()
+        // Dieselbe Schutzregel wie vorfuellenWennLeer: nur eine leere, ECHTE Position
+        // (kein Element, nichts von Hand Eingetragenes) anfassen. Der Unterschied: wir
+        // behalten den Befund (griff der Katalog? über Dichte? gar kein Treffer?) für die
+        // Herkunfts-Zeile — sonst sieht der Nutzer nur „leer" und weiß nicht, ob überhaupt
+        // etwas versucht wurde.
+        guard !position.istElement,
+              position.lohnArray.isEmpty,
+              position.materialArray.isEmpty,
+              position.geraeteArray.isEmpty else { return }
+        let ergebnis = AutoKalkulationsService.bewerte(position, in: viewContext)
+        try? viewContext.save()
+        herkunft = ergebnis
+    }
+
+    // MARK: - Herkunfts-Zeile (hat der Katalog beim Öffnen gegriffen?)
+
+    /// Klartext-Verdikt + Symbol + Farbe für den Befund des Vorfüllens.
+    /// Preis heraus → grün „vorbepreist"; GELB ohne Preis → orange „Wert passt noch nicht"
+    /// (meist die Einheit); ROT → grau „kein Treffer". Der Detailtext darunter ist die
+    /// eigentliche Meldung des Mops (nennt Kolonne, Quelle und ggf. „über Dichte …").
+    private func herkunftVerdikt(_ e: AutoKalkulationsService.Ergebnis)
+        -> (titel: String, symbol: String, farbe: Color) {
+        if e.einheitspreisVK > 0 {
+            return ("Aus dem Katalog vorbepreist", "checkmark.seal.fill", .green)
+        } else if e.status == .rot {
+            return ("Kein Katalog-Treffer", "questionmark.circle.fill", .secondary)
+        } else {
+            return ("Katalog geprüft — ein Wert passt noch nicht", "exclamationmark.triangle.fill", .orange)
+        }
+    }
+
+    @ViewBuilder private var herkunftSection: some View {
+        // Nicht doppeln: trägt die Position eine ungeprüfte KI-Schätzung, spricht der
+        // lila KI-Banner schon — dann keine zweite Herkunfts-Zeile.
+        if let e = herkunft, !enthaeltKI, let detail = e.meldungen.first, !detail.isEmpty {
+            let v = herkunftVerdikt(e)
+            Section {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(v.titel, systemImage: v.symbol)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(v.farbe)
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 2)
+            } header: {
+                Label("Herkunft der Zahl", systemImage: "book")
+            }
         }
     }
 
@@ -188,6 +237,7 @@ struct LVTiefenkalkulationView: View {
     var body: some View {
         List {
             positionKopfSection
+            herkunftSection
             kiSection
             materialSection
             lohnSection
