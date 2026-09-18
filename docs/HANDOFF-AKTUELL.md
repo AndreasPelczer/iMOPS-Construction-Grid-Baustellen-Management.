@@ -2,6 +2,26 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 18.09.2026 (Abend) — Echte Preise im Mops: BKI-Orakel gefüllt · SHB-Materialpreise (dein Wert) · Preis-Check · Firma-Transfer (Stammdaten+Settings zu Raphi). Lieferanten-Landkarte geklärt
+
+**Alles gemergt (PR #179–#182), Firma-Transfer offen als PR #183.** Riesentag: von der Dichte-Brücke früh bis echten Lieferantenpreisen abends. Die Kette schließt sich: LV → Lohn + Maschine + Material, alle Einheiten über den MopsUmrechner, Material mit ECHTEN Zahlen, BKI als Orakel daneben.
+
+**Gebaut & gemergt heute (Reihenfolge):**
+- **PR #179 Einheiten-Brücken:** Dichte m³↔t (`DichteKatalog`), Herkunfts-Zeile (Tiefenkalkulation zeigt „Aus dem Katalog vorbepreist"), Maschinen-Brücke (Bagger+Walze aus `maschinen_keys`, Park vor Miete), Material-Brücke + Lager (Schotter-Link + Richtpreis).
+- **PR #180 `MopsUmrechner`:** die EINE Leiter `Länge—(Höhe)→Fläche—(Dicke)→Volumen—(Dichte)→Masse`; Lohn/Maschine/Material rechnen alle darüber; löst die Schalung (m→m²). [[einheiten-leiter-mopsumrechner]]
+- **PR #181 Schalung + Bettung + BKI-Orakel:** Schalung = Vorhaltung (Gerät, €/m²·Einsatz) + Schalöl (Material), KEIN Schüttgut (`VorhaltungLink`); Bettung zeigt Splitt (Material-Link PFL-006/001); **BKI-Orakel** (`bki_marktpreise_2026.yaml`, `BKIMarktpreisKatalog`, `marktVergleichSection` — BKI-Spanne neben dem eigenen EP, `preisInPositionsEinheit` rechnet über die Leiter). Andreas hat **BKI Neubau gekauft** (RF Main-Tauber 1,027, netto) und die ersten Werte geerntet (STR-002=19, ERD-005=21, PFL-002=46, PFL-003=149, PFL-004=50 €). Loader nimmt Ø allein (Spanne optional). [[bki-orakel-marktpreise]]
+- **PR #182 Preis-Check + Preisspiegel + SHB:** `StammdatenCheckView` (Ampel 🟢 dein Wert / 🔵 Richtwert / 🔴 offen; Knopf in Stammdaten-Pflege); `materialPreis` nimmt jetzt den GÜNSTIGSTEN Lieferanten (Preisspiegel); Edelsplitt-Link auf **t** + eigene Dichte (SHB rechnet in t) via `MaterialLink.dichte`. **SHB-Preise eingetragen** (lokal, NICHT im Repo): Schotter 0/32 = 7,90 · Schotter 0/45 = 10,40 · Edelsplitt 2/5 = 11,80 €/t (Lieferant SHB Werbach), Ampel grün.
+- **PR #183 (offen) Firma-Transfer:** `FirmaTransfer` (Export/Import Stammdaten + Firmensettings als `.json`-Datei, Upsert über id) + `FirmaTransferView` (`.fileExporter`/`.fileImporter`, Knopf „Firma teilen" in Stammdaten). Datei läuft über **Box/Tailscale** zu Raphi (keine Cloud, kein Repo — Datenhoheit). Tests: Round-Trip zwei Apps, Settings, Upsert.
+
+**🗺️ LIEFERANTEN-LANDKARTE (Goldschmitt, geklärt heute):**
+- **Würth** = Werkstatt/Wartung (Öl, Fett, Werkzeug) — für LV-Material ~nichts (nur 3 Bestellungen/Jahr).
+- **Scharpegge** (Amorbach) = Bautenschutz-Spezialist (Abstandhalter/Drunterleiste S.141, Deckenrand-/Ringanker-/Sturzschalung, Abdichtung, Dämmung) — **kein Bulk**. Preisliste 2026/27 vorhanden (Artikelnr·Gebinde·Preis, netto Richtpreise; „Nachdruck nur mit Genehmigung" → NICHT ins Repo).
+- **SHB / Schotterwerk Werbach** (SHB-Schotter.de) = **Bulk** (Schotter/Splitt/Sand/Mineralgemisch/FSS), netto €/t, **ab Werk** (Transport separat). Das ist die Quelle für die Tiefbau-Material-Links.
+- **Xella (Ytong/Silka)** = Mauerwerk (Porenbeton+KS), netto €/m³, franko + Kranentladung, **+4,50 €/m³ Logistik/Energie draufrechnen** (nur dieser Lieferant). ~50 Varianten (125–259 €/m³ je Güte/WD). **NOCH NICHT verdrahtet** — Mauer-Bausteine (MAU-001…006) haben keinen Material-Link; wird gemacht, wenn eine echte Mauerwerk-Position kommt (dann das eine Produkt nennen → Link + Preis lokal).
+- **KERN-EINSICHT:** In der Bauwelt veröffentlicht keiner Bulk-Preise (kommen auf Anfrage). Die ehrliche Quelle ist die **eigene Rechnung**. Der Mops wird Goldschmitts privates Preisgedächtnis. Preise NIE ins Repo (Kundendaten-Falle, [[keine-kundendaten-im-rag-repo]]).
+
+**🔴 OFFENE BÖGEN:** (a) **SketchUp „Steine malen"** (Raphi malt Pflaster-Layout → Mengen → Mops-Positionen → Preis): verbinden, nicht neu — es gibt den Malmops-Spike `~/XcodeProjects/mops-scetchup` + den Verlegeplan-Leser; erst den Spike ansehen. (b) **Xella/Mauerwerk verdrahten**, wenn gebraucht. (c) **Varianten-Frage Wand-Schalung** (System/konventionell). (d) BKI-Fähigkeiten 2+3 (GELB-statt-ROT mit BKI-Mittel; Angebotsbewertung gegen max) — lohnt, wenn mehr BKI-Werte geerntet. (e) mehr Material-Links an Bausteine (Fleiß, sobald Position auftaucht). (f) ~9 alte lokale Feature-Branches aufräumen.
+
 ## Delta 18.09.2026 (Nachmittag II) — Mops lernt Schalung (Vorhaltung + Schalöl) · Bettung zeigt Splitt · BKI-Orakel vorbereitet (Markt-Vergleich)
 
 **Branch `feature/mops-lernt-schalung`, gebaut+getestet, Andreas mergt im Browser.** Drei Stücke, alle nach dem „Katalog vor KI"-Muster.
