@@ -47,4 +47,27 @@ enum EinheitenUmrechnung {
         }
         return nil
     }
+
+    // Volumen-Einheiten → Größe in m³; Masse-Einheiten → Größe in t.
+    private static let volumen_m3: [String: Double] = ["m3": 1, "cbm": 1, "fm": 1, "l": 0.001, "dm3": 0.001, "hl": 0.1]
+    private static let masse_t:    [String: Double] = ["t": 1, "to": 1, "kg": 0.001, "g": 0.000001]
+
+    /// Faktor „pro `von`" → „pro `nach`", wenn eine Größenart Volumen und die andere Masse ist —
+    /// überbrückt mit der **Dichte** (`dichteTproM3`, t/m³). Nur so kommt ein h/m³-Aufwandswert
+    /// an eine t-Position. Keine reine Umrechnung (siehe `proFaktor`) → der Aufrufer markiert
+    /// das Ergebnis als Richtwert. nil, wenn nicht Volumen↔Masse.
+    static func proFaktorMitDichte(von: String, nach: String, dichteTproM3: Double) -> Double? {
+        guard dichteTproM3 > 0 else { return nil }
+        let v = normalisiere(von)
+        let n = normalisiere(nach)
+        // pro-Volumen → pro-Masse: 1 Masse-Einheit (mN t) = mN/dichte m³ = (mN/dichte)/vV Volumen-Einheiten.
+        if let vV = volumen_m3[v], let mN = masse_t[n] {
+            return (mN / dichteTproM3) / vV
+        }
+        // pro-Masse → pro-Volumen: 1 Volumen-Einheit (vN m³) = vN·dichte t = (vN·dichte)/mV Masse-Einheiten.
+        if let mV = masse_t[v], let vN = volumen_m3[n] {
+            return (vN * dichteTproM3) / mV
+        }
+        return nil
+    }
 }

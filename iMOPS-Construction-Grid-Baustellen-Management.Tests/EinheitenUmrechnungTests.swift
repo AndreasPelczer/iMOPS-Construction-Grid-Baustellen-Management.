@@ -40,8 +40,38 @@ struct EinheitenUmrechnungTests {
     @Test func verschiedeneGroessenartenSindNichtUmrechenbar() {
         // Masse gegen Fläche: kein Faktor — der Aufrufer flaggt.
         #expect(EinheitenUmrechnung.proFaktor(von: "t", nach: "m2") == nil)
+        // Volumen gegen Masse geht NICHT direkt (braucht Dichte, siehe unten).
+        #expect(EinheitenUmrechnung.proFaktor(von: "m3", nach: "t") == nil)
         // Stück ist zu nichts umrechenbar außer sich selbst.
         #expect(EinheitenUmrechnung.proFaktor(von: "Stk", nach: "kg") == nil)
         #expect(EinheitenUmrechnung.proFaktor(von: "Stk", nach: "Stk") == 1)
+    }
+
+    // MARK: - Dichte-Brücke m³↔t (Schüttgüter)
+
+    @Test func dichteBrueckeM3NachTonne() {
+        // Aufwandswert h/m³ → h/t: Schotter ~1,9 t/m³ → 1 t = 1/1,9 m³ → Faktor = 1/1,9.
+        let f = try? #require(EinheitenUmrechnung.proFaktorMitDichte(von: "m3", nach: "t", dichteTproM3: 1.9))
+        #expect(f != nil)
+        #expect(abs((f ?? 0) - (1.0 / 1.9)) < 1e-9)
+        // 15 h/m³ werden zu ~7,9 h/t.
+        #expect(abs(15.0 * (f ?? 0) - 15.0 / 1.9) < 1e-9)
+    }
+
+    @Test func dichteBrueckeTonneNachM3UndZurueck() {
+        // t → m³: Faktor = Dichte.
+        #expect(abs((EinheitenUmrechnung.proFaktorMitDichte(von: "t", nach: "m3", dichteTproM3: 1.9) ?? 0) - 1.9) < 1e-9)
+        // Nur Volumen↔Masse — Fläche geht auch mit Dichte nicht.
+        #expect(EinheitenUmrechnung.proFaktorMitDichte(von: "m2", nach: "t", dichteTproM3: 1.9) == nil)
+    }
+
+    @Test func dichteKatalogErkenntSchuettgueter() {
+        #expect(DichteKatalog.dichte(fuer: "Schottertragschicht 0/62mm, d= 10cm") == 1.9)
+        #expect(DichteKatalog.dichte(fuer: "Frostschutzschicht einbauen") == 1.9)
+        #expect(DichteKatalog.dichte(fuer: "Brechsand 0/2 liefern") == 1.6)
+        // Kein Schüttgut → nil (dann kein Dichte-Weg, ehrlich flaggen).
+        // WICHTIG: „Betonstahl" darf NICHT als Beton (2,4) durchgehen.
+        #expect(DichteKatalog.dichte(fuer: "Betonstahlmatten verlegen") == nil)
+        #expect(DichteKatalog.dichte(fuer: "") == nil)
     }
 }

@@ -186,11 +186,19 @@ enum AutoKalkulationsService {
         let posEinheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let stbQuelle = baustein.map { "STLB \($0) · " } ?? ""
 
-        // Der Aufwandswert steht je Katalog-Einheit (z. B. h/t). Die Position rechnet in
-        // IHRER Einheit (z. B. kg). Erst umrechnen — sonst wäre der Lohn grob falsch
-        // (t↔kg = Faktor 1000, der Bewehrungs-Ausreißer). Nicht umrechenbar → ehrlich
-        // flaggen statt eine falsche Zahl zu setzen.
-        guard let faktor = EinheitenUmrechnung.proFaktor(von: t.einheit, nach: posEinheit) else {
+        // Der Aufwandswert steht je Katalog-Einheit (z. B. h/m³). Die Position rechnet in
+        // IHRER Einheit (z. B. t). Erst umrechnen — sonst wäre der Lohn grob falsch
+        // (t↔kg = Faktor 1000, der Bewehrungs-Ausreißer). Gleiche Größenart → direkt;
+        // Volumen↔Masse (m³↔t) → über die Dichte (Schüttgut-Richtwert); sonst ehrlich flaggen.
+        let faktor: Double
+        var dichteHinweis = ""
+        if let f = EinheitenUmrechnung.proFaktor(von: t.einheit, nach: posEinheit) {
+            faktor = f
+        } else if let d = DichteKatalog.dichte(fuer: pos.bezeichnung),
+                  let f = EinheitenUmrechnung.proFaktorMitDichte(von: t.einheit, nach: posEinheit, dichteTproM3: d) {
+            faktor = f
+            dichteHinweis = " · über Dichte \(String(format: "%g", d)) t/m³ (Schüttgut-Richtwert, prüfen)"
+        } else {
             let msg = "🟠 \(stbQuelle)Einheit prüfen: Aufwandswert in „\(t.einheit)“, Position in "
                     + "„\(posEinheit.isEmpty ? "?" : posEinheit)“ — nicht umrechenbar. Kein Lohnpreis "
                     + "gesetzt (er wäre sonst grob falsch). Einheit der Position anpassen oder von Hand bepreisen."
@@ -210,7 +218,7 @@ enum AutoKalkulationsService {
         // Wenn umgerechnet wurde, transparent zeigen (h/t → h/kg), sonst schlicht h/Einheit.
         let umHinweis = faktor == 1 ? ""
             : " → \(String(format: "%g", stundenProEinheit)) h/\(posEinheit) (umgerechnet)"
-        let msg = "🟡 \(stbQuelle)Richtwert \(g) h/\(t.einheit)\(umHinweis) (Spanne \(lo)–\(hi)) · Mannschaft: "
+        let msg = "🟡 \(stbQuelle)Richtwert \(g) h/\(t.einheit)\(umHinweis)\(dichteHinweis) (Spanne \(lo)–\(hi)) · Mannschaft: "
                 + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz). "
                 + "Schätzung (Rollen bepreist); Material fehlt noch."
         return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: kalk.einheitspreisVK)
