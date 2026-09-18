@@ -18,7 +18,6 @@ struct ErdmassenView: View {
     @ObservedObject var event: Event
 
     @State private var showingPicker = false
-    @State private var showingDXFPicker = false
     @State private var fileName = ""
     @State private var dgm: Gelaendemodell?
     @State private var zielHoehe = 0.0
@@ -49,9 +48,6 @@ struct ErdmassenView: View {
             .fileImporter(isPresented: $showingPicker,
                           allowedContentTypes: [UTType(filenameExtension: "xyz") ?? .plainText, .plainText, .data],
                           allowsMultipleSelection: false) { res in handlePick(res) }
-            .fileImporter(isPresented: $showingDXFPicker,
-                          allowedContentTypes: [UTType(filenameExtension: "dxf") ?? .data, .data],
-                          allowsMultipleSelection: false) { res in handleDXFPick(res) }
             .alert("Leistungsverzeichnis", isPresented: Binding(
                 get: { !meldung.isEmpty }, set: { if !$0 { meldung = "" } })) {
                 Button("OK", role: .cancel) { }
@@ -63,28 +59,16 @@ struct ErdmassenView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Rechnet Abtrag/Auftrag gegen ein Planum; der Abtrag wird als Aushub ins LV übernommen. Zwei Quellen: DGM1-Höhenraster („x y z“ je Zeile) ODER eine Vermessungs-DXF (Bestand mit Höhenpunkten).")
+            Text("Rechnet Abtrag/Auftrag gegen ein Planum aus einem DGM1-Höhenraster („x y z“ je Zeile); der Abtrag wird als Aushub ins LV übernommen.")
                 .font(.subheadline).foregroundStyle(.secondary)
-            HStack {
-                Button { showingPicker = true } label: {
-                    Label("Gelände (XYZ)", systemImage: "mountain.2")
-                }
-                .buttonStyle(.borderedProminent)
-                Button { showingDXFPicker = true } label: {
-                    Label("Vermessungs-DXF", systemImage: "doc.viewfinder")
-                }
-                .buttonStyle(.bordered)
+            Button { showingPicker = true } label: {
+                Label("Gelände (XYZ)", systemImage: "mountain.2")
             }
+            .buttonStyle(.borderedProminent)
             if !fileName.isEmpty { Text(fileName).font(.caption).foregroundStyle(.secondary) }
-            Text("DXF = Schätzung aus euren Messpunkten (kein Vermesser-Ersatz). Ein Übersichts-PDF liefert keine rechenbaren Höhen.")
+            Text("Für eine Vermessungs-DXF mit Haus-Aushub die Geländebrücke (Welle 7) auf der Baustelle nutzen — die rechnet Cut/Fill server-seitig, inkl. Hauslage platzieren.")
                 .font(.caption2).foregroundStyle(.secondary)
-            NavigationLink {
-                BaugrubeRechnerView()
-            } label: {
-                Label("Baugrube rechnen (Fläche × Tiefe)", systemImage: "square.dashed")
-            }
-            .font(.subheadline)
-            .padding(.top, 4)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -210,33 +194,6 @@ struct ErdmassenView: View {
                 }
                 dgm = modell
                 zielHoehe = (modell.mittlereHoehe * 100).rounded() / 100   // Start = Massenausgleich
-            } catch {
-                self.error = "Fehler beim Lesen: \(error.localizedDescription)"
-            }
-        }
-    }
-
-    /// Vermessungs-DXF (Bestand mit Höhenpunkten) → Höhenraster über Interpolation.
-    private func handleDXFPick(_ res: Result<[URL], Error>) {
-        switch res {
-        case .failure(let err): error = "Fehler: \(err.localizedDescription)"
-        case .success(let urls):
-            guard let url = urls.first else { return }
-            guard url.startAccessingSecurityScopedResource() else {
-                error = "Keine Berechtigung für die Datei."; return
-            }
-            defer { url.stopAccessingSecurityScopedResource() }
-            do {
-                let data = try Data(contentsOf: url)
-                fileName = url.lastPathComponent
-                error = ""
-                guard let e = VermessungDXFLeser.lies(ausDXF: data) else {
-                    dgm = nil
-                    error = "Keine Höhenpunkte in der DXF gefunden. Erwartet: Vermessungs-Bestand mit Höhen (Layer 1_Punkt, Festpunkte, Höhenlinien)."
-                    return
-                }
-                dgm = e.modell
-                zielHoehe = (e.modell.mittlereHoehe * 100).rounded() / 100  // Start = Massenausgleich
             } catch {
                 self.error = "Fehler beim Lesen: \(error.localizedDescription)"
             }

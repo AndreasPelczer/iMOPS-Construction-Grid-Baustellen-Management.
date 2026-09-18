@@ -977,15 +977,23 @@
     Meldet die Geländebrücke "kein geplantes Haus", erscheint darunter der Knopf
     "Hauslage platzieren". Er zeigt das Grundstueck aus demselben DXF, das schon
     geladen ist - Grundstuecksgrenzen und Gelaende-Ausdehnung, massstaeblich
-    eingepasst. Es wird NICHT neu hochgeladen und NICHT neu gerechnet.
+    eingepasst. Es wird NICHT neu hochgeladen.
 
-    Stand heute ist das eine reine Ansicht: man sieht, wo das Grundstueck liegt
-    und wie hoch das Gelaende reicht. Das Haus-Rechteck zum Verschieben und
-    Drehen kommt im naechsten Schritt; erst dann koennen die Ecken als
-    Hauslage an die Aushubrechnung gehen.
+    So gehst du vor: das Haus vom Lageplan (PDF-Draufsicht) abgreifen und die
+    Ecken der Reihe nach auf das Grundstueck tippen - Grenze und Gitter sind dein
+    Bezug. Live siehst du Flaeche (m2) und Laenge x Breite, damit du gegen die
+    Masse vom PDF pruefen kannst. "Letzte zurueck" und "Neu" korrigieren.
 
+    Ab drei Ecken rechnet "Aushub rechnen": die App schickt die Ecken als
+    footprint (in DXF-Koordinaten) an die Box, die daraus Cut/Fill, Schotter (t)
+    und LKW-Fuhren rechnet - genau wie bei einem Haus, das im DXF steht. Das
+    Ergebnis erscheint dann in der Geländebrücke-Karte mit "Ins LV uebernehmen"
+    und "PDF-Report". Ein OK-BP-Wert aus der Karte wird mitgenommen.
+
+    So wird ein haus-loser Vermessungsplan rechenbar, ohne Architekten-DXF.
     Es funktioniert mit DXF und DWG - der Dateiname wird mitgeschickt, damit die
-    Box eine DWG vorher wandelt.
+    Box eine DWG vorher wandelt. Ehrlich: Schaetzung aus euren Stuetzpunkten, und
+    WO das Haus liegt, aendert die Aushubtiefe - sauber vom Lageplan abgreifen.
   quelle_kurz: "iMOPS App-Bedienung (Welle 7, Schritt 2b)"
   license_note: "Eigene Bedienungshilfe"
 
