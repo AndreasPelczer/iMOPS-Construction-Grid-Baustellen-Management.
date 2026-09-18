@@ -46,6 +46,24 @@ struct STLBKatalogTests {
         #expect(b?.aufwandswertKey == "kanalbau.kanalrohr_verlegen")
     }
 
+    /// Material-Brücke: der Schüttgut-Baustein trägt jetzt seinen Material-Link
+    /// (Text, Handelseinheit, Praxis-Richtpreis) — so findet die Auto-Bepreisung den Schotter.
+    @Test func schuettgutBausteinTraegtMaterial() async {
+        let sts = STLBKatalog.shared.finde(leistung: "Schottertragschicht 0/62mm, d= 10cm")
+        #expect(sts?.id == "STR-002")
+        #expect(sts?.material?.text == "Schotter 0/32")
+        #expect(sts?.material?.einheit == "t")
+        #expect(sts?.material?.richtpreis == 20)
+
+        let fss = STLBKatalog.shared.finde(leistung: "Frostschutzschicht einbauen")
+        #expect(fss?.material?.text == "Schotter 0/45")
+        #expect(fss?.material?.richtpreis == 18)
+
+        // Ein Baustein ohne Schüttgut hat keinen Material-Link (nicht erzwungen).
+        let rohr = STLBKatalog.shared.finde(leistung: "Rohrgraben herstellen DN 400")
+        #expect(rohr?.material == nil)
+    }
+
     /// Raffis Ergänzung wirkt: Verkehrssicherung findet jetzt einen Baustein MIT Zeitwert.
     @Test func verkehrssicherungHatJetztZeit() async {
         let b = STLBKatalog.shared.finde(leistung: "Verkehrssicherung")

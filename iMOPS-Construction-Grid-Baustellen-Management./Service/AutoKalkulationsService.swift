@@ -112,7 +112,8 @@ enum AutoKalkulationsService {
             if let b = STLBKatalog.shared.finde(leistung: bez),
                let key = b.aufwandswertKey,
                let t = AufwandswerteKatalog.shared.eintrag(key: key) {
-                return gelbAusRichtwert(t, baustein: b.id, pos: pos, in: ctx)
+                return gelbAusRichtwert(t, baustein: b.id, maschinenKeys: b.maschinenKeys,
+                                        material: b.material, pos: pos, in: ctx)
             }
             // Fallback: direkter Stichwort-Treffer im Aufwandswerte-Katalog.
             if let t = AufwandswerteKatalog.shared.finde(leistung: bez, langtext: pos.langtext) {
@@ -182,15 +183,29 @@ enum AutoKalkulationsService {
     /// Schreibt den Richtwert als GELB-Schätzung auf die Position (echte Kolonne + Quelle).
     /// `baustein` = STLB-ID falls über den STLB gefunden (transparent in der Meldung).
     private static func gelbAusRichtwert(_ t: AufwandsTreffer, baustein: String?,
+                                         maschinenKeys: [String] = [],
+                                         material: STLBBaustein.MaterialLink? = nil,
                                          pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
         let posEinheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let stbQuelle = baustein.map { "STLB \($0) · " } ?? ""
 
-        // Der Aufwandswert steht je Katalog-Einheit (z. B. h/t). Die Position rechnet in
-        // IHRER Einheit (z. B. kg). Erst umrechnen — sonst wäre der Lohn grob falsch
-        // (t↔kg = Faktor 1000, der Bewehrungs-Ausreißer). Nicht umrechenbar → ehrlich
-        // flaggen statt eine falsche Zahl zu setzen.
-        guard let faktor = EinheitenUmrechnung.proFaktor(von: t.einheit, nach: posEinheit) else {
+        // Dichte einmal bestimmen — sie überbrückt Volumen↔Masse SOWOHL für den Lohn
+        // (h/m³ → h/t) ALS AUCH für die Maschinen (m³/h-Leistung an einer t-Position).
+        let dichte = DichteKatalog.dichte(fuer: pos.bezeichnung)
+
+        // Der Aufwandswert steht je Katalog-Einheit (z. B. h/m³). Die Position rechnet in
+        // IHRER Einheit (z. B. t). Erst umrechnen — sonst wäre der Lohn grob falsch
+        // (t↔kg = Faktor 1000, der Bewehrungs-Ausreißer). Gleiche Größenart → direkt;
+        // Volumen↔Masse (m³↔t) → über die Dichte (Schüttgut-Richtwert); sonst ehrlich flaggen.
+        let faktor: Double
+        var dichteHinweis = ""
+        if let f = EinheitenUmrechnung.proFaktor(von: t.einheit, nach: posEinheit) {
+            faktor = f
+        } else if let d = dichte,
+                  let f = EinheitenUmrechnung.proFaktorMitDichte(von: t.einheit, nach: posEinheit, dichteTproM3: d) {
+            faktor = f
+            dichteHinweis = " · über Dichte \(String(format: "%g", d)) t/m³ (Schüttgut-Richtwert, prüfen)"
+        } else {
             let msg = "🟠 \(stbQuelle)Einheit prüfen: Aufwandswert in „\(t.einheit)“, Position in "
                     + "„\(posEinheit.isEmpty ? "?" : posEinheit)“ — nicht umrechenbar. Kein Lohnpreis "
                     + "gesetzt (er wäre sonst grob falsch). Einheit der Position anpassen oder von Hand bepreisen."
@@ -204,16 +219,244 @@ enum AutoKalkulationsService {
         LeistungskatalogService.schreibeAufwandAusKolonne(
             mittelStunden: stundenProEinheit, kolonne: t.kolonne, auf: pos, in: ctx,
             quelle: LeistungskatalogService.herkunft(ausQuelle: t.quelleKurz))
+
+        // Die Maschinen der Kolonne dazu: der STLB-Baustein nennt sie (maschinen_keys),
+        // der Maschinenkatalog kennt Leistung + Mietpreis. Eigener Park hat Vorrang.
+        let geraeteHinweis = schreibeMaschinen(keys: maschinenKeys, pos: pos,
+                                               posEinheit: posEinheit, dichte: dichte, in: ctx)
+
+        // Das Material (bei Schüttgütern der GRÖSSTE Posten) dazu: der Baustein nennt es,
+        // Preis aus den Stammdaten oder als Katalog-Richtwert, plus Lager-Stand.
+        let materialHinweis = schreibeMaterial(material, pos: pos,
+                                               posEinheit: posEinheit, dichte: dichte, in: ctx)
+
         let kalk = LVKalkulator.kalkuliere(position: pos)
 
         let g = String(format: "%g", t.mittel), lo = String(format: "%g", t.min), hi = String(format: "%g", t.max)
         // Wenn umgerechnet wurde, transparent zeigen (h/t → h/kg), sonst schlicht h/Einheit.
         let umHinweis = faktor == 1 ? ""
             : " → \(String(format: "%g", stundenProEinheit)) h/\(posEinheit) (umgerechnet)"
-        let msg = "🟡 \(stbQuelle)Richtwert \(g) h/\(t.einheit)\(umHinweis) (Spanne \(lo)–\(hi)) · Mannschaft: "
-                + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz). "
-                + "Schätzung (Rollen bepreist); Material fehlt noch."
+        let materialOffen = material != nil ? "" : " Material fehlt noch."
+        let msg = "🟡 \(stbQuelle)Richtwert \(g) h/\(t.einheit)\(umHinweis)\(dichteHinweis) (Spanne \(lo)–\(hi)) · Mannschaft: "
+                + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz).\(geraeteHinweis)\(materialHinweis)"
+                + " Schätzung (Rollen + Geräte bepreist).\(materialOffen)"
         return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: kalk.einheitspreisVK)
+    }
+
+    // MARK: - Maschinen-Brücke (Geräte aus dem Katalog an die Position)
+
+    /// Hängt die Maschinen der Kolonne als Geräte-Zeilen an die Position — aus den
+    /// `maschinen_keys` des STLB-Bausteins. Für jede Maschine:
+    ///   1. eigener Park (Core-Data `Geraet`, Name passt)? → dein Abschreibungssatz, GRÜN „dein Wert".
+    ///   2. sonst Katalog-Mietpreis (Tage-Modell) → BLAU „Richtwert" (leihen).
+    /// Die Maschinen-Leistung steht in m³/h bzw. m²/h — die Position oft in t. Umgerechnet
+    /// wird über die Dichte (t→m³) und, für flächenbezogene Maschinen, über die Schichtdicke
+    /// (m³→m²). Klappt eine Umrechnung nicht, wird die Maschine ehrlich übersprungen.
+    /// - Returns: Klartext-Zusatz für die Meldung (welche Geräte dran sind / was fehlt).
+    private static func schreibeMaschinen(keys: [String], pos: LVPosition,
+                                          posEinheit: String, dichte: Double?,
+                                          in ctx: NSManagedObjectContext) -> String {
+        guard !keys.isEmpty else { return "" }
+        let maschinen = MaschinenKatalog.shared.maschinen(ids: keys)
+        guard !maschinen.isEmpty, pos.menge > 0 else { return "" }
+
+        let dickeM = schichtdickeMeter(aus: [pos.bezeichnung, pos.langtext])
+        let eigene = eigeneGeraete(in: ctx)
+
+        var dran: [String] = []
+        var uebersprungen: [String] = []
+
+        for m in maschinen {
+            guard let hl = m.hauptLeistung,
+                  let (mengeMasch, zielEinheit) = mengeFuerLeistung(
+                    posMenge: pos.menge, posEinheit: posEinheit,
+                    leistungEinheit: hl.einheit, dichte: dichte, dickeM: dickeM) else {
+                uebersprungen.append(m.bezeichnung)
+                continue
+            }
+
+            // 1) Eigener Park? Name-Treffer mit gesetztem Satz → dein Wert.
+            if let g = passendesEigenes(m, in: eigene), g.kostenProStunde > 0, g.leistung > 0 {
+                let stundenGesamt = mengeMasch / g.leistung
+                schreibeGeraetStunden(name: "\(m.bezeichnung) (dein Park)",
+                                      stundenJeEinheit: stundenGesamt / pos.menge,
+                                      satzProStunde: g.kostenProStunde,
+                                      quelle: "eigen", pos: pos, in: ctx)
+                dran.append("\(m.bezeichnung) (Park)")
+                continue
+            }
+
+            // 2) Katalog-Mietpreis, Tage-Modell (ein halber Tag Bagger kostet einen ganzen Miettag).
+            guard let mk = m.mietkostenTageModell(menge: mengeMasch, einheit: zielEinheit) else {
+                uebersprungen.append(m.bezeichnung)
+                continue
+            }
+            guard let tag = m.mieteTag, tag > 0 else { uebersprungen.append(m.bezeichnung); continue }
+            schreibeGeraetPauschal(name: "\(m.bezeichnung) (Miet-Richtwert)",
+                                   tage: mk.tage, satzProTag: tag,
+                                   quelle: "katalog", pos: pos, in: ctx)
+            dran.append("\(m.bezeichnung) (\(mk.tage) Tag\(mk.tage == 1 ? "" : "e") leihen)")
+        }
+
+        var teile = ""
+        if !dran.isEmpty { teile += " Geräte: \(dran.joined(separator: ", "))." }
+        if !uebersprungen.isEmpty {
+            teile += " Nicht umgerechnet (Einheit/Dicke unklar): \(uebersprungen.joined(separator: ", ")) — von Hand."
+        }
+        return teile
+    }
+
+    // MARK: - Material-Brücke (das Schüttgut an die Position + Lager-Stand)
+
+    /// Hängt das Material des Bausteins als Material-Zeile an die Position.
+    /// Menge: die Positionsmenge in die Handelseinheit des Materials umgerechnet (t↔m³ über
+    /// die Dichte) — bei Schüttgut ist das die gelieferte Tonnage. Preis in dieser Reihenfolge:
+    ///   1. Stammdaten (KalkMaterial, dein Einkaufspreis) → GRÜN „dein Wert".
+    ///   2. Katalog-Richtpreis (Praxis) → BLAU „Richtwert".
+    ///   3. keiner → 0 €, Zeile bleibt sichtbar (GELB „Materialpreis ergänzen") — ehrlich,
+    ///      damit du siehst, DASS Material gebraucht wird.
+    /// Dazu der Lager-Stand: auf Lager, teils, oder muss bestellt werden.
+    /// - Returns: Klartext-Zusatz für die Meldung (Material + Lager).
+    private static func schreibeMaterial(_ link: STLBBaustein.MaterialLink?, pos: LVPosition,
+                                         posEinheit: String, dichte: Double?,
+                                         in ctx: NSManagedObjectContext) -> String {
+        guard let link = link, pos.menge > 0 else { return "" }
+        let matEinheit = link.einheit.isEmpty ? posEinheit : link.einheit
+
+        // Menge des Materials in seiner Handelseinheit (z. B. 70 t Schotter für 70 t Position;
+        // bei einer m³-Position über die Dichte in t). Klappt die Umrechnung nicht → Menge = 1:1.
+        let matMenge = EinheitenUmrechnung.mengeUmrechnen(pos.menge, von: posEinheit, nach: matEinheit,
+                                                          dichteTproM3: dichte) ?? pos.menge
+        let mengeProEinheit = matMenge / pos.menge   // Material je Positions-Einheit
+
+        // Preis: Stammdaten vor Richtwert.
+        let preis: Double
+        let quelle: String
+        if let p = LeistungskatalogService.materialPreis(fuer: link.text, in: ctx), p > 0 {
+            preis = p; quelle = "eigen"
+        } else if let r = link.richtpreis, r > 0 {
+            preis = r; quelle = "praxis"
+        } else {
+            preis = 0; quelle = "startwert"
+        }
+
+        let pm = PositionMaterial(context: ctx)
+        pm.id = UUID()
+        pm.materialName = link.text
+        pm.einheit = matEinheit
+        pm.mengeProEinheit = mengeProEinheit
+        pm.einzelpreis = preis
+        pm.verschnittProzent = link.verschnitt
+        pm.quelle = quelle
+        pm.position = pos
+
+        // Lager: auf Lager / teils / bestellen.
+        let mengeText = "\(String(format: "%g", matMenge)) \(matEinheit)"
+        let lager: String
+        if let bestand = LeistungskatalogService.lagerBestand(fuer: link.text, in: ctx) {
+            if bestand >= matMenge {
+                lager = "auf Lager (\(String(format: "%g", bestand)) \(matEinheit) da, gebraucht \(mengeText))"
+            } else if bestand > 0 {
+                lager = "teils auf Lager (\(String(format: "%g", bestand)) \(matEinheit) da, Rest bestellen)"
+            } else {
+                lager = "Bestand 0 → bestellen"
+            }
+        } else {
+            lager = "nicht im Lager erfasst → bestellen"
+        }
+
+        let preisText = preis > 0
+            ? "\(String(format: "%.2f €", preis))/\(matEinheit)\(quelle == "eigen" ? " (dein Preis)" : " (Richtwert)")"
+            : "Preis fehlt — in Stammdaten ergänzen"
+        return " Material: \(link.text) \(mengeText) · \(preisText) · \(lager)."
+    }
+
+    /// Position-Menge (in ihrer Einheit) in die Leistungs-Einheit der Maschine bringen.
+    /// m³/h → m3 (ggf. über Dichte); m²/h → m2 (über Dichte in m³, dann ÷ Schichtdicke);
+    /// m/h → m (direkt). nil, wenn kein Weg passt.
+    private static func mengeFuerLeistung(posMenge: Double, posEinheit: String,
+                                          leistungEinheit: String, dichte: Double?, dickeM: Double?)
+        -> (menge: Double, einheit: String)? {
+        let ziel: String
+        switch leistungEinheit {
+        case "m³/h": ziel = "m3"
+        case "m²/h": ziel = "m2"
+        case "m/h":  ziel = "m"
+        default:     return nil
+        }
+        // Direkt (gleiche Größenart, oder Volumen↔Masse über Dichte).
+        if let mm = EinheitenUmrechnung.mengeUmrechnen(posMenge, von: posEinheit, nach: ziel, dichteTproM3: dichte) {
+            return (mm, ziel)
+        }
+        // Fläche aus Volumen ÷ Schichtdicke (die Position ist eine Schicht bekannter Dicke).
+        if ziel == "m2", let dicke = dickeM, dicke > 0,
+           let m3 = EinheitenUmrechnung.mengeUmrechnen(posMenge, von: posEinheit, nach: "m3", dichteTproM3: dichte) {
+            return (m3 / dicke, "m2")
+        }
+        return nil
+    }
+
+    /// Schichtdicke in Metern aus einem Positionstext („d= 10cm", „d=0,10 m", „10 cm").
+    static func schichtdickeMeter(aus texte: [String?]) -> Double? {
+        let text = texte.compactMap { $0 }.joined(separator: " ").lowercased()
+        // „d= 10cm" / „d=0,10m" bevorzugt, sonst erste „<zahl> cm"-Angabe.
+        let muster = [#"d\s*=?\s*([0-9]+(?:[.,][0-9]+)?)\s*(cm|m)\b"#,
+                      #"([0-9]+(?:[.,][0-9]+)?)\s*(cm)\b"#]
+        for p in muster {
+            guard let re = try? NSRegularExpression(pattern: p) else { continue }
+            let r = NSRange(text.startIndex..., in: text)
+            guard let m = re.firstMatch(in: text, range: r),
+                  let zr = Range(m.range(at: 1), in: text),
+                  let er = Range(m.range(at: 2), in: text) else { continue }
+            let zahl = Double(text[zr].replacingOccurrences(of: ",", with: ".")) ?? 0
+            guard zahl > 0 else { continue }
+            return text[er] == "cm" ? zahl / 100.0 : zahl
+        }
+        return nil
+    }
+
+    /// Alle eigenen Geräte (Maschinenpark, Stammdaten) — für den Park-vor-Miete-Vorrang.
+    private static func eigeneGeraete(in ctx: NSManagedObjectContext) -> [Geraet] {
+        (try? ctx.fetch(Geraet.fetchRequest())) ?? []
+    }
+
+    /// Ein eigenes Gerät, dessen Name zur Katalog-Maschine passt (grobes Stichwort-Match:
+    /// „bagger"/„walze"/… kommt in beiden vor). Konservativ — im Zweifel nichts, dann Miete.
+    private static func passendesEigenes(_ m: Maschine, in eigene: [Geraet]) -> Geraet? {
+        let kat = BauTextMatcher.tokenize(m.bezeichnung).filter { $0.count >= 5 }
+        guard !kat.isEmpty else { return nil }
+        return eigene.first { g in
+            let namen = Set(BauTextMatcher.tokenize(g.name ?? ""))
+            return kat.contains { namen.contains($0) }
+        }
+    }
+
+    private static func schreibeGeraetStunden(name: String, stundenJeEinheit: Double,
+                                              satzProStunde: Double, quelle: String,
+                                              pos: LVPosition, in ctx: NSManagedObjectContext) {
+        let pg = PositionGeraet(context: ctx)
+        pg.id = UUID()
+        pg.geraetName = name
+        pg.pauschal = false
+        pg.stunden = stundenJeEinheit          // h je Positions-Einheit (wie der Lohn)
+        pg.kostenProStunde = satzProStunde
+        pg.einheit = "h"
+        pg.quelle = quelle
+        pg.position = pos
+    }
+
+    private static func schreibeGeraetPauschal(name: String, tage: Int, satzProTag: Double,
+                                               quelle: String, pos: LVPosition,
+                                               in ctx: NSManagedObjectContext) {
+        let pg = PositionGeraet(context: ctx)
+        pg.id = UUID()
+        pg.geraetName = name
+        pg.pauschal = true
+        pg.stunden = Double(tage)               // Anzahl Miettage
+        pg.kostenProStunde = satzProTag         // €/Tag (pauschal: Preis je Zähl-Einheit)
+        pg.einheit = "Tag"
+        pg.quelle = quelle
+        pg.position = pos
     }
 
     /// Regie-/Stundenlohn-Einheit? (Std, h, Stunde …) — dann ist der EP der Stundensatz.

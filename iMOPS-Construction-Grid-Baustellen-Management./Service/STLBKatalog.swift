@@ -19,7 +19,19 @@ struct STLBBaustein: Sendable, Equatable, Identifiable {
     let din: String?
     let aufwandswertKey: String? // "erdarbeiten.graben_ausheben" → AufwandswerteKatalog.eintrag(key:)
     let maschinenKeys: [String]  // ["erdbau.minibagger_3t", ...] → MaschinenKatalog
+    let material: MaterialLink?  // das Schüttgut/Material der Position (Schotter …)
     let tags: [String]           // Suchbegriffe (tragen Synonyme)
+
+    /// Der Material-Link eines Bausteins: welches Schüttgut die Leistung braucht, in welcher
+    /// Einheit es gehandelt wird, ein Praxis-Richtpreis als Rückfall (falls in den Stammdaten
+    /// noch kein Preis steht) und der Verschnitt/Verlust. So findet die Auto-Bepreisung das
+    /// Material — den bei Schüttgütern GRÖSSTEN Posten — über den Katalog statt gar nicht.
+    struct MaterialLink: Sendable, Equatable {
+        let text: String        // "Schotter 0/32" → materialPreis + lagerBestand (per Name)
+        let einheit: String     // Handelseinheit des Materials ("t")
+        let richtpreis: Double? // €/Einheit Praxis-Richtwert, falls keine Stammdaten
+        let verschnitt: Double  // Anteil (0,05 = 5 %), bei Schüttgut meist 0
+    }
 }
 
 // MARK: - STLBKatalog
@@ -112,6 +124,15 @@ final class STLBKatalog: @unchecked Sendable {
                       let kurztext = b["kurztext"] as? String else { continue }
                 let maschinen = (b["maschinen_keys"] as? [Any])?.compactMap { $0 as? String } ?? []
                 let tags = (b["tags"] as? [Any])?.compactMap { $0 as? String } ?? []
+                var material: STLBBaustein.MaterialLink? = nil
+                if let mb = b["material"] as? [String: Any],
+                   let text = mb["text"] as? String, !text.isEmpty {
+                    material = STLBBaustein.MaterialLink(
+                        text: text,
+                        einheit: (mb["einheit"] as? String) ?? "",
+                        richtpreis: zahlAus(mb["richtpreis"]),
+                        verschnitt: zahlAus(mb["verschnitt"]) ?? 0)
+                }
                 result.append(STLBBaustein(
                     id: bid,
                     gewerkSektion: sektion,
@@ -122,10 +143,18 @@ final class STLBKatalog: @unchecked Sendable {
                     din: b["din"] as? String,
                     aufwandswertKey: b["aufwandswert_key"] as? String,
                     maschinenKeys: maschinen,
+                    material: material,
                     tags: tags))
             }
         }
         return result
+    }
+
+    private func zahlAus(_ any: Any?) -> Double? {
+        if let d = any as? Double { return d }
+        if let i = any as? Int { return Double(i) }
+        if let s = any as? String { return Double(s.replacingOccurrences(of: ",", with: ".")) }
+        return nil
     }
 
     private func locateYAML(name: String) -> URL? {

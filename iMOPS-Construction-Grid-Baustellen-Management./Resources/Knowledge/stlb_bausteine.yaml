@@ -185,6 +185,11 @@ erdarbeiten:
     din: "DIN 18300, TL SoB-StB"
     aufwandswert_key: "erdarbeiten.frostschutzschicht"
     maschinen_keys: ["erdbau.kettenbagger_8t", "verdichtung.walzenzug_klein"]
+    material:
+      text: "Schotter 0/45"
+      einheit: "t"
+      richtpreis: 18      # €/t Praxis-Richtwert (Frostschutz-Schotter, ab Werk, regional ±20%)
+      verschnitt: 0.0
     tags: ["Frostschutz", "Schotter", "FSS"]
 
   ERD-006:
@@ -654,6 +659,11 @@ strasse:
     din: "DIN 18315, TL SoB-StB"
     aufwandswert_key: "strassenbau.schottertragschicht"
     maschinen_keys: ["erdbau.kettenbagger_14t", "verdichtung.walzenzug_gross"]
+    material:
+      text: "Schotter 0/32"
+      einheit: "t"
+      richtpreis: 20      # €/t Praxis-Richtwert (Naturstein-Schotter, ab Werk, regional ±20%)
+      verschnitt: 0.0
     tags: ["Schottertragschicht", "STS", "Schotter 0/32"]
 
   STR-003:
