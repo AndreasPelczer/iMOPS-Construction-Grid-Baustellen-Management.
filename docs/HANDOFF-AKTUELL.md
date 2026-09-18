@@ -2,6 +2,20 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 18.09.2026 (Mittag) — Die Einheiten-Brücken: eine Position rechnet sich VOLLSTÄNDIG (Mann + Maschine + Material + Lager). Nächster Bogen: EIN zentraler MopsUmrechner (Leiter)
+
+**Branch `feature/dichte-bruecke-m3-tonne`, 4 Commits + HANDOFF, gebaut+getestet, Andreas mergt im Browser.** Auslöser: der Leitsatz „Katalog vor KI, Einheiten sind der Engpass" — die Auto-Bepreisung füllte nur den Lohn, Material+Maschine blieben 0, weil die Katalog-Einheiten (h/m³, m³/h, m²/h) nicht an t-Positionen kamen.
+
+- **Dichte-Brücke m³↔t** (`7f9ef81`): `DichteKatalog.dichte(fuer:)` (Schüttgut-Text→t/m³, bewusst eng: kein „beton"/„boden"), `EinheitenUmrechnung.proFaktorMitDichte`. In `AutoKalkulationsService.gelbAusRichtwert`: erst `proFaktor` (gleiche Größenart), dann Dichte-Brücke, sonst ehrlich „Einheit prüfen". Damit greift der Katalog (Schottertragschicht m³, mit Bagger+Walze) für Stadt-LVs in t.
+- **Herkunfts-Zeile** (`8369e13`): `LVTiefenkalkulationView` behält den `bewerte`-Befund und zeigt oben „Aus dem Katalog vorbepreist" (grün) / „Einheit passt nicht" (orange) / „kein Treffer" (grau) + die Mops-Meldung. Beantwortet „wo sehe ich, dass der Katalog gegriffen hat?".
+- **Maschinen-Brücke** (`2190180`): `gelbAusRichtwert` hängt die Maschinen der Kolonne an (aus `STLBBaustein.maschinenKeys` → `MaschinenKatalog`). **Park vor Miete:** passt ein eigenes `Geraet` (Name) → dein Abschreibungssatz (grün „dein Wert"), sonst Katalog-Mietpreis Tage-Modell (blau „Richtwert"/leihen). Maschinen-Leistung m³/h bzw. m²/h → Positions-t umgerechnet über Dichte (t→m³) und Schichtdicke (m³→m², aus „d= 10cm"); klappt nicht → ehrlich übersprungen. `EinheitenUmrechnung.mengeUmrechnen` (absolute Menge), `schichtdickeMeter`-Parser.
+- **Material-Brücke + Lager** (`7fe9261`): `STLBBaustein.MaterialLink` (text, einheit, richtpreis, verschnitt) an STR-002 (Schotter 0/32, 20 €/t) + ERD-005 (Schotter 0/45, 18). `schreibeMaterial`: Menge = Positionsmenge in Handelseinheit (t↔m³ über Dichte); Preis **Stammdaten (KalkMaterial, grün) vor Katalog-Richtpreis (blau) vor 0€ (sichtbar „ergänzen")**. Lager-Stand über vorhandene `LeistungskatalogService.lagerBestand` → auf Lager / teils / bestellen. **Live bestätigt:** Schottertragschicht 175 t rechnet sich zu 2.872,51 € (Material 10 €/t „dein Wert" aus Stammdaten, Bagger+Walze je 1 Tag, 3 Mann).
+- Tests grün: `EinheitenUmrechnungTests` (11, inkl. mengeUmrechnen/Dichte/Schichtdicke), `STLBKatalogTests` (Material-Link), `MopsFassTests` + `MaschinenKatalogTests` keine Regression.
+
+**🧭 NÄCHSTER BOGEN — der EINE `MopsUmrechner` (Andreas' Frage: „haben wir keine Vorlage?").** Die Erkenntnis: alle Einheiten hängen an EINER Leiter, jede Sprosse ist ein geometrisches Maß:
+`Länge —(×Höhe/Breite)→ Fläche —(×Dicke)→ Volumen —(×Dichte)→ Masse`.
+Es sind NICHT dutzende Sonderfälle, sondern **3 Brückenmaße** (Höhe, Dicke, Dichte); Länge↔Volumen (Graben), Länge↔Masse (Bewehrung), Fläche↔Masse sind Ketten daraus. **Heute halb & verstreut:** `EinheitenUmrechnung` kann gleiche Größenart + Dichte-Sprosse; die Dicke-Sprosse steckt als Parser in `AutoKalkulationsService`, die **Höhe-Sprosse fehlt ganz** → Schalung (m→m² über Fundamenthöhe) fällt durch zu KI. Plan: EIN `MopsUmrechner`, der die Leiter läuft (von-Einheit, nach-Einheit, bekannte Brückenmaße → Faktor); Brückenmaße aus `DichteKatalog` + Text/STLB-Langtext (`{{hoehe_m}}`) oder einmal fragen. Dann fällt die Schalung von selbst raus, gleicher Code wie Schotter. **Konkreter Testfall:** „Schalung Fundamente" 115 m — Katalog HAT `schalarbeiten.schalung_fundament` (0,5 h/m², 2 Schalungsbauer) und sollte matchen, aber m²≠m ohne Höhe.
+
 ## Delta 18.09.2026 — Der zweite Arbeitsplatz „Büro": Station 3 (Tiefenkalkulation vorausfüllen + KI-Startwert mit Spanne + Export-Sperre) · Leitsatz „Katalog vor KI, Einheiten sind der Engpass"
 
 **Auf `main`, jede Änderung einzeln gebaut+committet, NOCH NICHT gepusht** (Andreas mergt selbst im Browser). Vorlauf: PR #177 (Canvas-Runde) heute früh gemergt → `origin/main` = `ffa7598`; Raphis Mac gezogen + Testbau grün.
