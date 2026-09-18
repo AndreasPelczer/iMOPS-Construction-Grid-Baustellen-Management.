@@ -69,13 +69,54 @@ final class MopsKalkulationsHelper {
     }
 
     private func parsePreis(_ text: String) -> Double? {
+        parseZahl("PREIS", text)
+    }
+
+    /// Grobe KI-Schätzung für eine GANZE Bauleistung: Material- UND Einbauanteil
+    /// (Lohn + Gerät) je Einheit. So bekommt eine „herstellen"-Position (liefern + einbauen
+    /// + verdichten) gleich den ganzen Preis, nicht nur das Material.
+    /// KI-Schätzung, KEIN Angebot — immer als „geraten" markieren, Mensch prüft.
+    /// Eine geschätzte Spanne „liegt etwa zwischen min und max" — ehrlicher als eine
+    /// Schein-genaue Punktzahl. `mittel` ist der Arbeitswert für die Rechnung.
+    struct Spanne { let min: Double; let max: Double; var mittel: Double { (min + max) / 2 } }
+
+    func leistungsSchaetzung(leistung: String, einheit: String) async -> (material: Spanne?, einbau: Spanne?) {
+        guard isConnected else { return (nil, nil) }
+        // ZWEI einfache Fragen, jede als SPANNE (MIN/MAX) statt Punktzahl — parallel, damit
+        // es bei ~2 Min bleibt. Die Spanne ist ehrlich: die KI würfelt sonst jedes Mal eine
+        // andere Zahl AUS derselben Spanne; dann zeigen wir gleich die Spanne.
+        async let material = teilspanne("den reinen Materialpreis (nur Stoff, OHNE Einbau)", leistung, einheit)
+        async let einbau   = teilspanne("die reinen Einbaukosten (Lohn + Gerät, OHNE Material; reine Materiallieferung = 0)", leistung, einheit)
+        return await (material, einbau)
+    }
+
+    private func teilspanne(_ was: String, _ leistung: String, _ einheit: String) async -> Spanne? {
+        guard isConnected else { return nil }
+        let frage = "Nenne \(was) für die Bauleistung \(leistung) pro \(einheit) in EUR "
+            + "als realistische SPANNE (untere und obere Grenze; Deutschland, grobe Orientierung, "
+            + "kein verbindliches Angebot). Antworte NUR in diesem Format: MIN=X.XX MAX=Y.YY"
+        do {
+            let response = try await client.ask(question: frage, useProf: true)
+            guard let a = parseZahl("MIN", response.answer),
+                  let b = parseZahl("MAX", response.answer),
+                  a >= 0, b >= 0, (a + b) > 0 else { return nil }
+            return Spanne(min: Swift.min(a, b), max: Swift.max(a, b))
+        } catch {
+            logger.warning("Spannen-Anfrage fehlgeschlagen: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func parseZahl(_ schluessel: String, _ text: String) -> Double? {
         let upper = text.uppercased()
-        guard let r = upper.range(of: #"PREIS\s*=?\s*(\d+[.,]?\d*)"#, options: .regularExpression) else { return nil }
-        let num = String(upper[r])
-            .replacingOccurrences(of: "PREIS", with: "")
-            .replacingOccurrences(of: "=", with: "")
-            .replacingOccurrences(of: ",", with: ".")
-            .trimmingCharacters(in: .whitespaces)
+        let key = schluessel.uppercased()
+        // Tolerant: KEY, dann optional : oder = oder „CA."/„~"/€ und Leerzeichen, dann die Zahl.
+        // Fängt „MATERIAL=18.00", „MATERIAL: 18", „MATERIAL ca. 18 €" gleichermaßen.
+        let muster = "\(key)\\s*[:=]?\\s*(?:CA\\.?|~)?\\s*€?\\s*(\\d+(?:[.,]\\d+)?)"
+        guard let r = upper.range(of: muster, options: .regularExpression),
+              let zahlR = String(upper[r]).range(of: "\\d+(?:[.,]\\d+)?", options: .regularExpression)
+        else { return nil }
+        let num = String(upper[r])[zahlR].replacingOccurrences(of: ",", with: ".")
         return Double(num)
     }
 

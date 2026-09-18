@@ -20,6 +20,8 @@ struct LVTiefenkalkulationView: View {
     @State private var mopsAntwort: String?
     @State private var loeschZiel: LoeschZiel?   // sichtbares Löschen (auch am Mac, wo Swipe nicht geht)
     @State private var quelleInfo: String?       // Herkunfts-Hinweis beim Antippen eines Quelle-Badges
+    @State private var hatVorgefuellt = false     // der Mops-Vorschlag wird beim Öffnen EINMAL versucht
+    @State private var kiLaeuft = false           // läuft gerade eine KI-Schätzung?
 
     /// Was gelöscht werden soll (mit Klartext für die Sicherheitsabfrage).
     private struct LoeschZiel: Identifiable {
@@ -54,9 +56,139 @@ struct LVTiefenkalkulationView: View {
         LVKalkulator.kalkulationFuer(position)
     }
 
+    /// Beim Öffnen einmal den Vorschlag des Mops einlegen — die Kalkulation ist nie leer,
+    /// sie öffnet mit der besten Schätzung, du korrigierst nur. Rein lokal/deterministisch
+    /// (wie „Mops fass" für diese eine Zeile), kein Netz.
+    ///
+    /// SCHUTZREGEL: nur füllen, wenn die Position noch NICHTS trägt. `schreibeAufwandAusKolonne`
+    /// löscht vorhandenen Lohn, würde also von Hand Eingetragenes überschreiben. Elemente
+    /// rechnen über ihre Bausteine — die fasst der Vorschlag nicht an.
+    /// Die Quelle-Badges zeigen danach, was Richtwert (Vorschlag) ist und was Firmenwert.
+    private func vorfuellen() {
+        guard !hatVorgefuellt else { return }
+        hatVorgefuellt = true
+        if AutoKalkulationsService.vorfuellenWennLeer(position, in: viewContext) {
+            try? viewContext.save()
+        }
+    }
+
+    // MARK: - KI-Schätzung (nur wenn der Mops keinen Wert hat)
+
+    /// Trägt die Position einen von der KI geratenen, noch nicht bestätigten Wert?
+    private var enthaeltKI: Bool {
+        position.materialArray.contains { Kostenquelle($0.quelle) == .ki }
+            || position.lohnArray.contains { Kostenquelle($0.quelle) == .ki }
+            || position.geraeteArray.contains { Kostenquelle($0.quelle) == .ki }
+    }
+
+    /// Leer und bepreisbar → der Mops hat keinen Katalogwert; hier darf die KI raten.
+    private var istLeerBepreisbar: Bool {
+        !position.istElement
+            && position.materialArray.isEmpty
+            && position.lohnArray.isEmpty
+            && position.geraeteArray.isEmpty
+    }
+
+    @ViewBuilder private var kiSection: some View {
+        if enthaeltKI {
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("KI geraten — Startwert ohne Quelle", systemImage: "sparkles")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(.purple)
+                    Text("Das hat die KI erfunden — plausibel, aber ohne Quelle. Prüfen, nicht glauben. Bis du bestätigst, geht die Position NICHT ins Angebot.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    HStack(spacing: 10) {
+                        Button { kiBestaetigen() } label: {
+                            Label("Bestätigen", systemImage: "checkmark")
+                        }
+                        .buttonStyle(.borderedProminent).tint(.green)
+                        Button(role: .destructive) { kiVerwerfen() } label: {
+                            Label("Verwerfen", systemImage: "trash")
+                        }
+                    }
+                    .font(.subheadline)
+                }
+                .padding(.vertical, 2)
+            }
+        } else if istLeerBepreisbar {
+            Section {
+                Button { Task { await kiSchaetzen() } } label: {
+                    if kiLaeuft {
+                        HStack(spacing: 8) { ProgressView(); Text("Der Mops schätzt …") }
+                    } else {
+                        Label("Kein Wert? Vom Mops schätzen lassen (KI)", systemImage: "globe")
+                    }
+                }
+                .disabled(kiLaeuft)
+                Text("Grobe KI-Schätzung als Startwert (online, Büro). Kein gemessener Wert, keine Quelle — prüfen, nicht glauben.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func kiSchaetzen() async {
+        kiLaeuft = true
+        defer { kiLaeuft = false }
+        let name = position.bezeichnung ?? ""
+        let eh = position.einheit ?? ""
+        // Ganze Leistung schätzen: Material UND Einbau (Lohn+Gerät) — je als SPANNE.
+        let (material, einbau) = await MopsKalkulationsHelper.shared.leistungsSchaetzung(leistung: name, einheit: eh)
+        guard material != nil || einbau != nil else {
+            quelleInfo = "Der Mops hat gerade keine Schätzung — offline, oder er weiß nichts dazu. Trag den Wert von Hand ein."
+            return
+        }
+        // „liegt etwa zwischen X und Y" sichtbar dranschreiben; Arbeitswert = Mitte.
+        func spanneText(_ s: MopsKalkulationsHelper.Spanne) -> String {
+            "\(zahl(s.min))–\(zahl(s.max)) €/\(eh)"
+        }
+        if let s = material, s.mittel > 0 {
+            let pm = PositionMaterial(context: viewContext)
+            pm.id = UUID()
+            pm.materialName = "KI-Schätzung: \(name) (\(spanneText(s)))"
+            pm.einzelpreis = s.mittel
+            pm.mengeProEinheit = 1
+            pm.verschnittProzent = 0
+            pm.einheit = eh
+            pm.quelle = "ki"
+            pm.position = position
+        }
+        if let s = einbau, s.mittel > 0 {
+            // Einbau als PAUSCHALER Geräte-Posten für die ganze Position — bewusst NICHT als
+            // Stunden-Zeile (die erfände „70 Stunden" und ein Gerät, das die KI nie geschätzt
+            // hat) und NICHT als Lohn (das triebe den Firmenprofil-Vergleich in die Irre).
+            // Pauschal = ein ehrlicher Klumpen „Einbau, geschätzt: X € für die Position".
+            // Gesamt = Mitte × Menge; kostenProEinheit rechnet das je Einheit zurück.
+            let pg = PositionGeraet(context: viewContext)
+            pg.id = UUID()
+            pg.geraetName = "Einbau (Lohn + Gerät), geschätzt (\(spanneText(s)))"
+            pg.pauschal = true
+            pg.stunden = 1                                 // 1 × Gesamtbetrag
+            pg.kostenProStunde = s.mittel * position.menge // Gesamt für die Position
+            pg.einheit = "pauschal"
+            pg.quelle = "ki"
+            pg.position = position
+        }
+        try? viewContext.save()
+    }
+
+    private func kiBestaetigen() {
+        for m in position.materialArray where Kostenquelle(m.quelle) == .ki { m.quelle = "eigen" }
+        for l in position.lohnArray where Kostenquelle(l.quelle) == .ki { l.quelle = "eigen" }
+        for g in position.geraeteArray where Kostenquelle(g.quelle) == .ki { g.quelle = "eigen" }
+        try? viewContext.save()
+    }
+
+    private func kiVerwerfen() {
+        for m in position.materialArray where Kostenquelle(m.quelle) == .ki { viewContext.delete(m) }
+        for l in position.lohnArray where Kostenquelle(l.quelle) == .ki { viewContext.delete(l) }
+        for g in position.geraeteArray where Kostenquelle(g.quelle) == .ki { viewContext.delete(g) }
+        try? viewContext.save()
+    }
+
     var body: some View {
         List {
             positionKopfSection
+            kiSection
             materialSection
             lohnSection
             geraeteSection
@@ -67,6 +199,7 @@ struct LVTiefenkalkulationView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Kalkulation")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear(perform: vorfuellen)
         .alert("Woher kommt die Zahl?", isPresented: Binding(
             get: { quelleInfo != nil }, set: { if !$0 { quelleInfo = nil } })) {
             Button("OK", role: .cancel) { }

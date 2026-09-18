@@ -13,6 +13,7 @@ enum Kostenquelle {
     case praxis       // öffentlicher Praxis-Richtwert (YAML)
     case katalog      // Maschinenkatalog (mit Quellenangabe)
     case startwert    // Demo-/Platzhalter, NICHT belegt
+    case ki           // KI-Schätzung: vom Modell geraten, KEINE Quelle
     case eigen        // in der App selbst eingetragen/überschrieben
     case unbekannt
 
@@ -22,6 +23,7 @@ enum Kostenquelle {
         case "praxis":                                  self = .praxis
         case "katalog":                                 self = .katalog
         case "startwert", "demo", "seed", "schätzung", "schaetzung": self = .startwert
+        case "ki", "kigeneriert", "prof", "geraten":    self = .ki
         case "eigen", "erfahrung":                      self = .eigen
         default:                                        self = .unbekannt
         }
@@ -33,6 +35,7 @@ enum Kostenquelle {
         case .praxis:    return "Richtwert"
         case .katalog:   return "Richtwert"
         case .startwert: return "Startwert"
+        case .ki:        return "KI geraten"
         case .eigen:     return "dein Wert"
         case .unbekannt: return "offen"
         }
@@ -43,14 +46,20 @@ enum Kostenquelle {
         case .raffi, .eigen:    return .green     // euer eigener Wert — der Mops hat ihn
         case .praxis, .katalog: return .blue      // geliehener Richtwert, nicht eurer
         case .startwert:        return .orange    // Platzhalter, ausgedacht → Warnung
+        case .ki:               return .purple    // KI geraten → keine Quelle, unbedingt prüfen
         case .unbekannt:        return .gray      // (noch) nicht hinterlegt → ruhig, kein Alarm
         }
     }
 
     /// Belegt = aus einer nachvollziehbaren Quelle (nicht ausgedacht).
+    /// KI zählt NICHT als belegt — sie hat keine Quelle.
     var belegt: Bool {
         switch self { case .raffi, .praxis, .katalog, .eigen: return true; default: return false }
     }
+
+    /// Ein von der KI geratener Wert, der noch nicht von einem Menschen bestätigt wurde.
+    /// Darf nicht unbemerkt ins Angebot an die Stadt.
+    var istKIUngeprueft: Bool { self == .ki }
 
     var hinweis: String {
         switch self {
@@ -58,6 +67,7 @@ enum Kostenquelle {
         case .praxis:    return "Richtwert — ein öffentlicher Orientierungswert, nicht euer eigener. Quelle nachvollziehbar. Wenn ihr's besser wisst: überschreiben."
         case .katalog:   return "Richtwert aus dem Maschinenkatalog (mit Quellenangabe) — Orientierung, nicht euer eigener."
         case .startwert: return "Demo-/Startwert — als Platzhalter gesetzt, NICHT belegt. Zum Ändern: Zeile nach links wischen → löschen, dann mit deinem Wert neu hinzufügen."
+        case .ki:        return "KI geraten — das hat die KI erfunden (generiert). Plausibel, aber OHNE Quelle und ohne Gewähr: kein gemessener Wert, nirgends nachschlagbar. Nur ein Startwert. Prüfen, nicht glauben. Bestätige oder überschreibe ihn, bevor das Angebot rausgeht — sonst geht eine geratene Zahl an die Stadt."
         case .eigen:     return "Von dir selbst eingetragen — dein Wert."
         case .unbekannt: return "Herkunft (noch) nicht hinterlegt — diese Position wurde angelegt, bevor der Mops die Quelle mitgeführt hat. Der Wert ist nicht falsch, nur unbeschriftet. Neu berechnen (Mops fass) trägt die Quelle nach; ändern: Zeile wischen → löschen → neu."
         }
