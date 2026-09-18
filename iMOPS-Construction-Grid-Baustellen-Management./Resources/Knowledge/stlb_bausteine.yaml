@@ -561,8 +561,9 @@ pflaster:
       dicke_m: 0.04     # Standard-Bettungsdicke 4 cm — falls der Text keine nennt (m²→m³)
     material:
       text: "Edelsplitt 2/5"
-      einheit: "m3"
-      richtpreis: 45    # €/m³ Praxis-Richtwert (Edelsplitt 2/5, ab Werk, regional ±20%)
+      einheit: "t"
+      richtpreis: 30    # €/t Praxis-Richtwert (Edelsplitt, ab Werk); Position m³ → t über Dichte
+      dichte: 1.5       # t/m³ Splitt — überbrückt die m³-Position auf den t-Einkauf (SHB rechnet in t)
       verschnitt: 0.0
     tags: ["Bettungsmaterial", "Splitt", "Bettung"]
 
@@ -590,8 +591,9 @@ pflaster:
       dicke_m: 0.04     # Standard-Bettungsdicke 4 cm — falls der Text keine nennt (m²→m³)
     material:
       text: "Edelsplitt 2/5"
-      einheit: "m3"
-      richtpreis: 45    # €/m³ Praxis-Richtwert (Edelsplitt 2/5, ab Werk, regional ±20%)
+      einheit: "t"
+      richtpreis: 30    # €/t Praxis-Richtwert (Edelsplitt, ab Werk); Position m³ → t über Dichte
+      dichte: 1.5       # t/m³ Splitt — überbrückt die m³-Position auf den t-Einkauf (SHB rechnet in t)
       verschnitt: 0.0
     tags: ["Splittbett", "Pflasterbett", "Bettung"]
 
