@@ -20,6 +20,8 @@ struct STLBBaustein: Sendable, Equatable, Identifiable {
     let aufwandswertKey: String? // "erdarbeiten.graben_ausheben" → AufwandswerteKatalog.eintrag(key:)
     let maschinenKeys: [String]  // ["erdbau.minibagger_3t", ...] → MaschinenKatalog
     let material: MaterialLink?  // das Schüttgut/Material der Position (Schotter …)
+    let hoeheM: Double?          // Bauteil-Richthöhe (m) — Brückenmaß Länge↔Fläche (Schalung), wenn der Text keine nennt
+    let dickeM: Double?          // Bauteil-Richtdicke (m) — Brückenmaß Fläche↔Volumen, wenn der Text keine nennt
     let tags: [String]           // Suchbegriffe (tragen Synonyme)
 
     /// Der Material-Link eines Bausteins: welches Schüttgut die Leistung braucht, in welcher
@@ -133,6 +135,7 @@ final class STLBKatalog: @unchecked Sendable {
                         richtpreis: zahlAus(mb["richtpreis"]),
                         verschnitt: zahlAus(mb["verschnitt"]) ?? 0)
                 }
+                let geo = b["geometrie"] as? [String: Any]
                 result.append(STLBBaustein(
                     id: bid,
                     gewerkSektion: sektion,
@@ -144,6 +147,8 @@ final class STLBKatalog: @unchecked Sendable {
                     aufwandswertKey: b["aufwandswert_key"] as? String,
                     maschinenKeys: maschinen,
                     material: material,
+                    hoeheM: zahlAus(geo?["hoehe_m"]),
+                    dickeM: zahlAus(geo?["dicke_m"]),
                     tags: tags))
             }
         }

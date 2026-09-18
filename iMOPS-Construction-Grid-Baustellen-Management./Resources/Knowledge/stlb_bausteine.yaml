@@ -354,6 +354,19 @@ beton:
     aufwandswert_key: "betonarbeiten.betonieren_allgemein"
     tags: ["Fundament", "Frostschürze", "Streifenfundament"]
 
+  BET-010:
+    kurztext: "Schalung Fundamente"
+    langtext: >
+      Schalung für Fundamente/Fundamentränder herstellen, einbauen, ausschalen.
+      Abrechnung nach Schalfläche. Höhe {{hoehe_m}} m (falls angegeben).
+    einheit: "m2"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "schalarbeiten.schalung_fundament"
+    geometrie:
+      hoehe_m: 0.5      # Richthöhe für lfm-Ausschreibungen (m→m²) — Richtwert, prüfen
+    tags: ["Schalung", "Fundamentschalung", "Schalarbeiten", "Fundamente"]
+
 # ============================================================================
 # 04 — MAUERARBEITEN (DIN 18330)
 # ============================================================================

@@ -113,7 +113,8 @@ enum AutoKalkulationsService {
                let key = b.aufwandswertKey,
                let t = AufwandswerteKatalog.shared.eintrag(key: key) {
                 return gelbAusRichtwert(t, baustein: b.id, maschinenKeys: b.maschinenKeys,
-                                        material: b.material, pos: pos, in: ctx)
+                                        material: b.material, richtHoeheM: b.hoeheM, richtDickeM: b.dickeM,
+                                        pos: pos, in: ctx)
             }
             // Fallback: direkter Stichwort-Treffer im Aufwandswerte-Katalog.
             if let t = AufwandswerteKatalog.shared.finde(leistung: bez, langtext: pos.langtext) {
@@ -185,34 +186,32 @@ enum AutoKalkulationsService {
     private static func gelbAusRichtwert(_ t: AufwandsTreffer, baustein: String?,
                                          maschinenKeys: [String] = [],
                                          material: STLBBaustein.MaterialLink? = nil,
+                                         richtHoeheM: Double? = nil, richtDickeM: Double? = nil,
                                          pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
         let posEinheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let stbQuelle = baustein.map { "STLB \($0) · " } ?? ""
 
-        // Dichte einmal bestimmen — sie überbrückt Volumen↔Masse SOWOHL für den Lohn
-        // (h/m³ → h/t) ALS AUCH für die Maschinen (m³/h-Leistung an einer t-Position).
-        let dichte = DichteKatalog.dichte(fuer: pos.bezeichnung)
+        // Die Brückenmaße EINMAL sammeln — sie verbinden die Größenarten für Lohn, Maschine
+        // UND Material über denselben `MopsUmrechner` (die Leiter Länge→Fläche→Volumen→Masse):
+        // Dichte (Volumen↔Masse), Schichtdicke (Fläche↔Volumen), Höhe (Länge↔Fläche).
+        // Der Text der Position gewinnt; nennt er nichts, füllt das Bauteil-Richtmaß des
+        // Bausteins die Lücke (z. B. Fundamentschalung ~0,5 m Höhe — Richtwert, prüfen).
+        var bruecke = brueckeFuer(pos)
+        if bruecke.hoeheOderBreite == nil { bruecke.hoeheOderBreite = richtHoeheM }
+        if bruecke.dicke == nil { bruecke.dicke = richtDickeM }
 
         // Der Aufwandswert steht je Katalog-Einheit (z. B. h/m³). Die Position rechnet in
         // IHRER Einheit (z. B. t). Erst umrechnen — sonst wäre der Lohn grob falsch
-        // (t↔kg = Faktor 1000, der Bewehrungs-Ausreißer). Gleiche Größenart → direkt;
-        // Volumen↔Masse (m³↔t) → über die Dichte (Schüttgut-Richtwert); sonst ehrlich flaggen.
-        let faktor: Double
-        var dichteHinweis = ""
-        if let f = EinheitenUmrechnung.proFaktor(von: t.einheit, nach: posEinheit) {
-            faktor = f
-        } else if let d = dichte,
-                  let f = EinheitenUmrechnung.proFaktorMitDichte(von: t.einheit, nach: posEinheit, dichteTproM3: d) {
-            faktor = f
-            dichteHinweis = " · über Dichte \(String(format: "%g", d)) t/m³ (Schüttgut-Richtwert, prüfen)"
-        } else {
+        // (t↔kg = Faktor 1000, der Bewehrungs-Ausreißer). Gleiche Größenart → direkt; über
+        // Größenarten hinweg → über die Brückenmaße; fehlt eine Sprosse → ehrlich flaggen.
+        guard let um = MopsUmrechner.umrechnung(von: t.einheit, nach: posEinheit, bruecke: bruecke) else {
             let msg = "🟠 \(stbQuelle)Einheit prüfen: Aufwandswert in „\(t.einheit)“, Position in "
-                    + "„\(posEinheit.isEmpty ? "?" : posEinheit)“ — nicht umrechenbar. Kein Lohnpreis "
-                    + "gesetzt (er wäre sonst grob falsch). Einheit der Position anpassen oder von Hand bepreisen."
+                    + "„\(posEinheit.isEmpty ? "?" : posEinheit)“ — nicht umrechenbar (Brückenmaß fehlt, "
+                    + "z. B. Höhe/Dichte). Kein Lohnpreis gesetzt. Einheit anpassen oder von Hand bepreisen."
             return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: 0)
         }
-
-        let stundenProEinheit = t.mittel * faktor
+        let dichteHinweis = um.hinweis.isEmpty ? "" : " · \(um.hinweis) (Richtwert, prüfen)"
+        let stundenProEinheit = t.mittel * um.proFaktor
 
         // Nach der ECHTEN Kolonne bepreisen: Baggerfahrer zum Maschinisten-Satz, Helfer zum
         // Helfer-Satz — nicht mehr alles als Maurer.
@@ -223,18 +222,18 @@ enum AutoKalkulationsService {
         // Die Maschinen der Kolonne dazu: der STLB-Baustein nennt sie (maschinen_keys),
         // der Maschinenkatalog kennt Leistung + Mietpreis. Eigener Park hat Vorrang.
         let geraeteHinweis = schreibeMaschinen(keys: maschinenKeys, pos: pos,
-                                               posEinheit: posEinheit, dichte: dichte, in: ctx)
+                                               posEinheit: posEinheit, bruecke: bruecke, in: ctx)
 
         // Das Material (bei Schüttgütern der GRÖSSTE Posten) dazu: der Baustein nennt es,
         // Preis aus den Stammdaten oder als Katalog-Richtwert, plus Lager-Stand.
         let materialHinweis = schreibeMaterial(material, pos: pos,
-                                               posEinheit: posEinheit, dichte: dichte, in: ctx)
+                                               posEinheit: posEinheit, bruecke: bruecke, in: ctx)
 
         let kalk = LVKalkulator.kalkuliere(position: pos)
 
         let g = String(format: "%g", t.mittel), lo = String(format: "%g", t.min), hi = String(format: "%g", t.max)
         // Wenn umgerechnet wurde, transparent zeigen (h/t → h/kg), sonst schlicht h/Einheit.
-        let umHinweis = faktor == 1 ? ""
+        let umHinweis = um.proFaktor == 1 ? ""
             : " → \(String(format: "%g", stundenProEinheit)) h/\(posEinheit) (umgerechnet)"
         let materialOffen = material != nil ? "" : " Material fehlt noch."
         let msg = "🟡 \(stbQuelle)Richtwert \(g) h/\(t.einheit)\(umHinweis)\(dichteHinweis) (Spanne \(lo)–\(hi)) · Mannschaft: "
@@ -254,23 +253,24 @@ enum AutoKalkulationsService {
     /// (m³→m²). Klappt eine Umrechnung nicht, wird die Maschine ehrlich übersprungen.
     /// - Returns: Klartext-Zusatz für die Meldung (welche Geräte dran sind / was fehlt).
     private static func schreibeMaschinen(keys: [String], pos: LVPosition,
-                                          posEinheit: String, dichte: Double?,
+                                          posEinheit: String, bruecke: MopsUmrechner.Bruecke,
                                           in ctx: NSManagedObjectContext) -> String {
         guard !keys.isEmpty else { return "" }
         let maschinen = MaschinenKatalog.shared.maschinen(ids: keys)
         guard !maschinen.isEmpty, pos.menge > 0 else { return "" }
 
-        let dickeM = schichtdickeMeter(aus: [pos.bezeichnung, pos.langtext])
         let eigene = eigeneGeraete(in: ctx)
 
         var dran: [String] = []
         var uebersprungen: [String] = []
 
         for m in maschinen {
+            // Die Positionsmenge in die Leistungs-Einheit der Maschine bringen (m³/h → m³ …) —
+            // über denselben Umrechner (t→m³ Dichte, m³→m² Dicke, m→m² Höhe, alles auf der Leiter).
             guard let hl = m.hauptLeistung,
-                  let (mengeMasch, zielEinheit) = mengeFuerLeistung(
-                    posMenge: pos.menge, posEinheit: posEinheit,
-                    leistungEinheit: hl.einheit, dichte: dichte, dickeM: dickeM) else {
+                  let zielEinheit = leistungsBasisEinheit(hl.einheit),
+                  let mengeMasch = MopsUmrechner.mengeUmrechnen(pos.menge, von: posEinheit,
+                                                                nach: zielEinheit, bruecke: bruecke) else {
                 uebersprungen.append(m.bezeichnung)
                 continue
             }
@@ -318,15 +318,15 @@ enum AutoKalkulationsService {
     /// Dazu der Lager-Stand: auf Lager, teils, oder muss bestellt werden.
     /// - Returns: Klartext-Zusatz für die Meldung (Material + Lager).
     private static func schreibeMaterial(_ link: STLBBaustein.MaterialLink?, pos: LVPosition,
-                                         posEinheit: String, dichte: Double?,
+                                         posEinheit: String, bruecke: MopsUmrechner.Bruecke,
                                          in ctx: NSManagedObjectContext) -> String {
         guard let link = link, pos.menge > 0 else { return "" }
         let matEinheit = link.einheit.isEmpty ? posEinheit : link.einheit
 
         // Menge des Materials in seiner Handelseinheit (z. B. 70 t Schotter für 70 t Position;
         // bei einer m³-Position über die Dichte in t). Klappt die Umrechnung nicht → Menge = 1:1.
-        let matMenge = EinheitenUmrechnung.mengeUmrechnen(pos.menge, von: posEinheit, nach: matEinheit,
-                                                          dichteTproM3: dichte) ?? pos.menge
+        let matMenge = MopsUmrechner.mengeUmrechnen(pos.menge, von: posEinheit, nach: matEinheit,
+                                                    bruecke: bruecke) ?? pos.menge
         let mengeProEinheit = matMenge / pos.menge   // Material je Positions-Einheit
 
         // Preis: Stammdaten vor Richtwert.
@@ -371,37 +371,49 @@ enum AutoKalkulationsService {
         return " Material: \(link.text) \(mengeText) · \(preisText) · \(lager)."
     }
 
-    /// Position-Menge (in ihrer Einheit) in die Leistungs-Einheit der Maschine bringen.
-    /// m³/h → m3 (ggf. über Dichte); m²/h → m2 (über Dichte in m³, dann ÷ Schichtdicke);
-    /// m/h → m (direkt). nil, wenn kein Weg passt.
-    private static func mengeFuerLeistung(posMenge: Double, posEinheit: String,
-                                          leistungEinheit: String, dichte: Double?, dickeM: Double?)
-        -> (menge: Double, einheit: String)? {
-        let ziel: String
+    /// Die Basis-Einheit hinter einer Maschinen-Leistung (m³/h → „m3" …) — für den Umrechner.
+    private static func leistungsBasisEinheit(_ leistungEinheit: String) -> String? {
         switch leistungEinheit {
-        case "m³/h": ziel = "m3"
-        case "m²/h": ziel = "m2"
-        case "m/h":  ziel = "m"
+        case "m³/h": return "m3"
+        case "m²/h": return "m2"
+        case "m/h":  return "m"
         default:     return nil
         }
-        // Direkt (gleiche Größenart, oder Volumen↔Masse über Dichte).
-        if let mm = EinheitenUmrechnung.mengeUmrechnen(posMenge, von: posEinheit, nach: ziel, dichteTproM3: dichte) {
-            return (mm, ziel)
-        }
-        // Fläche aus Volumen ÷ Schichtdicke (die Position ist eine Schicht bekannter Dicke).
-        if ziel == "m2", let dicke = dickeM, dicke > 0,
-           let m3 = EinheitenUmrechnung.mengeUmrechnen(posMenge, von: posEinheit, nach: "m3", dichteTproM3: dichte) {
-            return (m3 / dicke, "m2")
-        }
-        return nil
+    }
+
+    // MARK: - Brückenmaße für den Umrechner (aus Text/Katalog)
+
+    /// Sammelt die Brückenmaße einer Position für den `MopsUmrechner`: Dichte (Schüttgut),
+    /// Schichtdicke und Höhe (aus dem Positionstext). Was nicht gefunden wird, bleibt nil —
+    /// dann sperrt die Leiter die zugehörige Sprosse, statt grob falsch zu rechnen.
+    private static func brueckeFuer(_ pos: LVPosition) -> MopsUmrechner.Bruecke {
+        let texte = [pos.bezeichnung, pos.langtext]
+        return MopsUmrechner.Bruecke(
+            hoeheOderBreite: hoeheMeter(aus: texte),
+            dicke: schichtdickeMeter(aus: texte),
+            dichteTproM3: DichteKatalog.dichte(fuer: pos.bezeichnung))
     }
 
     /// Schichtdicke in Metern aus einem Positionstext („d= 10cm", „d=0,10 m", „10 cm").
     static func schichtdickeMeter(aus texte: [String?]) -> Double? {
+        masszahlMeter(aus: texte, praefix: "d", mitBlankerCm: true)
+    }
+
+    /// Höhe/Breite in Metern aus einem Positionstext („h= 0,50 m", „höhe 0,5 m", „h=50cm").
+    /// Ohne blanke „<zahl> cm"-Rückfall — eine nackte cm-Angabe ist eher die Dicke.
+    static func hoeheMeter(aus texte: [String?]) -> Double? {
+        masszahlMeter(aus: texte, praefix: "h", mitBlankerCm: false)
+            ?? masszahlMeter(aus: texte, praefix: "höhe", mitBlankerCm: false)
+            ?? masszahlMeter(aus: texte, praefix: "hoehe", mitBlankerCm: false)
+    }
+
+    /// Ein Maß in Metern aus dem Text: „<präfix>= 0,50 m" / „<präfix> 50cm". Optional ein
+    /// Rückfall auf die erste blanke „<zahl> cm"-Angabe (nur für die Dicke sinnvoll).
+    private static func masszahlMeter(aus texte: [String?], praefix: String, mitBlankerCm: Bool) -> Double? {
         let text = texte.compactMap { $0 }.joined(separator: " ").lowercased()
-        // „d= 10cm" / „d=0,10m" bevorzugt, sonst erste „<zahl> cm"-Angabe.
-        let muster = [#"d\s*=?\s*([0-9]+(?:[.,][0-9]+)?)\s*(cm|m)\b"#,
-                      #"([0-9]+(?:[.,][0-9]+)?)\s*(cm)\b"#]
+        // \b vor dem Präfix: „h" nur als eigenes Wort/Maßkürzel, nicht mitten in „durch 5".
+        var muster = [#"\b\#(praefix)\s*=?\s*(?:ca\.?\s*)?([0-9]+(?:[.,][0-9]+)?)\s*(cm|m)\b"#]
+        if mitBlankerCm { muster.append(#"([0-9]+(?:[.,][0-9]+)?)\s*(cm)\b"#) }
         for p in muster {
             guard let re = try? NSRegularExpression(pattern: p) else { continue }
             let r = NSRange(text.startIndex..., in: text)

@@ -64,6 +64,20 @@ struct STLBKatalogTests {
         #expect(rohr?.material == nil)
     }
 
+    /// Höhe-Sprosse: „Schalung Fundamente" trifft jetzt einen eigenen Baustein mit einem
+    /// Bauteil-Richtmaß (Höhe), damit m (lfm) → m² (Schalfläche) über den MopsUmrechner geht.
+    @Test func schalungBausteinTraegtRichthoehe() async {
+        let b = STLBKatalog.shared.finde(leistung: "Schalung Fundamente")
+        #expect(b?.id == "BET-010")
+        #expect(b?.aufwandswertKey == "schalarbeiten.schalung_fundament")
+        #expect(b?.einheit == "m2")
+        #expect(b?.hoeheM == 0.5)
+        // Der Aufwandswert dahinter existiert (Schalungsbauer-Kolonne).
+        let t = AufwandswerteKatalog.shared.eintrag(key: b!.aufwandswertKey!)
+        #expect(t?.einheit == "m2")
+        #expect(t?.kolonne.contains("Schalung") == true)
+    }
+
     /// Raffis Ergänzung wirkt: Verkehrssicherung findet jetzt einen Baustein MIT Zeitwert.
     @Test func verkehrssicherungHatJetztZeit() async {
         let b = STLBKatalog.shared.finde(leistung: "Verkehrssicherung")
