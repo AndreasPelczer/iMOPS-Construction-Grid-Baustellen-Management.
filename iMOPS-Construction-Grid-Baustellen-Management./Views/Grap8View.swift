@@ -91,6 +91,8 @@ struct Grap8View: View {
     @State private var ladefehler: String?
     // Nativer „+"-Weg: einen echten Auftrag anlegen, ohne die (nur lesende) Leinwand.
     @State private var zeigeNeuerAuftrag = false
+    // Nativer Verbinden-Weg: zwei Aufträge verketten (die Kante zeichnet die Leinwand).
+    @State private var zeigeVerbinden = false
     // Steigt bei jedem neu angelegten Auftrag → die Leinwand bekommt den Graphen neu.
     @State private var aktualisierung = 0
 
@@ -114,12 +116,20 @@ struct Grap8View: View {
                 if let ladefehler {
                     fehlerbox(ladefehler)
                 } else if let event = gewaehlt {
-                    Grap8WebView(graph: Grap8Graph.aus(event),
-                                 steuerung: steuerung,
-                                 kontext: viewContext,
-                                 ladefehler: $ladefehler,
-                                 aktualisierung: aktualisierung)
-                        .ignoresSafeArea(edges: .bottom)
+                    ZStack(alignment: .bottomTrailing) {
+                        Grap8WebView(graph: Grap8Graph.aus(event),
+                                     steuerung: steuerung,
+                                     kontext: viewContext,
+                                     ladefehler: $ladefehler,
+                                     aktualisierung: aktualisierung)
+                            .ignoresSafeArea(edges: .bottom)
+
+                        // Kleine Gesamtrechnung der Baustelle — unten rechts, überm Canvas.
+                        CanvasRechnungBox(event: event)
+                            .padding(.trailing, 16)
+                            .padding(.bottom, 24)
+                            .id(aktualisierung)   // nach neuem Knoten neu rechnen
+                    }
                 } else {
                     Baustellenwahl(gewaehlt: $gewaehlt)
                 }
@@ -136,6 +146,14 @@ struct Grap8View: View {
                         .environment(\.managedObjectContext, viewContext)
                 }
             }
+            // Nativer „Verbinden": zwei Aufträge verketten. `onDismiss` schickt den Graphen
+            // neu → die neue Kante erscheint (Kanten kommen aus `Voraussetzung`).
+            .sheet(isPresented: $zeigeVerbinden, onDismiss: { aktualisierung += 1 }) {
+                if let event = gewaehlt {
+                    KnotenVerbindenView(event: event)
+                        .environment(\.managedObjectContext, viewContext)
+                }
+            }
             .navigationTitle(gewaehlt.flatMap { $0.title ?? $0.name } ?? "Grap8")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -145,6 +163,15 @@ struct Grap8View: View {
                 }
                 // Neuer Auftrag = neuer Knoten. Nativ, weil die Leinwand nur liest;
                 // nach dem Sichern wird der Graph neu geschickt und der Knoten erscheint.
+                // Zwei Knoten verketten (nativ; die Kante zeichnet die Leinwand danach).
+                if gewaehlt != nil {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { zeigeVerbinden = true } label: {
+                            Label("Verbinden", systemImage: "arrow.triangle.branch")
+                        }
+                        .tint(.orange)
+                    }
+                }
                 if gewaehlt != nil {
                     ToolbarItem(placement: .primaryAction) {
                         Button { zeigeNeuerAuftrag = true } label: {
@@ -176,6 +203,7 @@ struct Grap8View: View {
                 }
             }
         }
+        .mopsGrussBeiErscheinen()   // Bau-Mops trottet kurz ins Bild, wenn der Canvas aufgeht
     }
 
     /// Die bestehende Ansicht zum gewünschten Ziel — nichts Neues gebaut, nur geöffnet.
@@ -327,6 +355,8 @@ private struct Grap8WebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let konfiguration = WKWebViewConfiguration()
         konfiguration.userContentController.addUserScript(Self.viewportSkript)
+        konfiguration.userContentController.addUserScript(Self.auswahlStil)
+        konfiguration.userContentController.addUserScript(Self.positionsRueckkanal)
         // Die Leinwand meldet sich, sobald sie Daten annehmen kann.
         konfiguration.userContentController.add(context.coordinator, name: Self.bruecke)
 
@@ -424,6 +454,68 @@ private struct Grap8WebView: UIViewRepresentable {
         forMainFrameOnly: true
     )
 
+    /// „Wo arbeite ich gerade?" — der angeklickte Knoten UND sein rechtes Detail-Panel
+    /// bekommen dieselbe warme Markierung: oranger Ring + heller Hintergrund am Knoten,
+    /// hell-oranges Panel mit oranger Kante. So gehören Kästchen und Fenster sichtbar
+    /// zusammen. Injiziert als `<style>`, weil das Bundle kompiliert ist (kein Quelltext);
+    /// die Hintergründe stehen inline (#fff), darum überall `!important`. Die Statusfarbe
+    /// am Knoten-Rahmen bleibt — wir legen nur einen Ring darum, statt sie zu überschreiben.
+    private static let auswahlStil = WKUserScript(
+        source: """
+        (function () {
+          if (document.getElementById('mops-auswahl-stil')) return;
+          var s = document.createElement('style');
+          s.id = 'mops-auswahl-stil';
+          s.textContent =
+            '.react-flow__node.selected .g8-node{background:#FFEDD5!important;box-shadow:0 0 0 3px #F97316!important;}'
+          + 'aside{background:#FFF7ED!important;border-left:3px solid #F97316!important;}'
+          // Verbindungspunkte 50% größer (6px → 9px), damit man sie auf einen Blick sieht.
+          + '.react-flow__handle{width:9px!important;height:9px!important;min-width:9px!important;min-height:9px!important;}';
+          document.head.appendChild(s);
+        })();
+        """,
+        injectionTime: .atDocumentEnd,
+        forMainFrameOnly: true
+    )
+
+    /// Rückkanal für verschobene Knoten: das kompilierte Bundle funkt von sich aus nur
+    /// „ready" und „verwaltung". Damit gezogene Positionen bleiben, hängt sich dieses
+    /// Skript ans Loslassen (pointerup nach echtem Ziehen), liest die Flow-Koordinaten
+    /// jedes Knotens aus seinem eigenen `transform` (DOMMatrix, kein Regex) und schickt
+    /// `{action:'positionen', nodes:[{id,x,y}]}`. Swift speichert sie am `Auftrag`.
+    private static let positionsRueckkanal = WKUserScript(
+        source: """
+        (function () {
+          if (window.__mopsPosHook) return;
+          window.__mopsPosHook = true;
+          var bewegt = false;
+          document.addEventListener('pointerdown', function () { bewegt = false; }, true);
+          document.addEventListener('pointermove', function () { bewegt = true; }, true);
+          document.addEventListener('pointerup', function () {
+            if (!bewegt) return;
+            bewegt = false;
+            setTimeout(function () {
+              var knoten = document.querySelectorAll('.react-flow__node[data-id]');
+              var liste = [];
+              knoten.forEach(function (n) {
+                var id = n.getAttribute('data-id');
+                var cs = getComputedStyle(n).transform;
+                if (id && cs && cs !== 'none') {
+                  var m = new DOMMatrixReadOnly(cs);
+                  liste.push({ id: id, x: m.m41, y: m.m42 });
+                }
+              });
+              if (liste.length && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.grap8) {
+                window.webkit.messageHandlers.grap8.postMessage({ action: 'positionen', nodes: liste });
+              }
+            }, 140);
+          }, true);
+        })();
+        """,
+        injectionTime: .atDocumentEnd,
+        forMainFrameOnly: true
+    )
+
     // MARK: Coordinator
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
@@ -455,8 +547,35 @@ private struct Grap8WebView: UIViewRepresentable {
             switch aktion {
             case "ready":       schickeGraph()
             case "verwaltung":  oeffneVerwaltung(inhalt)
+            case "positionen":  speicherePositionen(inhalt)
             default:
                 logger.info("Grap8: unbekannte Aktion \(aktion, privacy: .public) — ignoriert.")
+            }
+        }
+
+        /// Verschobene Knoten festhalten: für jede Kennung den `Auftrag` auflösen und
+        /// seine Leinwand-Position setzen. Nur speichern, wenn sich wirklich etwas geändert
+        /// hat (der Rückkanal feuert nach jedem Ziehen; identische Werte sparen wir uns).
+        private func speicherePositionen(_ inhalt: [String: Any]) {
+            guard let liste = inhalt["nodes"] as? [[String: Any]] else { return }
+            var geaendert = false
+            for eintrag in liste {
+                guard let kennung = eintrag["id"] as? String,
+                      let x = (eintrag["x"] as? NSNumber)?.doubleValue,
+                      let y = (eintrag["y"] as? NSNumber)?.doubleValue,
+                      let auftrag = eltern.auftrag(zu: kennung) else { continue }
+                if auftrag.posX?.doubleValue != x || auftrag.posY?.doubleValue != y {
+                    auftrag.posX = NSNumber(value: x)
+                    auftrag.posY = NSNumber(value: y)
+                    geaendert = true
+                }
+            }
+            guard geaendert else { return }
+            do {
+                try eltern.kontext.save()
+                logger.info("Grap8: Knoten-Positionen gespeichert.")
+            } catch {
+                eltern.melde("Die neue Anordnung ließ sich nicht speichern.")
             }
         }
 

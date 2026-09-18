@@ -18,6 +18,8 @@
         <attribute name="kostenGruppeBezeichnung" optional="YES" attributeType="String"/>
         <attribute name="kostenGruppeNummer" optional="YES" attributeType="String"/>
         <attribute name="lastStartTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="posX" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="posY" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
         <attribute name="processingDetails" optional="YES" attributeType="String"/>
         <attribute name="statusRawValue" attributeType="String"/>
         <attribute name="storageLocation" optional="YES" attributeType="String"/>
@@ -212,6 +214,9 @@
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="kostenProStunde" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="stunden" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="einheit" optional="YES" attributeType="String"/>
+        <attribute name="pauschal" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="quelle" optional="YES" attributeType="String"/>
         <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkGeraete" inverseEntity="LVPosition"/>
     </entity>
     <entity name="PositionLohn" representedClassName="PositionLohn" syncable="YES">
@@ -219,6 +224,7 @@
         <attribute name="qualifikation" optional="YES" attributeType="String"/>
         <attribute name="stunden" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="stundenBruttoEK" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="quelle" optional="YES" attributeType="String"/>
         <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkLohn" inverseEntity="LVPosition"/>
     </entity>
     <entity name="PositionMaterial" representedClassName="PositionMaterial" syncable="YES">
@@ -228,6 +234,7 @@
         <attribute name="materialName" optional="YES" attributeType="String"/>
         <attribute name="mengeProEinheit" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="verschnittProzent" optional="YES" attributeType="Double" defaultValueString="0.05" usesScalarValueType="YES"/>
+        <attribute name="quelle" optional="YES" attributeType="String"/>
         <relationship name="position" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="kalkMaterialien" inverseEntity="LVPosition"/>
     </entity>
 </model>

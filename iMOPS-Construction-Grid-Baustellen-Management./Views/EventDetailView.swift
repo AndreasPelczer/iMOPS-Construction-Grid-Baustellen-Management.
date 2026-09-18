@@ -169,6 +169,9 @@ struct EventDetailView: View {
     @State private var reportPDFURL: URL?
     // Welle 5c: Wände aus Plan lesen
     @State private var showingWandLeser = false
+    @State private var showingAblaufplan = false
+    @State private var showingVerlegeplan = false
+    @State private var showingErdmassen = false
     @State private var showingMaterialliste = false
     @State private var showingGAEBImport = false
     @State private var showingWarmup = false
@@ -378,6 +381,8 @@ struct EventDetailView: View {
                     if zeigeImportKatalog {
                         gaebCard                  // Ausschreibung → LV (GAEB DA XML)
                         wandLeserCard             // Zeichnung → Wände (DXF/DWG)
+                        verlegeplanCard           // Zeichnung → Pflaster/Flächen-Mengen (DXF)
+                        erdmassenCard             // Gelände (DGM1) → Aushub-Mengen (Cut & Fill)
                         geländeCard               // Gelände → Aushub (DXF/DWG)
                         materiallisteCard         // Mengen aus Excel (.xlsx)
                         unterlagenCard            // Unterlagen (PDF) → Fakten
@@ -395,6 +400,7 @@ struct EventDetailView: View {
                     SchichtUebergabeCard(event: event)
                     brigadeCard
                     maschinenCard
+                    ablaufplanCard
                     lehrlingWarmupCard
                     jobsCard
                         .sheet(isPresented: $showingWarmup) {
@@ -434,6 +440,16 @@ struct EventDetailView: View {
             }
         }
         .toolbar {
+            // Schritt zurück (Command-Z auf iPad-Tastatur, sonst der Knopf): holt eine
+            // versehentliche Löschung — oder die letzte Änderung — zurück.
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { rueckgaengig() } label: {
+                    Label("Rückgängig", systemImage: "arrow.uturn.backward")
+                }
+                .tint(.orange)
+                .disabled(!(viewContext.undoManager?.canUndo ?? false))
+                .keyboardShortcut("z", modifiers: .command)
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showHelp = true } label: {
                     Image(systemName: "questionmark.circle")
@@ -657,6 +673,58 @@ struct EventDetailView: View {
         .buttonStyle(.plain)
         .sheet(isPresented: $showingWandLeser) {
             WandLeserView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - VERLEGEPLAN CARD (Bogen 2: Pflaster/Flächen-Mengen aus DXF, offline)
+    private var verlegeplanCard: some View {
+        Button {
+            showingVerlegeplan = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.grid.3x3.fill").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Mengen aus Verlegeplan").font(.headline).foregroundStyle(.primary)
+                    Text("Pflasterfläche, Randsteine & Aufbau aus einem DXF-Verlegeplan (offline)")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingVerlegeplan) {
+            VerlegeplanLeserView(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - ERDMASSEN CARD (Bogen 1: Gelände DGM1 → Aushub Cut & Fill)
+    private var erdmassenCard: some View {
+        Button {
+            showingErdmassen = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "mountain.2.fill").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Erdmassen aus Gelände").font(.headline).foregroundStyle(.primary)
+                    Text("Abtrag/Auftrag aus einem DGM1-Höhenraster (XYZ) → Aushub ins LV")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingErdmassen) {
+            ErdmassenView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
     }
@@ -1804,6 +1872,15 @@ struct EventDetailView: View {
         .buttonStyle(.plain)
     }
 
+    /// Ein Schritt zurück: macht die letzte Änderung am Datenbestand rückgängig
+    /// (z. B. ein versehentlich gelöschtes Kästchen) und speichert den Stand danach.
+    private func rueckgaengig() {
+        guard let undo = viewContext.undoManager, undo.canUndo else { return }
+        undo.undo()
+        try? viewContext.save()
+        refreshID = UUID()
+    }
+
     private func generateLVPDF() {
         let positionen = (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
             .sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }
@@ -2034,6 +2111,16 @@ struct EventDetailView: View {
         req.predicate = NSPredicate(format: "isActive == YES")
         return (try? viewContext.count(for: req)) ?? 0
     }
+    private func aktiveLeute() -> [Employee] {
+        let req: NSFetchRequest<Employee> = Employee.fetchRequest()
+        req.predicate = NSPredicate(format: "isActive == YES")
+        return (try? viewContext.fetch(req)) ?? []
+    }
+    /// Wie viele aktive Leute passen (über die Tarifgruppe) zu einer gebrauchten Rolle?
+    private func imTeam(fuerRolle rolle: String) -> Int {
+        let ziel = LeistungskatalogService.tarifgruppe(fuer: rolle)
+        return aktiveLeute().filter { LeistungskatalogService.tarifgruppe(fuer: $0.rolle ?? "") == ziel }.count
+    }
 
     /// Wie viele Mannstunden/-tage stecken in dieser Baustelle — aus den Aufwandswerten
     /// des LV. Ehrlich: zeigt an, wenn noch Aufwandswerte fehlen (Summe unvollständig).
@@ -2050,6 +2137,24 @@ struct EventDetailView: View {
                     .font(.subheadline.weight(.semibold))
                 Text("(bei \(Int(BrigadePlanung.stundenJeTag)) h je Person und Tag)")
                     .font(.caption2).foregroundStyle(.secondary)
+
+                // Wer wird gebraucht — nach Rolle (Nordstern: aus dem LV zur Brigade).
+                if !plan.rollen.isEmpty {
+                    Divider().padding(.vertical, 2)
+                    Text("Wer wird gebraucht").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    ForEach(plan.rollen) { r in
+                        HStack(spacing: 6) {
+                            Text(r.rolle).font(.caption)
+                            Spacer()
+                            Text("\(r.stunden.formatted(.number.precision(.fractionLength(0...1)))) h · \(r.manntage.formatted(.number.precision(.fractionLength(0...1)))) MT")
+                                .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            let n = imTeam(fuerRolle: r.rolle)
+                            Text(n > 0 ? "· \(n) im Team" : "· niemand im Team")
+                                .font(.caption2).foregroundStyle(n > 0 ? .green : .orange)
+                        }
+                    }
+                }
+
                 if leute > 0, let tage = plan.arbeitstage(beiLeuten: leute) {
                     Text("Bei \(leute) aktiven Leuten ≈ \(tage.formatted(.number.precision(.fractionLength(0...1)))) Arbeitstage")
                         .font(.subheadline)
@@ -2057,6 +2162,10 @@ struct EventDetailView: View {
                     Text("Lege im Team-Tab aktive Leute an, um die Arbeitstage zu sehen.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+
+                // Über die Bauzeit verteilt (Baubeginn→Fertigstellung): Ø Kolonnenstärke/Tag + je Rolle.
+                // Ehrlich: keine erfundene Abfolge, sondern die Auslastung über die echten Arbeitstage.
+                bauzeitVerteilung(plan: plan, leute: leute)
             }
             if plan.unvollstaendig {
                 Text("⚠️ \(plan.positionenOhneAufwand) von \(plan.positionenGesamt) Positionen noch ohne Aufwandswert — die Summe wächst, wenn du sie ergänzt.")
@@ -2068,6 +2177,46 @@ struct EventDetailView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// Personalbedarf über die Bauzeit gestreckt: Ø Leute/Tag, je Rolle, plus Team-Abgleich.
+    /// Braucht Baubeginn (eventStartTime) + Fertigstellung (eventEndTime) am Event.
+    @ViewBuilder private func bauzeitVerteilung(plan: BrigadePlanung, leute: Int) -> some View {
+        if let start = event.eventStartTime, let ende = event.eventEndTime {
+            let arbeitstage = BrigadePlanung.arbeitstageZwischen(start, ende)
+            if let v = plan.verteilung(arbeitstage: arbeitstage) {
+                let noetig = Int(v.besetzungProTag.rounded(.up))
+                Divider().padding(.vertical, 2)
+                Text("Über die Bauzeit — \(v.arbeitstage) Arbeitstag\(v.arbeitstage == 1 ? "" : "e") (Baubeginn→Fertigstellung)")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text("Ø \(v.besetzungProTag.formatted(.number.precision(.fractionLength(0...1)))) Leute/Tag → mind. \(noetig) im Team nötig, um in der Zeit fertig zu werden")
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(v.rollen) { r in
+                    HStack(spacing: 6) {
+                        Text(r.rolle).font(.caption)
+                        Spacer()
+                        Text("Ø \(r.personenProTag.formatted(.number.precision(.fractionLength(0...1))))/Tag  ·  \(r.manntage.formatted(.number.precision(.fractionLength(0...1)))) MT")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                }
+                if leute > 0 && leute < noetig {
+                    Text("⚠️ Team hat \(leute) aktive — für die Bauzeit gebraucht: \(noetig). Mehr Leute oder mehr Zeit.")
+                        .font(.caption2).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else if arbeitstage <= 0 {
+                Divider().padding(.vertical, 2)
+                Text("Fertigstellung liegt nicht nach dem Baubeginn — Zeitraum prüfen, dann verteilt der Mops den Bedarf über die Bauzeit.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } else {
+            Divider().padding(.vertical, 2)
+            Text("Setz oben Baubeginn und Fertigstellung — dann verteilt der Mops den Bedarf über die Bauzeit (Ø Leute/Tag je Rolle).")
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     // MARK: - MASCHINEN (Aushub → Bagger-Stunden, Nordstern-Stufe 3+4)
@@ -2101,6 +2250,35 @@ struct EventDetailView: View {
             .padding()
             .background(Color(.secondarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    // MARK: - ABLAUFPLAN CARD (Bogen 3: Aufträge in Bauablauf-Reihenfolge über die Bauzeit)
+    private var ablaufplanCard: some View {
+        Button {
+            showingAblaufplan = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "calendar.day.timeline.left").font(.title3).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Ablaufplan").font(.headline).foregroundStyle(.primary)
+                    Text("Aufträge in Bauablauf-Reihenfolge über die Bauzeit (Gantt)")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingAblaufplan) {
+            NavigationStack {
+                AblaufplanView(event: event)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { showingAblaufplan = false } } }
+            }
+            .environment(\.managedObjectContext, viewContext)
         }
     }
 

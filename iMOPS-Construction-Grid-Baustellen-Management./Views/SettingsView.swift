@@ -266,6 +266,12 @@ struct SettingsView: View {
                     Label("Aktives Profil", systemImage: "arrow.left.arrow.right.circle")
                 }
                 .pickerStyle(.segmented)
+
+                NavigationLink {
+                    FirmenprofilUebersichtView()
+                } label: {
+                    Label("Goldschmitt vs. Mops — Selbstkosten & Rechnung", systemImage: "rectangle.split.2x1")
+                }
             } header: {
                 Text("Firmenprofil")
             } footer: {

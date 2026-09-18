@@ -97,6 +97,14 @@ struct PersistenceController {
         if !inMemory {
             ZuschlagMigration.run(in: container.viewContext)
         }
-    
+
+        // Rückgängig ermöglichen (Command-Z / "Schritt zurück"): erst NACH den
+        // Migrationen einschalten, sonst wären deren Änderungen rückgängig-machbar.
+        // Begrenzte Tiefe = begrenzter Speicher.
+        if !inMemory {
+            let undo = UndoManager()
+            undo.levelsOfUndo = 30
+            container.viewContext.undoManager = undo
+        }
     }
     }

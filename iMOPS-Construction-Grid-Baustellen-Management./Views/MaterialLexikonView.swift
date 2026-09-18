@@ -82,6 +82,11 @@ struct MaterialLexikonView: View {
                     Label("Lager", systemImage: "shippingbox")
                 }
             }
+            ToolbarItem(placement: .navigationBarLeading) {
+                NavigationLink { MaschinenparkView() } label: {
+                    Label("Maschinen", systemImage: "wrench.and.screwdriver")
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showingAddSheet = true } label: {
                     Image(systemName: "plus")

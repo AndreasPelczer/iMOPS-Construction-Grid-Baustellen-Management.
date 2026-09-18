@@ -97,6 +97,7 @@ struct LVView: View {
     @State private var fassErgebnisse: [AutoKalkulationsService.Ergebnis] = []
     @State private var showFassReview = false
     @State private var brueckeInfo: String?   // Rückmeldung „auf den Canvas holen"
+    @State private var showingCanvas = false  // öffnet den Grap8-Canvas („Canvas ansehen")
 
     @State private var showXRMissingAlert = false
     @State private var xrMissingCount = 0
@@ -617,26 +618,45 @@ struct LVView: View {
                     }
                     .tint(.primary)
 
-                    // Brücke LV → Grap8-Canvas: Positionen als Knoten anlegen (dort kalkulierbar)
-                    Button {
-                        let n = LVCanvasBruecke.lvAufDenCanvas(event: event, in: viewContext)
-                        try? viewContext.save()
-                        brueckeInfo = n == 0
-                            ? "Alle LV-Positionen sind schon als Knoten auf dem Canvas."
-                            : "\(n) Position\(n == 1 ? "" : "en") als Knoten auf den Canvas gelegt — dort kalkulieren, dann lernt der Mops das Rezept."
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
-                                .font(.title3).foregroundStyle(.orange)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text("Auf den Canvas holen").font(.subheadline.weight(.medium))
-                                Text("LV-Positionen als Knoten (zum Kalkulieren)")
-                                    .font(.caption).foregroundStyle(.secondary)
+                    // Brücke LV → Grap8-Canvas: erst anlegen, danach ansehen (derselbe Knopf)
+                    if (event.jobs?.count ?? 0) > 0 {
+                        Button {
+                            showingCanvas = true
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+                                    .font(.title3).foregroundStyle(.orange)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text("Canvas ansehen").font(.subheadline.weight(.medium))
+                                    Text("die Knoten auf dem Canvas öffnen (zum Kalkulieren)")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
                             }
-                            Spacer()
                         }
+                        .tint(.primary)
+                    } else {
+                        Button {
+                            let n = LVCanvasBruecke.lvAufDenCanvas(event: event, in: viewContext)
+                            try? viewContext.save()
+                            brueckeInfo = n == 0
+                                ? "Alle LV-Positionen sind schon als Knoten auf dem Canvas."
+                                : "\(n) Position\(n == 1 ? "" : "en") als Knoten auf den Canvas gelegt — dort kalkulieren, dann lernt der Mops das Rezept."
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+                                    .font(.title3).foregroundStyle(.orange)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text("Auf den Canvas holen").font(.subheadline.weight(.medium))
+                                    Text("LV-Positionen als Knoten (zum Kalkulieren)")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                            }
+                        }
+                        .tint(.primary)
                     }
-                    .tint(.primary)
                 }
 
                 if gesamtFortschritt > 0 {
@@ -928,6 +948,10 @@ struct LVView: View {
                                               set: { if !$0 { brueckeInfo = nil } })) {
             Button("OK") { brueckeInfo = nil }
         } message: { Text(brueckeInfo ?? "") }
+        .fullScreenCover(isPresented: $showingCanvas) {
+            Grap8View(event: event)
+                .environment(\.managedObjectContext, viewContext)
+        }
         .fullScreenCover(isPresented: $showKostenübersicht) {
             KostenübersichtView(event: event, positionen: Array(positionen))
         }

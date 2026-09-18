@@ -86,14 +86,22 @@ extension Grap8Graph {
 
         let knoten: [Knoten] = auftraege.compactMap { auftrag in
             guard let id = kennung[ObjectIdentifier(auftrag)] else { return nil }
-            let platz = spalten[ObjectIdentifier(auftrag)] ?? (0, 0)
+            // Hat der Auftrag eine gespeicherte Leinwand-Position (weil er schon einmal
+            // verschoben wurde), gilt die. Sonst legt das Auto-Layout ihn ins Raster.
+            let position: Position
+            if let px = auftrag.posX?.doubleValue, let py = auftrag.posY?.doubleValue {
+                position = Position(x: px, y: py)
+            } else {
+                let platz = spalten[ObjectIdentifier(auftrag)] ?? (0, 0)
+                position = Position(x: 40 + Double(platz.spalte) * 260,
+                                    y: 40 + Double(platz.zeile) * 180)
+            }
             return Knoten(
                 id: id,
                 type: "auftrag",
-                position: Position(x: 40 + Double(platz.spalte) * 260,
-                                   y: 40 + Double(platz.zeile) * 180),
+                position: position,
                 data: Daten(
-                    title: Kausalkette.bezeichnung(auftrag),
+                    title: titelMitPreis(auftrag),
                     kg: kostengruppe(auftrag),
                     icon: symbol(auftrag),
                     base: zustand(auftrag),
@@ -233,6 +241,26 @@ extension Grap8Graph {
         case .onHold:     return "inArbeit"
         case .pending:    return "offen"
         }
+    }
+
+    /// Der Knoten-Titel mit dem Preis der LV-Position dahinter — damit man auf einen
+    /// Blick pro Kästchen sieht, was der Baustein kostet, und Ausreißer sofort auffallen.
+    /// Ohne verknüpfte LV-Position (nativ angelegter Auftrag) oder ohne Preis: nur der Name.
+    private static func titelMitPreis(_ auftrag: Auftrag) -> String {
+        let name = Kausalkette.bezeichnung(auftrag)
+        guard let pos = auftrag.lvPosition else { return name }
+        let preis = LVKalkulator.kalkulationFuer(pos).gesamtpreis
+        guard preis > 0 else { return name }
+        return "\(name)  ·  \(euro(preis))"
+    }
+
+    /// Kurzer Euro-Betrag ohne Nachkommastellen (z. B. „8.700 €") — zum Überfliegen.
+    private static func euro(_ wert: Double) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = "EUR"
+        f.maximumFractionDigits = 0
+        return f.string(from: NSNumber(value: wert)) ?? "\(Int(wert.rounded())) €"
     }
 
     private static func kostengruppe(_ auftrag: Auftrag) -> String {

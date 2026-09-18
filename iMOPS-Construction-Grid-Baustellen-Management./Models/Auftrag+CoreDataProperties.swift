@@ -23,6 +23,9 @@ extension Auftrag {
     @NSManaged var kostenGruppeNummer: String?
     @NSManaged var lastStartTime: Date?
     @NSManaged var processingDetails: String?
+    // Leinwand-Position (Grap8-Canvas). Optional: nil = noch nie verschoben → Auto-Layout.
+    @NSManaged var posX: NSNumber?
+    @NSManaged var posY: NSNumber?
     @NSManaged var statusRawValue: String?
     @NSManaged var storageLocation: String?
     @NSManaged var storageNote: String?

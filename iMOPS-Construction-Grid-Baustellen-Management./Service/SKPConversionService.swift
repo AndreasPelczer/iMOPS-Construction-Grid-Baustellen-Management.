@@ -114,6 +114,7 @@ class SKPConversionService {
         }
 
         try data.write(to: usdzURL)
+        MopsGruss.winke()   // umgewandelt → Bau-Mops grüßt
         return usdzURL
     }
 
@@ -161,6 +162,7 @@ class SKPConversionService {
             do {
                 try asset.export(to: usdzURL)
                 if fileManager.fileExists(atPath: usdzURL.path) {
+                    MopsGruss.winke()   // lokal umgewandelt → Bau-Mops grüßt
                     return usdzURL
                 }
             } catch {
@@ -178,6 +180,7 @@ class SKPConversionService {
         )
 
         if success {
+            MopsGruss.winke()   // lokal umgewandelt (Fallback) → Bau-Mops grüßt
             return usdzURL
         }
 

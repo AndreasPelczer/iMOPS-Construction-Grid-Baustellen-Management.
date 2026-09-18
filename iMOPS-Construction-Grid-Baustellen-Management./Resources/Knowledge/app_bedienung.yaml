@@ -417,6 +417,38 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Grap8_Canvas"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Canvas"
+    - "Leinwand"
+    - "Grap8"
+    - "Knoten verschieben"
+    - "Preis im Knoten"
+    - "Gesamtrechnung Canvas"
+    - "Knoten markieren"
+  antwort: |
+    Die Grap8-Leinwand (Canvas) zeigt die Baustelle als Knoten-Kaesten - jeder
+    Knoten ist ein Auftrag/LV-Eintrag. Aufgerufen wird sie im LV ueber "Auf den
+    Canvas holen" (danach heisst der Knopf "Canvas ansehen").
+
+    Was man sieht: Jeder Kasten traegt seinen Namen UND den Preis der LV-Position
+    dahinter ("Name  ·  8.700 EUR") - so fallen Ausreisser auf einen Blick auf. Der
+    Rahmen zeigt die Statusfarbe. Unten rechts steht die kleine Gesamtrechnung der
+    ganzen Baustelle (Material + Lohn + Geraet = Selbstkosten, dann Aufschlaege,
+    zusammen der Netto-Gesamtpreis); das "?" erklaert die Abkuerzungen.
+
+    Bedienung: Einen Kasten antippen oeffnet rechts sein Detailfenster; Kasten und
+    Fenster bekommen dieselbe orange Markierung - man sieht sofort, wo man arbeitet.
+    Kaesten lassen sich verschieben; die Anordnung bleibt jetzt gespeichert und ist
+    beim naechsten Oeffnen wieder da. "+" oben legt einen neuen Auftrag an. Ueber
+    "Knoten ins LV uebernehmen" wandern Knoten ohne LV-Position ins Leistungsverzeichnis.
+
+    Noch nicht: Umbenennen auf der Leinwand bleibt nicht erhalten.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_Ebenen_Freigabe"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

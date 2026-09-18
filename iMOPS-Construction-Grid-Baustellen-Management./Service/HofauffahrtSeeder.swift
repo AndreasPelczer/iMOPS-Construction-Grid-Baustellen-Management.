@@ -470,8 +470,11 @@ enum HofauffahrtSeeder {
         // `menge` ist die Menge JE QUADRATMETER. Die Gesamtmenge steht daneben,
         // sonst ist „0,57" im Code nicht nachvollziehbar. Verschnitt als Faktor
         // (0.05 = 5 %), siehe Dateikopf.
+        // quelle = ehrliche Herkunft je Preis, aus den Kommentaren hier drunter:
+        //   raffi = Raphaels echter Stammdaten-Preis · praxis = Markt-/Netz-Anker ·
+        //   startwert = Folgerung/Schätzung (unbelegt).
         let material: [(name: String, menge: Double, einheit: String,
-                        preis: Double, verschnitt: Double)] = [
+                        preis: Double, verschnitt: Double, quelle: String)] = [
             // ── Gezaehlt aus dem DXF ─────────────────────────────────────────
             //
             // 1294 Stueck, Layer „Pflaster".      [Netz-Anker, auf Stueck umgerechnet]
@@ -480,14 +483,14 @@ enum HofauffahrtSeeder {
             // qm-Preis, kein Haendlerpreis fuer genau diesen Stein** — wer einen
             // Angebotspreis von Pasand hat, traegt ihn hier ein.
             ("Pasand Pflaster Vollstein Nr. 59, Fine-dunkelgrau, 39×19,5×8cm",
-                                        vollsteine / flaecheQm,    "Stk",   3.04, 0),
+                                        vollsteine / flaecheQm,    "Stk",   3.04, 0, "startwert"),
             // 50 Stueck, dieselbe Reihe, halbe Laenge → halbe Flaeche, halber Preis.
             ("Pasand Pflaster Halbstein Nr. 59, 19,5×19,5×8cm",
-                                        halbsteine / flaecheQm,    "Stk",   1.52, 0),
+                                        halbsteine / flaecheQm,    "Stk",   1.52, 0, "startwert"),
             // 40 Stueck a 1,00 m, Layer „Leistensteine" = 40 lfm Randeinfassung.
             // Preis vom bisherigen Tiefbordstein uebernommen.       [Netz-Anker]
             ("Leistensteine (Randeinfassung, je 1,00 m)",
-                                     leistensteine / flaecheQm,    "Stk",   8.00, 0),
+                                     leistensteine / flaecheQm,    "Stk",   8.00, 0, "praxis"),
             //
             // ── Aus der Flaeche gerechnet ────────────────────────────────────
             //
@@ -496,21 +499,21 @@ enum HofauffahrtSeeder {
             // (`RaphaelStammdatenSeeder`); die 15 % Materialzuschlag kommen erst
             // im `LVKalkulator` obendrauf → 11,50. Vorher standen hier 7,90
             // [Werbach] — der belegte Firmenwert schlaegt den Marktanker.
-            ("Schotter 0/32 (Tragschicht)",  tragschichtT / flaecheQm,  "to", 10.00, 0),
+            ("Schotter 0/32 (Tragschicht)",  tragschichtT / flaecheQm,  "to", 10.00, 0, "raffi"),
             // 6,52 t, Layer „Splittbett 8/16", 4 cm Bettung.       [Werbach, ab Werk]
             // ⚠️ Raphaels Stammdaten fuehren **Splitt 2/8 zu 2,90 €/to** — eine
             // andere Koernung, also nicht uebertragbar. Fuer 8/16 gibt es dort
             // keinen Satz; der bisherige Wert bleibt stehen und ist damit der
             // unsicherste Preis dieser Position.
-            ("Splitt 8/16 (Bettung)",            bettungT / flaecheQm,  "to",  8.50, 0),
+            ("Splitt 8/16 (Bettung)",            bettungT / flaecheQm,  "to",  8.50, 0, "startwert"),
             // 2,01 t — Fugen einkehren                           [Werbach, ab Werk]
-            ("Abdecksand/Fugensand 0/2",                        0.02,   "to",  3.00, 0),
+            ("Abdecksand/Fugensand 0/2",                        0.02,   "to",  3.00, 0, "praxis"),
             // 110,34 m² — 10 % Ueberlappung. Preis korrigiert: Li 5,11 €/m²
             // (Raphaels echter Preis, „Vlies" 1050090) → mit 15 % Material-Zuschlag
             // Kalk 5,88. Vorher stand hier eine zu niedrige Schätzung von 1,50.
-            ("Trennvlies (Geotextil)",                          1.10,   "m²",  5.11, 0),
+            ("Trennvlies (Geotextil)",                          1.10,   "m²",  5.11, 0, "raffi"),
             // 1,00 m³ — Rueckenstuetze der Leistensteine             [Schätzung]
-            ("Beton C16/20 (Randstein-Rückenstütze)", 1.0 / flaecheQm,  "m³", 110.00, 0),
+            ("Beton C16/20 (Randstein-Rückenstütze)", 1.0 / flaecheQm,  "m³", 110.00, 0, "startwert"),
         ]
         for m in material {
             let pm = PositionMaterial(context: context)
@@ -520,6 +523,7 @@ enum HofauffahrtSeeder {
             pm.einheit = m.einheit
             pm.einzelpreis = m.preis
             pm.verschnittProzent = m.verschnitt
+            pm.quelle = m.quelle        // echte Herkunft je Preis (raffi/praxis/startwert)
             pm.position = pos
         }
 
@@ -532,36 +536,39 @@ enum HofauffahrtSeeder {
         lohn.qualifikation = "Facharbeiter/Helfer (Mischsatz)"
         lohn.stunden = 70.0 / flaecheQm
         lohn.stundenBruttoEK = 74.0
+        lohn.quelle = "startwert"
         lohn.position = pos
 
         // --- Gerät [Schätzung] ---
         //
-        // ⚠️ **Lücke 3:** Die Fuhren sind eine Stückzahl, keine Zeit. Sechs
-        // Fahrten zum Recyclinghof à 120 € stehen hier als „0,06 Stunden × 120 €"
-        // — rechnerisch ergibt das die richtigen 720 €, begrifflich ist es
-        // falsch. `PositionGeraet` kennt nur `stunden × kostenProStunde`; eine
-        // Pauschale oder einen Preis pro Stück gibt es im Modell nicht.
-        // Kleine Schwester der Fremdleistungs-Lücke.
+        // ✅ **Lücke 3 GESCHLOSSEN (17.9.):** Die Fuhren sind eine Stückzahl, keine Zeit.
+        // `PositionGeraet` kann jetzt `pauschal` (Anzahl × Preis je Einheit) — die 6 Fahrten
+        // à 120 € stehen ehrlich als „6 Fahrt × 120 €/Fahrt = 720 €", nicht mehr als 0,06 Stunden.
         // Bagger-Stunden HERGELEITET: Aushubmenge ÷ Leistung (Richtwert), nicht
         // geraten. Planum-Aushub ≈ Fläche × 0,35 m. Bei 4,4 m³/h ergibt das ~8 h wie
         // bisher — ändert man den Richtwert (Erdbauleistung.minibagger), wandert die
         // Zahl mit. Das ist der „woher die Stunden"-Nachweis aus der Bagger-Frage.
         let aushubM3 = flaecheQm * 0.35
         let baggerStunden = Erdbauleistung.stunden(menge: aushubM3, leistung: Erdbauleistung.minibagger)
-        let geraete: [(name: String, stunden: Double, satz: Double)] = [
+        // (name, anzahl, satz, pauschal, einheit). Zeit-Geräte: anzahl = Stunden JE Einheit.
+        // Pauschal (Fuhren): anzahl = ABSOLUTE Stückzahl, satz = Preis je Einheit, einheit = "Fahrt".
+        let geraete: [(name: String, anzahl: Double, satz: Double, pauschal: Bool, einheit: String)] = [
             // 35,11 m³ ÷ 4,4 m³/h ≈ 8 h Bagger (Menge ÷ Leistung, siehe oben)
-            ("Minibagger inkl. Bediener",                  baggerStunden / flaecheQm, 65.00),
+            ("Minibagger inkl. Bediener",  baggerStunden / flaecheQm, 65.00, false, "h"),
             // 10 h Rüttelplatte — Tragschicht lagenweise, Pflaster abrütteln
-            ("Rüttelplatte / Verdichter",                 10.0 / flaecheQm, 12.00),
-            // 6 Fuhren à 120 € — siehe Hinweis oben: Stückzahl im Zeit-Modell
-            ("LKW-Fuhren Aushub (6 Fahrten, je 120 €)",    6.0 / flaecheQm, 120.00),
+            ("Rüttelplatte / Verdichter",  10.0 / flaecheQm,          12.00, false, "h"),
+            // 6 Fuhren à 120 € — jetzt EHRLICH pauschal (Lücke 3 geschlossen): 6 Fahrten × 120 €.
+            ("LKW-Fuhren Aushub",          6.0,                       120.00, true,  "Fahrt"),
         ]
         for g in geraete {
             let pg = PositionGeraet(context: context)
             pg.id = UUID()
             pg.geraetName = g.name
-            pg.stunden = g.stunden
+            pg.stunden = g.anzahl
             pg.kostenProStunde = g.satz
+            pg.pauschal = g.pauschal
+            pg.einheit = g.einheit
+            pg.quelle = "startwert"
             pg.position = pos
         }
     }

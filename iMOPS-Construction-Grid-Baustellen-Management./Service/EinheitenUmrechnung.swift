@@ -1,0 +1,50 @@
+import Foundation
+
+/// Rechnet einen „pro Einheit"-Wert von einer Einheit in eine andere um — genau dann,
+/// wenn beide zur selben Größenart gehören (Masse, Volumen, Länge, Fläche).
+///
+/// Warum: Ein Aufwandswert steht im Katalog z. B. als „15 h **pro Tonne**", die
+/// LV-Position rechnet aber in **kg**. Ohne Umrechnung würden 15 h pro kg angesetzt —
+/// Faktor 1000 daneben (der Bewehrungs-Ausreißer). Passt die Größenart gar nicht
+/// zusammen (t gegen m²), gibt es KEINEN Faktor → der Aufrufer flaggt lieber, als
+/// eine grob falsche Zahl zu setzen.
+enum EinheitenUmrechnung {
+
+    // Größe einer Einheit in ihrer jeweiligen Basis (kg · l · m · m²).
+    private static let masse:   [String: Double] = ["kg": 1, "g": 0.001, "mg": 0.000001,
+                                                    "t": 1000, "to": 1000, "mg.": 0.000001]
+    private static let volumen: [String: Double] = ["l": 1, "ml": 0.001, "m3": 1000,
+                                                    "dm3": 1, "cbm": 1000, "fm": 1000, "hl": 100]
+    private static let laenge:  [String: Double] = ["m": 1, "lfm": 1, "lm": 1, "rm": 1,
+                                                    "cm": 0.01, "mm": 0.001, "dm": 0.1, "km": 1000]
+    private static let flaeche: [String: Double] = ["m2": 1, "qm": 1, "ar": 100, "ha": 10000]
+
+    private static let tabellen = [masse, volumen, laenge, flaeche]
+
+    /// Einheit vereinheitlichen: klein, ohne Leerzeichen/Punkte, ² → 2, ³ → 3.
+    static func normalisiere(_ e: String) -> String {
+        e.lowercased()
+            .replacingOccurrences(of: "²", with: "2")
+            .replacingOccurrences(of: "³", with: "3")
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: ".", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Faktor, um einen „pro `von`"-Wert in einen „pro `nach`"-Wert umzurechnen.
+    ///
+    /// `wert_pro_nach = wert_pro_von × faktor`. Beispiel t → kg: 15 h/t × 0,001 = 0,015 h/kg.
+    /// Gleiche Einheit → 1. Unterschiedliche Größenart (nicht umrechenbar) → nil.
+    static func proFaktor(von: String, nach: String) -> Double? {
+        let v = normalisiere(von)
+        let n = normalisiere(nach)
+        if v == n { return 1 }
+        for tabelle in tabellen {
+            if let basisVon = tabelle[v], let basisNach = tabelle[n] {
+                // pro-nach = pro-von × (Basisgröße nach / Basisgröße von)
+                return basisNach / basisVon
+            }
+        }
+        return nil
+    }
+}
