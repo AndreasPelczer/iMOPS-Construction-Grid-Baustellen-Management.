@@ -112,7 +112,8 @@ enum AutoKalkulationsService {
             if let b = STLBKatalog.shared.finde(leistung: bez),
                let key = b.aufwandswertKey,
                let t = AufwandswerteKatalog.shared.eintrag(key: key) {
-                return gelbAusRichtwert(t, baustein: b.id, maschinenKeys: b.maschinenKeys, pos: pos, in: ctx)
+                return gelbAusRichtwert(t, baustein: b.id, maschinenKeys: b.maschinenKeys,
+                                        material: b.material, pos: pos, in: ctx)
             }
             // Fallback: direkter Stichwort-Treffer im Aufwandswerte-Katalog.
             if let t = AufwandswerteKatalog.shared.finde(leistung: bez, langtext: pos.langtext) {
@@ -183,6 +184,7 @@ enum AutoKalkulationsService {
     /// `baustein` = STLB-ID falls über den STLB gefunden (transparent in der Meldung).
     private static func gelbAusRichtwert(_ t: AufwandsTreffer, baustein: String?,
                                          maschinenKeys: [String] = [],
+                                         material: STLBBaustein.MaterialLink? = nil,
                                          pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
         let posEinheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let stbQuelle = baustein.map { "STLB \($0) · " } ?? ""
@@ -223,15 +225,21 @@ enum AutoKalkulationsService {
         let geraeteHinweis = schreibeMaschinen(keys: maschinenKeys, pos: pos,
                                                posEinheit: posEinheit, dichte: dichte, in: ctx)
 
+        // Das Material (bei Schüttgütern der GRÖSSTE Posten) dazu: der Baustein nennt es,
+        // Preis aus den Stammdaten oder als Katalog-Richtwert, plus Lager-Stand.
+        let materialHinweis = schreibeMaterial(material, pos: pos,
+                                               posEinheit: posEinheit, dichte: dichte, in: ctx)
+
         let kalk = LVKalkulator.kalkuliere(position: pos)
 
         let g = String(format: "%g", t.mittel), lo = String(format: "%g", t.min), hi = String(format: "%g", t.max)
         // Wenn umgerechnet wurde, transparent zeigen (h/t → h/kg), sonst schlicht h/Einheit.
         let umHinweis = faktor == 1 ? ""
             : " → \(String(format: "%g", stundenProEinheit)) h/\(posEinheit) (umgerechnet)"
+        let materialOffen = material != nil ? "" : " Material fehlt noch."
         let msg = "🟡 \(stbQuelle)Richtwert \(g) h/\(t.einheit)\(umHinweis)\(dichteHinweis) (Spanne \(lo)–\(hi)) · Mannschaft: "
-                + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz).\(geraeteHinweis) "
-                + "Schätzung (Rollen + Geräte bepreist); Material fehlt noch."
+                + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz).\(geraeteHinweis)\(materialHinweis)"
+                + " Schätzung (Rollen + Geräte bepreist).\(materialOffen)"
         return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: kalk.einheitspreisVK)
     }
 
@@ -296,6 +304,71 @@ enum AutoKalkulationsService {
             teile += " Nicht umgerechnet (Einheit/Dicke unklar): \(uebersprungen.joined(separator: ", ")) — von Hand."
         }
         return teile
+    }
+
+    // MARK: - Material-Brücke (das Schüttgut an die Position + Lager-Stand)
+
+    /// Hängt das Material des Bausteins als Material-Zeile an die Position.
+    /// Menge: die Positionsmenge in die Handelseinheit des Materials umgerechnet (t↔m³ über
+    /// die Dichte) — bei Schüttgut ist das die gelieferte Tonnage. Preis in dieser Reihenfolge:
+    ///   1. Stammdaten (KalkMaterial, dein Einkaufspreis) → GRÜN „dein Wert".
+    ///   2. Katalog-Richtpreis (Praxis) → BLAU „Richtwert".
+    ///   3. keiner → 0 €, Zeile bleibt sichtbar (GELB „Materialpreis ergänzen") — ehrlich,
+    ///      damit du siehst, DASS Material gebraucht wird.
+    /// Dazu der Lager-Stand: auf Lager, teils, oder muss bestellt werden.
+    /// - Returns: Klartext-Zusatz für die Meldung (Material + Lager).
+    private static func schreibeMaterial(_ link: STLBBaustein.MaterialLink?, pos: LVPosition,
+                                         posEinheit: String, dichte: Double?,
+                                         in ctx: NSManagedObjectContext) -> String {
+        guard let link = link, pos.menge > 0 else { return "" }
+        let matEinheit = link.einheit.isEmpty ? posEinheit : link.einheit
+
+        // Menge des Materials in seiner Handelseinheit (z. B. 70 t Schotter für 70 t Position;
+        // bei einer m³-Position über die Dichte in t). Klappt die Umrechnung nicht → Menge = 1:1.
+        let matMenge = EinheitenUmrechnung.mengeUmrechnen(pos.menge, von: posEinheit, nach: matEinheit,
+                                                          dichteTproM3: dichte) ?? pos.menge
+        let mengeProEinheit = matMenge / pos.menge   // Material je Positions-Einheit
+
+        // Preis: Stammdaten vor Richtwert.
+        let preis: Double
+        let quelle: String
+        if let p = LeistungskatalogService.materialPreis(fuer: link.text, in: ctx), p > 0 {
+            preis = p; quelle = "eigen"
+        } else if let r = link.richtpreis, r > 0 {
+            preis = r; quelle = "praxis"
+        } else {
+            preis = 0; quelle = "startwert"
+        }
+
+        let pm = PositionMaterial(context: ctx)
+        pm.id = UUID()
+        pm.materialName = link.text
+        pm.einheit = matEinheit
+        pm.mengeProEinheit = mengeProEinheit
+        pm.einzelpreis = preis
+        pm.verschnittProzent = link.verschnitt
+        pm.quelle = quelle
+        pm.position = pos
+
+        // Lager: auf Lager / teils / bestellen.
+        let mengeText = "\(String(format: "%g", matMenge)) \(matEinheit)"
+        let lager: String
+        if let bestand = LeistungskatalogService.lagerBestand(fuer: link.text, in: ctx) {
+            if bestand >= matMenge {
+                lager = "auf Lager (\(String(format: "%g", bestand)) \(matEinheit) da, gebraucht \(mengeText))"
+            } else if bestand > 0 {
+                lager = "teils auf Lager (\(String(format: "%g", bestand)) \(matEinheit) da, Rest bestellen)"
+            } else {
+                lager = "Bestand 0 → bestellen"
+            }
+        } else {
+            lager = "nicht im Lager erfasst → bestellen"
+        }
+
+        let preisText = preis > 0
+            ? "\(String(format: "%.2f €", preis))/\(matEinheit)\(quelle == "eigen" ? " (dein Preis)" : " (Richtwert)")"
+            : "Preis fehlt — in Stammdaten ergänzen"
+        return " Material: \(link.text) \(mengeText) · \(preisText) · \(lager)."
     }
 
     /// Position-Menge (in ihrer Einheit) in die Leistungs-Einheit der Maschine bringen.
