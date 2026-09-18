@@ -22,7 +22,9 @@ private func stammParse(_ s: String) -> Double? {
 
 struct StammdatenPflegeView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.managedObjectContext) private var ctx
     @State private var bereich: Bereich = .loehne
+    @State private var zeigeCheck = false
 
     enum Bereich: String, CaseIterable, Identifiable {
         case loehne   = "Löhne"
@@ -58,9 +60,20 @@ struct StammdatenPflegeView: View {
             .navigationTitle("Stammdaten")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        zeigeCheck = true
+                    } label: {
+                        Label("Preis-Check", systemImage: "checklist")
+                    }
+                    .tint(.orange)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }.tint(.orange)
                 }
+            }
+            .sheet(isPresented: $zeigeCheck) {
+                StammdatenCheckView().environment(\.managedObjectContext, ctx)
             }
         }
     }

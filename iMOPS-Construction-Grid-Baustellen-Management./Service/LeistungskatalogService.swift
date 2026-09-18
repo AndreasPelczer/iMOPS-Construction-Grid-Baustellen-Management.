@@ -18,12 +18,18 @@ enum LeistungskatalogService {
     /// vorhandene Preis-Liste (gepflegt in StammdatenPflegeView, gerätelokal, vertraulich).
     /// Nachschlag über den normalisierten Namen, wie bei den Leistungsbausteinen. Kein
     /// Treffer → nil (dann bleibt der Rezept-Preis, oft 0).
+    /// Dein Materialpreis aus den Stammdaten. Preisspiegel: mehrere Lieferanten fürs selbe
+    /// Material → der GÜNSTIGSTE gewinnt (nur Einträge mit echtem Preis > 0). nil = kein
+    /// eigener Preis (dann greift der Katalog-Richtwert).
     static func materialPreis(fuer name: String, in ctx: NSManagedObjectContext) -> Double? {
         let ziel = normalisiere(name)
         guard !ziel.isEmpty else { return nil }
         let req: NSFetchRequest<KalkMaterial> = KalkMaterial.fetchRequest()
         let alle = (try? ctx.fetch(req)) ?? []
-        return alle.first { normalisiere($0.name) == ziel }?.preisProEinheit
+        return alle
+            .filter { normalisiere($0.name) == ziel && $0.preisProEinheit > 0 }
+            .map { $0.preisProEinheit }
+            .min()
     }
 
     /// Lagerbestand zu einem Material über den Namen: Katalog-Eintrag (`CDLexikonEntry`) per
