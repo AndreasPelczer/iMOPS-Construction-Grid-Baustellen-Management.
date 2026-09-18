@@ -12,14 +12,17 @@ import CoreData
 struct BKIMarktpreisKatalogTests {
 
     @Test func yamlLaedtUndFindetProBaustein() {
-        // Die Struktur-Beispiele sind da (Platzhalter), keyed über die STLB-Baustein-ID.
+        // Echte BKI-Werte (Main-Tauber, netto), keyed über die STLB-Baustein-ID.
+        // Nur der Ø/Mittelwert ist Pflicht; die volle Spanne (min/max) optional.
         let e = BKIMarktpreisKatalog.shared.eintrag(bausteinID: "STR-002")
         #expect(e != nil)
-        #expect(e?.einheit == "m3")
-        #expect(e?.min == 22)
-        #expect(e?.mittel == 30)
-        #expect(e?.max == 42)
-        #expect(e?.platzhalter == true)   // noch kein echter BKI-Wert
+        #expect(e?.einheit == "m2")
+        #expect(e?.mittel == 19)
+        #expect(e?.min == nil)            // nur Ø geerntet, keine Spanne
+        #expect(e?.platzhalter == false)  // echter Wert
+        #expect(e?.spanneText == "19 €/m2 (Ø)")
+        // Platzhalter (noch nicht geerntet) ist als solcher markiert.
+        #expect(BKIMarktpreisKatalog.shared.eintrag(bausteinID: "BET-010")?.platzhalter == true)
         // Kein Eintrag → nil (dann zeigt der Mops keinen Vergleich).
         #expect(BKIMarktpreisKatalog.shared.eintrag(bausteinID: "GIBTS-NICHT") == nil)
     }

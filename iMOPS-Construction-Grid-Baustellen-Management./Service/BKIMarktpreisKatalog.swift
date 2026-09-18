@@ -11,16 +11,20 @@ struct BKIMarktpreis: Sendable, Equatable {
     let bausteinID: String   // "STR-002" → passt zum STLBKatalog
     let bkiPosition: String  // Nachweis: welche BKI-Position
     let bkiLB: String?       // Leistungsbereich (Nachweis)
-    let einheit: String      // BKI-Einheit ("m3")
-    let min: Double
-    let von: Double
-    let mittel: Double
-    let bis: Double
-    let max: Double
+    let einheit: String      // BKI-Einheit ("m2")
+    let mittel: Double        // der Ø-/Mittelwert (aus der BKI-Trefferliste) — PFLICHT
+    let min: Double?          // volle Spanne optional (nur wenn per Klick geerntet)
+    let von: Double?
+    let bis: Double?
+    let max: Double?
     let platzhalter: Bool     // true = noch kein echter BKI-Wert (nur Struktur)
 
+    /// Anzeige: volle Spanne wenn vorhanden, sonst nur der Ø-Wert.
     var spanneText: String {
-        "\(euro(min)) – \(euro(mittel)) – \(euro(max))/\(einheit)"
+        if let mn = min, let mx = max {
+            return "\(euro(mn)) – \(euro(mittel)) – \(euro(mx))/\(einheit)"
+        }
+        return "\(euro(mittel))/\(einheit) (Ø)"
     }
     private func euro(_ d: Double) -> String { String(format: "%g €", d) }
 }
@@ -88,17 +92,19 @@ final class BKIMarktpreisKatalog: @unchecked Sendable {
             }
             guard let mp = root["marktpreise"] as? [String: Any] else { return }
             for (bid, wert) in mp {
+                // PFLICHT: Einheit + Mittel-/Ø-Wert (aus der BKI-Trefferliste). Die volle
+                // Spanne (min/von/bis/max) ist optional — kommt nur, wenn per Klick geerntet.
                 guard let e = wert as? [String: Any],
                       let einheit = e["einheit"] as? String,
-                      let min = zahl(e["min"]), let von = zahl(e["von"]),
-                      let mittel = zahl(e["mittel"]), let bis = zahl(e["bis"]),
-                      let mx = zahl(e["max"]) else { continue }
+                      let mittel = zahl(e["mittel"]) else { continue }
                 preise[bid] = BKIMarktpreis(
                     bausteinID: bid,
                     bkiPosition: (e["bki_position"] as? String) ?? "",
                     bkiLB: e["bki_lb"] as? String,
                     einheit: einheit,
-                    min: min, von: von, mittel: mittel, bis: bis, max: mx,
+                    mittel: mittel,
+                    min: zahl(e["min"]), von: zahl(e["von"]),
+                    bis: zahl(e["bis"]), max: zahl(e["max"]),
                     platzhalter: (e["platzhalter"] as? Bool) ?? false)
             }
             logger.info("BKI-Marktpreise geladen: \(self.preise.count)")
