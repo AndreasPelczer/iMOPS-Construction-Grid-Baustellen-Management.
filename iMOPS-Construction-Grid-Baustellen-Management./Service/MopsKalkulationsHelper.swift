@@ -78,28 +78,38 @@ final class MopsKalkulationsHelper {
     /// KI-Schätzung, KEIN Angebot — immer als „geraten" markieren, Mensch prüft.
     func leistungsSchaetzung(leistung: String, einheit: String) async -> (material: Double?, einbau: Double?) {
         guard isConnected else { return (nil, nil) }
-        let frage = "Für die Bauleistung \(leistung) (Deutschland, grobe Orientierung, kein verbindliches Angebot), "
-            + "je \(einheit): ungefährer Materialanteil und ungefährer Einbauanteil (Lohn + Gerät) in EUR. "
-            + "Ist es reine Materiallieferung, setze EINBAU=0. "
-            + "Antworte NUR in diesem Format: MATERIAL=X.XX EINBAU=Y.YY"
+        // ZWEI einfache Fragen im bewährten „PREIS=X.XX"-Format statt einer komplizierten
+        // Doppel-Frage — die liefert der (langsame, CPU-only) Prof zuverlässiger. Parallel,
+        // damit es bei ~2 Min bleibt statt sich zu verdoppeln.
+        async let material = teilpreis("den reinen Materialpreis (nur Stoff, OHNE Einbau)", leistung, einheit)
+        async let einbau   = teilpreis("die reinen Einbaukosten (Lohn + Gerät, OHNE Material; reine Materiallieferung = 0)", leistung, einheit)
+        return await (material, einbau)
+    }
+
+    private func teilpreis(_ was: String, _ leistung: String, _ einheit: String) async -> Double? {
+        guard isConnected else { return nil }
+        let frage = "Nenne \(was) für die Bauleistung \(leistung) pro \(einheit) in EUR "
+            + "(Deutschland, grobe Orientierung, kein verbindliches Angebot). "
+            + "Antworte NUR in diesem Format: PREIS=X.XX"
         do {
             let response = try await client.ask(question: frage, useProf: true)
-            return (parseZahl("MATERIAL", response.answer), parseZahl("EINBAU", response.answer))
+            return parsePreis(response.answer)
         } catch {
-            logger.warning("Leistungs-Schätzung fehlgeschlagen: \(error.localizedDescription)")
-            return (nil, nil)
+            logger.warning("Teilpreis-Anfrage fehlgeschlagen: \(error.localizedDescription)")
+            return nil
         }
     }
 
     private func parseZahl(_ schluessel: String, _ text: String) -> Double? {
         let upper = text.uppercased()
-        let muster = "\(schluessel.uppercased())\\s*=?\\s*(\\d+[.,]?\\d*)"
-        guard let r = upper.range(of: muster, options: .regularExpression) else { return nil }
-        let num = String(upper[r])
-            .replacingOccurrences(of: schluessel.uppercased(), with: "")
-            .replacingOccurrences(of: "=", with: "")
-            .replacingOccurrences(of: ",", with: ".")
-            .trimmingCharacters(in: .whitespaces)
+        let key = schluessel.uppercased()
+        // Tolerant: KEY, dann optional : oder = oder „CA."/„~"/€ und Leerzeichen, dann die Zahl.
+        // Fängt „MATERIAL=18.00", „MATERIAL: 18", „MATERIAL ca. 18 €" gleichermaßen.
+        let muster = "\(key)\\s*[:=]?\\s*(?:CA\\.?|~)?\\s*€?\\s*(\\d+(?:[.,]\\d+)?)"
+        guard let r = upper.range(of: muster, options: .regularExpression),
+              let zahlR = String(upper[r]).range(of: "\\d+(?:[.,]\\d+)?", options: .regularExpression)
+        else { return nil }
+        let num = String(upper[r])[zahlR].replacingOccurrences(of: ",", with: ".")
         return Double(num)
     }
 
