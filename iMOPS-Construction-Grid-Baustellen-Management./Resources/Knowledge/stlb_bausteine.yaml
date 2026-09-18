@@ -365,6 +365,18 @@ beton:
     aufwandswert_key: "schalarbeiten.schalung_fundament"
     geometrie:
       hoehe_m: 0.5      # Richthöhe für lfm-Ausschreibungen (m→m²) — Richtwert, prüfen
+    # Schalung ist wiederverwendbar → Hauptkosten neben dem Lohn sind die VORHALTUNG
+    # (Miete/Abschreibung der Schalung), nicht verbrauchtes Material. Verbraucht wird nur
+    # das Trennmittel (Schalöl). Beides Praxis-Richtwerte, prüfen.
+    vorhaltung:
+      bezeichnung: "Fundamentschalung (Vorhaltung)"
+      pro_m2: 5.0       # €/m² Schalfläche je Einsatz (Miete/Abschreibung) — Richtwert
+      einsaetze: 1
+    material:
+      text: "Schalöl (Trennmittel)"
+      einheit: "m2"
+      richtpreis: 0.35  # €/m² Schalfläche (Trennmittel) — Richtwert
+      verschnitt: 0.0
     tags: ["Schalung", "Fundamentschalung", "Schalarbeiten", "Fundamente"]
 
 # ============================================================================
