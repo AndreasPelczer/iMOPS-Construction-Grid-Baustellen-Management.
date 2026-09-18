@@ -131,34 +131,36 @@ struct LVTiefenkalkulationView: View {
         defer { kiLaeuft = false }
         let name = position.bezeichnung ?? ""
         let eh = position.einheit ?? ""
-        // Ganze Leistung schätzen: Material UND Einbau (Lohn+Gerät).
+        // Ganze Leistung schätzen: Material UND Einbau (Lohn+Gerät) — je als SPANNE.
         let (material, einbau) = await MopsKalkulationsHelper.shared.leistungsSchaetzung(leistung: name, einheit: eh)
-        guard (material ?? 0) > 0 || (einbau ?? 0) > 0 else {
+        guard material != nil || einbau != nil else {
             quelleInfo = "Der Mops hat gerade keine Schätzung — offline, oder er weiß nichts dazu. Trag den Wert von Hand ein."
             return
         }
-        if let m = material, m > 0 {
+        // „liegt etwa zwischen X und Y" sichtbar dranschreiben; Arbeitswert = Mitte.
+        func spanneText(_ s: MopsKalkulationsHelper.Spanne) -> String {
+            "\(zahl(s.min))–\(zahl(s.max)) €/\(eh)"
+        }
+        if let s = material, s.mittel > 0 {
             let pm = PositionMaterial(context: viewContext)
             pm.id = UUID()
-            pm.materialName = "KI-Schätzung: \(name)"
-            pm.einzelpreis = m
+            pm.materialName = "KI-Schätzung: \(name) (\(spanneText(s)))"
+            pm.einzelpreis = s.mittel
             pm.mengeProEinheit = 1
             pm.verschnittProzent = 0
             pm.einheit = eh
             pm.quelle = "ki"
             pm.position = position
         }
-        if let e = einbau, e > 0 {
-            // Einbau als EIN Geräte-Posten je Einheit (1 Einheit × geschätzter Preis).
-            // Bewusst NICHT als Lohn: die Lohn-Zeile rechnet Stunden × echten Tarif und
-            // triebe den Firmenprofil-Vergleich in die Irre. Als Gerät liest es sich wie
-            // das Material („1 t × 6 €/t") und der geschätzte Preis bleibt der Preis.
+        if let s = einbau, s.mittel > 0 {
+            // Einbau als EIN Geräte-Posten je Einheit — bewusst nicht als Lohn (das triebe
+            // den Firmenprofil-Vergleich in die Irre). Arbeitswert = Mitte, Spanne im Namen.
             let pg = PositionGeraet(context: viewContext)
             pg.id = UUID()
-            pg.geraetName = "Einbau (Lohn + Gerät), geschätzt"
+            pg.geraetName = "Einbau (Lohn + Gerät), geschätzt (\(spanneText(s)))"
             pg.stunden = 1
-            pg.kostenProStunde = e
-            pg.einheit = eh          // zeigt „1 t × 6 €/t" statt einer Schein-Stunde
+            pg.kostenProStunde = s.mittel
+            pg.einheit = eh
             pg.pauschal = false
             pg.quelle = "ki"
             pg.position = position

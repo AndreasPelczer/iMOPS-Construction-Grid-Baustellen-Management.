@@ -76,26 +76,33 @@ final class MopsKalkulationsHelper {
     /// (Lohn + Gerät) je Einheit. So bekommt eine „herstellen"-Position (liefern + einbauen
     /// + verdichten) gleich den ganzen Preis, nicht nur das Material.
     /// KI-Schätzung, KEIN Angebot — immer als „geraten" markieren, Mensch prüft.
-    func leistungsSchaetzung(leistung: String, einheit: String) async -> (material: Double?, einbau: Double?) {
+    /// Eine geschätzte Spanne „liegt etwa zwischen min und max" — ehrlicher als eine
+    /// Schein-genaue Punktzahl. `mittel` ist der Arbeitswert für die Rechnung.
+    struct Spanne { let min: Double; let max: Double; var mittel: Double { (min + max) / 2 } }
+
+    func leistungsSchaetzung(leistung: String, einheit: String) async -> (material: Spanne?, einbau: Spanne?) {
         guard isConnected else { return (nil, nil) }
-        // ZWEI einfache Fragen im bewährten „PREIS=X.XX"-Format statt einer komplizierten
-        // Doppel-Frage — die liefert der (langsame, CPU-only) Prof zuverlässiger. Parallel,
-        // damit es bei ~2 Min bleibt statt sich zu verdoppeln.
-        async let material = teilpreis("den reinen Materialpreis (nur Stoff, OHNE Einbau)", leistung, einheit)
-        async let einbau   = teilpreis("die reinen Einbaukosten (Lohn + Gerät, OHNE Material; reine Materiallieferung = 0)", leistung, einheit)
+        // ZWEI einfache Fragen, jede als SPANNE (MIN/MAX) statt Punktzahl — parallel, damit
+        // es bei ~2 Min bleibt. Die Spanne ist ehrlich: die KI würfelt sonst jedes Mal eine
+        // andere Zahl AUS derselben Spanne; dann zeigen wir gleich die Spanne.
+        async let material = teilspanne("den reinen Materialpreis (nur Stoff, OHNE Einbau)", leistung, einheit)
+        async let einbau   = teilspanne("die reinen Einbaukosten (Lohn + Gerät, OHNE Material; reine Materiallieferung = 0)", leistung, einheit)
         return await (material, einbau)
     }
 
-    private func teilpreis(_ was: String, _ leistung: String, _ einheit: String) async -> Double? {
+    private func teilspanne(_ was: String, _ leistung: String, _ einheit: String) async -> Spanne? {
         guard isConnected else { return nil }
         let frage = "Nenne \(was) für die Bauleistung \(leistung) pro \(einheit) in EUR "
-            + "(Deutschland, grobe Orientierung, kein verbindliches Angebot). "
-            + "Antworte NUR in diesem Format: PREIS=X.XX"
+            + "als realistische SPANNE (untere und obere Grenze; Deutschland, grobe Orientierung, "
+            + "kein verbindliches Angebot). Antworte NUR in diesem Format: MIN=X.XX MAX=Y.YY"
         do {
             let response = try await client.ask(question: frage, useProf: true)
-            return parsePreis(response.answer)
+            guard let a = parseZahl("MIN", response.answer),
+                  let b = parseZahl("MAX", response.answer),
+                  a >= 0, b >= 0, (a + b) > 0 else { return nil }
+            return Spanne(min: Swift.min(a, b), max: Swift.max(a, b))
         } catch {
-            logger.warning("Teilpreis-Anfrage fehlgeschlagen: \(error.localizedDescription)")
+            logger.warning("Spannen-Anfrage fehlgeschlagen: \(error.localizedDescription)")
             return nil
         }
     }
