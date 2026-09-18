@@ -557,6 +557,13 @@ pflaster:
     gewerk: "Pflasterarbeiten"
     din: "DIN 18318"
     aufwandswert_key: "pflasterarbeiten.splittbett_herstellen"
+    geometrie:
+      dicke_m: 0.04     # Standard-Bettungsdicke 4 cm — falls der Text keine nennt (m²→m³)
+    material:
+      text: "Edelsplitt 2/5"
+      einheit: "m3"
+      richtpreis: 45    # €/m³ Praxis-Richtwert (Edelsplitt 2/5, ab Werk, regional ±20%)
+      verschnitt: 0.0
     tags: ["Bettungsmaterial", "Splitt", "Bettung"]
 
   PFL-007:
@@ -579,6 +586,13 @@ pflaster:
     gewerk: "Pflasterarbeiten"
     din: "DIN 18318"
     aufwandswert_key: "pflasterarbeiten.splittbett_herstellen"
+    geometrie:
+      dicke_m: 0.04     # Standard-Bettungsdicke 4 cm — falls der Text keine nennt (m²→m³)
+    material:
+      text: "Edelsplitt 2/5"
+      einheit: "m3"
+      richtpreis: 45    # €/m³ Praxis-Richtwert (Edelsplitt 2/5, ab Werk, regional ±20%)
+      verschnitt: 0.0
     tags: ["Splittbett", "Pflasterbett", "Bettung"]
 
   PFL-002:

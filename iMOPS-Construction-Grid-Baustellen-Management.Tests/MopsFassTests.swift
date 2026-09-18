@@ -33,6 +33,19 @@ struct MopsFassTests {
         #expect(e.einheitspreisVK > 0)
     }
 
+    @Test @MainActor func bettungBekommtSplittMaterial() throws {
+        // „Bettungsmaterial liefern" 50 m³ → PFL-006: der Edelsplitt wird jetzt als Material
+        // angezeigt (vorher fehlte der Material-Link → „wird nicht angezeigt").
+        let pos = position("Bettungsmaterial liefern und einbauen", "m3", menge: 50)
+        let e = AutoKalkulationsService.bewerte(pos, in: ctx)
+        let splitt = pos.materialArray.first { ($0.materialName ?? "").contains("Edelsplitt") }
+        #expect(splitt != nil)
+        #expect(splitt?.einzelpreis == 45)
+        // m³-Position, m³-Material → 1:1 (50 m³ Splitt für 50 m³ Bettung).
+        #expect(splitt?.mengeProEinheit == 1)
+        #expect(e.meldungen.first?.contains("Edelsplitt") == true)
+    }
+
     @Test @MainActor func roteWennKeinRezept() throws {
         let e = AutoKalkulationsService.bewerte(position("Dachbegrünung extensiv", "m²"), in: ctx)
         #expect(e.status == .rot)
