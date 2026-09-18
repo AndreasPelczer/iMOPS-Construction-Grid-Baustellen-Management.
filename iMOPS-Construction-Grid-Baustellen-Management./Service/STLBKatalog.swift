@@ -20,6 +20,7 @@ struct STLBBaustein: Sendable, Equatable, Identifiable {
     let aufwandswertKey: String? // "erdarbeiten.graben_ausheben" → AufwandswerteKatalog.eintrag(key:)
     let maschinenKeys: [String]  // ["erdbau.minibagger_3t", ...] → MaschinenKatalog
     let material: MaterialLink?  // das Schüttgut/Material der Position (Schotter …)
+    let vorhaltung: VorhaltungLink? // wiederverwendbares Betriebsmittel (Schalung) — Gerätekosten je Fläche
     let hoeheM: Double?          // Bauteil-Richthöhe (m) — Brückenmaß Länge↔Fläche (Schalung), wenn der Text keine nennt
     let dickeM: Double?          // Bauteil-Richtdicke (m) — Brückenmaß Fläche↔Volumen, wenn der Text keine nennt
     let tags: [String]           // Suchbegriffe (tragen Synonyme)
@@ -33,6 +34,15 @@ struct STLBBaustein: Sendable, Equatable, Identifiable {
         let einheit: String     // Handelseinheit des Materials ("t")
         let richtpreis: Double? // €/Einheit Praxis-Richtwert, falls keine Stammdaten
         let verschnitt: Double  // Anteil (0,05 = 5 %), bei Schüttgut meist 0
+    }
+
+    /// Vorhaltung eines wiederverwendbaren Betriebsmittels (Schalung): NICHT verbrauchtes
+    /// Material, sondern Miete/Abschreibung je Schalfläche und Einsatz → Gerätekosten. So kommt
+    /// der Hauptkostenblock der Schalung neben dem Lohn ehrlich in den Preis (statt „fehlt").
+    struct VorhaltungLink: Sendable, Equatable {
+        let bezeichnung: String // "Fundamentschalung (Vorhaltung)"
+        let proM2: Double       // €/m² Schalfläche JE Einsatz (Praxis-Richtwert)
+        let einsaetze: Double   // wie oft in dieser Position eingesetzt (meist 1)
     }
 }
 
@@ -135,6 +145,14 @@ final class STLBKatalog: @unchecked Sendable {
                         richtpreis: zahlAus(mb["richtpreis"]),
                         verschnitt: zahlAus(mb["verschnitt"]) ?? 0)
                 }
+                var vorhaltung: STLBBaustein.VorhaltungLink? = nil
+                if let vb = b["vorhaltung"] as? [String: Any],
+                   let proM2 = zahlAus(vb["pro_m2"]), proM2 > 0 {
+                    vorhaltung = STLBBaustein.VorhaltungLink(
+                        bezeichnung: (vb["bezeichnung"] as? String) ?? "Schalung (Vorhaltung)",
+                        proM2: proM2,
+                        einsaetze: zahlAus(vb["einsaetze"]) ?? 1)
+                }
                 let geo = b["geometrie"] as? [String: Any]
                 result.append(STLBBaustein(
                     id: bid,
@@ -147,6 +165,7 @@ final class STLBKatalog: @unchecked Sendable {
                     aufwandswertKey: b["aufwandswert_key"] as? String,
                     maschinenKeys: maschinen,
                     material: material,
+                    vorhaltung: vorhaltung,
                     hoeheM: zahlAus(geo?["hoehe_m"]),
                     dickeM: zahlAus(geo?["dicke_m"]),
                     tags: tags))

@@ -2,6 +2,19 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 18.09.2026 (Nachmittag II) — Mops lernt Schalung (Vorhaltung + Schalöl) · Bettung zeigt Splitt · BKI-Orakel vorbereitet (Markt-Vergleich)
+
+**Branch `feature/mops-lernt-schalung`, gebaut+getestet, Andreas mergt im Browser.** Drei Stücke, alle nach dem „Katalog vor KI"-Muster.
+
+- **Schalung ist kein Schüttgut** (Andreas' Punkt): sie ist wiederverwendbar → Hauptkosten neben dem Lohn sind die **Vorhaltung** (Miete/Abschreibung der Schalung, €/m² je Einsatz = Gerät), verbraucht wird nur **Schalöl** (Trennmittel = Material). Neu: `STLBBaustein.VorhaltungLink` + `schreibeVorhaltung` (Schalfläche aus der Positionsmenge über den MopsUmrechner → €/m²×Einsätze als pauschale Geräte-Zeile). `schreibeGeraetPauschal` verallgemeinert (Tag/m²/…). **BET-010** trägt jetzt Vorhaltung (5 €/m²·Einsatz) + Schalöl (0,35 €/m², über die Material-Brücke). Test: 115 m → Lohn + Vorhaltung 287,50 € (57,5 m²×5) + Schalöl.
+- **Bettung zeigt den Splitt** (Andreas: „Splitt ist da, wird nicht angezeigt"): dem Baustein fehlte der Material-Link. **PFL-006 + PFL-001** tragen jetzt `material: Edelsplitt 2/5` (m³, 45 €/m³ Richtwert) + `geometrie.dicke_m 0.04` (fürs Lohn-Umrechnen m²-Aufwandswert→m³-Position).
+- **BKI-Orakel vorbereitet** (Markt-Vergleich, KEINE Kalkulationsgrundlage): neu `Resources/Knowledge/bki_marktpreise_2026.yaml` (5. Wissens-YAML; meta + `marktpreise:` je STLB-Baustein-ID mit min/von/mittel/bis/max, `platzhalter: true` bis echte Werte da sind), `Service/BKIMarktpreisKatalog.swift` (Loader), `AutoKalkulationsService.preisInPositionsEinheit` (rechnet BKI-Preis über die Leiter in die Positions-Einheit, fairer Vergleich), `marktVergleichSection` in `LVTiefenkalkulationView` (BKI-Spanne neben dem eigenen EP + neutrale Abweichung „X% unter/über Markt-Mittel", Quelle + Platzhalter-Warnung). Zeigt nur, wenn ein Eintrag existiert.
+- Tests: `BKIMarktpreisKatalogTests` (Laden + m³→t-Umrechnung), Schalung- + Bettung-Integrationstests, voller Preis-Pfad grün.
+
+**🧭 ANDREAS' PLAN (BKI, entschieden):** BKI Baupreise Online Neubau (~99 €/Jahr, 14.000 Positionen, Regionalfaktor **Main-Tauber-Kreis**, 4 Wochen gratis testen). Er **erntet selbst** die Preise zu unseren ~92 STLB-Bausteinen (min/von/mittel/bis/max) und gibt sie mir → ich fülle `bki_marktpreise_2026.yaml`. Legal (Abo-Lizenz), nachweisbar (jeder Preis trägt seine BKI-Position), jährlich aktualisiert. **Drei Mops-Fähigkeiten** daraus: (1) Plausibilität ✅ (Anzeige gebaut: EP vs. Markt-Mittel), (2) GELB-statt-ROT mit BKI-Mittel als Startwert bei fehlendem Wert — OFFEN, (3) Angebots-/Preisspiegel-Bewertung gegen BKI max — OFFEN.
+
+**🔴 OFFENE BÖGEN:** (a) **Preisspiegel für Material-Einkauf** (Andreas' Idee): mehrere Lieferanten je Material `{Lieferant, Preis, Einheit, Datum}` → günstigster als Vorschlag, Vergleich sichtbar. Quellen: Scharpegge-Preisliste (angefragt, ohne Preisspalte bisher!) + eine Alternativeinkaufsliste (wird erstellt). Knackpunkt: dasselbe Material über Lieferanten hinweg zusammenführen (Name normalisiert). (b) **Varianten-Frage Wand-Schalung** (System/konventionell) — bei Fundament fix, bei Wand relevant. (c) BKI-Fähigkeiten 2+3. (d) Material-Links an weitere Bausteine (Fleiß-Sache, sobald man auf einen ohne stößt).
+
 ## Delta 18.09.2026 (Nachmittag) — MopsUmrechner: EIN Umrechner (die Leiter) räumt die verstreuten Brücken auf + löst die Schalung (Höhe). Nächster Bogen: „der Mops lernt Schalung"
 
 **Branch `feature/mops-umrechner`, gebaut+getestet, Andreas mergt im Browser.** Antwort auf Andreas' Frage „haben wir keine Vorlage für die t↔m³/m↔m²-Umrechnungen?".

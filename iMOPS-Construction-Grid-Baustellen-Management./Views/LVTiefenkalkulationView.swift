@@ -244,6 +244,7 @@ struct LVTiefenkalkulationView: View {
             geraeteSection
             zuschlagSection
             ergebnisSection
+            marktVergleichSection
             mopsBonusSection
         }
         .listStyle(.insetGrouped)
@@ -776,6 +777,76 @@ struct LVTiefenkalkulationView: View {
             .clipShape(Capsule())
         }
         .frame(height: 8)
+    }
+
+    // MARK: - Markt-Vergleich (BKI-Orakel)
+
+    /// BKI-Marktpreis zu dieser Position (über den STLB-Baustein) + das Markt-Mittel in der
+    /// Positions-Einheit (fair vergleichbar über den MopsUmrechner), falls überbrückbar.
+    private var bkiVergleich: (preis: BKIMarktpreis, mittelInEinheit: Double?)? {
+        guard !position.istElement, let bez = position.bezeichnung,
+              let b = STLBKatalog.shared.finde(leistung: bez),
+              let bki = BKIMarktpreisKatalog.shared.eintrag(bausteinID: b.id) else { return nil }
+        let normPos = EinheitenUmrechnung.normalisiere(position.einheit ?? "")
+        let normBki = EinheitenUmrechnung.normalisiere(bki.einheit)
+        let mittel = normPos == normBki ? bki.mittel
+            : AutoKalkulationsService.preisInPositionsEinheit(bki.mittel, vonEinheit: bki.einheit, pos: position)
+        return (bki, mittel)
+    }
+
+    /// Der Markt-Vergleich: BKI-Spanne (min–mittel–max) neben dem selbst gerechneten EP, mit
+    /// neutraler Abweichung. Nur Orientierung — überschreibt NIE die Kalkulation.
+    @ViewBuilder private var marktVergleichSection: some View {
+        if let v = bkiVergleich {
+            let bki = v.preis
+            let eigen = kalkulation.einheitspreisVK
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    if bki.platzhalter {
+                        Label("Platzhalter — echten BKI-Wert eintragen", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                    }
+                    HStack {
+                        Text("BKI-Markt").font(.subheadline).foregroundStyle(.secondary)
+                        Spacer()
+                        Text(bki.spanneText).font(.subheadline.monospacedDigit())
+                    }
+                    if eigen > 0 {
+                        HStack {
+                            Text("Dein EP").font(.subheadline)
+                            Spacer()
+                            Text("\(eigen.formatted(.currency(code: "EUR")))/\(einheitKurz)")
+                                .font(.subheadline.monospacedDigit().bold())
+                        }
+                        if let mittel = v.mittelInEinheit, mittel > 0 {
+                            let delta = (eigen - mittel) / mittel
+                            Text(deltaText(delta))
+                                .font(.caption)
+                                .foregroundStyle(abs(delta) > 0.20 ? .orange : .secondary)
+                        } else {
+                            Text("Andere Einheit als BKI (\(bki.einheit)) — direkter Vergleich, ohne Prozent.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    if !bki.bkiPosition.isEmpty {
+                        Text("BKI-Position: \(bki.bkiPosition)").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Text("\(BKIMarktpreisKatalog.shared.quelle) · \(BKIMarktpreisKatalog.shared.stand)")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 2)
+            } header: {
+                Label("Markt-Vergleich (BKI)", systemImage: "chart.bar.doc.horizontal")
+            } footer: {
+                Text("Nur zur Orientierung — der Mops überschreibt deine Kalkulation nicht. BKI = Baupreise aus abgerechneten Objekten.")
+            }
+        }
+    }
+
+    private func deltaText(_ delta: Double) -> String {
+        let p = Int((abs(delta) * 100).rounded())
+        if p < 1 { return "Auf Markt-Mittel." }
+        return delta < 0 ? "\(p)% unter Markt-Mittel." : "\(p)% über Markt-Mittel."
     }
 
     // MARK: - Mops Bonus

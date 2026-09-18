@@ -113,7 +113,8 @@ enum AutoKalkulationsService {
                let key = b.aufwandswertKey,
                let t = AufwandswerteKatalog.shared.eintrag(key: key) {
                 return gelbAusRichtwert(t, baustein: b.id, maschinenKeys: b.maschinenKeys,
-                                        material: b.material, richtHoeheM: b.hoeheM, richtDickeM: b.dickeM,
+                                        material: b.material, vorhaltung: b.vorhaltung,
+                                        richtHoeheM: b.hoeheM, richtDickeM: b.dickeM,
                                         pos: pos, in: ctx)
             }
             // Fallback: direkter Stichwort-Treffer im Aufwandswerte-Katalog.
@@ -186,6 +187,7 @@ enum AutoKalkulationsService {
     private static func gelbAusRichtwert(_ t: AufwandsTreffer, baustein: String?,
                                          maschinenKeys: [String] = [],
                                          material: STLBBaustein.MaterialLink? = nil,
+                                         vorhaltung: STLBBaustein.VorhaltungLink? = nil,
                                          richtHoeheM: Double? = nil, richtDickeM: Double? = nil,
                                          pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
         let posEinheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -229,15 +231,20 @@ enum AutoKalkulationsService {
         let materialHinweis = schreibeMaterial(material, pos: pos,
                                                posEinheit: posEinheit, bruecke: bruecke, in: ctx)
 
+        // Vorhaltung (Schalung): das wiederverwendbare Betriebsmittel als Geräte-Zeile —
+        // €/m² Schalfläche je Einsatz. Der Hauptkostenblock der Schalung neben dem Lohn.
+        let vorhaltungHinweis = schreibeVorhaltung(vorhaltung, pos: pos,
+                                                   posEinheit: posEinheit, bruecke: bruecke, in: ctx)
+
         let kalk = LVKalkulator.kalkuliere(position: pos)
 
         let g = String(format: "%g", t.mittel), lo = String(format: "%g", t.min), hi = String(format: "%g", t.max)
         // Wenn umgerechnet wurde, transparent zeigen (h/t → h/kg), sonst schlicht h/Einheit.
         let umHinweis = um.proFaktor == 1 ? ""
             : " → \(String(format: "%g", stundenProEinheit)) h/\(posEinheit) (umgerechnet)"
-        let materialOffen = material != nil ? "" : " Material fehlt noch."
+        let materialOffen = (material == nil && vorhaltung == nil) ? " Material fehlt noch." : ""
         let msg = "🟡 \(stbQuelle)Richtwert \(g) h/\(t.einheit)\(umHinweis)\(dichteHinweis) (Spanne \(lo)–\(hi)) · Mannschaft: "
-                + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz).\(geraeteHinweis)\(materialHinweis)"
+                + "\(t.kolonne.isEmpty ? "—" : t.kolonne) · Quelle \(t.quelleKurz).\(geraeteHinweis)\(vorhaltungHinweis)\(materialHinweis)"
                 + " Schätzung (Rollen + Geräte bepreist).\(materialOffen)"
         return Ergebnis(position: pos, status: .gelb, meldungen: [msg], einheitspreisVK: kalk.einheitspreisVK)
     }
@@ -293,7 +300,7 @@ enum AutoKalkulationsService {
             }
             guard let tag = m.mieteTag, tag > 0 else { uebersprungen.append(m.bezeichnung); continue }
             schreibeGeraetPauschal(name: "\(m.bezeichnung) (Miet-Richtwert)",
-                                   tage: mk.tage, satzProTag: tag,
+                                   anzahl: Double(mk.tage), zaehlEinheit: "Tag", satzProEinheit: tag,
                                    quelle: "katalog", pos: pos, in: ctx)
             dran.append("\(m.bezeichnung) (\(mk.tage) Tag\(mk.tage == 1 ? "" : "e") leihen)")
         }
@@ -371,6 +378,31 @@ enum AutoKalkulationsService {
         return " Material: \(link.text) \(mengeText) · \(preisText) · \(lager)."
     }
 
+    // MARK: - Vorhaltung (Schalung als wiederverwendbares Gerät)
+
+    /// Hängt die Schalungs-Vorhaltung als Geräte-Zeile an: €/m² Schalfläche × Einsätze, pauschal.
+    /// Die Schalfläche kommt aus der Positionsmenge über den Umrechner (m lfm → m² über die Höhe,
+    /// m³ → m² über die Dicke …). So steht der Hauptkostenblock der Schalung neben dem Lohn.
+    /// - Returns: Klartext-Zusatz für die Meldung.
+    private static func schreibeVorhaltung(_ link: STLBBaustein.VorhaltungLink?, pos: LVPosition,
+                                           posEinheit: String, bruecke: MopsUmrechner.Bruecke,
+                                           in ctx: NSManagedObjectContext) -> String {
+        guard let link = link, pos.menge > 0, link.proM2 > 0 else { return "" }
+        // Schalfläche in m². Ist die Position schon in m², direkt; sonst über die Leiter.
+        guard let flaeche = MopsUmrechner.mengeUmrechnen(pos.menge, von: posEinheit, nach: "m2", bruecke: bruecke),
+              flaeche > 0 else {
+            return " Vorhaltung: Fläche unklar (Höhe/Dicke fehlt) — von Hand."
+        }
+        let einsaetze = max(1, link.einsaetze)
+        schreibeGeraetPauschal(name: link.bezeichnung,
+                               anzahl: flaeche, zaehlEinheit: "m²",
+                               satzProEinheit: link.proM2 * einsaetze,
+                               quelle: "katalog", pos: pos, in: ctx)
+        let e = einsaetze == 1 ? "" : " × \(String(format: "%g", einsaetze)) Einsätze"
+        return " Vorhaltung: \(link.bezeichnung) \(String(format: "%g", flaeche)) m² × "
+             + "\(String(format: "%.2f €", link.proM2))/m²\(e) (Richtwert)."
+    }
+
     /// Die Basis-Einheit hinter einer Maschinen-Leistung (m³/h → „m3" …) — für den Umrechner.
     private static func leistungsBasisEinheit(_ leistungEinheit: String) -> String? {
         switch leistungEinheit {
@@ -392,6 +424,17 @@ enum AutoKalkulationsService {
             hoeheOderBreite: hoeheMeter(aus: texte),
             dicke: schichtdickeMeter(aus: texte),
             dichteTproM3: DichteKatalog.dichte(fuer: pos.bezeichnung))
+    }
+
+    /// Rechnet einen „pro Einheit"-Preis (z. B. BKI-Marktpreis €/m³) in die Einheit der
+    /// Position um — über dieselben Brückenmaße wie die Kalkulation (die Leiter). Für einen
+    /// fairen EP-Vergleich. nil, wenn nicht überbrückbar (dann in der BKI-Einheit vergleichen).
+    static func preisInPositionsEinheit(_ preis: Double, vonEinheit: String, pos: LVPosition) -> Double? {
+        let posEinheit = (pos.einheit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let f = MopsUmrechner.proFaktor(von: vonEinheit, nach: posEinheit, bruecke: brueckeFuer(pos)) else {
+            return nil
+        }
+        return preis * f
     }
 
     /// Schichtdicke in Metern aus einem Positionstext („d= 10cm", „d=0,10 m", „10 cm").
@@ -457,16 +500,18 @@ enum AutoKalkulationsService {
         pg.position = pos
     }
 
-    private static func schreibeGeraetPauschal(name: String, tage: Int, satzProTag: Double,
-                                               quelle: String, pos: LVPosition,
-                                               in ctx: NSManagedObjectContext) {
+    /// Pauschaler Geräte-Posten: Anzahl × Preis je Zähl-Einheit (Tage-Miete, m²-Vorhaltung …).
+    /// `stunden` trägt bei pauschal die ABSOLUTE Anzahl, `kostenProStunde` den Preis je Zähl-Einheit.
+    private static func schreibeGeraetPauschal(name: String, anzahl: Double, zaehlEinheit: String,
+                                               satzProEinheit: Double, quelle: String,
+                                               pos: LVPosition, in ctx: NSManagedObjectContext) {
         let pg = PositionGeraet(context: ctx)
         pg.id = UUID()
         pg.geraetName = name
         pg.pauschal = true
-        pg.stunden = Double(tage)               // Anzahl Miettage
-        pg.kostenProStunde = satzProTag         // €/Tag (pauschal: Preis je Zähl-Einheit)
-        pg.einheit = "Tag"
+        pg.stunden = anzahl
+        pg.kostenProStunde = satzProEinheit
+        pg.einheit = zaehlEinheit
         pg.quelle = quelle
         pg.position = pos
     }

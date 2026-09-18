@@ -33,11 +33,49 @@ struct MopsFassTests {
         #expect(e.einheitspreisVK > 0)
     }
 
+    @Test @MainActor func bettungBekommtSplittMaterial() throws {
+        // „Bettungsmaterial liefern" 50 m³ → PFL-006: der Edelsplitt wird jetzt als Material
+        // angezeigt (vorher fehlte der Material-Link → „wird nicht angezeigt").
+        let pos = position("Bettungsmaterial liefern und einbauen", "m3", menge: 50)
+        let e = AutoKalkulationsService.bewerte(pos, in: ctx)
+        let splitt = pos.materialArray.first { ($0.materialName ?? "").contains("Edelsplitt") }
+        #expect(splitt != nil)
+        #expect(splitt?.einzelpreis == 45)
+        // m³-Position, m³-Material → 1:1 (50 m³ Splitt für 50 m³ Bettung).
+        #expect(splitt?.mengeProEinheit == 1)
+        #expect(e.meldungen.first?.contains("Edelsplitt") == true)
+    }
+
     @Test @MainActor func roteWennKeinRezept() throws {
         let e = AutoKalkulationsService.bewerte(position("Dachbegrünung extensiv", "m²"), in: ctx)
         #expect(e.status == .rot)
         #expect(e.einheitspreisVK == 0)
         #expect(e.meldungen.contains { $0.contains("Kein gelerntes Rezept") })
+    }
+
+    @Test @MainActor func schalungBekommtLohnVorhaltungUndSchaloel() throws {
+        // „Schalung Fundamente" 115 m → BET-010: Lohn (Schalungsbauer), Vorhaltung (Gerät,
+        // €/m² je Einsatz) UND Schalöl (Material) — Schalung ist kein Schüttgut.
+        let pos = position("Schalung Fundamente", "m", menge: 115)
+        let e = AutoKalkulationsService.bewerte(pos, in: ctx)
+        #expect(e.einheitspreisVK > 0)
+
+        // Lohn: Schalungsbauer da.
+        #expect(pos.lohnArray.contains { ($0.qualifikation ?? "").contains("Schalung") })
+
+        // Vorhaltung als Geräte-Zeile: 115 m × 0,5 m Höhe = 57,5 m² × 5 €/m² = 287,50 €.
+        let vorhaltung = pos.geraeteArray.first { ($0.geraetName ?? "").contains("Vorhaltung") }
+        #expect(vorhaltung != nil)
+        #expect(abs((vorhaltung?.kostenGesamt ?? 0) - 57.5 * 5.0) < 0.01)
+
+        // Schalöl als Material (Trennmittel), Richtpreis 0,35 €/m².
+        let schaloel = pos.materialArray.first { ($0.materialName ?? "").contains("Schalöl") }
+        #expect(schaloel != nil)
+        #expect(schaloel?.einzelpreis == 0.35)
+
+        // Die Herkunfts-Meldung nennt beides.
+        #expect(e.meldungen.first?.contains("Vorhaltung") == true)
+        #expect(e.meldungen.first?.contains("Schalöl") == true)
     }
 
     @Test @MainActor func gelbeWennAufwandwertFehlt() throws {

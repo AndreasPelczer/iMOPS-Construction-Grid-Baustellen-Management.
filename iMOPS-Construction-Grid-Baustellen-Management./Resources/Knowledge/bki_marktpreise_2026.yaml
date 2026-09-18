@@ -1,0 +1,73 @@
+# BKI-Marktpreise — Referenz/Orakel, NICHT Kalkulationsgrundlage.
+# ============================================================================
+# Der Mops rechnet WEITER von unten auf (Material + Lohn + Gerät = deine echten
+# Kosten + Aufschlag). Diese Datei ist nur der MARKT-VERGLEICH daneben: BKI-
+# Baupreise aus abgerechneten Objekten. So siehst du, ob dein Einheitspreis
+# plausibel liegt — ohne dass eine fremde Zahl deine Kalkulation überschreibt.
+#
+# NACHWEIS: jeder Eintrag trägt seine BKI-Position + BKI-ID. Kein Raten, kein
+# Internet — Baudatenbank der Deutschen Architektenkammern, mit Abo lizenziert.
+#
+# PFLICHT je Eintrag: einheit + mittel (der Ø aus der BKI-Trefferliste).
+# OPTIONAL: min/von/bis/max (die volle Spanne — nur wenn per Klick geerntet).
+# Schlüssel = STLB-Baustein-ID (wie in stlb_bausteine.yaml).
+
+meta:
+  quelle: "BKI Baupreise Online 2026 — Neubau"
+  regionalfaktor: "Main-Tauber-Kreis (RF 1,027)"
+  stand: "geerntet 18.09.2026"
+  aktualisierung: "jährlich (BKI-Abo)"
+  hinweis: "Preise netto. Marktpreise als Referenz. Jeder Preis trägt quelle: BKI."
+
+marktpreise:
+
+  # ---- ECHTE BKI-Werte (Main-Tauber, netto), geerntet 18.09.2026 ----
+
+  STR-002:            # Schottertragschicht 0/32
+    bki_position: "Tragschicht, Schotter 0/32, bis 30cm"
+    bki_lb: "LB 013 / KG 325"
+    einheit: "m2"
+    mittel: 19
+
+  ERD-005:            # Frostschutzschicht einbauen
+    bki_position: "Frostschutzschicht, Schotter 0/32, bis 30cm"
+    bki_lb: "LB 013 / KG 325"
+    einheit: "m2"
+    mittel: 21
+
+  PFL-002:            # Betonverbundpflaster verlegen
+    bki_position: "Pflasterdecke, Betonpflaster"
+    bki_lb: "LB 028 / KG 353"
+    einheit: "m2"
+    mittel: 46
+
+  PFL-003:            # Natursteinpflaster verlegen
+    bki_position: "Pflasterdecke, Granit, 10x10"
+    bki_lb: "LB 028 / KG 353"
+    einheit: "m2"
+    mittel: 149
+
+  PFL-004:            # Tiefbordsteine setzen
+    bki_position: "Bordstein, Beton, 12x18x30, L=100"
+    bki_lb: "LB 028 / KG 353"
+    einheit: "m"
+    mittel: 50
+
+  # Beispiel MIT voller Spanne (per Klick geerntet) — so sieht ein kompletter Eintrag aus:
+  # (allgemeine Schotter-Tragschicht 0/45, 30cm — Referenz, nicht material-genau zu STR-002)
+  # STR-002-alt:
+  #   bki_position: "Tragschicht, Schotter, 30cm (0/45)"
+  #   bki_id: "BKI-013000092"
+  #   einheit: "m2"
+  #   min: 13
+  #   von: 21
+  #   mittel: 25
+  #   bis: 25
+  #   max: 37
+
+  # ---- NOCH ZU ERNTEN (Platzhalter) ----
+  BET-010:            # Schalung Fundamente
+    bki_position: "PLATZHALTER - in BKI nach Schalung / Fundamentschalung suchen"
+    einheit: "m2"
+    mittel: 40
+    platzhalter: true
