@@ -3,11 +3,17 @@ import SwiftUI
 /// Baugruben-Aushub schätzen: Länge × Breite × Tiefe, optional Arbeitsraum + Böschung.
 /// Für die Grube fürs Bauwerk (nicht die ganze Geländemodellierung).
 struct BaugrubeRechnerView: View {
-    @State private var laengeT = ""
-    @State private var breiteT = ""
+    @State private var laengeT: String
+    @State private var breiteT: String
     @State private var tiefeT  = ""
     @State private var arbeitsraumT = "0,50"
     @State private var boeschung: Baugrube.Boeschung = .senkrecht
+
+    /// Optional mit Länge/Breite vorbelegen (z. B. aus „Plan abgreifen" übernommen).
+    init(vorgabeLaenge: Double? = nil, vorgabeBreite: Double? = nil) {
+        _laengeT = State(initialValue: vorgabeLaenge.map { String(format: "%.1f", $0) } ?? "")
+        _breiteT = State(initialValue: vorgabeBreite.map { String(format: "%.1f", $0) } ?? "")
+    }
 
     private func zahl(_ s: String) -> Double { Double(s.replacingOccurrences(of: ",", with: ".")) ?? 0 }
 

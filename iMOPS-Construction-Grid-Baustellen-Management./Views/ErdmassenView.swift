@@ -79,12 +79,18 @@ struct ErdmassenView: View {
             Text("DXF = Schätzung aus euren Messpunkten (kein Vermesser-Ersatz). Ein Übersichts-PDF liefert keine rechenbaren Höhen.")
                 .font(.caption2).foregroundStyle(.secondary)
             NavigationLink {
+                PlanAbgreifenView()
+            } label: {
+                Label("Plan abgreifen (Haus vom Plan messen)", systemImage: "ruler")
+            }
+            .font(.subheadline)
+            .padding(.top, 4)
+            NavigationLink {
                 BaugrubeRechnerView()
             } label: {
                 Label("Baugrube rechnen (Fläche × Tiefe)", systemImage: "square.dashed")
             }
             .font(.subheadline)
-            .padding(.top, 4)
         }
     }
 
