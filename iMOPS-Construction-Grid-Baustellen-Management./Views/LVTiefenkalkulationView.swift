@@ -20,6 +20,7 @@ struct LVTiefenkalkulationView: View {
     @State private var mopsAntwort: String?
     @State private var loeschZiel: LoeschZiel?   // sichtbares Löschen (auch am Mac, wo Swipe nicht geht)
     @State private var quelleInfo: String?       // Herkunfts-Hinweis beim Antippen eines Quelle-Badges
+    @State private var hatVorgefuellt = false     // der Mops-Vorschlag wird beim Öffnen EINMAL versucht
 
     /// Was gelöscht werden soll (mit Klartext für die Sicherheitsabfrage).
     private struct LoeschZiel: Identifiable {
@@ -54,6 +55,22 @@ struct LVTiefenkalkulationView: View {
         LVKalkulator.kalkulationFuer(position)
     }
 
+    /// Beim Öffnen einmal den Vorschlag des Mops einlegen — die Kalkulation ist nie leer,
+    /// sie öffnet mit der besten Schätzung, du korrigierst nur. Rein lokal/deterministisch
+    /// (wie „Mops fass" für diese eine Zeile), kein Netz.
+    ///
+    /// SCHUTZREGEL: nur füllen, wenn die Position noch NICHTS trägt. `schreibeAufwandAusKolonne`
+    /// löscht vorhandenen Lohn, würde also von Hand Eingetragenes überschreiben. Elemente
+    /// rechnen über ihre Bausteine — die fasst der Vorschlag nicht an.
+    /// Die Quelle-Badges zeigen danach, was Richtwert (Vorschlag) ist und was Firmenwert.
+    private func vorfuellen() {
+        guard !hatVorgefuellt else { return }
+        hatVorgefuellt = true
+        if AutoKalkulationsService.vorfuellenWennLeer(position, in: viewContext) {
+            try? viewContext.save()
+        }
+    }
+
     var body: some View {
         List {
             positionKopfSection
@@ -67,6 +84,7 @@ struct LVTiefenkalkulationView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Kalkulation")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear(perform: vorfuellen)
         .alert("Woher kommt die Zahl?", isPresented: Binding(
             get: { quelleInfo != nil }, set: { if !$0 { quelleInfo = nil } })) {
             Button("OK", role: .cancel) { }

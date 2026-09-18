@@ -51,6 +51,22 @@ enum AutoKalkulationsService {
         positionen.map { bewerte($0, in: ctx) }
     }
 
+    /// Legt den Mops-Vorschlag NUR dann an, wenn die Position noch nichts trägt — damit die
+    /// Tiefenkalkulation beim Öffnen vorausgefüllt ist, ohne je von Hand Eingetragenes zu
+    /// überschreiben. **Schutzregel:** `schreibeAufwandAusKolonne` löscht vorhandenen Lohn;
+    /// darum rühren wir eine Position mit Lohn/Material/Gerät nicht an. Elemente rechnen über
+    /// ihre Bausteine und bleiben ebenfalls unberührt.
+    /// - Returns: true, wenn vorgefüllt wurde (die Position war leer).
+    @discardableResult
+    static func vorfuellenWennLeer(_ pos: LVPosition, in ctx: NSManagedObjectContext) -> Bool {
+        guard !pos.istElement,
+              pos.lohnArray.isEmpty,
+              pos.materialArray.isEmpty,
+              pos.geraeteArray.isEmpty else { return false }
+        _ = bewerte(pos, in: ctx)
+        return true
+    }
+
     /// Eine Position bewerten. Reine Ableitung aus dem echten Modell — keine Schätzung.
     static func bewerte(_ pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
         let bez = (pos.bezeichnung ?? "").trimmingCharacters(in: .whitespacesAndNewlines)

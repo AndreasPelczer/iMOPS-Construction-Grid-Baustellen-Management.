@@ -133,4 +133,32 @@ struct MopsFassTests {
             positionen: [position("Betonwände herstellen", "m²")], in: ctx)
         #expect(AutoKalkulationsService.bilanz(ergebnisse).exportBereit == true)
     }
+
+    // MARK: - Tiefenkalkulation vorausfüllen (Station 3)
+
+    /// Öffnet man die Kalkulation einer LEEREN Position, legt der Mops seinen Vorschlag ein.
+    @Test @MainActor func vorfuellenLegtVorschlagInLeerePosition() throws {
+        LeistungskatalogService.merke(leistung: "Betonwände herstellen", einheit: "m²",
+                                      maurer: 0.8, helfer: 0.4, in: ctx)
+        let pos = position("Betonwände herstellen", "m²")
+        #expect(pos.lohnArray.isEmpty)   // vorher leer
+
+        let gefuellt = AutoKalkulationsService.vorfuellenWennLeer(pos, in: ctx)
+        #expect(gefuellt == true)
+        #expect(!pos.lohnArray.isEmpty, "Der Vorschlag muss Lohn eingelegt haben.")
+    }
+
+    /// SICHERHEIT: eine Position mit von Hand eingetragenem Lohn wird NIE überschrieben.
+    @Test @MainActor func vorfuellenLaesstBestehendeWerteInRuhe() throws {
+        let pos = position("Sonderposition", "psch")
+        let pl = PositionLohn(context: ctx)
+        pl.id = UUID(); pl.qualifikation = "Facharbeiter"; pl.stunden = 0.5
+        pl.stundenBruttoEK = 40; pl.position = pos
+        #expect(pos.lohnArray.count == 1)
+
+        let gefuellt = AutoKalkulationsService.vorfuellenWennLeer(pos, in: ctx)
+        #expect(gefuellt == false, "Nicht-leere Position darf nicht angefasst werden.")
+        #expect(pos.lohnArray.count == 1)
+        #expect(pos.lohnArray.first?.stunden == 0.5)   // unverändert
+    }
 }
