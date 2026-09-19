@@ -46,13 +46,20 @@ enum MopsAblage {
         return true
     }
 
+    /// Aus einem Baustellen-Namen einen sicheren Ordnernamen machen: Schrägstriche (die
+    /// sonst Unterordner wären) zu Bindestrich, Leerraum trimmen. nil = leer/unbrauchbar.
+    static func sichererOrdnername(_ name: String) -> String? {
+        let sicher = name
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return sicher.isEmpty ? nil : sicher
+    }
+
     /// Ordner für eine Baustelle inkl. Dokument-Fächer (idempotent). nil = iCloud nicht da.
     @discardableResult
     static func ordnerFuerBaustelle(_ name: String) -> URL? {
-        guard let wurzel = wurzel() else { return nil }
-        let sicher = name.replacingOccurrences(of: "/", with: "-")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !sicher.isEmpty else { return nil }
+        guard let wurzel = wurzel(), let sicher = sichererOrdnername(name) else { return nil }
         let baustelle = wurzel
             .appendingPathComponent("Baustellen", isDirectory: true)
             .appendingPathComponent(sicher, isDirectory: true)
@@ -68,6 +75,19 @@ enum MopsAblage {
     static func imHintergrundVorbereiten() {
         DispatchQueue.global(qos: .utility).async {
             stelleGrundstrukturSicher()
+        }
+    }
+
+    /// Für jede Baustelle einen Ordner sicherstellen (Hintergrund, idempotent).
+    /// Legt nur an — löscht/benennt NIE um: eine umbenannte Baustelle bekommt einen neuen
+    /// Ordner, der alte bleibt (kein Datenverlust; das Aufräumen bleibt dem Nutzer). Die
+    /// Namen werden auf dem Aufrufer-Thread eingesammelt und als Strings übergeben — nie
+    /// Core-Data-Objekte über Thread-Grenzen.
+    static func synchronisiereBaustellen(_ namen: [String]) {
+        DispatchQueue.global(qos: .utility).async {
+            guard wurzel() != nil else { return }
+            stelleGrundstrukturSicher()
+            for name in namen { _ = ordnerFuerBaustelle(name) }
         }
     }
 }
