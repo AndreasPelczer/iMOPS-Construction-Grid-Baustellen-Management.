@@ -2,6 +2,16 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 19.09.2026 (Mittag II) — Datei-Ablage Stufe 1: Mops-Ordner in Dateien sichtbar (iPad/iPhone)
+
+**Andreas' Vision (DAU-Punkt, sein Kern-Argument):** Der Mops muss einen SICHTBAREN Ablageort bieten, wo man Dateien aus Mail/Download/anderem User reinlegt — sonst steigt ein Nicht-Techniker aus („wo tu ich das hin, ich mach nix kaputt, ruf die IT"). Traumbild: ein iCloud-Ordner „iMOPS" in der Finder-Seitenleiste, darin **Unterordner pro Baustelle** mit ALLEN Dokumenten (Boden-DXF, DXF-Zeichnung, PDF/Statik, Architektenpläne, Bodengutachten, Baugenehmigung) — auch AUSSERHALB des Mops findbar. (Stammdaten/Firmeneinstellungen sind app-weit → gehören in „_Firma", nicht je Baustelle.)
+
+**Stufe 1 gebaut (Info.plist):** `LSSupportsOpeningDocumentsInPlace` = true dazu (`UIFileSharingEnabled` war schon an). → Der App-Documents-Ordner erscheint in der **Dateien-App auf iPad/iPhone** („Auf meinem iPad → iMOPS"). Build grün, Plist valide. **Sicherheit geprüft:** Core-Data-Store liegt in **Application Support** (Persistence.swift:51, Default-URL), NICHT in Documents → per Datei-Sichtbarkeit nicht löschbar. Sichtbar werden nur `Documents/CADFiles/` + lose JSON-Arbeitsdateien (angebote.json, Lager, Fortschritt).
+
+**⚠️ Ehrlich:** Auf dem **Mac** erscheint der Ordner damit NICHT in der Finder-Seitenleiste — das ist **Stufe 2 (iCloud)**. Stufe 1 = Fundament + Sofort-Gewinn auf iPad/iPhone.
+
+**🔴 OFFEN — Stufe 2 (nächster Schritt, Andreas will A):** iCloud-Drive-Container „iMOPS" → Finder-Seitenleiste am Mac + Sync Mac/iPad/Handy + möglicher Andreas↔Raphi-Weg (geteilter iCloud-Ordner). **BRAUCHT iCloud-Capability** (Xcode: Signing & Capabilities → + iCloud → iCloud Documents; Ubiquity-Container; Andreas' Apple-Team) + `NSUbiquitousContainers`-Keys (Finder-Anzeigename) + Code (Container-URL, Dateien spiegeln). Kein reiner Code-Change — Andreas muss die Capability in Xcode aktivieren, ich führe. **Stufe 3:** Unterordner pro Baustelle (mit Core Data synchron) + Dokument-Kategorien; nutzt vorhandenes `DateiSortierer` (statik/fakten/ablegen) + Genehmigungs-Mappe [[genehmigungs-checkliste]]. Kanten: Umbenennen/Löschen/Konflikt → vorsichtig.
+
 ## Delta 19.09.2026 (Mittag) — Schritt 4: „Preise anhängen" (Stammdaten-Material → Position), die Kette schließt sich
 
 **Live bewiesen:** Der CSV-Import (Vormittag III) hat die 8 Setiadji-Preise in die Stammdaten gelegt (Ankunfts-Bericht „8 Preise gelandet" — Andreas hat's am Mac gesehen). ABER: die Positionen zeigten weiter nur Lohn-Richtwerte (Betonstahl 0,71, Ytong 18,92, Beton 44,09) — der Stammdaten-Preis war noch nicht ANGEHÄNGT. Genau die als Schritt 4 angekündigte Lücke.
