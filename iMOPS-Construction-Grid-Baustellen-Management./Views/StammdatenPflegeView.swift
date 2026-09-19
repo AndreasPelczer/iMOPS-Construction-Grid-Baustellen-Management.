@@ -566,20 +566,24 @@ struct PreisImportBerichtView: View {
                     }
                 }
 
-                if !bericht.neuMaterial.isEmpty || !bericht.neuLohn.isEmpty {
+                if !bericht.neuMaterial.isEmpty || !bericht.neuLohn.isEmpty || !bericht.neuLeistung.isEmpty {
                     Section("Neu angelegt") {
                         ForEach(bericht.neuMaterial, id: \.self) { zeile($0, farbe: .green, symbol: "plus.circle.fill") }
                         ForEach(bericht.neuLohn, id: \.self) { zeile($0 + " (Lohn)", farbe: .green, symbol: "plus.circle.fill") }
+                        ForEach(bericht.neuLeistung, id: \.self) { zeile($0 + " (Firma-Preis)", farbe: .green, symbol: "plus.circle.fill") }
                     }
                 }
 
-                if !bericht.aktualisiertMaterial.isEmpty || !bericht.aktualisiertLohn.isEmpty {
+                if !bericht.aktualisiertMaterial.isEmpty || !bericht.aktualisiertLohn.isEmpty || !bericht.aktualisiertLeistung.isEmpty {
                     Section("Preis aktualisiert") {
                         ForEach(bericht.aktualisiertMaterial.indices, id: \.self) { i in
                             aenderung(bericht.aktualisiertMaterial[i])
                         }
                         ForEach(bericht.aktualisiertLohn.indices, id: \.self) { i in
                             aenderung(bericht.aktualisiertLohn[i])
+                        }
+                        ForEach(bericht.aktualisiertLeistung.indices, id: \.self) { i in
+                            aenderung(bericht.aktualisiertLeistung[i])
                         }
                     }
                 }

@@ -158,6 +158,7 @@
         <attribute name="rezeptJSON" optional="YES" attributeType="String"/>
         <attribute name="erstelltAm" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="verwendungen" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="einheitspreisVK" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
     </entity>
     <entity name="LVPosition" representedClassName="LVPosition" syncable="YES">
         <attribute name="langtext" optional="YES" attributeType="String"/>

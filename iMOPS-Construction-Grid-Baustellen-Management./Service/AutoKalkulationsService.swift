@@ -54,7 +54,12 @@ enum AutoKalkulationsService {
     /// das Ausfüllen. Gedacht direkt nach dem Import (leere Positionen).
     @discardableResult
     static func fass(positionen: [LVPosition], in ctx: NSManagedObjectContext) -> [Ergebnis] {
-        positionen.map { bewerte($0, in: ctx) }
+        let ergebnisse = positionen.map { bewerte($0, in: ctx) }
+        // Firma-Preis-Katalog: wo ein fertiger EH-Preis für die Leistung hinterlegt ist,
+        // gewinnt er (als Angebot → effektiverEP nimmt ihn zuerst). Raphis bekannter Preis
+        // schlägt die Schätzung.
+        for pos in positionen { FirmaPreisKatalog.anwenden(auf: pos, store: .shared, in: ctx) }
+        return ergebnisse
     }
 
     /// Legt den Mops-Vorschlag NUR dann an, wenn die Position noch nichts trägt — damit die

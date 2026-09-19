@@ -34,14 +34,18 @@ struct PreisImportBericht: Identifiable {
     var neuLohn: [String] = []
     var aktualisiertLohn: [Aenderung] = []
     var unveraendertLohn: [String] = []
+    var neuLeistung: [String] = []          // Firma-Preis-Katalog: EH-Preis je Leistung
+    var aktualisiertLeistung: [Aenderung] = []
+    var unveraendertLeistung: [String] = []
     var uebersprungen: [String] = []      // Zeile + Grund
     var gesamtZeilen = 0
 
     var landetGesamt: Int {
         neuMaterial.count + aktualisiertMaterial.count + neuLohn.count + aktualisiertLohn.count
+            + neuLeistung.count + aktualisiertLeistung.count
     }
     var alleLiegen: Int {
-        landetGesamt + unveraendertMaterial.count + unveraendertLohn.count
+        landetGesamt + unveraendertMaterial.count + unveraendertLohn.count + unveraendertLeistung.count
     }
 }
 
@@ -98,6 +102,9 @@ struct StammdatenPreisImportService {
 
             if typ == "lohn" {
                 verarbeiteLohn(name: name, preis: preis, in: ctx, bericht: &bericht)
+            } else if typ == "leistung" {
+                verarbeiteLeistung(name: name, einheit: einheit, preis: preis,
+                                   lieferant: lieferant, in: ctx, bericht: &bericht)
             } else {
                 verarbeiteMaterial(name: name, einheit: einheit, preis: preis,
                                    lieferant: lieferant, in: ctx, bericht: &bericht)
@@ -136,6 +143,34 @@ struct StammdatenPreisImportService {
             km.lieferant = lieferant.isEmpty ? "Import" : lieferant
             km.letzteAktualisierung = Date()
             bericht.neuMaterial.append(name)
+        }
+    }
+
+    // MARK: - Leistung -> Firma-Preis am Leistungsbaustein
+
+    /// Fertigen EH-Preis (Verkaufspreis) je Leistungstext in den Firma-Katalog schreiben.
+    /// Match über Leistungstext + Einheit (LeistungskatalogService.finde). Idempotent.
+    private func verarbeiteLeistung(name: String, einheit: String, preis: Double,
+                                    lieferant: String, in ctx: NSManagedObjectContext,
+                                    bericht: inout PreisImportBericht) {
+        if let vorhanden = LeistungskatalogService.finde(leistung: name, einheit: einheit, in: ctx) {
+            let alt = vorhanden.einheitspreisVK
+            if abs(alt - preis) < 0.001 {
+                bericht.unveraendertLeistung.append(name)
+            } else {
+                vorhanden.einheitspreisVK = preis
+                bericht.aktualisiertLeistung.append(
+                    .init(name: name, alt: alt, neu: preis, einheit: vorhanden.einheit ?? einheit))
+            }
+        } else {
+            let b = Leistungsbaustein(context: ctx)
+            b.id = UUID()
+            b.leistung = name
+            b.einheit = einheit.isEmpty ? "psch" : einheit
+            b.einheitspreisVK = preis
+            b.quelle = lieferant.isEmpty ? "firma-katalog" : lieferant
+            b.erstelltAm = Date()
+            bericht.neuLeistung.append(name)
         }
     }
 

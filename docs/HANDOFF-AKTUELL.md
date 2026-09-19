@@ -2,6 +2,20 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 19.09.2026 (Abend) — Goldschmitt-Katalog · Xcode-27-Fix · Firma-Preis-Katalog (Schritt 2)
+
+**Feldforschung mit echten Goldschmitt-Angeboten (Andreas' Originale):**
+- **LV-Katalog +25 generische Positionen** (`stlb_bausteine.yaml`, jetzt 133 Bausteine): Kellerabdichtung (PR #199) + kompletter Zusatzarbeiten-Fundus (PR #200) — Erdbau, Fundament, Entwässerung/Kanal (PVC DN100, Schächte, Mehrsparteneinführung), Hausanschlüsse, Terrasse/Zufahrt, Bauzaun-Monatsmiete, Kranstellplatz. **NUR Texte + Einheiten, KEINE Preise, KEIN Kunde** (Kundendaten-Riegel). Jeder `aufwandswert_key` auf echte Keys (Test `alleBausteineHabenAufloesbarenKey` grün). Raphis Angebots-Form als Wissen: [[raphi-angebot-arbeitsweise]]; Bauteil-Trennung: [[bau-positionen-immer-getrennt]].
+
+**Xcode-27-Fix (Raphi):** Nach Xcode-Update baute Raphis Mac nicht. Ursache: 4 Dateien nutzen CoreData ohne `import CoreData` (altes Xcode ließ es durch, 27 nicht). Gefixt (PR #201): `import CoreData` in MaterialDetailView, LVPickerViews, MangelStatus, LagerStore. **Raphi-Signierung (sein Team/Bundle-ID) bleibt LOKAL, nie pushen.** Raphi noch auf altem Stand (git pull offen).
+
+**Firma-Preis-Katalog — Schritt 2 (Nordstern, gebaut, grün):** fertiger EH-Preis je Leistung, lokal.
+- **Modell:** `Leistungsbaustein` neues Attribut **`einheitspreisVK: Double`** (optional, Default 0 → leichte Migration, automatisch aktiv). Accessor in `Leistungsbaustein+CoreDataProperties.swift`.
+- **Füllen:** `StammdatenPreisImportService` kennt jetzt Zeilen-Typ **`leistung`** (CSV `leistung;name;einheit;preis;quelle` → setzt `einheitspreisVK` am Baustein, Match über `LeistungskatalogService.finde`); Ankunfts-Bericht zeigt Leistung-Zeilen.
+- **Nutzen:** `Service/FirmaPreisKatalog.swift` (NEU): `preis(fuer:)` Match Leistungstext+Einheit; `anwenden(auf:store:)` hängt den Firmenpreis als **Angebot** (→ `effektiverEP` nimmt Angebote ZUERST, schlägt die Schätzung). Eingehängt in **`AutoKalkulationsService.fass`** (nach der Bewertung). `Tests/FirmaPreisKatalogTests.swift` 4 grün.
+- **🔴 OFFEN Schritt 2-Rest:** die echten Goldschmitt-EH-Preise als lokale `leistung`-CSV bereitstellen (Kundendaten → nur lokal, Desktop). Optional Menü-Knopf „Firma-Preise anwenden". Dann **Schritt 3: Angebots-PDF auf Raphis Form** (`LVPDFExporter` erweitern: Briefpapier-Kopf, Titel-Gruppierung + Titelsummen + Titelzusammenstellung + Anschreiben/Rechtstext — siehe [[raphi-angebot-arbeitsweise]]).
+- Andreas' Wunsch nebenbei: Mouse-Hover-Effekt auf der Baustellen-Auswahl (Mac) — `.onHover` Rahmen-Highlight, klein.
+
 ## Delta 19.09.2026 (Nachmittag) — Datei-Ablage Stufe 3: Ordner je Baustelle automatisch
 
 **Stufe 2 lebt (Andreas: „iMOPS taucht links im Finder auf").** Stufe 3 legt jetzt für JEDE Baustelle automatisch einen Ordner mit Dokument-Fächern an.
