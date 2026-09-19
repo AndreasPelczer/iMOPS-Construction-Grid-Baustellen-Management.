@@ -80,6 +80,20 @@ final class STLBKatalog: @unchecked Sendable {
         return x.baustein
     }
 
+    /// Mehrere Vorschläge zu einem (Teil-)Text — für die Autovervollständigung beim
+    /// Anlegen/Bearbeiten einer Position. Nach Trefferstärke sortiert, die besten zuerst.
+    func vorschlaege(zu text: String, max: Int = 6) -> [STLBBaustein] {
+        ladeFallsNoetig()
+        let titel = BauTextMatcher.staemme(text)
+        guard !titel.isEmpty else { return [] }
+        let bewertet: [(Int, STLBBaustein)] = bausteine.compactMap { b in
+            let t = "\(b.kurztext) \(b.tags.joined(separator: " "))"
+            let s = BauTextMatcher.score(kandidat: t, gegen: titel)
+            return s > 0 ? (s, b) : nil
+        }
+        return bewertet.sorted { $0.0 > $1.0 }.prefix(max).map { $0.1 }
+    }
+
     func alle() -> [STLBBaustein] {
         ladeFallsNoetig()
         return bausteine
