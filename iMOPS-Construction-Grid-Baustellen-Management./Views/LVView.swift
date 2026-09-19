@@ -68,6 +68,7 @@ struct LVView: View {
     @State private var showHierarchieVerwalten = false
     @State private var showFreigabeStatus = false
     @State private var showStammdaten = false
+    @State private var showPreiseAnhaengen = false
     @State private var showImport = false
     @State private var showGAEBImport = false
     @State private var showBausteine = false
@@ -886,6 +887,11 @@ struct LVView: View {
                         Label("Stammdaten pflegen", systemImage: "slider.horizontal.3")
                     }
 
+                    Button { showPreiseAnhaengen = true } label: {
+                        Label("Preise anhängen", systemImage: "link.badge.plus")
+                    }
+                    .disabled(positionen.isEmpty)
+
                     if duplikatAnzahl > 0 {
                         Button(role: .destructive) { zeigeDuplikatBestaetigung = true } label: {
                             Label("Duplikate entfernen (\(duplikatAnzahl))", systemImage: "square.on.square.dashed")
@@ -1010,6 +1016,10 @@ struct LVView: View {
         }
         .fullScreenCover(isPresented: $showStammdaten) {
             StammdatenPflegeView()
+        }
+        .sheet(isPresented: $showPreiseAnhaengen) {
+            PreisAnhaengenView(event: event)
+                .environment(\.managedObjectContext, viewContext)
         }
         .fullScreenCover(isPresented: $showImport) {
             LVImportView(event: event)
