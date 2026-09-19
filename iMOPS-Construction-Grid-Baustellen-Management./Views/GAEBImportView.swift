@@ -291,6 +291,12 @@ struct GAEBImportView: View {
 
             // If X84: store unit price in AngebotsStore as "Auftraggeber"-offer
             if let up = item.unitPrice, up > 0, isX84 {
+                // FALLE (gefixt): die objectID eines FRISCH angelegten Objekts ist
+                // TEMPORÄR und ändert sich beim save() in eine permanente. Wird der
+                // AngebotsStore mit der temporären URI gekeyed, findet er den Preis nach
+                // dem Speichern/Neustart nie wieder → importierter X84-Preis „verschwindet".
+                // Erst die permanente ID besorgen, dann als Schlüssel nehmen.
+                try? viewContext.obtainPermanentIDs(for: [pos])
                 let posID  = pos.objectID.uriRepresentation().absoluteString
                 let angebot = Angebot(lieferant: importResult?.ownerName.isEmpty == false
                                      ? importResult!.ownerName : "GAEB-Import",
