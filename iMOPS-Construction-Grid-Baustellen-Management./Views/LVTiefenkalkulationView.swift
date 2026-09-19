@@ -306,25 +306,30 @@ struct LVTiefenkalkulationView: View {
 
     private var positionKopfSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text(position.posNr ?? "–")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.orange)
-                    if let kg = position.kostenGruppeNummer {
-                        Text("· KG \(kg)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+            // Kräftiger Kopf in Orange auf Schwarz („Industrial"): der Bau-Mann sieht auf
+            // einen Blick, worum es geht (Feldforschung: „er erkennt nicht, worum es gerade
+            // geht"). Der Positionsname groß und orange, Nummer/KG/Menge ruhig darunter.
+            VStack(alignment: .leading, spacing: 8) {
                 Text(position.bezeichnung ?? "Unbenannte Position")
-                    .font(.headline)
-                HStack {
+                    .font(.title3.weight(.heavy))
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 12) {
+                    Text(position.posNr ?? "–").monospacedDigit()
+                    if let kg = position.kostenGruppeNummer { Text("KG \(kg)") }
+                    Spacer()
                     Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(position.einheit ?? "")")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .fontWeight(.semibold)
                 }
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.9))
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.black)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+            .listRowBackground(Color.clear)
         }
     }
 
@@ -412,15 +417,22 @@ struct LVTiefenkalkulationView: View {
             } else {
                 ForEach(position.lohnArray, id: \.objectID) { pl in
                     HStack {
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 3) {
                             Text(pl.qualifikation ?? "–")
                                 .font(.subheadline)
-                            Text("\(pl.stunden.formatted(.number.precision(.fractionLength(0...2)))) h/\(einheitKurz) × \(pl.stundenBruttoEK.formatted(.currency(code: "EUR")))/h")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            baustelleZeile(menge: pl.stunden * position.menge,
-                                           einheit: "h",
-                                           gesamt: pl.kostenProEinheit * position.menge)
+                            // Menschlich: ZUERST die Zeit für die ganze Menge (daran kann ein
+                            // Bau-Mann die Zahl nachvollziehen — Feldforschung), dann Betrag +
+                            // Stundensatz. Kein „0,02 h/kg", kein „h".
+                            if position.menge > 0 {
+                                Label("\(menschlicheZeit(pl.stunden * position.menge)) Arbeit — für alle \(zahl(position.menge)) \(einheitKurz)", systemImage: "clock")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                Text("= \((pl.kostenProEinheit * position.menge).formatted(.currency(code: "EUR")))  ·  \(pl.stundenBruttoEK.formatted(.currency(code: "EUR"))) je Stunde")
+                                    .font(.caption2.weight(.medium)).foregroundStyle(Color.accentColor)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            } else {
+                                Text("\(menschlicheZeit(pl.stunden)) je \(einheitKurz)  ·  \(pl.stundenBruttoEK.formatted(.currency(code: "EUR"))) je Stunde")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                             QuelleBadge(quelle: Kostenquelle(pl.quelle)) { quelleInfo = Kostenquelle(pl.quelle).hinweis }
                         }
                         Spacer()
@@ -510,11 +522,16 @@ struct LVTiefenkalkulationView: View {
                                     .foregroundStyle(.secondary)
                                 baustelleZeile(menge: pg.stunden, einheit: pg.zaehlEinheit, gesamt: pg.kostenGesamt)
                             } else {
-                                Text("\(pg.stunden.formatted(.number.precision(.fractionLength(0...2)))) h/\(einheitKurz) × \(pg.kostenProStunde.formatted(.currency(code: "EUR")))/h")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                baustelleZeile(menge: pg.stunden * position.menge, einheit: "h",
-                                               gesamt: pg.kostenProEinheit * position.menge)
+                                if position.menge > 0 {
+                                    Label("\(menschlicheZeit(pg.stunden * position.menge)) Einsatz — für alle \(zahl(position.menge)) \(einheitKurz)", systemImage: "clock")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                    Text("= \((pg.kostenProEinheit * position.menge).formatted(.currency(code: "EUR")))  ·  \(pg.kostenProStunde.formatted(.currency(code: "EUR"))) je Stunde")
+                                        .font(.caption2.weight(.medium)).foregroundStyle(Color.accentColor)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                } else {
+                                    Text("\(menschlicheZeit(pg.stunden)) je \(einheitKurz)  ·  \(pg.kostenProStunde.formatted(.currency(code: "EUR"))) je Stunde")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
                             }
                             QuelleBadge(quelle: Kostenquelle(pg.quelle)) { quelleInfo = Kostenquelle(pg.quelle).hinweis }
                         }
@@ -659,10 +676,10 @@ struct LVTiefenkalkulationView: View {
                 .foregroundStyle(.secondary)
             Spacer()
             VStack(alignment: .trailing, spacing: 1) {
-                Text("\(kalkulation.stundenGesamt.formatted(.number.precision(.fractionLength(0...2)))) Std")
-                    .font(.subheadline.weight(.semibold).monospacedDigit())
-                Text("\(kalkulation.stundenJeEinheit.formatted(.number.precision(.fractionLength(0...3)))) Std je \(position.einheit ?? "Einheit")")
-                    .font(.caption2.monospacedDigit())
+                Text(menschlicheZeit(kalkulation.stundenGesamt))
+                    .font(.subheadline.weight(.semibold))
+                Text("je \(position.einheit ?? "Einheit"): \(menschlicheZeit(kalkulation.stundenJeEinheit))")
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
@@ -708,7 +725,7 @@ struct LVTiefenkalkulationView: View {
                     Text("Gesamtpreis")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    Text("\(position.menge.formatted(.number.precision(.fractionLength(0...2)))) \(einheitKurz) × \(kalkulation.einheitspreisVK.formatted(.currency(code: "EUR")))/\(einheitKurz) · geplant \(kalkulation.stundenGesamt.formatted(.number.precision(.fractionLength(0...1)))) Std")
+                    Text("\(zahl(position.menge)) \(einheitKurz) × \(kalkulation.einheitspreisVK.formatted(.currency(code: "EUR")))/\(einheitKurz)  ·  geplant \(menschlicheZeit(kalkulation.stundenGesamt))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -735,6 +752,9 @@ struct LVTiefenkalkulationView: View {
 
     /// Die Relation zur Baustelle: was diese Zeile für die ECHTE Menge der Position bedeutet
     /// (Gesamt-Menge in ihrer Einheit + Gesamtbetrag). Macht aus dem abstrakten „je Einheit" das Konkrete.
+    /// Dezimalstunden menschlich (Feldforschung 19.9.) — Logik + Tests in `Zeitformat`.
+    private func menschlicheZeit(_ stunden: Double) -> String { Zeitformat.menschlich(stunden) }
+
     @ViewBuilder private func baustelleZeile(menge realMenge: Double, einheit mengeEinheit: String, gesamt: Double) -> some View {
         if position.menge > 0 {
             let eh = mengeEinheit.isEmpty ? "" : " \(mengeEinheit)"
