@@ -3,6 +3,10 @@ import SwiftUI
 struct EventRowView: View {
     @ObservedObject var event: Event
 
+    // Mac: Maus über der Zeile → sofort sichtbar, welche Baustelle unter dem Zeiger ist.
+    // Auf dem iPad ohne Zeiger passiert nichts (onHover feuert dort nicht).
+    @State private var isHovered = false
+
     private var progress: EventJobProgressData {
         EventJobProgressData(event: event)
     }
@@ -66,6 +70,20 @@ struct EventRowView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isHovered ? Color.orange.opacity(0.10) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(isHovered ? Color.orange.opacity(0.65) : Color.clear, lineWidth: 1.5)
+        )
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) { isHovered = hovering }
+        }
     }
 }
