@@ -47,7 +47,7 @@
 meta:
   version: "1.0.0"
   stand: "2026-09"
-  anzahl_bausteine: 95
+  anzahl_bausteine: 117
   gewerke: 21
   hinweis: >
     Eigene Textbausteine im STLB-Stil. Keine lizenzierten STLB-Bau-Texte.
@@ -113,6 +113,54 @@ baustelleneinrichtung:
     aufwandswert_key: "baustelleneinrichtung.geruest_aufstellen"
     maschinen_keys: ["gerueste.fassadengeruest"]
     tags: ["Gerüst", "Standgerüst", "Fassade"]
+
+  BE-005:
+    kurztext: "Baumaschinen An- und Abtransport"
+    langtext: >
+      An- und Abfuhr von Bagger mit Zubehör sowie Verdichtungsgeräten. Einschl.
+      Vorhaltung aller für die Arbeiten benötigten Werkzeuge und Maschinen über
+      die Bauzeit. Auf- und Abladen, Transport zur und von der Baustelle.
+    einheit: "psch"
+    gewerk: "Baustelleneinrichtung"
+    din: "DIN 18299"
+    aufwandswert_key: "baustelleneinrichtung.container_aufstellen"
+    tags: ["Bagger", "An- und Abfuhr", "Maschinen", "Transport", "Vorhaltung"]
+
+  BE-006:
+    kurztext: "Baustellen-WC (Chemietoilette)"
+    langtext: >
+      Mobile Chemietoilette aufstellen, vorhalten und regelmäßig warten,
+      Mindestmietzeit ca. {{miet_wochen}} Wochen. Nur erforderlich, falls keine
+      Toilette im Gebäude zur Verfügung steht. Einschl. Reinigung und Entsorgung.
+    einheit: "Wo"
+    gewerk: "Baustelleneinrichtung"
+    din: "DIN 18299"
+    aufwandswert_key: "baustelleneinrichtung.container_aufstellen"
+    tags: ["Toilette", "WC", "Chemietoilette", "Bautoilette"]
+
+  BE-007:
+    kurztext: "Bauzaun mobil (Stahlrahmen)"
+    langtext: >
+      Mobiler Bauzaun aus Stahlrahmen, Höhe ca. 2,00 m, Feldlänge ca. 3,50 m,
+      einschl. Füßen und Verbindern. Aufstellen (z. B. U-Form), vorhalten und
+      räumen. Preis je lfm aufgestellter Zaun.
+    einheit: "m"
+    gewerk: "Baustelleneinrichtung"
+    din: "DIN 18299"
+    aufwandswert_key: "baustelleneinrichtung.bauzaun_aufstellen"
+    tags: ["Bauzaun", "Absperrung", "mobil", "Stahlrahmen"]
+
+  BE-008:
+    kurztext: "Bauwasser und Baustrom"
+    langtext: >
+      Bauwasser- und Baustromanschluss für die Bauzeit. Sofern bauseits durch den
+      Bauherrn zur Verfügung gestellt, entfällt die Position bzw. wird nur der
+      Verbrauch berechnet.
+    einheit: "psch"
+    gewerk: "Baustelleneinrichtung"
+    din: "DIN 18299"
+    aufwandswert_key: "baustelleneinrichtung.container_aufstellen"
+    tags: ["Bauwasser", "Baustrom", "Anschluss", "bauseits"]
 
 # ============================================================================
 # 02 — ERDARBEITEN (DIN 18300)
@@ -229,6 +277,32 @@ erdarbeiten:
     aufwandswert_key: "erdarbeiten.graben_ausheben"
     maschinen_keys: ["erdbau.minibagger_3t", "verdichtung.stampfer"]
     tags: ["Rohrgraben", "Kabelgraben", "Graben"]
+
+  ERD-009:
+    kurztext: "Kelleraußenwand freilegen"
+    langtext: >
+      Vorhandene Kelleraußenwand freilegen, Boden der Bodenklasse {{bodenklasse}}
+      (i. d. R. 3–5) nach DIN 18300 abtragen. Aushub seitlich auf dem Grundstück
+      lagern zur späteren Wiederverfüllung. Arbeitsraum nach DIN 4124.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300, DIN 4124"
+    aufwandswert_key: "erdarbeiten.graben_ausheben"
+    maschinen_keys: ["erdbau.minibagger_3t"]
+    tags: ["freilegen", "Kellerwand", "Aushub", "seitlich lagern"]
+
+  ERD-010:
+    kurztext: "Wiederverfüllung mit gelagertem Aushub"
+    langtext: >
+      Seitlich gelagertes Aushubmaterial wieder einbauen und lagenweise
+      verdichten (vorausgesetzt, das Material ist geeignet). Verfüllung des
+      Arbeitsraums an der Kelleraußenwand. Verdichtung nach ZTVE-StB.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300"
+    aufwandswert_key: "erdarbeiten.boden_verdichten"
+    maschinen_keys: ["verdichtung.stampfer"]
+    tags: ["Verfüllung", "einbauen", "verdichten", "Wiedereinbau"]
 
 # ============================================================================
 # 03 — BETON- UND STAHLBETONARBEITEN (DIN 18331)
@@ -543,6 +617,39 @@ abdichtung:
     gewerk: "Abdichtung"
     aufwandswert_key: "abdichtung.trennvlies_verlegen"
     tags: ["Trennvlies", "Geotextil", "Vlies"]
+
+  ABD-007:
+    kurztext: "Noppenbahn (Schutz- und Dränschicht)"
+    langtext: >
+      Noppenbahn als Schutz- und Dränschicht vor der erdberührten Kellerwand
+      verlegen, Noppen zur Wand. Überlappung nach Herstellerangabe, oberer
+      Abschluss mit Abschlussprofil. Einschl. Befestigung.
+    einheit: "m2"
+    gewerk: "Abdichtung"
+    din: "DIN 18533"
+    aufwandswert_key: "abdichtung.trennvlies_verlegen"
+    tags: ["Noppenbahn", "Dränage", "Schutzschicht", "Geo Drain"]
+
+  ABD-008:
+    kurztext: "Wandreinigung mit Dampfstrahler"
+    langtext: >
+      Freigelegte Kelleraußenwand mit Dampfstrahlgerät reinigen, einschl.
+      Bedienung. Lose Teile, Erdreste und Verunreinigungen entfernen als
+      Untergrundvorbereitung für die Abdichtung.
+    einheit: "h"
+    gewerk: "Abdichtung"
+    aufwandswert_key: "abdichtung.trennvlies_verlegen"
+    tags: ["Reinigung", "Dampfstrahler", "Untergrund", "Fassade"]
+
+  ABD-009:
+    kurztext: "Wand mit Stahlbesen säubern"
+    langtext: >
+      Kelleraußenwand mit Stahlbesen abkehren, lose Mörtel- und Betonreste
+      entfernen, Untergrund für die Abdichtung vorbereiten.
+    einheit: "m2"
+    gewerk: "Abdichtung"
+    aufwandswert_key: "abdichtung.trennvlies_verlegen"
+    tags: ["säubern", "Stahlbesen", "Untergrund", "abkehren"]
 
 # ============================================================================
 # 06 — PFLASTERARBEITEN (DIN 18318)
