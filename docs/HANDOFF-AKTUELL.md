@@ -2,6 +2,20 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 19.09.2026 (Mittag) — Schritt 4: „Preise anhängen" (Stammdaten-Material → Position), die Kette schließt sich
+
+**Live bewiesen:** Der CSV-Import (Vormittag III) hat die 8 Setiadji-Preise in die Stammdaten gelegt (Ankunfts-Bericht „8 Preise gelandet" — Andreas hat's am Mac gesehen). ABER: die Positionen zeigten weiter nur Lohn-Richtwerte (Betonstahl 0,71, Ytong 18,92, Beton 44,09) — der Stammdaten-Preis war noch nicht ANGEHÄNGT. Genau die als Schritt 4 angekündigte Lücke.
+
+**Gebaut (grün, 5 Tests grün):**
+- **`Service/PreisAnhaengeService.swift`** (NEU): matcht pro Position die passende `KalkMaterial` über Namens-Tokens (normalisiert: Slash/Bindestrich → Leer), Schwelle 0,6. `haengeAn(...)` legt eine `PositionMaterial`-Zeile an (einzelpreis aus Stammdaten, mengeProEinheit=1, quelle="eigen"), idempotent. → EP springt von „nur Lohn" auf „Lohn + Material".
+- **`Views/PreisAnhaengenView.swift`** (NEU): Bestätigungs-Sheet — pro Position Vorschlag + ✓ + Override-Menü (für Fälle ohne Auto-Treffer, z.B. Deponie→Bodenaushub). „Anhängen (N)".
+- **`Views/LVView.swift`**: ⋯-Menü-Knopf **„Preise anhängen"** (link.badge.plus) + Sheet.
+- **`Tests/PreisAnhaengeTests.swift`** (5 grün): Beton→Beton · Bewehrung→Betonstahl (nicht Beton) · Ytong trotz Bindestrich/Slash · kein Falsch-Treffer bei Fremdposition · Anhängen idempotent.
+
+**Die ganze Kette steht jetzt:** SketchUp/Plan → LV-Positionen · Preisliste-CSV → Stammdaten (Import + Ankunfts-Bericht) · **„Preise anhängen" → Material an Position** (Vorschlag+Bestätigung) · EP = Lohn+Material · Mops fass · X84. Mensch bestätigt, erfindet nie; jede Zahl trägt Herkunft.
+
+**🔴 OFFEN:** (a) Andreas testet „Preise anhängen" an Setiadji am Mac/iPad → Summe klettert von 12.660 Richtung realistisch; Deponie von Hand zuweisen. (b) Schalsteinwand/Ringbalken haben noch keinen LOHN (waren rote „kein Rezept") — kriegen erstmal nur Beton, Raphi feilt. (c) angehängtes Material als wiederverwendbares **Rezept lernen** (nächste Baustelle automatisch). (d) SketchUp-Plugin Preis-Feld + „offen"-Schalter (Quell-Ende desselben Rohrs).
+
 ## Delta 19.09.2026 (Vormittag III) — Stammdaten-Preis-Import (CSV → Stammdaten) mit Ankunfts-Nachweis · objectID-Import-Bug gefixt
 
 **Der Kern-Frust, ehrlich benannt (Andreas):** Er ist Koch + Coder, kein Baumann — er KANN Bau-Preise nicht validieren („3,50 bei Ringbalken? keine Ahnung, wem soll ich glauben, die KI halluziniert"). Und wiederkehrender Ärger: Preise/Stammdaten lagen wochenlang „eingebaut", waren es aber nie — weil ein Agent „getestet/fertig" MELDETE (Behauptung), ohne dass jemand die ANKUNFT an den echten Daten maß. **Diagnose:** Die Sicherungen prüfen die ÜBERGABE, nicht die ANKUNFT+WIRKUNG. Antwort = das System trägt Preise MIT Herkunft + einem Ankunfts-Nachweis; der Mensch bestätigt/überschreibt, erfindet nie. (Tao: Nachweis statt Behauptung, an den Daten statt am Code.)
