@@ -84,6 +84,17 @@ extension Grap8Graph {
         let kennung = kennungen(fuer: auftraege)
         let spalten = spaltenAufteilung(auftraege)
 
+        // Preis-Nachschlag über den (normalisierten) Namen — als Fallback, falls ein Auftrag
+        // seine LV-Verknüpfung verloren hat. Das passiert nach einem LV-Neuimport: die alten
+        // Canvas-Aufträge zeigten auf die gelöschten Positionen, `lvPosition` wurde per
+        // Nullify auf nil gesetzt → ohne diesen Fallback stünde kein Preis mehr im Kasten.
+        var preisNachName: [String: Double] = [:]
+        for pos in (event.lvPositionen?.allObjects as? [LVPosition]) ?? [] {
+            let preis = LVKalkulator.kalkulationFuer(pos).gesamtpreis
+            guard preis > 0, let name = pos.bezeichnung else { continue }
+            preisNachName[name.lowercased().trimmingCharacters(in: .whitespaces)] = preis
+        }
+
         let knoten: [Knoten] = auftraege.compactMap { auftrag in
             guard let id = kennung[ObjectIdentifier(auftrag)] else { return nil }
             // Hat der Auftrag eine gespeicherte Leinwand-Position (weil er schon einmal
@@ -101,7 +112,7 @@ extension Grap8Graph {
                 type: "auftrag",
                 position: position,
                 data: Daten(
-                    title: titelMitPreis(auftrag),
+                    title: titelMitPreis(auftrag, preisNachName: preisNachName),
                     kg: kostengruppe(auftrag),
                     icon: symbol(auftrag),
                     base: zustand(auftrag),
@@ -246,12 +257,18 @@ extension Grap8Graph {
     /// Der Knoten-Titel mit dem Preis der LV-Position dahinter — damit man auf einen
     /// Blick pro Kästchen sieht, was der Baustein kostet, und Ausreißer sofort auffallen.
     /// Ohne verknüpfte LV-Position (nativ angelegter Auftrag) oder ohne Preis: nur der Name.
-    private static func titelMitPreis(_ auftrag: Auftrag) -> String {
+    private static func titelMitPreis(_ auftrag: Auftrag, preisNachName: [String: Double]) -> String {
         let name = Kausalkette.bezeichnung(auftrag)
-        guard let pos = auftrag.lvPosition else { return name }
-        let preis = LVKalkulator.kalkulationFuer(pos).gesamtpreis
-        guard preis > 0 else { return name }
-        return "\(name)  ·  \(euro(preis))"
+        // 1. Verknüpfte LV-Position (der Normalfall).
+        if let pos = auftrag.lvPosition {
+            let preis = LVKalkulator.kalkulationFuer(pos).gesamtpreis
+            if preis > 0 { return "\(name)  ·  \(euro(preis))" }
+        }
+        // 2. Verknüpfung fehlt/leer (z. B. nach LV-Neuimport) → Preis über den Namen.
+        if let preis = preisNachName[name.lowercased().trimmingCharacters(in: .whitespaces)], preis > 0 {
+            return "\(name)  ·  \(euro(preis))"
+        }
+        return name
     }
 
     /// Kurzer Euro-Betrag ohne Nachkommastellen (z. B. „8.700 €") — zum Überfliegen.
