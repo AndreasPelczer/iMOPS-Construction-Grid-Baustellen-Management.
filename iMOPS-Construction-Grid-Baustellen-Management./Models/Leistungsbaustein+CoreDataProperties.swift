@@ -17,6 +17,7 @@ extension Leistungsbaustein {
     @NSManaged var rezeptJSON: String?        // Material/Gerät als JSON (Lohn steht in maurer/helferStunden)
     @NSManaged var erstelltAm: Date?
     @NSManaged var verwendungen: Int32        // wie oft gepickt — häufige zuerst
+    @NSManaged var einheitspreisVK: Double     // Firma-Katalog: fertiger EH-Preis je Einheit (lokal, 0 = keiner)
 
     /// Kurzform für die Anzeige: „0,5 Maurer + 1,5 Helfer h/psch".
     var aufwandAnzeige: String {
