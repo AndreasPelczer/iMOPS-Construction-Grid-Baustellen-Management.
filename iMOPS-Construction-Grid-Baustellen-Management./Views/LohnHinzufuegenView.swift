@@ -162,8 +162,27 @@ struct LohnHinzufuegenView: View {
         pl.stundenBruttoEK = Double(stundenBruttoEK.replacingOccurrences(of: ",", with: ".")) ?? 0
         pl.quelle = "eigen"
         pl.position = position
+        lerneLohnsatz()            // wie beim Material: in die Stammdaten aufnehmen
         try? viewContext.save()
         dismiss()
+    }
+
+    /// Nimmt einen Lohnsatz in die Stammdaten (`Lohnsatz`) auf, damit er beim nächsten Mal
+    /// in der Auswahl steht — genau wie `lerneInKatalog()` beim Material. Idempotent:
+    /// legt nur an, wenn diese Qualifikation noch keinen Stammsatz hat.
+    /// Der Brutto-EK wird direkt als Stundenlohn mit Zuschlag 1,0 gespeichert
+    /// (`berechnungBruttoEK = stundenlohn × zuschlagFaktor` = der eingegebene Brutto).
+    private func lerneLohnsatz() {
+        let q = qualifikation.trimmingCharacters(in: .whitespaces)
+        let brutto = Double(stundenBruttoEK.replacingOccurrences(of: ",", with: ".")) ?? 0
+        guard !q.isEmpty, brutto > 0 else { return }
+        let vorhanden = lohnsaetze.contains { ($0.qualifikation ?? "").lowercased() == q.lowercased() }
+        guard !vorhanden else { return }
+        let ls = Lohnsatz(context: viewContext)
+        ls.id = UUID()
+        ls.qualifikation = q
+        ls.stundenlohn = brutto
+        ls.zuschlagFaktor = 1.0
     }
 
     private func berechneVorschau() -> Double {

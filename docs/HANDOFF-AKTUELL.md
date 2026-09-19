@@ -2,6 +2,20 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 19.09.2026 (Vormittag II) — Canvas↔LV verdrahtet · KI-Marker ehrlich · Lohn lernt · EK/VK getrennt
+
+**4 Sachen gebaut, alle grün, auf `main` UNCOMMITTED → Branch + PR nach Andreas' iPad-Test (kein Push ohne OK).** Backups in `_backups/20260919_*`. Verbinden statt erfinden — nichts Neues erfunden, die vorhandenen Brücken/Enums nur verdrahtet (Kühlhaus-Check gemacht, zwei Explore-Läufe mit Datei:Zeile).
+
+- **Canvas ↔ LV Auto-Sync:** Der „+" im Canvas legt jetzt automatisch die LV-Position mit an, der „+" im LV automatisch den Canvas-Knoten — über die schon vorhandene `LVCanvasBruecke` (`erzeugeLVPosition`/`erzeugeKnoten`) + Modell-Link `Auftrag.lvPosition ↔ LVPosition.auftrag`. Eingehängt in `AddJobViewModel.saveNewJob()` und `AddLVPositionView.save()` (nur Neuanlage). **Import flutet den Canvas NICHT** (GAEB läuft nicht über diese „+"-Wege); Batch-Knöpfe bleiben für Alt-Bestand.
+- **KI-Marker ehrlich:** `LVPositionRow` markierte nur `Kostenquelle==.ki` — darum blieben Katalog-**Richtwerte** (blau, z.B. Eisenflechter-Lohn) unsichtbar. Jetzt zeigt die Zeile die **schwächste Quelle** über das vorhandene `QuelleBadge` (Richtwert blau / Startwert orange / KI lila; grün/leer = dein Wert). Eine Sprache in Liste + Tiefenkalk.
+- **Lohn lernt in Stammdaten:** `LohnHinzufuegenView.hinzufuegen()` legt einen `Lohnsatz`-Stammsatz an (idempotent, Brutto-EK als `stundenlohn`, `zuschlagFaktor 1,0`) — analog zu `MaterialHinzufuegenView.lerneInKatalog()`. **Gerät lernt (noch) nicht** — der `Geraet`-Stamm rechnet über Abschreibung (Anschaffung ÷ Nutzungsdauer), kein €/h-Feld → bräuchte ein Modell-Feld (`stundensatzManuell`, Migration). Bewusst NICHT mit Fake-Wert gemacht.
+- **EK/VK getrennt** (Andreas' Wunsch „übersichtlicher"): Neuer Abschnitt **„Grundpreis (EK)"** in `AddLVPositionView` (EK je Einheit editierbar, bei Text/Menge; ausgeblendet beim Baustein-unter-Element). Die **LV-Liste zeigt den EK nur noch an** (read-only, `direktPreis`-TextField raus) — bearbeitet wird über Wischen→Bearbeiten. **VK bleibt in der Kalkulation.**
+- **`app_bedienung.yaml` nachgezogen** (Drift-Regel): Canvas-Eintrag (Auto-Sync) + LV-Eintrag (Herkunfts-Badge, EK/VK-Trennung, Hand-Preis-Lernen).
+
+**🔴 OFFEN aus diesem Block:** (a) Andreas testet die 4 Sachen am iPad, dann Branch + PR + merge `main` (sein „Go"). (b) **Gerät-Handpreis-Lernen** braucht Modell-Feld (Migration) — auf Wunsch. (c) X84-Gegencheck Setiadji siehe unten.
+
+**⚠️ Setiadji-X84-Befund (`~/Downloads/Setiadji-Baustelle-X84`, 12 Pos, Gesamt 17.326,87 €):** Mehrere EPs sind **nur Lohn, Material fehlt** — Bodenplatte 44,09/m³ (Material allein wäre ~125!), Streifenfundament 23,51, **Betonstahl 0,71/kg** + Matten 0,33, **Mauerwerk Ytong 18,93/m² (Steine fehlen komplett!)**, Baustelleneinrichtung fehlt ganz. Realistisch eher **~34–36k**. Vor dem Absenden: Material-Preise in die Stammdaten (jetzt lernen sie ja), dann „Mops fass" neu → neu exportieren. Manuell bepreiste Pos (Decke 283,96 · Schalsteinwand 284,62 · Ringbalken 332,50 · Bodenaushub abfahren 31,50) sind sauber.
+
 ## Delta 19.09.2026 (Morgen) — Aufgeräumt: alles auf `main`, Raphi synchronisiert
 
 **Alle gestrigen Branches sind GEMERGT — `main` = `537517a`.** Die „NICHT gepusht"-Sätze in den 18.09-Deltas unten sind damit ERLEDIGT (waren beim Schreiben wahr, jetzt Historie).
