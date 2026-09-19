@@ -2,6 +2,19 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 19.09.2026 (Mittag III) — Datei-Ablage Stufe 2: iCloud-Ordner „iMOPS" (Finder-Seitenleiste + Sync)
+
+**iCloud-Capability aktiviert** (Andreas in Xcode, mit Führung — Hürde war „PLA update available": aktualisierte Apple-Lizenzvereinbarung erst zustimmen unter developer.apple.com/account → Vereinbarungen, dann „Try Again", Container schwarz). Xcode hat `…​.entitlements` (icloud-container/-services CloudDocuments/ubiquity) + pbxproj angelegt — **beide committet** (sonst gehen sie verloren).
+
+**Gebaut:**
+- **`Info.plist`**: `NSUbiquitousContainers` → Container `iCloud.io.imops.iMOPS-Construction-Grid-Baustellen-Management-` als **„iMOPS"** (Name), `IsDocumentScopePublic=true`, `SupportedFolderLevels=Any` → erscheint in **Finder-Seitenleiste / iCloud Drive / Dateien** als „iMOPS".
+- **`Service/MopsAblage.swift`** (NEU): nil-sicherer Ablage-Service. `wurzel()` = Ubiquity-Container/Documents (nil ohne iCloud-Login → App läuft normal). `stelleGrundstrukturSicher()` legt **_Firma** + **Baustellen** an (idempotent). `ordnerFuerBaustelle(name)` legt Baustellen-Ordner + Fächer (Architektur/Vermessung/Statik/Gutachten/Genehmigung/Sonstiges) an. `url(forUbiquityContainerIdentifier:)` läuft IMMER im Hintergrund (Main-Thread-Falle).
+- **`iMOPSApp.swift`**: `MopsAblage.imHintergrundVorbereiten()` im Start-`.task`.
+
+**⚠️ Nicht von mir testbar (kein iCloud im Build-Env):** Andreas muss neu bauen + im Finder prüfen, ob „iMOPS" (Seitenleiste/iCloud Drive) mit _Firma + Baustellen erscheint. Build grün, Plist valide, Service nil-sicher.
+
+**🔴 OFFEN — Stufe 3:** `ordnerFuerBaustelle` beim Anlegen/Öffnen einer Baustelle aufrufen (Core-Data-Events → Ordner je Baustelle), Dokumente per `DateiSortierer` in die Fächer einsortieren, Zuordnung Datei→Baustelle (Finder ODER Mops). Kanten: Umbenennen/Löschen/Konflikt. Optional: geteilter iCloud-Ordner als Andreas↔Raphi-Weg.
+
 ## Delta 19.09.2026 (Mittag II) — Datei-Ablage Stufe 1: Mops-Ordner in Dateien sichtbar (iPad/iPhone)
 
 **Andreas' Vision (DAU-Punkt, sein Kern-Argument):** Der Mops muss einen SICHTBAREN Ablageort bieten, wo man Dateien aus Mail/Download/anderem User reinlegt — sonst steigt ein Nicht-Techniker aus („wo tu ich das hin, ich mach nix kaputt, ruf die IT"). Traumbild: ein iCloud-Ordner „iMOPS" in der Finder-Seitenleiste, darin **Unterordner pro Baustelle** mit ALLEN Dokumenten (Boden-DXF, DXF-Zeichnung, PDF/Statik, Architektenpläne, Bodengutachten, Baugenehmigung) — auch AUSSERHALB des Mops findbar. (Stammdaten/Firmeneinstellungen sind app-weit → gehören in „_Firma", nicht je Baustelle.)
