@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import UniformTypeIdentifiers
 
 // Welle 6 — Stammdaten-Pflege: die Kalkulations-Vorlagen (Löhne / Materialien /
 // Geräte) anlegen, bearbeiten, löschen. Bisher nur per StammdatenSeeder hartcodiert
@@ -26,6 +27,8 @@ struct StammdatenPflegeView: View {
     @State private var bereich: Bereich = .loehne
     @State private var zeigeCheck = false
     @State private var zeigeTransfer = false
+    @State private var zeigeDateiWahl = false
+    @State private var bericht: PreisImportBericht?
 
     enum Bereich: String, CaseIterable, Identifiable {
         case loehne   = "Löhne"
@@ -77,6 +80,14 @@ struct StammdatenPflegeView: View {
                     }
                     .tint(.orange)
                 }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        zeigeDateiWahl = true
+                    } label: {
+                        Label("Preise laden", systemImage: "square.and.arrow.down")
+                    }
+                    .tint(.orange)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }.tint(.orange)
                 }
@@ -86,6 +97,25 @@ struct StammdatenPflegeView: View {
             }
             .sheet(isPresented: $zeigeTransfer) {
                 FirmaTransferView().environment(\.managedObjectContext, ctx)
+            }
+            // Preisliste (CSV) en bloc laden → Ankunfts-Bericht statt „fertig".
+            .fileImporter(isPresented: $zeigeDateiWahl,
+                          allowedContentTypes: [.commaSeparatedText, .plainText, .text],
+                          allowsMultipleSelection: false) { ergebnis in
+                switch ergebnis {
+                case .success(let urls):
+                    guard let url = urls.first else { return }
+                    let zugriff = url.startAccessingSecurityScopedResource()
+                    defer { if zugriff { url.stopAccessingSecurityScopedResource() } }
+                    bericht = StammdatenPreisImportService.shared.importiere(von: url, in: ctx)
+                case .failure(let fehler):
+                    var b = PreisImportBericht()
+                    b.uebersprungen.append("Datei-Fehler: \(fehler.localizedDescription)")
+                    bericht = b
+                }
+            }
+            .sheet(item: $bericht) { b in
+                PreisImportBerichtView(bericht: b)
             }
         }
     }
@@ -507,4 +537,90 @@ private func neuButton(_ titel: String, _ action: @escaping () -> Void) -> some 
     .buttonStyle(.borderedProminent)
     .tint(.orange)
     .padding()
+}
+
+// MARK: - Ankunfts-Bericht
+//
+// TAO: Nachweis statt Behauptung. Kein „Import fertig", sondern schwarz auf weiß, was
+// WIRKLICH gelandet ist — neu, aktualisiert (alt→neu), was übersprungen wurde und warum.
+// Das ist der Beleg, den Andreas & Raphi ohne Bau-Wissen lesen können.
+
+struct PreisImportBerichtView: View {
+    let bericht: PreisImportBericht
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack {
+                        Image(systemName: bericht.landetGesamt > 0 ? "checkmark.seal.fill" : "tray")
+                            .font(.title)
+                            .foregroundStyle(bericht.landetGesamt > 0 ? .green : .secondary)
+                        VStack(alignment: .leading) {
+                            Text("\(bericht.landetGesamt) Preise gelandet")
+                                .font(.headline)
+                            Text("\(bericht.gesamtZeilen) Zeilen gelesen · \(bericht.alleLiegen) liegen jetzt in den Stammdaten")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                if !bericht.neuMaterial.isEmpty || !bericht.neuLohn.isEmpty {
+                    Section("Neu angelegt") {
+                        ForEach(bericht.neuMaterial, id: \.self) { zeile($0, farbe: .green, symbol: "plus.circle.fill") }
+                        ForEach(bericht.neuLohn, id: \.self) { zeile($0 + " (Lohn)", farbe: .green, symbol: "plus.circle.fill") }
+                    }
+                }
+
+                if !bericht.aktualisiertMaterial.isEmpty || !bericht.aktualisiertLohn.isEmpty {
+                    Section("Preis aktualisiert") {
+                        ForEach(bericht.aktualisiertMaterial.indices, id: \.self) { i in
+                            aenderung(bericht.aktualisiertMaterial[i])
+                        }
+                        ForEach(bericht.aktualisiertLohn.indices, id: \.self) { i in
+                            aenderung(bericht.aktualisiertLohn[i])
+                        }
+                    }
+                }
+
+                if !bericht.unveraendertMaterial.isEmpty || !bericht.unveraendertLohn.isEmpty {
+                    Section("Schon aktuell (unverändert)") {
+                        Text("\(bericht.unveraendertMaterial.count + bericht.unveraendertLohn.count) Positionen waren bereits mit diesem Preis hinterlegt.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+
+                if !bericht.uebersprungen.isEmpty {
+                    Section("Übersprungen (bitte prüfen)") {
+                        ForEach(bericht.uebersprungen, id: \.self) { zeile($0, farbe: .orange, symbol: "exclamationmark.triangle.fill") }
+                    }
+                }
+            }
+            .navigationTitle("Ankunfts-Bericht")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }.tint(.orange)
+                }
+            }
+        }
+    }
+
+    private func zeile(_ text: String, farbe: Color, symbol: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: symbol).foregroundStyle(farbe).font(.footnote)
+            Text(text).font(.subheadline)
+        }
+    }
+
+    private func aenderung(_ a: PreisImportBericht.Aenderung) -> some View {
+        HStack {
+            Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(.blue).font(.footnote)
+            Text(a.name).font(.subheadline)
+            Spacer()
+            Text("\(a.alt.formatted(.number.precision(.fractionLength(0...2)))) → \(a.neu.formatted(.number.precision(.fractionLength(0...2)))) €/\(a.einheit)")
+                .font(.caption.monospacedDigit()).foregroundStyle(.blue)
+        }
+    }
 }

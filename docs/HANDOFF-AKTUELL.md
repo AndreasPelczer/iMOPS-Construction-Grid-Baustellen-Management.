@@ -2,6 +2,22 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 19.09.2026 (Vormittag III) — Stammdaten-Preis-Import (CSV → Stammdaten) mit Ankunfts-Nachweis · objectID-Import-Bug gefixt
+
+**Der Kern-Frust, ehrlich benannt (Andreas):** Er ist Koch + Coder, kein Baumann — er KANN Bau-Preise nicht validieren („3,50 bei Ringbalken? keine Ahnung, wem soll ich glauben, die KI halluziniert"). Und wiederkehrender Ärger: Preise/Stammdaten lagen wochenlang „eingebaut", waren es aber nie — weil ein Agent „getestet/fertig" MELDETE (Behauptung), ohne dass jemand die ANKUNFT an den echten Daten maß. **Diagnose:** Die Sicherungen prüfen die ÜBERGABE, nicht die ANKUNFT+WIRKUNG. Antwort = das System trägt Preise MIT Herkunft + einem Ankunfts-Nachweis; der Mensch bestätigt/überschreibt, erfindet nie. (Tao: Nachweis statt Behauptung, an den Daten statt am Code.)
+
+**Gebaut (Schritt 1–3, alle grün, Tests grün):**
+- **`Service/StammdatenPreisImportService.swift`** (NEU): CSV `typ;name;einheit;preis;lieferant` → `KalkMaterial`/`Lohnsatz`. Idempotent (Match über Namen, kein Verdoppeln), deutsches Komma, Kopfzeile erkannt. Gibt einen **`PreisImportBericht`** zurück (neu / aktualisiert alt→neu / unverändert / übersprungen+Grund).
+- **`Tests/StammdatenPreisImportTests.swift`** (NEU, 4 Tests grün): Zeilen landen WIRKLICH in Core Data · Re-Import verdoppelt nicht · Preisänderung überschreibt · kaputte Zeile wird gemeldet nicht verschluckt.
+- **`Views/StammdatenPflegeView.swift`**: Knopf **„Preise laden"** (fileImporter CSV) → Import → **`PreisImportBerichtView`** (Ankunfts-Bericht „N Preise gelandet", Listen). Der Beleg, den Andreas/Raphi ohne Bau-Wissen lesen.
+- **`Views/GAEBImportView.swift`**: **objectID-Import-Bug GEFIXT** — bei X84-Import wurde der AngebotsStore-Key aus der TEMPORÄREN objectID vor dem `save()` gegriffen → Preis nach Speichern/Neustart „weg". Jetzt `obtainPermanentIDs` vor dem Key. (Genau die Falle, die Andreas immer wieder traf.)
+
+**Lokal, NICHT im Repo (Kundendaten):** `~/Desktop/BV Setiadji-Artanti Retzbach/Setiadji-Preise-Stammdaten.csv` — 8 Material-Preise mit Quelle (Schotter 7,90 SHB 🟢 · Ytong 24/11,5 34/22 Xella 🟢 · Beton C25/30 130 · Betonstahl 1,20 · Matten 1,10 · Deponie BK2 17 🟠Gutachten · Baustelleneinrichtung 2500). Validiert (parst sauber).
+
+**Andreas' Idee (nächster Bogen, sein Instinkt goldrichtig):** Das SketchUp-Plugin (`mops-scetchup`, Spike) als **Quell-Ende desselben Rohrs**: Raphi bepreist beim Malen den Bauteil-TYP (€/Einheit, einmal), Sync emittiert dieselbe CSV → mein Import lässt sie landen. Feinschliff: Preis pro Einheit (nicht pro Objekt), **nicht hart blocken** sondern „Preis offen" bewusst wählbar (→ 🔴 offen im Mops, sichtbar+gewählt), Herkunft „Raphi·SketchUp·Datum" klebt automatisch dran.
+
+**🔴 OFFEN — Schritt 4:** Nach Import `Setiadji-Preise-Stammdaten.csv` → „Mops fass" → prüfen, welche der 12 Positionen den Preis gezogen hat und welche NICHT (Namens-/Rezept-Treffer). Rezept-Lücken (z.B. rote „Schalsteinwand-Verguss") verbinden, damit die Stammdaten-Preise an die Positionen kommen. Dann X84 neu, Gegencheck. Danach: Plugin-Preis-Feld + „offen"-Schalter.
+
 ## Delta 19.09.2026 (Vormittag II) — Canvas↔LV verdrahtet · KI-Marker ehrlich · Lohn lernt · EK/VK getrennt
 
 **4 Sachen gebaut, alle grün, auf `main` UNCOMMITTED → Branch + PR nach Andreas' iPad-Test (kein Push ohne OK).** Backups in `_backups/20260919_*`. Verbinden statt erfinden — nichts Neues erfunden, die vorhandenen Brücken/Enums nur verdrahtet (Kühlhaus-Check gemacht, zwei Explore-Läufe mit Datei:Zeile).
