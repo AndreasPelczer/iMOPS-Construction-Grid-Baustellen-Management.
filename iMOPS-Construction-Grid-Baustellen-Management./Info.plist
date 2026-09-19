@@ -117,6 +117,8 @@
 	<string>iMOPS verbindet sich mit der Mops-Box im lokalen Netzwerk (BauWissen, Plan-Auswertung, Material-Scan).</string>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
