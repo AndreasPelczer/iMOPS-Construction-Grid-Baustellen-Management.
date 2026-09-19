@@ -15,6 +15,7 @@
 //
 
 import Foundation
+import CoreData
 import Combine
 
 // MARK: - Modell
