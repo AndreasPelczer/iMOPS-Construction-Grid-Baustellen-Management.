@@ -283,6 +283,22 @@
     einen Fachvorschlag für die Kostengruppe anzeigen. Dafür werden nur
     Bezeichnung und Einheit ausgewertet. Der Vorschlag wird erst übernommen, wenn
     der Nutzer aktiv auf "Vorschlag übernehmen" tippt.
+
+    Herkunft der Zahlen: In der LV-Liste trägt jede Position ein kleines
+    Herkunfts-Badge, wenn noch geschätzte Werte drinstecken - blau "Richtwert"
+    (aus dem Katalog), orange "Startwert", lila "KI geraten". Kein Badge = dein
+    Wert / Firmenwert (geprüft). So sieht man auf einen Blick, wo noch eine
+    geschätzte Zahl hängt, nicht nur bei KI.
+
+    EK und VK getrennt: Den Grundpreis (EK je Einheit) bearbeitest du im
+    "Position bearbeiten"-Dialog (Abschnitt "Grundpreis (EK)"), zusammen mit Text
+    und Menge. Den Verkaufspreis (VK) baust du in der Kalkulation auf. Die LV-Liste
+    zeigt den EK nur noch an (nicht mehr direkt in der Zeile editierbar); sobald eine
+    Tiefenkalkulation existiert, zählt dort der VK.
+
+    Hand-Preise lernen: Ein selbst eingetippter Material- ODER Lohn-Preis wird in
+    die Stammdaten übernommen (Material-Katalog bzw. Lohnsätze) und steht beim
+    nächsten Mal automatisch zur Auswahl. Geräte-Handpreise lernen (noch) nicht.
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
@@ -442,8 +458,13 @@
     Bedienung: Einen Kasten antippen oeffnet rechts sein Detailfenster; Kasten und
     Fenster bekommen dieselbe orange Markierung - man sieht sofort, wo man arbeitet.
     Kaesten lassen sich verschieben; die Anordnung bleibt jetzt gespeichert und ist
-    beim naechsten Oeffnen wieder da. "+" oben legt einen neuen Auftrag an. Ueber
-    "Knoten ins LV uebernehmen" wandern Knoten ohne LV-Position ins Leistungsverzeichnis.
+    beim naechsten Oeffnen wieder da. "+" oben legt einen neuen Auftrag an (Freier
+    Auftrag oder Ketten-Start-Baustein) - dabei entsteht automatisch die passende
+    LV-Position, der Auftrag ist also sofort auch im LV sichtbar. Umgekehrt legt "+"
+    im LV automatisch einen Canvas-Knoten an. Canvas und LV sind dasselbe Ding, doppelt
+    sichtbar: der Canvas zum Planen, das LV zum Durchgehen. Der Sammel-Knopf "Knoten ins
+    LV uebernehmen" bleibt fuer aeltere Knoten ohne LV-Position (z.B. aus einem Import),
+    "Auf den Canvas holen" umgekehrt fuer importierte LV-Positionen.
 
     Noch nicht: Umbenennen auf der Leinwand bleibt nicht erhalten.
   quelle_kurz: "iMOPS App-Bedienung"

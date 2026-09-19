@@ -117,6 +117,11 @@ final class AddJobViewModel {
         }
         newJob.extras = extras.toJSONString()
 
+        // Brücke: ein Auftrag IST zugleich eine LV-Position — dasselbe Ding, doppelt
+        // sichtbar (Canvas zum Planen, LV zum Durchgehen). Menge/Einheit bleiben offen,
+        // bis sie im LV gepflegt werden. Verbinden statt zwei getrennte Welten.
+        LVCanvasBruecke.erzeugeLVPosition(fuer: newJob, event: event, in: viewContext)
+
         do {
             try viewContext.save()
             return true

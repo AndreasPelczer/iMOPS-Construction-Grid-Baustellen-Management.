@@ -20,6 +20,7 @@ struct AddLVPositionView: View {
     @State private var kgProposal: KGProposal?
     @State private var selectedGeschoss: Geschoss?   // Welle 9 — Ebene der Position
     @State private var rezeptMass = ""               // B-Element: Aufwand je Element-Einheit
+    @State private var einkaufspreis = ""            // EK/Grundpreis je Einheit (VK kommt aus der Kalkulation)
 
     /// Das Element, unter dem diese Position als Baustein hängt (nil = kein Baustein).
     private var elternElement: LVPosition? {
@@ -74,6 +75,35 @@ struct AddLVPositionView: View {
                     // sonst sucht man den Fehler an der falschen Stelle.
                     if elternElement != nil {
                         Text("Die Menge kommt aus dem Rezept-Maß unten — dieses Feld bleibt leer. Die Einheit brauchst du: sie sagt, in was der Baustein rechnet.")
+                    }
+                }
+                // Grundpreis (EK) — hier bearbeitest du EK, Text und Menge. Der VK wird in
+                // der Kalkulation aufgebaut. Beim Baustein unter einem Element entfällt das
+                // (dort kommt der Preis aus dem Rezept), darum ausgeblendet.
+                if elternElement == nil {
+                    Section {
+                        HStack {
+                            Text("EK je \(einheit)").foregroundStyle(.secondary)
+                            Spacer()
+                            TextField("0,00", text: $einkaufspreis)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 100)
+                            Text("€").foregroundStyle(.secondary)
+                        }
+                        if let ek = Double(einkaufspreis.replacingOccurrences(of: ",", with: ".")), ek > 0,
+                           let m = Double(menge.replacingOccurrences(of: ",", with: ".")), m > 0 {
+                            HStack {
+                                Text("Gesamt (EK)").foregroundStyle(.secondary)
+                                Spacer()
+                                Text((ek * m).formatted(.currency(code: "EUR"))).monospacedDigit()
+                            }
+                            .font(.caption)
+                        }
+                    } header: {
+                        Text("Grundpreis (EK)")
+                    } footer: {
+                        Text("Einfacher Einkaufs-/Grundpreis je Einheit — den bearbeitest du hier. Den Verkaufspreis (VK) baust du in der Kalkulation auf; sobald es eine Tiefenkalkulation gibt, zählt in der Liste der VK von dort.")
                     }
                 }
                 // Nur wenn die Position ein Baustein unter einem Element ist: das Rezept-Maß.
@@ -186,6 +216,8 @@ struct AddLVPositionView: View {
         rezeptMass = p.mengeJeDeckelEinheit == 0
             ? ""
             : p.mengeJeDeckelEinheit.formatted(.number.precision(.fractionLength(0...3)))
+        let ek = p.value(forKey: "einkaufspreis") as? Double ?? 0
+        einkaufspreis = ek == 0 ? "" : String(format: "%.2f", ek).replacingOccurrences(of: ".", with: ",")
         refreshKGProposal()
     }
 
@@ -225,6 +257,18 @@ struct AddLVPositionView: View {
         // Welle 9 — Ebene setzen (nie nil): gewähltes Geschoss oder Default der Baustelle.
         pos.geschoss = selectedGeschoss
             ?? HierarchieHelfer.sichereDefaultGeschoss(for: event, in: viewContext).geschoss
+        // EK/Grundpreis — nur bei normalen Positionen (Baustein unter Element bekommt den
+        // Preis aus dem Rezept, das EK-Feld war dort gar nicht zu sehen).
+        if elternElement == nil {
+            let ekWert = Double(einkaufspreis.replacingOccurrences(of: ",", with: ".")) ?? 0
+            pos.setValue(ekWert, forKey: "einkaufspreis")
+        }
+        // Brücke: eine neu angelegte LV-Position erscheint zugleich als Knoten auf dem
+        // Canvas (zum Planen). Nur bei Neuanlage — beim Bearbeiten existiert der Knoten
+        // schon (Link Auftrag.lvPosition), sonst würde er verdoppelt.
+        if editPosition == nil {
+            LVCanvasBruecke.erzeugeKnoten(fuer: pos, event: event, in: viewContext)
+        }
         try? viewContext.save()
         dismiss()
     }

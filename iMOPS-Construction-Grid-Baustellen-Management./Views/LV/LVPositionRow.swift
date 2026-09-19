@@ -37,16 +37,26 @@ struct LVPositionRow: View {
     private var positionID: String { position.objectID.uriRepresentation().absoluteString }
     private var isAlt: Bool { LVPositionHelper.isAlternative(position) }
 
-    /// Trägt die Position einen von der KI geratenen, noch nicht bestätigten Wert?
-    /// Gleiche Prüfung wie in der Tiefenkalkulation — sichtbar auch in der LV-Liste,
-    /// damit eine geratene Zahl nicht unbemerkt durchrutscht.
-    private var enthaeltKI: Bool {
-        position.materialArray.contains { Kostenquelle($0.quelle) == .ki }
-            || position.lohnArray.contains { Kostenquelle($0.quelle) == .ki }
-            || position.geraeteArray.contains { Kostenquelle($0.quelle) == .ki }
+    /// Die „schwächste" (am wenigsten belegte) Herkunft aller Kostenzeilen der Position.
+    /// Zeigt in der Liste auf einen Blick, ob hier noch GESCHÄTZTE Zahlen stecken statt
+    /// deiner eigenen — und zwar JEDE nicht selbst bestätigte Quelle, nicht nur KI:
+    /// Richtwert (blau) · Startwert (orange) · KI geraten (lila). Vorher wurde nur `.ki`
+    /// markiert, darum blieb ein Katalog-Richtwert (z. B. der Eisenflechter-Lohn) unsichtbar.
+    /// nil = alles dein Wert/Firmenwert (oder leer) → kein Schätz-Hinweis nötig.
+    private var schwaechsteQuelle: Kostenquelle? {
+        let quellen = position.materialArray.map { Kostenquelle($0.quelle) }
+            + position.lohnArray.map { Kostenquelle($0.quelle) }
+            + position.geraeteArray.map { Kostenquelle($0.quelle) }
+        func rang(_ q: Kostenquelle) -> Int {
+            switch q {
+            case .ki:               return 4   // geraten, keine Quelle → unbedingt prüfen
+            case .startwert:        return 3   // Platzhalter
+            case .praxis, .katalog: return 2   // geliehener Richtwert, nicht deiner
+            default:                return 0   // eigen/raffi/unbekannt → kein Schätz-Hinweis
+            }
+        }
+        return quellen.filter { rang($0) > 0 }.max { rang($0) < rang($1) }
     }
-
-    @State private var direktPreis: String = ""
 
     var onOpenSourceDocument: ((URL) -> Void)? = nil
 
@@ -67,14 +77,10 @@ struct LVPositionRow: View {
                     .font(.body).lineLimit(2)
                     .foregroundStyle(isAlt ? .secondary : .primary)
 
-                if enthaeltKI {
-                    HStack(spacing: 2) {
-                        Image(systemName: "sparkles").font(.system(size: 8, weight: .bold))
-                        Text("KI").font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 5).padding(.vertical, 2)
-                    .background(Color.purple).clipShape(Capsule())
+                if let q = schwaechsteQuelle {
+                    // Gleiches Herkunfts-Badge wie in der Tiefenkalk — eine Sprache in
+                    // Liste und Detail. Zeigt die schwächste Quelle der Position.
+                    QuelleBadge(quelle: q)
                 }
 
                 Spacer()
@@ -125,32 +131,19 @@ struct LVPositionRow: View {
                         .font(.caption.weight(.semibold)).foregroundStyle(.green)
 
                 } else {
-                    Text("EP:")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    TextField("0,00", text: $direktPreis)
-                        .keyboardType(.decimalPad)
-                        .frame(width: 70)
-                        .textFieldStyle(.roundedBorder)
-                        .onAppear {
-                            let val = position.value(forKey: "einkaufspreis") as? Double ?? 0
-                            if val > 0 {
-                                direktPreis = String(format: "%.2f", val)
-                                    .replacingOccurrences(of: ".", with: ",")
-                            }
-                        }
-                        .onChange(of: direktPreis) { _, newValue in
-                            let cleaned = newValue.replacingOccurrences(of: ",", with: ".")
-                            let preis = Double(cleaned) ?? 0.0
-                            position.setValue(preis, forKey: "einkaufspreis")
-                            try? position.managedObjectContext?.save()
-                        }
+                    // EK/Grundpreis — nur Anzeige. Bearbeitet wird er in der Bearbeiten-View
+                    // (Wischen → Bearbeiten): EK dort, VK in der Kalkulation — nicht an zwei
+                    // Stellen. Ohne EK und ohne Kalkulation steht „—".
+                    let ek = position.value(forKey: "einkaufspreis") as? Double ?? 0
+                    Image(systemName: "cart").font(.caption2).foregroundStyle(.secondary)
+                    Text(ek > 0 ? ek.formatted(.currency(code: "EUR")) : "—")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    Text("EK").font(.caption2).foregroundStyle(.secondary)
 
                     Spacer()
 
-                    let val = position.value(forKey: "einkaufspreis") as? Double ?? 0
-                    if val > 0 {
-                        Text((position.menge * val).formatted(.currency(code: "EUR")))
+                    if ek > 0 {
+                        Text((position.menge * ek).formatted(.currency(code: "EUR")))
                             .font(.caption.weight(.semibold)).foregroundStyle(.gray)
                     }
                 }
