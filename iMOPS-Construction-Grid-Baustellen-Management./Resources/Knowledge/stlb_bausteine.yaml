@@ -47,7 +47,7 @@
 meta:
   version: "1.0.0"
   stand: "2026-09"
-  anzahl_bausteine: 117
+  anzahl_bausteine: 133
   gewerke: 21
   hinweis: >
     Eigene Textbausteine im STLB-Stil. Keine lizenzierten STLB-Bau-Texte.
@@ -161,6 +161,17 @@ baustelleneinrichtung:
     din: "DIN 18299"
     aufwandswert_key: "baustelleneinrichtung.container_aufstellen"
     tags: ["Bauwasser", "Baustrom", "Anschluss", "bauseits"]
+
+  BE-009:
+    kurztext: "Bauzaun Monatsmiete"
+    langtext: >
+      Monatsmiete für den vorgehaltenen mobilen Bauzaun über die Bauzeit hinaus.
+      Preis je Monat.
+    einheit: "Monat"
+    gewerk: "Baustelleneinrichtung"
+    din: "DIN 18299"
+    aufwandswert_key: "baustelleneinrichtung.bauzaun_aufstellen"
+    tags: ["Bauzaun", "Miete", "Monatsmiete", "Vorhaltung"]
 
 # ============================================================================
 # 02 — ERDARBEITEN (DIN 18300)
@@ -303,6 +314,44 @@ erdarbeiten:
     aufwandswert_key: "erdarbeiten.boden_verdichten"
     maschinen_keys: ["verdichtung.stampfer"]
     tags: ["Verfüllung", "einbauen", "verdichten", "Wiedereinbau"]
+
+  ERD-011:
+    kurztext: "Aushub Bodenklasse 3-5 herstellen und seitlich lagern"
+    langtext: >
+      Aushub der Bodenklasse {{bodenklasse}} (i. d. R. 3–5) nach DIN 18300
+      herstellen. Aushubmaterial seitlich auf dem Grundstück lagern zur späteren
+      Wiederverwendung. Nach Vorgabe Bodengutachten.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300"
+    aufwandswert_key: "erdarbeiten.baugrube_ausheben_bagger"
+    maschinen_keys: ["erdbau.minibagger_3t"]
+    tags: ["Aushub", "Bodenklasse", "seitlich lagern"]
+
+  ERD-012:
+    kurztext: "Fundamentaushub Streifenfundamente"
+    langtext: >
+      Fundamentaushub für Streifenfundamente, Bodenklasse {{bodenklasse}}
+      (i. d. R. 3–5) nach DIN 18300. Aushub seitlich lagern. Grabenquerschnitt
+      z. B. 0,80 x 0,80 m.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300"
+    aufwandswert_key: "erdarbeiten.graben_ausheben"
+    maschinen_keys: ["erdbau.minibagger_3t"]
+    tags: ["Fundament", "Streifenfundament", "Aushub", "Graben"]
+
+  ERD-013:
+    kurztext: "Kranstellplatz herstellen (Schotterung)"
+    langtext: >
+      Standfläche für den Kran als Schotterung herstellen: Aushub, Schotter
+      liefern, einbauen und verdichten. Tragfähiger Untergrund für die
+      Kranaufstellung.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300"
+    aufwandswert_key: "erdarbeiten.frostschutzschicht"
+    tags: ["Kranstellplatz", "Schotterung", "Standfläche", "Kran"]
 
 # ============================================================================
 # 03 — BETON- UND STAHLBETONARBEITEN (DIN 18331)
@@ -452,6 +501,18 @@ beton:
       richtpreis: 0.35  # €/m² Schalfläche (Trennmittel) — Richtwert
       verschnitt: 0.0
     tags: ["Schalung", "Fundamentschalung", "Schalarbeiten", "Fundamente"]
+
+  BET-011:
+    kurztext: "Fundamentbeton C20/25 XC2 liefern und einbauen"
+    langtext: >
+      Fundamentbeton C20/25, Expositionsklasse XC2, für Streifenfundamente /
+      Frostschürze liefern und einbauen. Einschl. Verdichten und Nachbehandlung.
+      Bewehrung und Schalung gesondert.
+    einheit: "m3"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331, DIN EN 206"
+    aufwandswert_key: "betonarbeiten.betonieren_allgemein"
+    tags: ["Fundamentbeton", "C20/25", "Streifenfundament", "Frostschürze"]
 
 # ============================================================================
 # 04 — MAUERARBEITEN (DIN 18330)
@@ -852,6 +913,29 @@ strasse:
     din: "DIN 18316"
     tags: ["wiederherstellen", "Fahrbahndecke", "Grabenbereich"]
 
+  STR-008:
+    kurztext: "Schotter 0/32 Terrasse liefern, einbauen, verdichten"
+    langtext: >
+      Schottertragschicht 0/32 für Terrassenfläche liefern, in einer Stärke von
+      ca. {{dicke_cm}} cm einbauen und lagenweise verdichten. Tragfähiger Unterbau
+      für den Belag.
+    einheit: "m2"
+    gewerk: "Straßenbau"
+    din: "DIN 18315"
+    aufwandswert_key: "strassenbau.schottertragschicht"
+    tags: ["Schotter", "Terrasse", "Tragschicht", "verdichten"]
+
+  STR-009:
+    kurztext: "Schotter 0/32 Zufahrt liefern, einbauen, verdichten"
+    langtext: >
+      Schottertragschicht 0/32 für Zufahrt/Weg liefern, in einer Stärke von ca.
+      {{dicke_cm}} cm einbauen und lagenweise verdichten. Einbautiefe im Mittel.
+    einheit: "m2"
+    gewerk: "Straßenbau"
+    din: "DIN 18315"
+    aufwandswert_key: "strassenbau.schottertragschicht"
+    tags: ["Schotter", "Zufahrt", "Weg", "Tragschicht"]
+
 # ============================================================================
 # 08 — KANALBAU (DIN 18306)
 # ============================================================================
@@ -920,6 +1004,105 @@ kanal:
     aufwandswert_key: "kanalbau.entwaesserungsrinne"
     din: "DIN EN 1433"
     tags: ["Rinne", "Schlitzrinne", "Entwässerungsrinne"]
+
+  KAN-006:
+    kurztext: "PVC-Rohr DN100 liefern und im Sandbett verlegen"
+    langtext: >
+      PVC-Kanalrohr DN100 (KG) liefern und im Sandbett verlegen, einschl.
+      Rohrformstücken und Verbindern. Gefälle nach DIN EN 1610.
+    einheit: "m"
+    gewerk: "Kanalbau"
+    din: "DIN EN 1610"
+    aufwandswert_key: "kanalbau.kanalrohr_verlegen"
+    tags: ["PVC", "KG-Rohr", "DN100", "Sandbett", "Kanal"]
+
+  KAN-007:
+    kurztext: "PVC-Abzweig DN100/100 liefern und im Sandbett verlegen"
+    langtext: >
+      PVC-Abzweig (KG) DN100/100 liefern und im Sandbett einbauen.
+    einheit: "Stück"
+    gewerk: "Kanalbau"
+    din: "DIN EN 1610"
+    aufwandswert_key: "kanalbau.kanalrohr_verlegen"
+    tags: ["PVC", "Abzweig", "DN100", "Formstück"]
+
+  KAN-008:
+    kurztext: "PVC-Bogen DN100 liefern und im Sandbett verlegen"
+    langtext: >
+      PVC-Bogen (KG) DN100 liefern und im Sandbett einbauen.
+    einheit: "Stück"
+    gewerk: "Kanalbau"
+    din: "DIN EN 1610"
+    aufwandswert_key: "kanalbau.kanalrohr_verlegen"
+    tags: ["PVC", "Bogen", "DN100", "Formstück"]
+
+  KAN-009:
+    kurztext: "Kopfloch für Kontrollschacht herstellen"
+    langtext: >
+      Kopfloch für Kontrollschacht herstellen, Bodenklasse {{bodenklasse}}
+      (i. d. R. 3–5). Einschl. Wiederverfüllung mit dem ausgebaggerten Material;
+      überschüssiges Erdreich seitlich lagern.
+    einheit: "m3"
+    gewerk: "Kanalbau"
+    din: "DIN 18306"
+    aufwandswert_key: "kanalbau.schacht_setzen"
+    tags: ["Kopfloch", "Kontrollschacht", "Aushub"]
+
+  KAN-010:
+    kurztext: "Anschluss an bestehende Leitung (Schmutz-/Regenwasser)"
+    langtext: >
+      Anschluss an eine bestehende Schmutz- oder Regenwasserleitung herstellen,
+      einschl. Formstücken und Dichtung.
+    einheit: "Stück"
+    gewerk: "Kanalbau"
+    din: "DIN EN 1610"
+    aufwandswert_key: "kanalbau.hausanschluss"
+    tags: ["Anschluss", "Schmutzwasser", "Regenwasser", "Leitung"]
+
+  KAN-011:
+    kurztext: "Kontrollschacht Schmutzwasser aus Schachtringen"
+    langtext: >
+      Kontrollschacht für Schmutzwasser, Tiefe ca. {{tiefe_m}} m, aus
+      Schachtringen mit Ortbetonsohle liefern und herstellen. Einschl. Abdeckung.
+    einheit: "Stück"
+    gewerk: "Kanalbau"
+    din: "DIN 18306, DIN 4034"
+    aufwandswert_key: "kanalbau.schacht_setzen"
+    tags: ["Kontrollschacht", "Schmutzwasser", "Schachtringe", "Ortbetonsohle"]
+
+  KAN-012:
+    kurztext: "Gerinne im Schacht herstellen"
+    langtext: >
+      Gerinne / Durchführung im Kontrollschacht herstellen (Leitung im Schacht
+      nach unten führen), einschl. Ausformung mit Beton.
+    einheit: "Stück"
+    gewerk: "Kanalbau"
+    din: "DIN 18306"
+    aufwandswert_key: "kanalbau.schacht_setzen"
+    tags: ["Gerinne", "Schacht", "Durchführung", "Ausformung"]
+
+  KAN-013:
+    kurztext: "Kopflöcher für Hausanschlüsse herstellen und schließen"
+    langtext: >
+      Kopflöcher für Hausanschlüsse (Lage unbekannt) herstellen und nach
+      Anschluss wieder schließen, einschl. Wiederverfüllung.
+    einheit: "m3"
+    gewerk: "Kanalbau"
+    din: "DIN 18306"
+    aufwandswert_key: "kanalbau.hausanschluss"
+    tags: ["Kopfloch", "Hausanschluss", "Aushub", "schließen"]
+
+  KAN-014:
+    kurztext: "Mehrsparteneinführung 4-fach liefern und einbauen"
+    langtext: >
+      Mehrsparteneinführung 4-fach mit Leerrohren (z. B. 10 m) liefern und
+      einbauen, für die Hausanschlüsse (Strom, Wasser, Telekom, Gas). Verlegen
+      der Rohre gesondert.
+    einheit: "Stück"
+    gewerk: "Kanalbau"
+    din: "DIN 18012"
+    aufwandswert_key: "kanalbau.hausanschluss"
+    tags: ["Mehrsparteneinführung", "Hausanschluss", "Leerrohr", "4-fach"]
 
 # ============================================================================
 # 09 — DACHARBEITEN (DIN 18338 Dachdeckung, DIN 18339 Klempner)
