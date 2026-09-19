@@ -19,8 +19,9 @@ struct LVPDFExporter {
         let mV:    CGFloat = 40
         var cW:    CGFloat { pageW - 2 * mH }
 
-        // Col widths: Pos(35) ArtNr(70) Bez(190) Menge(50) Einh(45) EP(62.5) GP(62.5) = 515
-        let colW: [CGFloat] = [35, 70, 190, 50, 45, 62.5, 62.5]
+        // Col widths: Pos(60) ArtNr(45) Bez(190) Menge(50) Einh(45) EP(62.5) GP(62.5) = 515
+        // Pos breiter, damit „01.01.0001" nicht abschneidet; Art.-Nr. schmaler (meist leer).
+        let colW: [CGFloat] = [60, 45, 190, 50, 45, 62.5, 62.5]
         let colHdrs = ["Pos.", "Art.-Nr.", "Bezeichnung", "Menge", "Einheit", "EP (€)", "GP (€)"]
 
         let orange = UIColor(red: 0.91, green: 0.40, blue: 0.04, alpha: 1)
