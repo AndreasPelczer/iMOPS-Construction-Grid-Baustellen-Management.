@@ -27,8 +27,10 @@ struct LVPDFExporter {
         var y: CGFloat = 40
         var ctx: UIGraphicsPDFRendererContext!
 
-        /// Laufende Netto-Summe ueber alle Positionen (gefuellt in drawKG).
+        /// Laufende Netto-Summe ueber alle Positionen (gefuellt in drawTitel).
         var gesamtNetto: Double = 0
+        /// Je Titel: Nummer, Name, Summe — für die Titelzusammenstellung (Raphis Form).
+        var titelSummen: [(nr: String, name: String, summe: Double)] = []
 
         let eurFmt: NumberFormatter = {
             let f = NumberFormatter()
@@ -56,6 +58,7 @@ struct LVPDFExporter {
                 c.beginPage()
                 self.drawHeader()
                 self.drawPositionen()
+                self.drawTitelzusammenstellung()
                 self.drawKostenZusammenfassung()
                 self.drawFooter()
             }
@@ -64,27 +67,45 @@ struct LVPDFExporter {
         // MARK: Header / Deckblatt
 
         func drawHeader() {
-            fill(CGRect(x: mH, y: y, width: cW, height: 4), color: orange)
-            y += 12
+            // Firmenkopf (Logo + Anschrift) aus dem Briefpapier — Raphis Kopf.
+            y = Briefpapier.zeichneKopf(ab: y, links: mH, breite: cW)
+            y += 8
 
-            txt("iMOPS Construction Grid", x: mH, y: y,
-                font: .systemFont(ofSize: 9), color: UIColor(white: 0.5, alpha: 1))
-            y += 18
+            // Empfänger (Bauherr) als Anschriftenfeld.
+            let plzOrt = [event.bauherrPLZ, event.bauherrOrt].compactMap { $0 }
+                .filter { !$0.isEmpty }.joined(separator: " ")
+            let empf = [event.bauherr, event.bauherrStrasse, plzOrt]
+                .compactMap { $0 }.filter { !$0.isEmpty }
+            if !empf.isEmpty {
+                y = Briefpapier.zeichneEmpfaenger(empf, ab: y, links: mH) + 16
+            } else {
+                y += 8
+            }
 
-            txt("Leistungsverzeichnis", x: mH, y: y,
-                font: .systemFont(ofSize: 18, weight: .bold))
-            y += 30
+            // Angebot-Titel links, Kopfdaten rechts.
+            let datum = DateFormatter.localizedString(from: Date(), dateStyle: .medium, timeStyle: .none)
+            txt("Angebot", x: mH, y: y, font: .systemFont(ofSize: 16, weight: .bold), color: orange)
+            txtInRect("Angebots-Nr.: \(event.eventNumber ?? "–")",
+                      rect: CGRect(x: mH + cW - 240, y: y + 1, width: 240, height: 12),
+                      font: .systemFont(ofSize: 9.5), align: .right)
+            txtInRect("Datum: \(datum)",
+                      rect: CGRect(x: mH + cW - 240, y: y + 14, width: 240, height: 12),
+                      font: .systemFont(ofSize: 9.5), align: .right)
+            y += 24
+            txt("Objekt: \(event.title ?? "–")", x: mH, y: y,
+                font: .systemFont(ofSize: 10, weight: .semibold)); y += 15
+            if let ort = event.location, !ort.isEmpty {
+                txt(ort, x: mH, y: y, font: .systemFont(ofSize: 9.5),
+                    color: UIColor(white: 0.35, alpha: 1)); y += 14
+            }
+            y += 4; hline(at: y); y += 12
 
-            hline(at: y); y += 14
-
-            infoRow("Projekt:",    event.title    ?? "–")
-            infoRow("Standort:",   event.location ?? "–")
-            infoRow("Datum:",      DateFormatter.localizedString(from: Date(),
-                                        dateStyle: .long, timeStyle: .none))
-            infoRow("Positionen:", "\(positionen.count)")
-
-            y += 12
-            hline(at: y); y += 20
+            // Anschreiben.
+            txt("Sehr geehrte Damen und Herren,", x: mH, y: y, font: .systemFont(ofSize: 10)); y += 15
+            txtInRect("beiliegend erhalten Sie unser Angebot. Es ist ein Einheitspreis-Angebot; die Abrechnung erfolgt nach tatsächlich geleisteten Mengen. Wir sichern Ihnen eine fachgerechte und termingerechte Ausführung der Arbeiten nach VOB zu.",
+                      rect: CGRect(x: mH, y: y, width: cW, height: 42),
+                      font: .systemFont(ofSize: 9.5), color: UIColor(white: 0.2, alpha: 1))
+            y += 46; hline(at: y); y += 14
         }
 
         func infoRow(_ label: String, _ value: String) {
@@ -100,73 +121,103 @@ struct LVPDFExporter {
 
         func drawPositionen() {
             let grouped = Dictionary(grouping: positionen) { $0.kostenGruppeNummer ?? "999" }
+            var titelNr = 0
             for kg in grouped.keys.sorted() {
                 let items = (grouped[kg] ?? []).sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }
                 guard !items.isEmpty else { continue }
-                pageBreakIfNeeded(60)
-                drawKG(kg, items: items)
+                titelNr += 1
+                let nr = String(format: "%02d", titelNr)
+                let name = dinLabel(kg)
+                pageBreakIfNeeded(70)
+                let summe = drawTitel(nr, name: name, items: items)
+                titelSummen.append((nr: nr, name: name, summe: summe))
             }
         }
 
-        func drawKG(_ kg: String, items: [LVPosition]) {
-            // Section header
-            fill(CGRect(x: mH,     y: y, width: cW, height: 22), color: orange.withAlphaComponent(0.1))
-            fill(CGRect(x: mH,     y: y, width: 3,  height: 22), color: orange)
-            txt("KG \(kg)  –  \(dinLabel(kg))",
-                x: mH + 8, y: y + 5,
-                font: .systemFont(ofSize: 9, weight: .semibold), color: orange)
+        /// Ein Titel-Block (Kopf → Positionen → Titelsumme). Gibt die Titelsumme zurück.
+        func drawTitel(_ nr: String, name: String, items: [LVPosition]) -> Double {
+            // Titel-Kopf
+            fill(CGRect(x: mH, y: y, width: cW, height: 22), color: orange.withAlphaComponent(0.1))
+            fill(CGRect(x: mH, y: y, width: 3,  height: 22), color: orange)
+            txt("\(nr).   \(name.uppercased())", x: mH + 8, y: y + 5,
+                font: .systemFont(ofSize: 10, weight: .bold), color: orange)
             y += 26
 
-            // Table header row
-            fill(CGRect(x: mH, y: y, width: cW, height: 16),
-                 color: UIColor(white: 0.88, alpha: 1))
+            // Table header
+            fill(CGRect(x: mH, y: y, width: cW, height: 16), color: UIColor(white: 0.88, alpha: 1))
             var xOff = mH
             for (i, h) in colHdrs.enumerated() {
                 let align: NSTextAlignment = i >= 3 ? .right : .left
-                txtInRect(h,
-                          rect: CGRect(x: xOff+3, y: y+3, width: colW[i]-6, height: 10),
-                          font: .systemFont(ofSize: 8, weight: .semibold),
-                          color: .darkGray, align: align)
+                txtInRect(h, rect: CGRect(x: xOff+3, y: y+3, width: colW[i]-6, height: 10),
+                          font: .systemFont(ofSize: 8, weight: .semibold), color: .darkGray, align: align)
                 xOff += colW[i]
             }
             y += 18
 
             // Data rows
+            var titelSumme: Double = 0
             for (idx, pos) in items.enumerated() {
                 pageBreakIfNeeded(18)
                 if idx % 2 == 1 {
-                    fill(CGRect(x: mH, y: y, width: cW, height: 18),
-                         color: UIColor(white: 0.96, alpha: 1))
+                    fill(CGRect(x: mH, y: y, width: cW, height: 18), color: UIColor(white: 0.96, alpha: 1))
                 }
                 let ep = LVKalkulator.effektiverEP(for: pos)
                 let gp = ep * pos.menge
                 gesamtNetto += gp
+                titelSumme += gp
                 let vals: [(String, NSTextAlignment)] = [
-                    (pos.posNr        ?? "",  .left),
+                    (pos.posNr ?? "", .left),
                     (pos.artikelNummer ?? "", .left),
-                    (pos.bezeichnung  ?? "",  .left),
+                    (pos.bezeichnung ?? "", .left),
                     (pos.menge > 0 ? String(format: "%.2f", pos.menge) : "", .right),
-                    (pos.einheit      ?? "",  .left),
+                    (pos.einheit ?? "", .left),
                     (ep > 0 ? eur(ep) : "", .right),
                     (gp > 0 ? eur(gp) : "", .right)
                 ]
                 xOff = mH
                 for (i, (val, align)) in vals.enumerated() {
-                    txtInRect(val,
-                              rect: CGRect(x: xOff+3, y: y+3, width: colW[i]-6, height: 15),
+                    txtInRect(val, rect: CGRect(x: xOff+3, y: y+3, width: colW[i]-6, height: 15),
                               font: .systemFont(ofSize: 9), align: align)
                     xOff += colW[i]
                 }
-                // Row separator
                 UIColor(white: 0.88, alpha: 1).setStroke()
                 let p = UIBezierPath()
-                p.move(to: CGPoint(x: mH,    y: y+18))
-                p.addLine(to: CGPoint(x: mH+cW, y: y+18))
-                p.lineWidth = 0.25
-                p.stroke()
+                p.move(to: CGPoint(x: mH, y: y+18)); p.addLine(to: CGPoint(x: mH+cW, y: y+18))
+                p.lineWidth = 0.25; p.stroke()
                 y += 18
             }
-            y += 12
+
+            // Titelsumme
+            pageBreakIfNeeded(24)
+            y += 3
+            txtInRect("Titelsumme \(nr)  \(name)",
+                      rect: CGRect(x: mH + cW - 340, y: y, width: 220, height: 14),
+                      font: .systemFont(ofSize: 9.5, weight: .semibold), align: .right)
+            txtInRect(eur(titelSumme),
+                      rect: CGRect(x: mH + cW - 120, y: y, width: 120, height: 14),
+                      font: .systemFont(ofSize: 9.5, weight: .bold), color: orange, align: .right)
+            y += 22
+            return titelSumme
+        }
+
+        // MARK: Titelzusammenstellung
+
+        func drawTitelzusammenstellung() {
+            guard titelSummen.count > 1 else { return }
+            pageBreakIfNeeded(40 + CGFloat(titelSummen.count) * 16)
+            y += 6
+            txt("Titelzusammenstellung", x: mH, y: y,
+                font: .systemFont(ofSize: 12, weight: .bold)); y += 20
+            for t in titelSummen {
+                txtInRect("\(t.nr)   \(t.name)",
+                          rect: CGRect(x: mH, y: y, width: cW - 130, height: 14),
+                          font: .systemFont(ofSize: 9.5))
+                txtInRect(eur(t.summe),
+                          rect: CGRect(x: mH + cW - 130, y: y, width: 130, height: 14),
+                          font: .systemFont(ofSize: 9.5), align: .right)
+                y += 16
+            }
+            y += 2; hline(at: y); y += 8
         }
 
         // MARK: Kostenzusammenfassung (DIN 276: Netto + MwSt + Brutto)
@@ -180,10 +231,10 @@ struct LVPDFExporter {
             let mwst     = gesamtNetto * mwstSatz / 100
             let brutto   = gesamtNetto + mwst
 
-            summenZeile("Summe netto", gesamtNetto, bold: false)
+            summenZeile("LV-Gesamtsumme (netto)", gesamtNetto, bold: true)
             summenZeile("zzgl. MwSt. \(pctStr(mwstSatz)) %", mwst, bold: false)
             y += 2; hline(at: y); y += 10
-            summenZeile("Summe brutto", brutto, bold: true)
+            summenZeile("Angebotsendsumme", brutto, bold: true)
         }
 
         /// Eine rechtsbuendige Summenzeile (Label + Betrag) am rechten Rand.
@@ -207,11 +258,8 @@ struct LVPDFExporter {
         // MARK: Footer
 
         func drawFooter() {
-            let dateStr = DateFormatter.localizedString(from: Date(),
-                                                       dateStyle: .medium, timeStyle: .none)
-            txt("iMOPS Construction Grid  ·  \(event.title ?? "")  ·  \(dateStr)",
-                x: mH, y: pageH - 25,
-                font: .systemFont(ofSize: 7.5), color: .lightGray)
+            // Firmen-Fuß (Kontakt/Bank/Steuer + kurzer Rechtstext) aus dem Briefpapier.
+            _ = Briefpapier.zeichneFuss(seitenHoehe: pageH, links: mH, breite: cW)
         }
 
         // MARK: Drawing helpers
