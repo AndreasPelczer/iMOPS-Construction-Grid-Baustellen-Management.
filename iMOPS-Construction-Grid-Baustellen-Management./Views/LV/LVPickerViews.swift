@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreData
 
 struct KGPickerList: View {
     @Binding var selected: String
