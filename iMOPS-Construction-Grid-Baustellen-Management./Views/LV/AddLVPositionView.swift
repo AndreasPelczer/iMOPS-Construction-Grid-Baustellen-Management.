@@ -17,6 +17,7 @@ struct AddLVPositionView: View {
     @State private var lieferant = ""
     @State private var isAlternative = false
     @State private var showKatalog = false
+    @State private var katalogVorschlaege: [STLBBaustein] = []   // Live-Vorschläge aus dem LV-Katalog
     @State private var kgProposal: KGProposal?
     @State private var selectedGeschoss: Geschoss?   // Welle 9 — Ebene der Position
     @State private var rezeptMass = ""               // B-Element: Aufwand je Element-Einheit
@@ -29,6 +30,13 @@ struct AddLVPositionView: View {
     }
 
     let einheiten = ["m²", "m³", "lfm", "Stück", "kg", "t", "Psch", "h"]
+
+    /// Die Einheit aus einem Katalog-Vorschlag (z. B. „m2", „Wo", „Monat") kann von der
+    /// festen Liste abweichen — dann zeigen wir sie zusätzlich an, sonst stünde das
+    /// Picker-Feld leer.
+    private var einheitenAngezeigt: [String] {
+        einheiten.contains(einheit) ? einheiten : einheiten + [einheit]
+    }
     let lieferanten = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
 
     var isValid: Bool {
@@ -51,6 +59,28 @@ struct AddLVPositionView: View {
                         TextField("1.1.01", text: $posNr).keyboardType(.numbersAndPunctuation)
                     }
                     TextField("Bezeichnung *", text: $bezeichnung, axis: .vertical).lineLimit(2...4)
+                    // Live-Vorschläge aus dem LV-Katalog: beim Tippen echte Positionen picken
+                    // (Text + Einheit kommen mit; der Firma-Preis greift dann beim Rechnen).
+                    if !katalogVorschlaege.isEmpty {
+                        ForEach(katalogVorschlaege) { b in
+                            Button {
+                                bezeichnung = b.kurztext
+                                einheit = b.einheit
+                                katalogVorschlaege = []
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "text.badge.plus").foregroundStyle(.orange).font(.caption)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(b.kurztext).font(.subheadline).foregroundStyle(.primary)
+                                        Text("\(b.gewerk) · \(b.einheit)").font(.caption2).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "arrow.up.left").font(.caption2).foregroundStyle(.orange)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                     Toggle(isOn: $isAlternative) {
                         Label("Alternativposition", systemImage: "doc.on.doc")
                             .foregroundStyle(isAlternative ? .blue : .primary)
@@ -65,7 +95,7 @@ struct AddLVPositionView: View {
                     HStack {
                         TextField("0,00", text: $menge).keyboardType(.decimalPad).frame(maxWidth: 120)
                         Picker("Einheit", selection: $einheit) {
-                            ForEach(einheiten, id: \.self) { Text($0) }
+                            ForEach(einheitenAngezeigt, id: \.self) { Text($0) }
                         }.pickerStyle(.menu)
                     }
                 } header: {
@@ -183,8 +213,12 @@ struct AddLVPositionView: View {
                 }
             }
             .onAppear { prefill(); setupGeschoss() }
-            .onChange(of: bezeichnung) { _, _ in
+            .onChange(of: bezeichnung) { _, neu in
                 refreshKGProposal()
+                let vs = neu.trimmingCharacters(in: .whitespaces).count >= 3
+                    ? STLBKatalog.shared.vorschlaege(zu: neu) : []
+                // Exakter Treffer = gerade gepickt → keine Liste mehr zeigen.
+                katalogVorschlaege = vs.contains { $0.kurztext == neu } ? [] : vs
             }
             .onChange(of: einheit) { _, _ in
                 refreshKGProposal()
