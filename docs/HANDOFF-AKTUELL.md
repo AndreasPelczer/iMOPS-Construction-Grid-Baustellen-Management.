@@ -2,6 +2,22 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 19.09.2026 (Morgen) — Aufgeräumt: alles auf `main`, Raphi synchronisiert
+
+**Alle gestrigen Branches sind GEMERGT — `main` = `537517a`.** Die „NICHT gepusht"-Sätze in den 18.09-Deltas unten sind damit ERLEDIGT (waren beim Schreiben wahr, jetzt Historie).
+- **PR #186** (Hauslage): `HauslagePlatzierenView` fertig (Haus-Rechteck → `footprint` UTM → `/gelaendebruecke/calculate` → Ergebnis in der Karte; Zoom/Pan + PDF-Lageplan-Hintergrund) + Insel-Duplikate raus (`VermessungDXFLeser`/`Baugrube`/`BaugrubeRechnerView` + 2 Tests + `ErdmassenView`-Knöpfe). PR #185 (PlanAbgreifen) geschlossen.
+- **PR #187** (LV): lila KI-Pille in der LV-Zeile (`LVPositionRow.enthaeltKI`) + „Duplikate entfernen"-Menüknopf in `LVView` (allgemeiner Dedup Bezeichnung+Einheit+Menge; kalkulierte bleibt; Undo).
+- **PR #188** (Canvas): der „+" im Grap8-Canvas ist ein Menü — Freier Auftrag + 8 Baustein-Typen (Fundament/Wände/… = native Ketten-Starts via `AddJobView(vorgabeAufgabe:)`; die read-only Bundle-Palette bleibt Deko).
+- Zusammengeführtes `main` **baut grün**. **Raphis MacBookAir gezogen** (war auf #177, 11 PRs zurück → jetzt `537517a`). **9 alte lokale Branches aufgeräumt** (Inhalt in main verifiziert), nur noch `main`.
+
+**🔴 OFFEN / nächste Schritte:**
+- **Montag: Rohbau-Angebot Setiadji.** Die Baustelle liegt in der App (LV aus `~/Desktop/BV Setiadji-Artanti Retzbach/LV-Skelett-Setiadji.x83`, 12 Positionen, „Mops fass" gelb, auf dem Canvas). Noch: **Stammdaten-Preise** eintragen (Betonstahl 3,50 €/kg fertig verlegt · SHB-Schotter ab Werk 7,90 · Ytong 24 cm PPW2/0,35 · Vath RC-Schotter), **Baustelleneinrichtung** (Pauschale) + **Boden-Deponiepreis** (BK2, ~15–20 €/m³ — **NICHT** Vath: Vath = Bauschutt-Annahme, kein sauberer Boden), dann **Angebot exportieren** (X84/PDF). Ehrlich im Angebot: „Rohbau nach Planauswertung — Rest nach fertiger Werkplanung".
+- **Bepreistes LV-Skelett-Dokument** (Herkunfts-Ampel ✓belegt/~Schätzung/✗fehlt): Artifact + `~/Desktop/BV Setiadji-Artanti Retzbach/LV-Skelett-Setiadji.html`. Kern (Erdbau+Beton+Bewehrung) ~14,4k, +Mauerwerk ~16k, Restgewerke nur Grobkennwerte.
+- **Hauslage-v1** am iPad im **Griff-Test** fühlen (Zoom/PDF-Ausrichten); danach evtl. 2-Punkt-Präzisions-Ausrichtung, Flurstück hervorheben, Abstandsflächen.
+- **SketchUp-Brücke:** Raphi soll „Generate Report" mit **Volume + LenX/Y/Z** exportieren (seine Komponenten-/Layer-Namen tragen Geschoss+Bauteil+Dicke+Güte — top; nur die Mengen fehlten). Sein Modell hängt wegen des **163-MB-Gelände-Netzes** → Gelände in eigene Datei/gröber (1-m-Konturen, Skimp). Nächste Bögen: **Stammdaten-CSV-Import** (Lieferantenlisten en bloc), **Palette-Drop-Rückkanal** (Bundle meldet Drop → Auftrag), **Import-Upsert** (Re-Import aktualisiert statt dupliziert), SketchUp-Live-Plugin (`~/XcodeProjects/mops-scetchup`, FAKE-Modus).
+- **Vath** als Lieferant: `~/Desktop/Lieferanten-Preise/Vath-Recycling-Preisliste-2026.csv` (−20 % eingerechnet), noch nicht in Stammdaten (kein Massen-Import → von Hand). [[lieferanten-landkarte-goldschmitt]]
+- Fremde `docs/material-stammliste.csv` liegt unversioniert im Repo (nicht von mir; unangetastet).
+
 ## Delta 18.09.2026 (Abend II) — Geländebrücke: geparkter Schritt „Hauslage platzieren" fertig (footprint) · Insel-Duplikate raus · Batch-Doku-Extraktion durchleuchtet · Setiadji-Ordner sortiert
 
 **Branch `feature/hauslage-footprint`, gebaut + getestet (455 Tests grün), NICHT gepusht.** Andreas testet den Griff-Feel am iPad, dann Push/PR + PR #185 schließen (sein OK). ⚠️ Diese Doku liegt auf dem **Branch**, nicht auf `main` — reitet beim Merge mit (sonst auf main cherry-picken).
