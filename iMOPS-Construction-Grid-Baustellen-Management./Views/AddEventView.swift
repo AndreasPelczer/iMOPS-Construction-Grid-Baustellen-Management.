@@ -229,6 +229,12 @@ struct AddEventView: View {
 
         do {
             try viewContext.save()
+            // Stufe 3: für die neue Baustelle gleich den iCloud-Ordner (mit Fächern) anlegen.
+            // Namen als String einsammeln, Datei-Arbeit im Hintergrund (nil-sicher ohne iCloud).
+            let baustelleName = newEvent.title ?? ""
+            DispatchQueue.global(qos: .utility).async {
+                _ = MopsAblage.ordnerFuerBaustelle(baustelleName)
+            }
             dismiss()
         } catch {
             print("Fehler beim Speichern: \(error.localizedDescription)")

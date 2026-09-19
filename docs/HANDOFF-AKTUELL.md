@@ -2,6 +2,20 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 19.09.2026 (Nachmittag) — Datei-Ablage Stufe 3: Ordner je Baustelle automatisch
+
+**Stufe 2 lebt (Andreas: „iMOPS taucht links im Finder auf").** Stufe 3 legt jetzt für JEDE Baustelle automatisch einen Ordner mit Dokument-Fächern an.
+
+**Gebaut (5 Tests grün):**
+- **`MopsAblage`** erweitert: `sichererOrdnername(_)` (Schrägstrich/Doppelpunkt → Bindestrich, leer → nil, testbar ohne iCloud), `synchronisiereBaustellen([String])` (Hintergrund, idempotent, legt nur an — löscht/benennt NIE um: umbenannte Baustelle = neuer Ordner, alter bleibt, kein Datenverlust). `ordnerFuerBaustelle` legt Fächer Architektur/Vermessung/Statik/Gutachten/Genehmigung/Sonstiges an.
+- **`iMOPSApp`** Start-Task: Baustellen-Titel auf dem Main-Context einsammeln (nur Strings über Thread-Grenzen, keine Core-Data-Objekte) → `synchronisiereBaustellen`.
+- **`AddEventView.saveEvent`**: neue Baustelle → gleich Ordner anlegen (Hintergrund).
+- **`Tests/MopsAblageTests.swift`** (5 grün): Name-Absicherung + 6 Fächer.
+
+**⚠️ Nicht von mir testbar (kein iCloud im Build-Env):** Andreas baut neu → in `iMOPS/Baustellen/` sollten Ordner je Baustelle (Setiadji, Bauer Horst, …) mit den 6 Fächern erscheinen.
+
+**🔴 OFFEN — Stufe 3.1:** Dokumente automatisch ins richtige Fach einsortieren (`DateiSortierer` liefert statik/fakten/ablegen — Taxonomie auf die 6 Fächer mappen). Zuordnung Datei→Baustelle→Mops (dokuPath auf die iCloud-Datei zeigen lassen). Umbenennen/Löschen-Abgleich (bewusst offen gelassen). Geteilter iCloud-Ordner als Andreas↔Raphi-Weg.
+
 ## Delta 19.09.2026 (Mittag III) — Datei-Ablage Stufe 2: iCloud-Ordner „iMOPS" (Finder-Seitenleiste + Sync)
 
 **iCloud-Capability aktiviert** (Andreas in Xcode, mit Führung — Hürde war „PLA update available": aktualisierte Apple-Lizenzvereinbarung erst zustimmen unter developer.apple.com/account → Vereinbarungen, dann „Try Again", Container schwarz). Xcode hat `…​.entitlements` (icloud-container/-services CloudDocuments/ubiquity) + pbxproj angelegt — **beide committet** (sonst gehen sie verloren).

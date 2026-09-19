@@ -80,10 +80,17 @@ struct iMOPSApp: App {
                     // in-memory ist (kein Persistence-Layer im Spike).
                     TheBrain.shared.seed()
 
-                    // Stufe 2: den sichtbaren „iMOPS"-Ordner in iCloud Drive vorbereiten
-                    // (Grundstruktur _Firma + Baustellen). Läuft im Hintergrund und ist
-                    // nil-sicher — ohne iCloud-Login passiert einfach nichts.
-                    MopsAblage.imHintergrundVorbereiten()
+                    // Stufe 2+3: den sichtbaren „iMOPS"-Ordner in iCloud Drive vorbereiten
+                    // (Grundstruktur _Firma + Baustellen) UND für jede vorhandene Baustelle
+                    // einen Ordner (mit Fächern) sicherstellen. Namen hier auf dem Main-
+                    // Context einsammeln, die Datei-Arbeit läuft im Hintergrund (nil-sicher —
+                    // ohne iCloud-Login passiert nichts).
+                    let baustellenNamen: [String] = {
+                        let req = NSFetchRequest<Event>(entityName: "Event")
+                        let events = (try? persistence.container.viewContext.fetch(req)) ?? []
+                        return events.compactMap { $0.title }
+                    }()
+                    MopsAblage.synchronisiereBaustellen(baustellenNamen)
                 }
                 .onReceive(
                     NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
