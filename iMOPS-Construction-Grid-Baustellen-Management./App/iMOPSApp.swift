@@ -79,6 +79,11 @@ struct iMOPSApp: App {
                     // und Schicht-Start. Läuft bei jedem App-Start, weil TheBrain
                     // in-memory ist (kein Persistence-Layer im Spike).
                     TheBrain.shared.seed()
+
+                    // Stufe 2: den sichtbaren „iMOPS"-Ordner in iCloud Drive vorbereiten
+                    // (Grundstruktur _Firma + Baustellen). Läuft im Hintergrund und ist
+                    // nil-sicher — ohne iCloud-Login passiert einfach nichts.
+                    MopsAblage.imHintergrundVorbereiten()
                 }
                 .onReceive(
                     NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
