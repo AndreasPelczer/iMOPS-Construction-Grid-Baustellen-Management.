@@ -831,6 +831,31 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Material_Bestellung_Ecke"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Wo ist die Materialliste"
+    - "Material und Bestellung"
+    - "Was bestelle ich"
+    - "Was ist auf Lager"
+    - "Bestellliste finden"
+    - "Lager oeffnen"
+  antwort: |
+    In der Baustelle (Event-Detail) gibt es die eigene Ecke "Material & Bestellung".
+    Sie ist der Beschaffungs-Ort — bewusst getrennt von "Leistungsverzeichnis und
+    Kalkulation" (dort geht es um Kosten, hier ums Bestellen und den Lagerbestand).
+    Darin:
+    - Materialliste: der Material-Bedarf dieser Baustelle (aus dem Auslesen), mit
+      Soll/Ist-Abgleich gegen das Lager ("Lager sagt vorhanden, vor Ort fehlt" wird
+      rot gemeldet).
+    - Lager: Bestand (= Summe der Buchungen), Meldebestand, Nachbestellen.
+    - Bestellliste: was fehlt, je Lieferant, bis zum Bestellschein (PDF/Mail).
+    Frueher lag die Materialliste unter der Kalkulation — sie ist dorthin verschoben,
+    wo Lager und Bestellliste ohnehin leben, damit die Beschaffung an einem Ort ist.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_LV_Gruppen_Bearbeiten"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
