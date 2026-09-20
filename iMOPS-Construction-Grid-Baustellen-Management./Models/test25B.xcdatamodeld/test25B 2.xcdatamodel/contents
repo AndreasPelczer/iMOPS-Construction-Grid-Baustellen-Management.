@@ -11,6 +11,7 @@
         <relationship name="lvPosition" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="LVPosition" inverseName="aufmasse" inverseEntity="LVPosition"/>
     </entity>
     <entity name="Auftrag" representedClassName=".Auftrag" syncable="YES">
+        <attribute name="dauerTage" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="deliveryTemperature" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="employeeName" optional="YES" attributeType="String"/>
         <attribute name="extras" optional="YES" attributeType="String" defaultValueString=""/>
@@ -126,6 +127,7 @@
         <attribute name="typ" optional="YES" attributeType="String" defaultValueString="manuell"/>
         <attribute name="erfuellt" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="reihenfolge" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="wartezeitTage" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <relationship name="geschoss" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Geschoss" inverseName="voraussetzungen" inverseEntity="Geschoss"/>
         <relationship name="quelle" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="istVoraussetzungFuer" inverseEntity="Auftrag"/>
         <relationship name="auftrag" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Auftrag" inverseName="voraussetzungen" inverseEntity="Auftrag"/>

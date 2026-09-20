@@ -138,3 +138,30 @@ enum Bauablauf {
         return nil
     }
 }
+
+// MARK: - Adapter: echte Aufträge → Vorwärtsrechnung
+extension Bauablauf {
+
+    /// Baut aus den Aufträgen (Knoten mit `dauerTage`) und ihren Voraussetzungen
+    /// (Kanten `quelle → auftrag` mit `wartezeitTage`) den Terminplan. Nutzt den
+    /// Abhängigkeitsgraph, der im Canvas schon existiert — nur mit Zeit versehen.
+    static func terminplan(fuer jobs: [Auftrag]) -> AblaufErgebnis {
+        func kid(_ a: Auftrag) -> String { a.objectID.uriRepresentation().absoluteString }
+        let bekannt = Set(jobs.map { kid($0) })
+
+        let knoten = jobs.map {
+            AblaufKnoten(id: kid($0), name: $0.processingDetails ?? "—", dauerTage: max(0, $0.dauerTage))
+        }
+        var kanten: [AblaufKante] = []
+        for j in jobs {
+            let vs = (j.voraussetzungen as? Set<Voraussetzung>) ?? []
+            for v in vs {
+                guard let q = v.quelle else { continue }      // nur echte Auftrags-Kanten
+                let von = kid(q)
+                guard bekannt.contains(von) else { continue } // nur innerhalb dieser Baustelle
+                kanten.append(AblaufKante(von: von, zu: kid(j), wartezeitTage: max(0, v.wartezeitTage)))
+            }
+        }
+        return vorwaertsrechnung(knoten: knoten, kanten: kanten)
+    }
+}

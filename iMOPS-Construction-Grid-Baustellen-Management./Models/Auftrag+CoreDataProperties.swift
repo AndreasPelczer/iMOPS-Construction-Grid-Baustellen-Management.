@@ -30,6 +30,7 @@ extension Auftrag {
     @NSManaged var storageLocation: String?
     @NSManaged var storageNote: String?
     @NSManaged var totalProcessingTime: Double
+    @NSManaged var dauerTage: Double   // Zeit im Canvas: Arbeitsdauer in Tagen (0 = Meilenstein)
     @NSManaged var event: Event?
     @NSManaged var extras: String?
 

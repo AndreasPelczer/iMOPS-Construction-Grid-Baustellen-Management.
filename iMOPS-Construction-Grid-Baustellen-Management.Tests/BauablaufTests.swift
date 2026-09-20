@@ -123,4 +123,19 @@ struct BauablaufTests {
         #expect(!r.zyklus.isEmpty)
         #expect(r.termine.isEmpty)
     }
+
+    /// Adapter über echte Aufträge: Dauer am Knoten + Wartezeit an der Voraussetzung.
+    @Test @MainActor func terminplanAusAuftraegen() {
+        let beton = auftrag("Betonieren"); beton.dauerTage = 1
+        let schal = auftrag("Ausschalen"); schal.dauerTage = 1
+        let v = Voraussetzung(context: ctx)     // die Kante beton → schal
+        v.quelle = beton
+        v.auftrag = schal
+        v.wartezeitTage = 3                      // 3 Tage härten
+        let r = Bauablauf.terminplan(fuer: [schal, beton])   // Reihenfolge egal
+        let t = Dictionary(uniqueKeysWithValues: r.termine.map { ($0.name, $0) })
+        #expect(t["Betonieren"]?.fruehestesEndeTag == 1)
+        #expect(t["Ausschalen"]?.fruehesterStartTag == 4)   // 1 + 3 härten
+        #expect(r.gesamtdauerTage == 5)
+    }
 }

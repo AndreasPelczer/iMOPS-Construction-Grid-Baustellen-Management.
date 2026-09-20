@@ -13,6 +13,7 @@ extension Voraussetzung {
     @NSManaged var typ: String?
     @NSManaged var erfuellt: Bool
     @NSManaged var reihenfolge: Int16
+    @NSManaged var wartezeitTage: Double   // Zeit im Canvas: Übergangszeit/lag auf der Kante (Härten/Trocknen)
     @NSManaged var geschoss: Geschoss?
 
     // Grap8 — die Kante im Schritt→Schritt-Graph. Beide optional, damit eine
