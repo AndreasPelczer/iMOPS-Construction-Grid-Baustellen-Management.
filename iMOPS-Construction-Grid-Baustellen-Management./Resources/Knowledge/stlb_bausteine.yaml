@@ -178,6 +178,29 @@ baustelleneinrichtung:
 # ============================================================================
 erdarbeiten:
 
+  ERD-014:
+    kurztext: "Gelaende modellieren (Cut/Fill)"
+    langtext: >
+      Boden auf dem Grundstueck loesen, umlagern, profilgerecht einbauen und verdichten.
+      Massenausgleich innerhalb der Baustelle, kein Abtransport.
+    einheit: "m3"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300"
+    aufwandswert_key: "erdarbeiten.baugrube_ausheben_bagger"
+    maschinen_keys: ["erdbau.kettenbagger_8t"]
+    tags: ["Gelaendemodellierung", "Geländemodellierung", "Modellierung", "Cut/Fill", "Massenausgleich", "Hanglage", "umlagern"]
+
+  ERD-015:
+    kurztext: "Boeschung herstellen und profilieren"
+    langtext: >
+      Boeschung im vorgegebenen Neigungsverhaeltnis herstellen, profilieren und andruecken.
+      Neigung {{neigung}}. Standsicherheit nach DIN 4124 beachten.
+    einheit: "m2"
+    gewerk: "Erdarbeiten"
+    din: "DIN 18300, DIN 4124"
+    aufwandswert_key: "erdarbeiten.boden_verdichten"
+    tags: ["Boeschung", "Böschung", "profilieren", "Neigung", "Boeschungen"]
+
   ERD-001:
     kurztext: "Oberboden abtragen"
     langtext: >
@@ -366,7 +389,31 @@ beton:
     gewerk: "Betonarbeiten"
     din: "DIN 18331"
     aufwandswert_key: "betonarbeiten.betonieren_allgemein"
-    tags: ["Fundamentbeton", "Beton", "Einfassung", "Ortbeton"]
+    tags: ["Fundamentbeton", "Beton", "Einfassung", "Ortbeton", "Fundamentbett", "Bettung", "Unterbeton", "Stuetzwinkel", "Stützwinkel"]
+
+  BET-012:
+    kurztext: "Filigran-/Elementdecke liefern und verlegen"
+    langtext: >
+      Stahlbeton-Elementdecke (Filigran-/Halbfertigteilplatten) {{betonguete}}, Gesamtdicke
+      {{dicke_cm}} cm, liefern, mit Kran verlegen, ausrichten und lagern. Ortbetonergaenzung,
+      Bewehrung und Montageunterstuetzung nach gesonderten Positionen.
+    einheit: "m2"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331, DIN EN 13747"
+    aufwandswert_key: "betonarbeiten.elementdecke_verlegen"
+    maschinen_keys: ["heben.autokran"]
+    tags: ["Elementdecke", "Filigran", "Filigrandecke", "Filigran-Elementdecke", "Plattendecke", "Halbfertigteil", "Geschossdecke", "Decke"]
+
+  BET-013:
+    kurztext: "Ortbetonergaenzung auf Elementdecke"
+    langtext: >
+      Ortbeton {{betonguete}} auf verlegte Elementdecke liefern, einbringen, verdichten und
+      abziehen. Schichtdicke = Gesamtdicke minus Plattendicke.
+    einheit: "m3"
+    gewerk: "Betonarbeiten"
+    din: "DIN 18331"
+    aufwandswert_key: "betonarbeiten.betonieren_allgemein"
+    tags: ["Ortbetonergaenzung", "Ortbetonergänzung", "Aufbeton", "Ortbeton", "Elementdecke", "Decke"]
 
   BET-001:
     kurztext: "Sauberkeitsschicht"
@@ -438,7 +485,7 @@ beton:
     din: "DIN 18331"
     aufwandswert_key: "betonarbeiten.stuetze"
     maschinen_keys: ["beton.innenruettler"]
-    tags: ["Stütze", "Betonstütze", "Pfeiler"]
+    tags: ["Stütze", "Betonstütze", "Pfeiler", "Drempelstütze", "Drempelstuetze", "Drempelstützen", "Drempelstuetzen", "Drempel", "Stahlbetonstütze", "Wandstütze"]
 
   BET-006:
     kurztext: "Stahlbeton Unterzüge"
@@ -463,7 +510,7 @@ beton:
     gewerk: "Betonarbeiten"
     din: "DIN 18331"
     aufwandswert_key: "betonarbeiten.treppe"
-    tags: ["Treppe", "Treppenlauf", "Podest"]
+    tags: ["Treppe", "Treppenlauf", "Podest", "Treppenloch", "Treppenauge", "Innentreppe"]
 
   BET-008:
     kurztext: "Streifenfundamente / Frostschürzen"
@@ -603,6 +650,65 @@ mauer:
 # ============================================================================
 # 05 — ABDICHTUNG (DIN 18533)
 # ============================================================================
+  MAU-007:
+    kurztext: "Mauerwerk Porenbeton (Ytong/Hebel)"
+    langtext: |
+      Mauerwerk aus Porenbeton-Plansteinen {{material}}, Wanddicke {{dicke_cm}} cm,
+      im Dünnbettverfahren mit Dünnbettmörtel versetzt. Einschl. Zuschnitt, Anschlüsse an
+      Stahlbetonbauteile, Mauerkronen bei Arbeitsunterbrechung abdecken. Kimmschicht,
+      Stürze und Ringbalken nach gesonderten Positionen.
+      HINWEIS: Bedarfswerte je m³ Mauerwerk (Steine Stück/m³, Dünnbettmörtel kg/m³) stehen
+      in `YtongBedarf` — öffentlicher Xella-Vordruck. Der Preis je Stein/Sack ist
+      Betriebswissen und kommt aus den Stammdaten, nicht aus dem Katalog.
+    einheit: m2
+    gewerk: Mauerarbeiten
+    din: "DIN 18330, DIN EN 771-4"
+    aufwandswert_key: mauerarbeiten.mauerwerk_porenbeton
+    maschinen_keys:
+      - heben.teleskoplader
+    material:
+      text: "Porenbeton-Planstein"
+      einheit: m2
+      richtpreis: 0.0
+      verschnitt: 0.03
+    tags:
+      - Porenbeton
+      - Ytong
+      - Hebel
+      - Planstein
+      - Plansteine
+      - Mauerwerk
+      - Dünnbettmörtel
+      - Dünnbettverfahren
+      - Gasbeton
+      - Giebelmauerwerk
+      - PPW
+      - tragend
+
+  MAU-008:
+    kurztext: "Aussparungen und Durchbrüche im Mauerwerk"
+    langtext: |
+      Aussparungen, Wanddurchbrüche und Schlitze im Mauerwerk herstellen, Kanten sauber
+      arbeiten, Schutt aufnehmen und entsorgen. Nach Einbau der Leitungen schließen,
+      soweit gefordert. Abrechnung je Stück nach Aufmaß.
+    einheit: St
+    gewerk: Mauerarbeiten
+    din: "DIN 18330"
+    aufwandswert_key: mauerarbeiten.sturz_einbauen
+    tags:
+      - Deckendurchbrueche
+      - Bodendurchbrueche
+      - Wanddurchbrueche
+      - Aussparung
+      - Aussparungen
+      - Wanddurchbruch
+      - Wanddurchbrüche
+      - Durchbruch
+      - Durchbrüche
+      - Deckendurchbrüche
+      - Bodendurchbrüche
+      - Schlitze
+
 abdichtung:
 
   ABD-006:
@@ -613,6 +719,17 @@ abdichtung:
     gewerk: "Abdichtung"
     aufwandswert_key: "abdichtung.trennvlies_verlegen"
     tags: ["PE-Folie", "Trennlage", "Folie", "Trennschicht"]
+
+  ABD-010:
+    kurztext: "Daemmeinlage XPS unterseitig (Waermebruecke Sturz/Ringbalken)"
+    langtext: >
+      XPS-Daemmeinlage unterseitig im Bereich von Wandoeffnungen und Ringbalken einlegen,
+      Dicke {{dicke_cm}} cm. Auflager beidseitig ueberdecken.
+    einheit: "m"
+    gewerk: "Abdichtungs- und Daemmarbeiten"
+    din: "DIN 4108"
+    aufwandswert_key: "abdichtung.perimeterdaemmung"
+    tags: ["Daemmeinlage", "Dämmeinlage", "Daemmeinlagen", "Dämmeinlagen", "XPS", "Waermebruecke", "Wärmebrücke", "Ringbalkendaemmung"]
 
   ABD-001:
     kurztext: "Abdichtung Bodenplatte"
@@ -639,7 +756,7 @@ abdichtung:
     gewerk: "Abdichtung"
     din: "DIN 18533"
     aufwandswert_key: "abdichtung.abdichtung_kellerwand"
-    tags: ["Kellerwand", "KMB", "Dickbeschichtung"]
+    tags: ["Kellerwand", "KMB", "Dickbeschichtung", "Bauwerksabdichtung", "Spritzwasserbereich", "Sockelabdichtung", "Sockel"]
 
   ABD-003:
     kurztext: "Perimeterdämmung"
@@ -778,7 +895,7 @@ pflaster:
     din: "DIN 18318, DIN EN 1338"
     aufwandswert_key: "pflasterarbeiten.verbundpflaster_verlegen"
     maschinen_keys: ["verdichtung.ruettelplatte_mittel", "schneiden.nassschneidetisch", "kleingeraete.steinknacker"]
-    tags: ["Verbundpflaster", "Betonpflaster", "Rechteckpflaster"]
+    tags: ["Verbundpflaster", "Betonpflaster", "Rechteckpflaster", "Stellplatz", "Stellplätze", "Stellplaetze", "Fahrwege", "Zufahrt", "Pflaster"]
 
   PFL-003:
     kurztext: "Natursteinpflaster verlegen"
@@ -941,6 +1058,18 @@ strasse:
 # ============================================================================
 kanal:
 
+  KAN-015:
+    kurztext: "Zisterne setzen und anschliessen"
+    langtext: >
+      Zisterne {{volumen}} liefern, Grube herstellen, Behaelter setzen, ausrichten, mit
+      Zulauf, Ueberlauf und Abdeckung anschliessen, verfuellen und verdichten.
+    einheit: "St"
+    gewerk: "Kanalbau"
+    din: "DIN 1986-100"
+    aufwandswert_key: "kanalbau.schacht_setzen"
+    maschinen_keys: ["erdbau.kettenbagger_8t"]
+    tags: ["Zisterne", "Retentionszisterne", "Regenwasserzisterne", "Ueberlauf", "Überlauf", "Rigole"]
+
   KAN-001:
     kurztext: "Kanalrohr verlegen"
     langtext: >
@@ -1014,7 +1143,7 @@ kanal:
     gewerk: "Kanalbau"
     din: "DIN EN 1610"
     aufwandswert_key: "kanalbau.kanalrohr_verlegen"
-    tags: ["PVC", "KG-Rohr", "DN100", "Sandbett", "Kanal"]
+    tags: ["PVC", "KG-Rohr", "DN100", "Sandbett", "Kanal", "Grundleitung", "Grundleitungen", "frostfrei"]
 
   KAN-007:
     kurztext: "PVC-Abzweig DN100/100 liefern und im Sandbett verlegen"

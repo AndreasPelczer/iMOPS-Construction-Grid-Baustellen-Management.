@@ -2,6 +2,237 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 21.09.2026 (00:10) — BESTÄTIGT AN ECHTEN DATEN: die Rundreise schließt
+
+Andreas hat die vier Schritte gemacht (neu gebaut 00:04, LV geleert, der fertigen X84 der laufenden Baustelle
+importiert). Ergebnis in der App: **263.304,97 € Angebotssumme**, jede Position grün mit
+„EP (Angebot)" — die beiden Einheiten-Funde stehen sichtbar drin (Randschalung 115,56 €/m²,
+Betonstahlmatten 2,35 €/kg).
+
+**Rundreise-Probe** (der Nachweis, der gestern fehlte): dieselbe Baustelle wieder als X84
+exportiert (Mops-Export, 00:09) und gegengerechnet —
+109 Items, 109 `<UP>`, DP 84, Summe **263.304,97 €**. Rein und raus identisch, keine
+Position ohne Preis. Der Weg Datei → Angebotsspeicher → LV → Export ist damit an echten
+Daten dicht.
+
+Zum Vergleich der Stand davor (Mischbestand aus zwei Importen, PDF von 00:06):
+162 Positionen, 92 ohne Preis, 169.876,69 € — die vier Stützwinkel-Positionen standen leer.
+
+**🔴 Offen:** das Angebots-PDF neu exportieren (das von 00:06 hat noch die alten Zahlen).
+Dabei fällt die **Titelfolge** auf: Titel 01 heißt „Baukonstruktionen" und mischt Innenwände
+(341/342) mit Bauzaun, Bau-WC und Gerüst (391/392), danach erst Baugrube. Raphis Angebote
+laufen nach Bauablauf — Baustelleneinrichtung, Erdbau, dann aufgehend. Kosmetik, aber einem
+Bauleiter fällt es sofort auf. Ebenfalls offen: Filigranplatten-Lieferpreis (~1.900 € Lücke)
+und Stützwinkel H 2050 (5.600 €, extrapoliert, rosa ⚠) beim Fertigteilwerk anfragen.
+
+## Delta 21.09.2026 (00:xx) — Der Import meldete „fertig" und hatte nichts geliefert
+
+**Branch `feature/gelaende-dxf-aushub`, weiter lokal, NICHT gepusht.**
+
+**Was passiert ist.** Andreas importierte um 23:18 die fertige der fertigen X84 der laufenden Baustelle
+(109 Positionen, 109 Einheitspreise, 263.304,97 €). Die App zeigte danach drei Zahlen für
+dieselbe Baustelle: LV **164.788,03 €**, Canvas-Rechnung **4.076,08 €**, Datei **263.304,97 €**.
+
+**Die Diagnose — und die Falle darin.** Ich habe von außen gemessen: Datei sauber (DP 84,
+`<UP>` in jedem Item), Parser sauber (mit `swiftc` gegen die echte Datei: 109 Items, 109
+Preise, Summe auf den Cent), Positionen in der Datenbank mit vollständigem Langtext
+(zeichengleich mit der X84 — es war also die richtige, neueste Datei). Trotzdem im
+Angebotsspeicher **kein einziger Eintrag** nach 21:18.
+
+Die Ursache lag nicht im Code, sondern daneben: **`ps` sagt, die App läuft seit 22:00 —
+der Preis-Fix `dc8b6ea` ist um 22:06 committet.** Sechs Minuten. Dahinter noch fünf
+Commits: Canvas-Rechnung (22:17), die kompletten Rezepte (22:22/22:29/22:34). Das erklärt
+alle drei Zahlen auf einen Schlag. Andreas' App war auf dem Stand von 22:00.
+Betriebsregel dazu: Memory `laufende-app-aelter-als-der-fix.md`.
+
+Nebenbefunde aus derselben Messung:
+- **162 Positionen statt 109**, 17 Positionsnummern doppelt. Ein GAEB-Import hängt an, er
+  ersetzt nicht — die Stützwinkel stehen zweimal drin (`L_995 …` alt, `L 995 … liefern und
+  versetzen` neu).
+- **84 Angebots-Schlüssel zeigen auf gelöschte Positionen.** Ungefährlich: `Z_PRIMARYKEY.Z_MAX`
+  = höchste lebende Z_PK, Core Data recycelt die IDs nicht. Ein alter Preis kann nicht an
+  einer neuen Position kleben. Aufräumen wäre trotzdem mal fällig.
+- Die 140 Angebote mit Lieferant „Firma-Katalog" stammen vom **Preislisten-Import**
+  (`FirmaPreisKatalog`), nicht vom GAEB-Weg. Der GAEB-Weg hat nie etwas geschrieben.
+
+**Gebaut — Ankunfts-Nachweis für den GAEB-Import** (`Service/GAEBAnkunftsPruefung.swift`,
+`Views/GAEBAnkunftsBerichtView.swift`). Der eigentliche Skandal war nicht der Bug, sondern
+dass er sich wie Erfolg anfühlte: der Import zählte, was er zu tun *glaubte*. Jetzt liest er
+nach dem `save()` **zurück**, über `LVKalkulator.effektiverEP` — denselben Weg, den das LV
+und die Angebotssumme gehen. Was dort nicht erscheint, erscheint auch hier nicht.
+Bringt eine Datei Preise mit, gibt es **kein blankes „Import fertig" mehr**, sondern immer
+den Nachweis: Positionen · Preise in der Datei · davon abrufbar · Summenprobe Soll gegen Ist ·
+bei Lücken jede Position einzeln, teuerste zuerst, mit Fehlbetrag. Rot bei Ausfall.
+Schwester im Repo: `PreisImportBerichtView` (Preislisten-CSV) — gleiche Idee, anderer Weg herein.
+
+**Dazu die Doppel-Import-Warnung:** hat die Baustelle schon Positionen, steht das jetzt
+orange über der Auswahlliste, samt Satz „der Import hängt an, er ersetzt nicht".
+
+**Tests:** `GAEBAnkunftsPruefungTests` (6 neu, **488/488 grün**) — der Totalausfall von heute,
+der reparierte Weg, eine Datei ohne Preise (darf keinen Alarm geben), Teilausfall mit exaktem
+Fehlbetrag, Bestandszähler je Baustelle. Dazu `derSchluesselMussDiePermanenteObjectIDSein`:
+baut beide Reihenfolgen nebeneinander nach (Schlüssel vor dem Speichern = temporäre ID =
+Preis weg / `obtainPermanentIDs` zuerst = Preis da). Ohne den wäre der Nachweis blind für
+genau den Fehler, für den es ihn gibt. Drift-Regel erfüllt: `app_bedienung.yaml` +2 Einträge
+(`App_GAEB_Ankunftsbericht`, `App_GAEB_Import_haengt_an`) → 51 gesamt.
+
+**Befund am Rand, NICHT geändert (Andreas entscheidet):** eine Baustelle wird in der Liste
+per **Swipe nach links ohne jede Rückfrage** gelöscht (`EventListView.swift:27`
+`.onDelete(perform:)` → `EventListViewModel.swift:158-163`). `Event.lvPositionen` steht im
+Modell auf **`deletionRule="Cascade"`** — ein verrutschter Daumen nimmt also das komplette
+LV mit, hier wären das 162 Positionen und die ganze Kalkulation. Das widersprüche der
+eigenen Regel für destruktives Löschen (kein Full-Swipe, `.alert` mit benannten Folgen —
+so gelöst beim Auftrag-Löschen am 18.09.). Das LV selbst ist dagegen sauber geschützt:
+Einzelposition mit Alert, Gesamt-LV nur über GOAT-PIN. Nur die Baustelle darüber nicht.
+
+**🔴 Was Andreas tun muss, damit die Baustelle stimmt** (in dieser Reihenfolge):
+1. In Xcode **Stop, dann Run** — sonst läuft weiter die 22:00-Binary und alles wiederholt sich.
+2. Das alte LV leeren (162 Altpositionen): in der Baustelle **Rechtsklick / langes Drücken
+   auf die LV-Karte → „Gesamtes LV löschen" → GOAT-PIN → „LV LEEREN"**
+   (`Views/LVAbrissView.swift`). Die Baustelle selbst bleibt dabei stehen — Mängel,
+   Bautagesberichte, Aufmaße gehen nicht verloren.
+   *Nicht* der „Duplikate entfernen"-Knopf im LV: der vergleicht Bezeichnung+Einheit+Menge,
+   und die alten Positionen heißen anders („Stützwinkel L_995 …" / Einheit „Stk" gegen
+   „Stützwinkel L 995 … liefern und versetzen" / „Stück"). An diesem Bestand nachgemessen:
+   er würde **0** Positionen entfernen, obwohl 16 Positionsnummern doppelt sind.
+3. die X84 vom Desktop importieren.
+4. Der Ankunfts-Bericht muss grün **„Alle 109 Preise sind da"** und **263.304,97 €** zeigen.
+   Zeigt er rot, ist der Fix unvollständig — dann die Liste der vermissten Positionen lesen.
+
+## Delta 20.09.2026 (Nacht, spät) — BKI-Ernte 2. Runde: eine Einheit war 7.400 € wert
+
+**Branch `feature/gelaende-dxf-aushub`, weiter lokal, NICHT gepusht.** Geändert: nur
+`docs/bki-ernten.md` und `Resources/Knowledge/bki_marktpreise_2026.yaml`. Kein Swift.
+
+**Der Befund, um den es geht — BKI rechnet Winkelstützelemente je LAUFENDEM METER Wand,
+nicht je Stück.** Die Reihe (LB 080, KG 543, RF 1,027): H 55 → 175 €/m · H 80 → 210 · H 130 → 398 ·
+H 155 → **452** (BKI-080000421, VON 418 / BIS 526). Die L-Steine der laufenden Baustelle sind
+995 mm breit, also ein Stück je Meter → **452 € statt der angesetzten 210 €/Stück.** Über alle
+vier Positionen: **7.300 € → 14.713 €.** Der vorige Ansatz war nicht knapp daneben, sondern halb
+so hoch. Zusätzlich nennt der BKI-Leistungstext die **Betonbettung** als enthalten — die eigene
+Position „Fundamentbett unter Stützwinkel" (310,67 €) ist deshalb entfallen, sonst doppelt.
+
+**Gegenrichtung, gleicher Tag:** Grundleitung PVC-U DN100 = **35 €/m** (LB 009) gegen 95 €/m
+Richtwert → −1.800 €. Und die **Dichtheitsprüfung nach DIN EN 1610** (8,85 €/m, alternativ
+566 € je Strang) fehlte im LV komplett — bei Neubau Pflicht, jetzt als 411.0035 drin.
+
+**Nicht übernommen:** BKI „Baustelle einrichten, Geräteeinheit/Kolonne" 28.417 €/St — der
+Leistungstext sagt Bohr-/Ramm-/Rüttelarbeiten, also Spezialtiefbau. Gilt nicht für ein EFH.
+Brauchbar aus LB 006 dagegen: **Stundensatz Facharbeiter 79 €/h, Helfer 70 €/h** — unabhängige
+Gegenprobe für den eigenen Verrechnungssatz (74 €/h liegt sauber dazwischen).
+
+**🔴 Korrektur einer Behauptung aus der Runde davor:** In `docs/bki-ernten.md` stand, Goldschmitt
+liege durchgehend bei **BKI × 0,730**, „dreifach bestätigt". **Das war falsch und ist ersetzt.**
+Von den drei Belegen war nur einer ein echter Zeile-gegen-Zeile-Vergleich; bei der Bodenplatte war
+der BKI-Wert selbst zusammenaddiert, bei den Mauerwerksöffnungen stand links ein eigener Richtwert
+statt einer Katalogzeile (Zirkelschluss). Die Gegenprobe an einer echten Katalogzeile: Mauerwerk
+GP2/0,5 d=30 cm **125,83 / 124,00 = 1,015** gegen Pflaster **0,725** — 40 % Streuung.
+**Es gibt keinen einheitlichen Firmenfaktor.** Position für Position, nie hochrechnen.
+Der Abschnitt in `docs/bki-ernten.md` heißt jetzt so und erklärt die Falle; Memory
+`bki-ernten-verfahren.md` ebenfalls korrigiert.
+
+**Nachgerechnet statt behauptet — Elementdecke:** die Zerlegung liegt bei **76,55 €/m²**
+(Elemente + Ortbetonergänzung + Unterstützung + Randschalung + Bewehrung, 5.817,69 € auf 76 m²)
+gegen BKI 102 €/m² bei nur 18 cm. Unsere Decke ist 20 cm dick, müsste also darüber liegen →
+**rund 1.900 € Lücke, wahrscheinlich im Lieferpreis der Filigranplatten.** Beim Fertigteilwerk
+anfragen. (Eine vorher in den Vorabzug geschriebene Zahl von „3.100 €" war ungeprüft und ist
+korrigiert.)
+
+**🔴 Ein Test war rot — nicht durch diese Änderung.** `BKIMarktpreisKatalogTests.yamlLaedtUnd
+FindetProBaustein` verlangte, dass **BET-010 ein Platzhalter** ist. BET-010 wurde in der Ernte-Runde
+davor (Commit 96c237d) mit einem echten Wert gefüllt → seitdem rot. Der Test hielt einen Zustand
+fest, den das Ernten planmäßig auflöst. **Ein Test darf nicht rot werden, weil jemand seine Arbeit
+gemacht hat.** Ersetzt durch `keinUngeernteterWertGibtSichAlsEchterMarktpreisAus` — prüft die Regel
+(kein Eintrag ohne Wert darf unmarkiert bleiben) statt einer einzelnen Zeile. Dafür
+`BKIMarktpreisKatalog.alle()` ergänzt. **482/482 grün, TEST SUCCEEDED.**
+
+**`bki_marktpreise_2026.yaml`:** 13 Bausteine + **23** freie Positionen (vorher 14). Neu:
+Winkelstützreihe (4 Höhen), Grundleitung, Dichtheitsprüfung, beide Stundensätze, Lagerplatz.
+Lizenzlinie unverändert: Einzelwerte mit Quelle und BKI-ID, keine Tabellen.
+
+**Sichtbare Herkunft an jeder Position** (Andreas' „deterministisches LV mit Ausnahmen"):
+die Preis-CSV füllt das **Lieferanten-Feld** jetzt mit der Herkunft statt mit abgeschnittenem
+Fließtext — `Goldschmitt-Katalog (eigene Kalkulation)` · `aus Goldschmitt-Katalogzeilen gerechnet` ·
+`BKI Baupreise 2026, RF 1,027 (BKI-080000421)` · `Marktrichtwert - eigener Lieferant eintragen` ·
+`!! ANNAHME - vor Angebotsabgabe pruefen`. Der Nutzer überschreibt es mit seinem echten
+Lieferanten; die Herkunft bleibt in der Angebots-Vorschau dokumentiert. Im Vorabzug tragen diese
+Positionen ein **rosa ⚠-Abzeichen** bzw. ein blaues „BKI 2026".
+
+**Zweite Einheiten-Falle, gleiche Bauart:** die **Randschalung** führt BKI je lfm (18,49 €/m),
+unser LV je m². Über die Bauteildicke umgerechnet: Bodenplatte d=16 → 115,56 €/m², Decke d=20 →
+92,45 €/m². Statt der angesetzten 35 €/m². **+853 €** über beide Positionen. Ebenfalls übernommen:
+Betonstahlmatten 2,35 €/kg (4×), Durchbrüche/Aussparungen 61 €/St (2×).
+
+**Bewusst NICHT übernommen, mit Grund:** BKI „Querschnittsabdichtung Mauerwerk" 6,76 €/m ist die
+reine Sperrbahn — unsere **Kimmschicht LM 21** ist eine gemauerte Ausgleichsschicht mit Mörtel,
+andere Leistung. Und die **PE-Trennlage** (2,00 €/m²) steht auf Goldschmitts Katalogteilen, das ist
+näher an der Firma als BKIs Marktpreis 2,99 €/m².
+
+**Stand Rohbau:** 79 Positionen + 1 Eventual (eine raus, eine dazu), **101.871,98 € netto**
+(vorher 96.311,03). Herkunft nach Geld: Goldschmitt-Katalog 38,4 % · eigener Richtwert 26,4 % ·
+aus Katalog gerechnet 15,0 % · BKI 14,8 % · markierte Annahme 5,4 % (die eine Stützwinkelhöhe
+H 205, die BKI nicht führt). **Belegt: 68,2 %** — vorher lag der Richtwert-Anteil bei 41 %.
+
+- **🔴 OFFEN:** kein Push. Filigranplatten-Lieferpreis und Stützwinkel H 205 beim Werk anfragen —
+  das sind die beiden letzten großen ungeprüften Zahlen. Danach Baustelle 101 im Mops löschen,
+  der fertigen X84 der laufenden Baustelle neu importieren, „Mops fass".
+
+## Delta 20.09.2026 (Nacht) — Geländebrücke offline: Aushub aus zwei DXF
+
+**Branch `feature/gelaende-dxf-aushub` (lokal, NICHT gepusht, baut auf `chore/mops-scharfstellen`).**
+Andreas' Weg: der Architekt liefert einen Geländeplan OHNE Haus und danach die Grundstücks-
+zeichnung MIT Haus. Beide im selben Koordinatensystem → der Aushub ist rechenbar statt geschätzt.
+
+**Neu — `Service/DXFGelaende.swift`:**
+- `DXFGelaendeLeser.lies(dxf:)` — zeilenbasierter DXF-Leser, der den **Blockbaum rekursiv auflöst**
+  (`q = R(rot)·S(scale)·(p − Blockbasis) + Einfügepunkt`, verkettet). SketchUp legt ALLES in
+  verschachtelte Blöcke; der ENTITIES-Abschnitt hat nur die obersten INSERTs. Liest VERTEX,
+  POINT, LINE, 3DFACE, LWPOLYLINE. POLYLINE-Köpfe bewusst NICHT (sonst Geisterpunkte im Ursprung).
+- `DXFMassstab.vorschlag(fuer:)` — die **SketchUp-Zollfalle**: Exporte kommen oft als
+  „Zoll-als-Meter" (1 Einheit = 39,37 m), `$INSUNITS` lügt dabei. Erkannt an der Spannweite
+  (< 5 Einheiten = unplausibel), **vorgeschlagen, nie still angewendet**.
+- `Gelaendemodell.ausPunktwolke(_:ausschnitt:zellgroesse:hoehenversatz:)` — unregelmäßige
+  Punktwolke → Raster (nächster Nachbar über Eimer-Index). Zellen ohne Geländepunkt werden
+  **gezählt und gemeldet**, nicht heimlich interpoliert.
+- `Aushubvorgabe` / `Aushubrechner` — Sohle = Rohfußboden − Bodenaufbau − Plattendicke − Polster;
+  Umriss + Arbeitsraum → `ErdmassenRechner.gegenEbene` (der lag schon da, Bogen 1).
+- `Umriss` (Bounding Box, `erweitert(um:)`, `skaliert(_:)`) + `gebaeudeUmriss()` über Wand-Layer.
+
+**Neu — `Views/AushubAusDXFView.swift`:** fünf Schritte (Gelände → Maßstab → Haus/Umriss →
+Höhenanker + Aufbau → rechnen), Ergebniskarte, „Aushub ins LV übernehmen" mit dem **Rechenweg
+im Langtext**. Eingehängt in `ErdmassenView` (Knopf „Aushub aus zwei DXF"). Rechnen läuft
+auf einem Hintergrund-Thread.
+
+**Tests:** `DXFGelaendeTests.swift`, 13 neue → **460/460 grün, TEST SUCCEEDED**
+(vorher 445). Falle dabei: lange `+`-Ketten aus Tupel-Arrays lassen den Swift-Typechecker
+aufgeben („unable to type-check this expression in reasonable time") — Test-DXF werden
+jetzt imperativ über einen kleinen `DXFBauer` gebaut.
+
+**Nachweis an echten Daten (nicht nur Unit-Test):** `Service/Erdmassen.swift` + `DXFGelaende.swift`
+mit `swiftc` gegen Raphis echte `Raphi-Haus-Layer.dxf` (11 MB) laufen lassen — 61.319 Punkte in
+1,7 s, Hausumriss 8,00 × 9,50 m automatisch erkannt, Wandfuß Z 2,30 → Versatz 193,58,
+Gelände 193,02–200,96 müNN, **Abtrag 130,2 m³** bei 0,50 m Arbeitsraum. Deckt sich mit der
+Handrechnung. Der Höhenanker ist dreifach geprüft (Straßenhöhe, Garagen-RFB 194,26 müNN
+auf den Zentimeter, Terrassenhöhe).
+
+**Drift-Regel erfüllt:** `app_bedienung.yaml` +1 Eintrag `App_Aushub_aus_zwei_DXF` (47 gesamt).
+
+- **🔴 OFFEN:** kein Push (Andreas' OK abwarten). Am echten Gerät noch nicht angefasst —
+  der Datei-Picker-Weg (zwei DXF nacheinander) ist ungetestet. Nicht gebaut, bewusst:
+  Geländemodellierung gegen ein **geplantes** Endgelände (`ErdmassenRechner.gegenFlaeche`
+  kann das schon, es fehlt nur die zweite Zeichnung) und der Fundamentgraben der Hangseite.
+
+## Delta 20.09.2026 (Abend) — Mops SCHARFGESTELLT (Demos/Seeder/Zauberstäbe raus)
+
+**Branch `chore/mops-scharfstellen` (lokal, Commit 6da29b7, NICHT gepusht).** Der Mops läuft ab jetzt nur auf ECHTEN Daten — frischer Mops ist leer bis zum Import.
+
+**Entfernt (15 Dateien + Referenzen):** Demo-/Fake-Seeder (Demo, Debug, BeispielKalkulation, BauerHorst, Hofauffahrt, Sandsteinstufen, Marktbreit, StammdatenSeeder) · `RaphaelStammdatenSeeder` (echte Goldschmitt-Preise waren hardcoded → **DSGVO-Fix**, kommen jetzt per Import-CSV) · `SnapshotHostView` (+ `--snapshot-mode`-Weiche in iMOPSApp) · Zauberstab-/Demo-Knöpfe (ContentView „Demo", Grap8-Text, Hausplaner „Beispielprojekt laden", `LieferwarnungDemoFactory`) · `TheBrain.shared.seed()` beim Start.
+
+**Bewusst BEHALTEN (echte Logik, kein Demo — Falle vermieden):** `ScharpeggeSeeder` (Lieferanten-Sortiment aus Bundle-CSV, im Onboarding/Bestellliste) · `YtongBedarf` · `TiefbauRezepte` · `HouseProjectGenerator`/`ProjektGenerator`/`HouseConfiguratorView` (**echtes Hausplaner-Feature, ist ein Tab in RootTabView!**) · `TheBrain`-Datei (KernelGuardStatusView liest sie) · Firmenprofil-`.mops`-Demo-Schalter (DSGVO-Schutz, kein Fake).
+
+**Tests:** 5 Demo-Seeder-Testdateien entfernt; `KnotenAufwandswertTests` + `KatalogSichtenUndMasseTests` nutzen jetzt Inline-Fixture (Maurer 28,50×1,65 / Helfer 18,50×1,55) statt `StammdatenSeeder`. **445/445 grün, TEST SUCCEEDED.** Backups `_backups/20260920_170535/scharf/`.
+- **🔴 OFFEN:** Andreas' OK zum Merge abwarten. Frischer Start seedet nur noch Scharpegge/Ytong/Tiefbau; Firmen-Zuschläge/Löhne kommen aus Einstellungen bzw. Import (nicht mehr aus Seeder).
+
 ## Delta 20.09.2026 — Geräte-Import + Goldschmitts ECHTER Katalog (aus Raphis Mail geborgen)
 
 **Branch `feature/geraete-katalog-import` (lokal, NICHT gepusht).** Baut auf `feature/preise-in-einstellungen`.

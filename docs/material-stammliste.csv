@@ -1,0 +1,35 @@
+prioritaet;kategorie;material;einheit;lieferant;preis_netto;gebinde;notiz
+# ============================================================================
+# MATERIAL-STAMMLISTE für den Mops — Raphi trägt Lieferant + Preis (netto) ein.
+# So gepreist wird JEDES LV, das diese Stoffe nutzt — kein Neu-Suchen pro LV.
+# Reihenfolge: 1 = klein/zuerst (die häufigsten), 2 = danach, 3 = später.
+# WICHTIG: Würth = Befestigung/Chemie/Kleinteile. Bulk (Schotter/Splitt/Sand/
+# Beton) kommt vom BAUSTOFFHÄNDLER (Scharpegge o.ä.), NICHT von Würth.
+# ============================================================================
+
+# ---- PRIORITÄT 1: klein zuerst (deckt eure aktuellen Baustellen) ----
+1;Schüttgut;Schotter 0/32 (Tragschicht);t;;;;Baustoffhändler
+1;Schüttgut;Schotter 0/45 (Frostschutz);t;;;;Baustoffhändler
+1;Schüttgut;Edelsplitt 2/5 (Bettung);t;;;;Baustoffhändler
+1;Schüttgut;Brechsand 0/2 (Fugen);t;;;;Baustoffhändler
+1;Pflaster;Betonverbundpflaster;m2;;;;Baustoffhändler / Steinwerk
+1;Pflaster;Tiefbordstein Beton;m;;;;Baustoffhändler
+1;Chemie;Schalöl / Trennmittel;l;;;;WÜRTH
+1;Befestigung;Abstandhalter (Drunterleiste);Stk;;;;WÜRTH
+
+# ---- PRIORITÄT 2: danach ----
+2;Schüttgut;Frostschutzkies 0/32;t;;;;Baustoffhändler
+2;Schüttgut;Mutterboden / Oberboden;m3;;;;Baustoffhändler / Erdbau
+2;Pflaster;Natursteinpflaster Granit;m2;;;;Baustoffhändler
+2;Pflaster;Rasenkantenstein;m;;;;Baustoffhändler
+2;Beton;Transportbeton C25/30;m3;;;;Betonwerk
+2;Beton;Betonstahlmatten Q;kg;;;;Stahlhandel
+2;Chemie;Pflasterfugenmörtel;Sack;;;;WÜRTH / Baustoffhändler
+2;Trennlage;PE-Folie 0,2mm;m2;;;;WÜRTH / Baustoffhändler
+
+# ---- PRIORITÄT 3: später (nach Bedarf) ----
+3;Beton;Betonstabstahl;kg;;;;Stahlhandel
+3;Schüttgut;Recyclingschotter (RCL) 0/32;t;;;;Baustoffhändler
+3;Entwässerung;Rinne / Ablauf;Stk;;;;Baustoffhändler
+3;Befestigung;Dübel / Anker (Sortiment);Stk;;;;WÜRTH
+3;Werkzeug;Verbrauch (Trennscheiben etc.);Stk;;;;WÜRTH

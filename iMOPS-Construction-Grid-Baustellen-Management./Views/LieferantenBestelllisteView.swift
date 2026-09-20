@@ -36,10 +36,6 @@ struct LieferantenBestelllisteView: View {
     @State private var showMailCompose = false
     @State private var previewAnfrage: AnfrageTextPreview?
 
-    private var demoAnfragenByPositionId: [NSManagedObjectID: UniversalAnfrage] {
-        LieferwarnungDemoFactory.anfragenByPositionId(for: positionen)
-    }
-
     private var grouped: [(lieferant: String, positionen: [LVPosition])] {
         let known = ["Scharpegge", "Hauff", "Baumarkt", "Sonstige"]
         var dict: [String: [LVPosition]] = [:]
@@ -123,9 +119,6 @@ struct LieferantenBestelllisteView: View {
                     Text(pos.bezeichnung ?? "–")
                         .font(.body)
                     HStack(spacing: 6) {
-                        if let anfrage = demoAnfragenByPositionId[pos.objectID] {
-                            LieferwarnungBadge(warnstufe: anfrage.aktuelleWarnstufe)
-                        }
                         if let art = pos.artikelNummer, !art.isEmpty {
                             Text(art).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                             Text("·").foregroundStyle(.secondary)
@@ -434,53 +427,6 @@ private struct LieferwarnungBadge: View {
 
     private var background: Color {
         foreground.opacity(0.14)
-    }
-}
-
-private enum LieferwarnungDemoFactory {
-    static func anfragenByPositionId(for positionen: [LVPosition], now: Date = Date()) -> [NSManagedObjectID: UniversalAnfrage] {
-        var result: [NSManagedObjectID: UniversalAnfrage] = [:]
-        for (index, position) in positionen.enumerated() {
-            result[position.objectID] = makeAnfrage(for: position, index: index, now: now)
-        }
-        return result
-    }
-
-    private static func makeAnfrage(for position: LVPosition, index: Int, now: Date) -> UniversalAnfrage {
-        let warnschwelle: TimeInterval = 48 * 3_600
-        let offset: TimeInterval
-        switch index % 3 {
-        case 0: offset = warnschwelle + 24 * 3_600
-        case 1: offset = 24 * 3_600
-        default: offset = 12 * 3_600
-        }
-
-        return UniversalAnfrage(
-            baustelleId: position.event?.objectID.uriRepresentation().absoluteString ?? "demo-baustelle",
-            status: .beauftragt,
-            positionen: [
-                BedarfsPosition(
-                    lvPositionId: position.objectID.uriRepresentation().absoluteString,
-                    posNr: position.posNr ?? "",
-                    material: position.bezeichnung ?? "Material",
-                    menge: position.menge,
-                    einheit: position.einheit ?? "",
-                    bedarfsquelle: BedarfsQuelle(
-                        typ: .lv,
-                        ref: position.posNr ?? "LV",
-                        datei: position.quellDatei,
-                        planblatt: nil,
-                        notiz: "Demo-Lieferwarnung",
-                        geprueftVon: nil
-                    )
-                )
-            ],
-            lieferung: LieferDetails(
-                beauftragtAm: now.addingTimeInterval(-24 * 3_600),
-                lieferfensterVon: now.addingTimeInterval(offset),
-                lieferfensterBis: now.addingTimeInterval(offset + 4 * 3_600)
-            )
-        )
     }
 }
 

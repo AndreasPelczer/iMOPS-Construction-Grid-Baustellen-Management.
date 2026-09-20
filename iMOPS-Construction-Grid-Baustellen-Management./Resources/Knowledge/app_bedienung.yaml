@@ -1451,3 +1451,186 @@
     Zwischenschritte (A wartet auf B, B auf C, C kann nicht auf A warten).
 
     Die Verknuepfungen sind dasselbe, was Grap8 als Pfeile zeichnet.
+
+- id: "App_Aushub_aus_zwei_DXF"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Aushub aus DXF"
+    - "Aushub rechnen"
+    - "zwei DXF"
+    - "Gelaendeplan ohne Haus"
+    - "Zeichnung mit Haus"
+    - "Baugrube rechnen"
+    - "Aushubsohle"
+    - "Hoehenanker"
+    - "Zollfalle SketchUp"
+    - "Massstab DXF"
+  antwort: |
+    "Aushub aus DXF" rechnet die Baugrube aus ZWEI Zeichnungen, die sich ergaenzen:
+    dem Gelaendeplan OHNE Haus (die Hoehen) und der Grundstueckszeichnung MIT Haus
+    (der Umriss). Beide muessen aus demselben Koordinatensystem kommen.
+
+    Wo: Baustelle oeffnen -> "Erdmassen aus Gelaende" -> Knopf
+    "Aushub aus zwei DXF (Gelaende + Haus)". Rechnet offline im Mops, ohne Server.
+
+    So gehst du vor:
+    1. Gelaende-DXF waehlen. Der Mops loest verschachtelte Bloecke selbst auf.
+    2. Massstab bestaetigen. Spannt das Modell nur ein paar Einheiten, ist es die
+       SketchUp-Zollfalle (1 Einheit = 39,37 m) - der Mops schlaegt das vor, rechnet
+       aber NICHT heimlich um. Darunter steht, wie gross das Grundstueck damit waere.
+    3. Haus-DXF waehlen. Der Umriss kommt aus den Wand-Layern; ueber die Auswahl
+       "Umriss aus" laesst sich auch ein anderer Layer nehmen (z. B. nur die Garage).
+    4. Hoehenanker setzen: Rohfussboden EG in mueNN aus dem Werkplan eintragen und
+       dazu, auf welchem Z das Modell die OK Bodenplatte hat ("Wandfuss aus der
+       Hauszeichnung uebernehmen" macht das automatisch). Liegt das Gelaende schon
+       in mueNN, den Schalter oben umlegen.
+    5. Aufbau pruefen: Bodenaufbau, Plattendicke, Polster, Arbeitsraum. Daraus wird
+       die Aushubsohle: Rohfussboden minus Bodenaufbau minus Platte minus Polster.
+    6. "Aushub rechnen" -> Abtrag/Auftrag, Flaeche, Gelaende von/bis, mittlere Tiefe.
+    7. "Aushub ins LV uebernehmen" schreibt die Position mit dem ganzen Rechenweg
+       in den Langtext.
+
+    Gegenprobe (wichtig): nach dem Anker zeigt das Ergebnis die Gelaendespanne in
+    mueNN. Die gegen einen bekannten Wert halten - Strassenhoehe, Nachbarhoehe,
+    Hoehe aus dem Lageplan. Passt die nicht, stimmt der Anker nicht.
+
+    EHRLICH: das ist ein geometrisches Volumen im gewachsenen Zustand - ohne
+    Auflockerung, ohne Boeschungsausrundung, kein Vermesser-Aufmass. Rasterzellen
+    ausserhalb des Gelaendemodells werden gezaehlt und angezeigt.
+  quelle_kurz: "iMOPS AushubAusDXFView"
+
+- id: "App_Mops_fass_Ampel"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Mops fass"
+    - "Ampel rot gelb gruen"
+    - "warum ist die Position rot"
+    - "Summe stimmt nicht"
+    - "Preis wird nicht angezeigt"
+    - "importierter Preis weg"
+  antwort: |
+    "Mops fass" geht ueber alle LV-Positionen, sucht das Rezept, rechnet den
+    Einheitspreis und stellt eine Ampel:
+
+    GRUEN  - der Preis steht. Entweder liegt ein hinterlegter Einheitspreis vor
+             (aus einem importierten GAEB-X84, aus dem Firma-Preis-Katalog oder von
+             einem Lieferanten) oder das Rezept ist vollstaendig durchgerechnet.
+             Bei einem hinterlegten Preis steht in der Meldung, von wem er kommt.
+    GELB   - Rezept oder Richtwert da, aber ein Wert fehlt (Material, Aufwandswert)
+             oder es steckt eine ungepruefte KI-Schaetzung drin.
+    ROT    - kein Rezept, kein Richtwert, kein Preis. Ehrliche Luecke, keine
+             erfundene Zahl.
+
+    WICHTIG - Rangfolge der Preise, ueberall gleich:
+    hinterlegter Preis (Angebot) schlaegt Element-Kalkulation schlaegt
+    Eigenkalkulation. Ein importierter Angebotspreis bleibt also stehen, auch wenn
+    spaeter noch Lohnstunden dazukommen. Die Lohnstunden werden trotzdem gematcht -
+    sie sind das Zeitgeruest fuer Termine und Mannschaft, nicht der Preis.
+
+    Steht unten eine viel zu kleine Summe, obwohl Preise importiert wurden: die
+    Kostenuebersicht gegenpruefen. Zeigt die den richtigen Betrag, sind die Preise da.
+  quelle_kurz: "iMOPS AutoKalkulationsService, LVKalkulator.effektiverEP"
+
+- id: "App_Canvas_Rechnung"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Rechnung im Canvas"
+    - "Rechnung ganze Baustelle"
+    - "Endpreis Canvas"
+    - "Angebotssumme Canvas"
+    - "Rechnung aufklappen"
+    - "Selbstkosten und Aufschlaege"
+  antwort: |
+    Die Rechnungskarte unten rechts im Canvas zeigt zwei verschiedene Dinge -
+    das ist Absicht:
+
+    ANGEBOTSSUMME (netto) - immer sichtbar, oben.
+    Das ist der Endpreis, der auch im LV, im PDF und im GAEB-Export steht.
+    Alle rechnen ueber dieselbe Rangfolge: hinterlegter Preis vor Element vor
+    Eigenkalkulation.
+
+    Auf die Karte tippen klappt sie auf. Dann kommen dazu:
+    - "Woraus der Preis kommt": wie viel aus hinterlegten Preisen (GAEB-Import,
+      Firma-Katalog, Lieferantenangebot) und wie viel aus eigener Kalkulation.
+    - "Was es den Betrieb kostet": Material + Lohn + Geraet = Selbstkosten,
+      dazu die Aufschlaege (BGK, AGK, Wagnis und Gewinn).
+      Material/Lohn/Geraet sind antippbar - dann sieht man, welche Positionen
+      den Betrag treiben (groesste zuerst, gut zum Ausreisser-Suchen).
+
+    WICHTIG: Bei Positionen mit hinterlegtem Preis gibt es keine Material/Lohn/
+    Geraet-Aufteilung. Der Preis IST der Preis. Der Unterschied zwischen
+    Angebotssumme und Selbstkosten ist die Marge - kein Fehler.
+
+    Die Karte merkt sich, ob sie auf- oder zugeklappt war.
+  quelle_kurz: "iMOPS CanvasRechnungBox, LVKalkulator.gesamtAufschluesselung"
+
+- id: "App_GAEB_Ankunftsbericht"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Ankunfts-Bericht"
+    - "Preise fehlen nach GAEB-Import"
+    - "Wo sind meine Preise"
+    - "Import fertig aber keine Preise"
+    - "Summe stimmt nicht nach Import"
+    - "Preise verschwunden"
+  antwort: |
+    Nach dem Import einer GAEB-Datei MIT Preisen (DP 84 / X84) kommt kein blankes
+    "Import fertig" mehr, sondern der Ankunfts-Bericht. Er liest zurueck, was
+    wirklich in der Baustelle liegt - ueber denselben Weg, den das LV und die
+    Angebotssumme gehen.
+
+    Was er zeigt:
+    - Positionen uebernommen
+    - Preise in der Datei / davon jetzt abrufbar
+    - Summenprobe: Summe in der Datei gegen Summe in der Baustelle
+    - bei Luecken: jede betroffene Position, teuerste zuerst, mit Fehlbetrag
+
+    GRUEN = Soll und Ist stimmen ueberein, man darf weiterrechnen.
+    ROT = Preise standen in der Datei und sind nicht angekommen. Dann NICHT
+    weiterrechnen: die Baustelle wuerde mit einer zu niedrigen Summe arbeiten.
+    Das ist ein Fehler im Import, nicht in der Datei - bitte melden.
+
+    Warum es das gibt: am 20.09.2026 hat ein Import 109 Positionen angelegt und
+    "fertig" gemeldet, obwohl KEINER der 109 Preise (263.304,97 EUR) angekommen
+    war. Aufgefallen ist es erst, weil die Endsumme im LV komisch aussah.
+  quelle_kurz: "iMOPS GAEBAnkunftsPruefung, GAEBAnkunftsBerichtView"
+
+- id: "App_GAEB_Import_haengt_an"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Positionen doppelt nach Import"
+    - "LV doppelt"
+    - "GAEB zweimal importiert"
+    - "Alte Positionen loeschen vor Import"
+    - "Import ersetzt nicht"
+  antwort: |
+    Ein GAEB-Import HAENGT AN, er ersetzt das vorhandene LV NICHT. Hat die
+    Baustelle schon Positionen, steht im Import-Fenster oben eine orange Warnung
+    mit der Anzahl.
+
+    Soll das neue LV den alten Stand abloesen, VORHER die alten Positionen
+    loeschen. Sonst steht alles doppelt in der Summe, und die Endsumme ist eine
+    Mischung aus zwei Staenden - nicht nachvollziehbar.
+
+    So leert man das alte LV, OHNE die Baustelle zu verlieren:
+    In der Baustelle auf die LV-Karte rechtsklicken (Laptop) bzw. lange druecken
+    (iPad) -> "Gesamtes LV loeschen" -> GOAT-PIN eingeben -> "LV LEEREN".
+    Maengel, Bautagesberichte und Aufmasse bleiben erhalten, nur die
+    LV-Positionen gehen weg.
+
+    Einzelne Positionen loeschen geht im LV ueber Wischen nach links, Rechtsklick
+    oder den Dialog beim Antippen der Zeile - jeweils mit Rueckfrage. Mehrere auf
+    einmal geht ueber die Auswahl NICHT (die kann nur "Zusammenfuehren").
+
+    Der Knopf "Duplikate entfernen" hilft hier meist NICHT: er vergleicht
+    Bezeichnung + Einheit + Menge. Stammen die doppelten Positionen aus zwei
+    verschiedenen Import-Staenden, sind die Texte leicht anders geschrieben - dann
+    findet er nichts, obwohl die Positionsnummern doppelt sind.
+
+    Merkhilfe: importieren = dazulegen, nicht austauschen.
+  quelle_kurz: "iMOPS GAEBImportView, GAEBAnkunftsPruefung.bestandVorImport"

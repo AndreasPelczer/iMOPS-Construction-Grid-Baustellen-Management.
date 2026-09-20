@@ -19,25 +19,9 @@ struct iMOPSApp: App {
     @State private var session = AppSession()
     @State private var importedFileHandler = ImportedFileHandler()
 
-    // DEBUG-Weiche für reproduzierbare Screenshots ("Codis Augen"): Start mit
-    // `--snapshot-mode --target=<View>` zeigt einen einzelnen Ziel-Screen mit
-    // In-Memory-Mock-Daten statt der normalen App. Im Release nicht vorhanden.
-    @ViewBuilder
-    private var snapshotOrRoot: some View {
-        #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--snapshot-mode") {
-            SnapshotHostView()
-        } else {
-            RootTabView()
-        }
-        #else
-        RootTabView()
-        #endif
-    }
-
     var body: some Scene {
         WindowGroup {
-            snapshotOrRoot
+            RootTabView()
                 .environment(\.managedObjectContext, persistence.container.viewContext)
                 .environment(session)
                 .environment(importedFileHandler)
@@ -45,40 +29,19 @@ struct iMOPSApp: App {
                     EventListViewModel(context: persistence.container.viewContext)
                 )
                 .task {
+                    // Scharf gestellt: nur noch ECHTE Fach-/Lieferantendaten beim Start.
+                    // Lieferanten-Sortiment (Scharpegge, aus Bundle-CSV).
                     ScharpeggeSeeder.seedIfNeeded(context: persistence.container.viewContext)
-                    // NACH Scharpegge (das den ganzen Katalog einmalig löscht + neu füllt):
-                    // die Tiefbau/Pflaster-Materialien sichern, sonst könnten sie in dem
-                    // einen Start-Fenster fehlen (Reihenfolge Scharpegge ↔ DemoSeeder).
-                    DemoSeeder.seedMaterialsIfNeeded(into: persistence.container.viewContext)
-                    StammdatenSeeder.seedIfNeeded(context: persistence.container.viewContext)
                     // Öffentliche Ytong-Bedarfswerte je m³ als Mauerwerks-Rezepte
                     // (Mengen fest, Preis 0 → in den Stammdaten nachtragen).
                     YtongBedarf.seedIfNeeded(context: persistence.container.viewContext)
                     // Tiefbau-/Außenanlagen-Rezepte (Hofeinfahrt): Material-Richtwerte +
                     // Bagger-Stunden; Lohn/Preis bleiben offen (Aufwandswert per Prof).
                     TiefbauRezepte.seedIfNeeded(context: persistence.container.viewContext)
-                    MarktbreitSeeder.seedIfNeeded(context: persistence.container.viewContext)
-                    // NACH MarktbreitSeeder: rechnet dessen Dach-/Decken-Positionen durch
-                    // und braucht sie deshalb schon in der Datenbank.
-                    BeispielKalkulationSeeder.seedIfNeeded(context: persistence.container.viewContext)
-                    // Demo-Baustelle mit beiden Sichten: 12 Arbeitsschritte als
-                    // Grap8-Kette UND eine LV-Zeile mit Kosten. Idempotent.
-                    BauerHorstSeeder.seedIfNeeded(context: persistence.container.viewContext)
-                    // Zweite Demo: früher Lebenszyklus (Lieferzeit, Fremdleistung).
-                    SandsteinstufenSeeder.seedIfNeeded(context: persistence.container.viewContext)
-                    // Dritte Demo: echtes Mengengeruest (100 qm statt „1 Psch").
-                    HofauffahrtSeeder.seedIfNeeded(context: persistence.container.viewContext)
-                    // Echte Preise aus Raphaels Kalkulations-Software — vertraulich.
-                    // Legt Lohn-/Material-/Geraete-Stammdaten an und setzt die drei
-                    // Firmen-Zuschlaege, die der Mops kennt.
-                    RaphaelStammdatenSeeder.seedIfNeeded(context: persistence.container.viewContext)
+                    // Preise/Projekte kommen jetzt aus dem echten Import (Firma-Katalog-CSV),
+                    // nicht mehr aus Demo-Seedern. Frischer Mops = leer bis zum Import.
                     NotificationService.shared.requestAuthorization()
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)
-
-                    // Kernel-Spike: TheBrain bootstrappen mit Baustellen-Brigade
-                    // und Schicht-Start. Läuft bei jedem App-Start, weil TheBrain
-                    // in-memory ist (kein Persistence-Layer im Spike).
-                    TheBrain.shared.seed()
 
                     // Stufe 2+3: den sichtbaren „iMOPS"-Ordner in iCloud Drive vorbereiten
                     // (Grundstruktur _Firma + Baustellen) UND für jede vorhandene Baustelle

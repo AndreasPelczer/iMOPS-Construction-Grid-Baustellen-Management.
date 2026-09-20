@@ -66,7 +66,13 @@ struct ErdmassenView: View {
             }
             .buttonStyle(.borderedProminent)
             if !fileName.isEmpty { Text(fileName).font(.caption).foregroundStyle(.secondary) }
-            Text("Für eine Vermessungs-DXF mit Haus-Aushub die Geländebrücke (Welle 7) auf der Baustelle nutzen — die rechnet Cut/Fill server-seitig, inkl. Hauslage platzieren.")
+            NavigationLink {
+                AushubAusDXFView(event: event)
+            } label: {
+                Label("Aushub aus zwei DXF (Gelände + Haus)", systemImage: "square.3.layers.3d")
+            }
+            .buttonStyle(.bordered)
+            Text("Zwei Zeichnungen statt eines Rasters: Geländeplan ohne Haus + Grundstückszeichnung mit Haus → Umriss, Aushubsohle, Abtrag. Rechnet offline im Mops. Die Geländebrücke (Welle 7) auf der Baustelle macht dasselbe server-seitig, inkl. Hauslage platzieren.")
                 .font(.caption2).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

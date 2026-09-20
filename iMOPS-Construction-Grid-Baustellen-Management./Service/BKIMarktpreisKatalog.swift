@@ -51,6 +51,12 @@ final class BKIMarktpreisKatalog: @unchecked Sendable {
         return preise[bausteinID]
     }
 
+    /// Alle geladenen Einträge — für Prüfungen über den ganzen Katalog.
+    func alle() -> [BKIMarktpreis] {
+        ladeFallsNoetig()
+        return Array(preise.values)
+    }
+
     /// Quellen-Etikett für die Anzeige („BKI Baupreise online · MTK · 2026").
     var quelle: String {
         ladeFallsNoetig()

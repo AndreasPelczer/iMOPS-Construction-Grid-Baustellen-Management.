@@ -54,12 +54,11 @@ enum AutoKalkulationsService {
     /// das Ausfüllen. Gedacht direkt nach dem Import (leere Positionen).
     @discardableResult
     static func fass(positionen: [LVPosition], in ctx: NSManagedObjectContext) -> [Ergebnis] {
-        let ergebnisse = positionen.map { bewerte($0, in: ctx) }
-        // Firma-Preis-Katalog: wo ein fertiger EH-Preis für die Leistung hinterlegt ist,
-        // gewinnt er (als Angebot → effektiverEP nimmt ihn zuerst). Raphis bekannter Preis
-        // schlägt die Schätzung.
+        // ZUERST die Firmenpreise anhängen, DANN bewerten. Vorher lief es andersherum —
+        // der erste Klick auf „Mops fass" bewertete also noch ohne die Preise, die er
+        // gerade selbst anhängt, und zeigte ROT, wo längst ein Preis lag.
         for pos in positionen { FirmaPreisKatalog.anwenden(auf: pos, store: .shared, in: ctx) }
-        return ergebnisse
+        return positionen.map { bewerte($0, in: ctx) }
     }
 
     /// Legt den Mops-Vorschlag NUR dann an, wenn die Position noch nichts trägt — damit die
@@ -81,7 +80,27 @@ enum AutoKalkulationsService {
     /// Eine Position bewerten. Trägt sie eine ungeprüfte KI-Schätzung, bleibt sie GELB und
     /// gesperrt — eine geratene Zahl darf nicht als „fertig" ins Angebot, bis ein Mensch sie
     /// bestätigt (Badge antippen → bestätigen, oder überschreiben).
-    static func bewerte(_ pos: LVPosition, in ctx: NSManagedObjectContext) -> Ergebnis {
+    static func bewerte(_ pos: LVPosition, in ctx: NSManagedObjectContext,
+                        store: AngebotsStore = .shared) -> Ergebnis {
+        // Ein hinterlegtes Angebot IST der Preis — aus einem importierten GAEB-X84, aus dem
+        // Firma-Preis-Katalog oder von einem Lieferanten. `LVKalkulator.effektiverEP` nimmt es
+        // ohnehin zuerst; die Ampel muss dasselbe sehen, sonst meldet sie ROT für eine Position,
+        // die längst einen belastbaren Einheitspreis trägt. (20.09.2026 an einer echten
+        // Baustelle aufgefallen: 109 importierte Preise, Ampel trotzdem rot/gelb.)
+        if let angebot = store.guenstigster(for: pos.objectID.uriRepresentation().absoluteString),
+           angebot.einzelpreis > 0 {
+            // Das Rezept trotzdem holen, wenn die Position noch leer ist: es liefert die
+            // LOHNSTUNDEN fürs Zeitgerüst. Den Preis rührt es nicht an — das Angebot gewinnt.
+            if !pos.istElement, pos.lohnArray.isEmpty, pos.materialArray.isEmpty,
+               pos.geraeteArray.isEmpty {
+                _ = LeistungskatalogService.autoMatch(position: pos, in: ctx)
+            }
+            let betrag = String(format: "%.2f", angebot.einzelpreis).replacingOccurrences(of: ".", with: ",")
+            return Ergebnis(
+                position: pos, status: .gruen,
+                meldungen: ["💶 Einheitspreis \(betrag) € von \(angebot.lieferant) - hinterlegter Preis, keine Schaetzung."],
+                einheitspreisVK: angebot.einzelpreis)
+        }
         let e = bewerteRoh(pos, in: ctx)
         guard hatKIWert(pos) else { return e }
         let hinweis = "🟣 KI geraten — Startwert ohne Quelle. Prüfen und bestätigen, bevor das Angebot rausgeht."
