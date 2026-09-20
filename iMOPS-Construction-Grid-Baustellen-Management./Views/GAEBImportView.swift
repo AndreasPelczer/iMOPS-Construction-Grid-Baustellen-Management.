@@ -289,8 +289,13 @@ struct GAEBImportView: View {
             pos.event              = event
             erstellt.append(pos)
 
-            // If X84: store unit price in AngebotsStore as "Auftraggeber"-offer
-            if let up = item.unitPrice, up > 0, isX84 {
+            // Ein Einheitspreis in der Datei IST ein Preis — unabhaengig davon, was die
+            // Kopfzeile als Datenart (DP) behauptet. Vorher haengte dieser Zweig zusaetzlich
+            // an `isX84`; stimmte das Kopf-Feld nicht, fielen ALLE mitgelieferten Preise
+            // stillschweigend weg und die Positionen bekamen nur Lohn-Richtwerte.
+            // 20.09.2026 an einer echten Baustelle passiert: 109 Preise in der Datei,
+            // 0 im Angebotsspeicher, Summe 15.255 statt 256.742 EUR.
+            if let up = item.unitPrice, up > 0 {
                 // FALLE (gefixt): die objectID eines FRISCH angelegten Objekts ist
                 // TEMPORÄR und ändert sich beim save() in eine permanente. Wird der
                 // AngebotsStore mit der temporären URI gekeyed, findet er den Preis nach
@@ -310,7 +315,7 @@ struct GAEBImportView: View {
             // Kein Treffer = bewusst OHNE Preis (keine erfundene Zahl).
         }
         try? viewContext.save()
-        if !isX84 {
+        if kalkuliert == 0 || !isX84 {
             // „Mops fass": über alle importierten Positionen kalkulieren → Ampel-Review
             fassErgebnisse = AutoKalkulationsService.fass(positionen: erstellt, in: viewContext)
             try? viewContext.save()

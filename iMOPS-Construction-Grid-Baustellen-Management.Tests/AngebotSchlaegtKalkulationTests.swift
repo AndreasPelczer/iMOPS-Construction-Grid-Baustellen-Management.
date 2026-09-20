@@ -167,3 +167,60 @@ struct AmpelSiehtAngebotTests {
         #expect(AutoKalkulationsService.bewerte(pos, in: ctx, store: s).status == .rot)
     }
 }
+
+// MARK: - Ein Einheitspreis in der Datei ist ein Preis
+
+struct GAEBPreisUnabhaengigVonDPTests {
+
+    /// Dieselbe Datei, einmal mit DP 84 und einmal mit DP 83 im Kopf: die Positionen
+    /// tragen in beiden Fällen ihren Einheitspreis. Der Import darf ihn nicht davon
+    /// abhängig machen, was die Kopfzeile behauptet.
+    private func dxfText(dp: String) -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <GAEB>
+          <GAEBInfo><Version>3.3</Version></GAEBInfo>
+          <PrjInfo><NamePrj>Testprojekt</NamePrj><Cur>EUR</Cur></PrjInfo>
+          <Award>
+            <DP>\(dp)</DP>
+            <BoQ><BoQBody>
+              <BoQCtgy ID="01"><BoQInfo><TextComplete>Erdarbeiten und Baugrube</TextComplete></BoQInfo>
+              <BoQBody><Itemlist>
+                <Item ID="01.0010">
+                  <Description><CompleteText><DetailTxt><TextComplete>Baugrube ausheben</TextComplete></DetailTxt></CompleteText></Description>
+                  <Qty>130.200</Qty><QU>m3</QU><UP>3.94</UP>
+                </Item>
+              </Itemlist></BoQBody>
+              </BoQCtgy>
+            </BoQBody></BoQ>
+          </Award>
+        </GAEB>
+        """
+    }
+
+    private func parse(_ text: String) throws -> GAEBImportResult {
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("gaeb-test-\(UUID().uuidString).x84")
+        try text.write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+        return try GAEBImporter.parse(url: url)
+    }
+
+    @Test func preisWirdBeiDP84Gelesen() throws {
+        let r = try parse(dxfText(dp: "84"))
+        #expect(r.dp == 84)
+        #expect(r.items.count == 1)
+        #expect(r.items.first?.unitPrice == 3.94)
+        #expect(r.items.first?.menge == 130.2)
+        #expect(r.items.first?.einheit == "m³")
+        #expect(r.items.first?.guessedKG == "310")
+    }
+
+    /// Der Kern: auch wenn der Kopf 83 sagt, steht der Preis in der Datei — und der
+    /// Importer muss ihn übernehmen, statt ihn wegzuwerfen.
+    @Test func preisStehtAuchWennDerKopf83Sagt() throws {
+        let r = try parse(dxfText(dp: "83"))
+        #expect(r.dp == 83)
+        #expect(r.items.first?.unitPrice == 3.94)
+    }
+}
