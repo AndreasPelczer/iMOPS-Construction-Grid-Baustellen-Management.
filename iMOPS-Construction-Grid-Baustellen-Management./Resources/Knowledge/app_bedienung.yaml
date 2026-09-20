@@ -1499,3 +1499,36 @@
     Auflockerung, ohne Boeschungsausrundung, kein Vermesser-Aufmass. Rasterzellen
     ausserhalb des Gelaendemodells werden gezaehlt und angezeigt.
   quelle_kurz: "iMOPS AushubAusDXFView"
+
+- id: "App_Mops_fass_Ampel"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Mops fass"
+    - "Ampel rot gelb gruen"
+    - "warum ist die Position rot"
+    - "Summe stimmt nicht"
+    - "Preis wird nicht angezeigt"
+    - "importierter Preis weg"
+  antwort: |
+    "Mops fass" geht ueber alle LV-Positionen, sucht das Rezept, rechnet den
+    Einheitspreis und stellt eine Ampel:
+
+    GRUEN  - der Preis steht. Entweder liegt ein hinterlegter Einheitspreis vor
+             (aus einem importierten GAEB-X84, aus dem Firma-Preis-Katalog oder von
+             einem Lieferanten) oder das Rezept ist vollstaendig durchgerechnet.
+             Bei einem hinterlegten Preis steht in der Meldung, von wem er kommt.
+    GELB   - Rezept oder Richtwert da, aber ein Wert fehlt (Material, Aufwandswert)
+             oder es steckt eine ungepruefte KI-Schaetzung drin.
+    ROT    - kein Rezept, kein Richtwert, kein Preis. Ehrliche Luecke, keine
+             erfundene Zahl.
+
+    WICHTIG - Rangfolge der Preise, ueberall gleich:
+    hinterlegter Preis (Angebot) schlaegt Element-Kalkulation schlaegt
+    Eigenkalkulation. Ein importierter Angebotspreis bleibt also stehen, auch wenn
+    spaeter noch Lohnstunden dazukommen. Die Lohnstunden werden trotzdem gematcht -
+    sie sind das Zeitgeruest fuer Termine und Mannschaft, nicht der Preis.
+
+    Steht unten eine viel zu kleine Summe, obwohl Preise importiert wurden: die
+    Kostenuebersicht gegenpruefen. Zeigt die den richtigen Betrag, sind die Preise da.
+  quelle_kurz: "iMOPS AutoKalkulationsService, LVKalkulator.effektiverEP"

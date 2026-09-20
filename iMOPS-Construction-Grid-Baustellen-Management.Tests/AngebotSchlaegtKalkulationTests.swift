@@ -122,3 +122,48 @@ struct AngebotSchlaegtKalkulationTests {
                    lieferanten: ["GAEB-Import"])
     }
 }
+
+// MARK: - Die Ampel muss hinterlegte Preise sehen
+
+struct AmpelSiehtAngebotTests {
+
+    private let s = AngebotsStore.shared
+
+    @Test func positionMitAngebotIstGruen() throws {
+        let pc = PersistenceController(inMemory: true)
+        let ctx = pc.container.viewContext
+        let pos = LVPosition(context: ctx)
+        pos.posNr = "01.01"
+        // Bewusst eine Leistung, für die es KEIN Rezept und KEINEN Richtwert gibt —
+        // ohne Angebot wäre sie ROT.
+        pos.bezeichnung = "Stützwinkel L 995 B 120 H 1550 liefern und versetzen"
+        pos.einheit = "Stück"
+        pos.menge = 19
+
+        let ohne = AutoKalkulationsService.bewerte(pos, in: ctx, store: s)
+        #expect(ohne.status != .gruen)
+
+        try? ctx.obtainPermanentIDs(for: [pos])
+        let id = pos.objectID.uriRepresentation().absoluteString
+        s.upsert(Angebot(lieferant: "GAEB-Import", einzelpreis: 210.00), for: id)
+
+        let mit = AutoKalkulationsService.bewerte(pos, in: ctx, store: s)
+        #expect(mit.status == .gruen)
+        #expect(mit.einheitspreisVK == 210.00)
+        #expect(mit.meldungen.first?.contains("GAEB-Import") == true)
+        #expect(mit.meldungen.first?.contains("210,00") == true)
+        #expect(mit.enthaeltKI == false)
+        s.remove(lieferant: "GAEB-Import", for: id)
+    }
+
+    @Test func ampelBleibtRotOhnePreisUndOhneRezept() throws {
+        let pc = PersistenceController(inMemory: true)
+        let ctx = pc.container.viewContext
+        let pos = LVPosition(context: ctx)
+        pos.posNr = "01.02"
+        pos.bezeichnung = "Zyxwvu Fantasieleistung ohne Katalogeintrag"
+        pos.einheit = "Stück"
+        pos.menge = 1
+        #expect(AutoKalkulationsService.bewerte(pos, in: ctx, store: s).status == .rot)
+    }
+}
