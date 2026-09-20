@@ -1487,3 +1487,184 @@ ausstattung:
     hinweis: "Kernbohrung, Dübel, Element (z.B. Fahrradbügel) montieren"
     quellen: ["PRAXIS"]
 
+
+# === MERGE 2026-09-20: Aufwandswerte Gerüst/Klempner/Landschaftsbau (Praxiswert; Spread von Raphi) ===
+geruest:
+  fassadengeruest_aufstellen:
+    bezeichnung: Standgerüst nach DIN EN 12810 aufstellen, bis 20m Standhöhe
+    einheit: m2
+    aufwandswert:
+      min: 0.12
+      mittel: 0.12
+      max: 0.12
+    kolonne: 2 Gerüstbauer
+    hinweis: Inkl. Verankerung, Seitenschutz, Belag. Ab 20m Höhe +30%
+    quellen:
+    - PRAXIS
+  fassadengeruest_vorhalten:
+    bezeichnung: Vorhaltung Gerüst — kein Arbeitsaufwand, nur Mietkosten
+    einheit: m2/Monat
+    aufwandswert:
+      min: 0.0
+      mittel: 0.0
+      max: 0.0
+    kolonne: '-'
+    hinweis: Mietpreis ca. 1,50-3,00 €/m2/Monat je nach Anbieter
+    quellen:
+    - PRAXIS
+  fassadengeruest_abbauen:
+    bezeichnung: Standgerüst abbauen, verladen, abtransportieren
+    einheit: m2
+    aufwandswert:
+      min: 0.1
+      mittel: 0.1
+      max: 0.1
+    kolonne: 2 Gerüstbauer
+    hinweis: Abbau schneller als Aufbau — keine Verankerung bohren
+    quellen:
+    - PRAXIS
+  geruest_umsetzen:
+    bezeichnung: Gerüst von einer Gebäudeseite zur anderen umsetzen
+    einheit: m2
+    aufwandswert:
+      min: 0.06
+      mittel: 0.06
+      max: 0.06
+    kolonne: 2 Gerüstbauer
+    hinweis: Nur Teildemontage + Wiederaufbau, keine Neuverankerung
+    quellen:
+    - PRAXIS
+  schutzgeruest:
+    bezeichnung: Schutz-/Fanggerüst aufstellen inkl. Netz oder Plane
+    einheit: m2
+    aufwandswert:
+      min: 0.15
+      mittel: 0.15
+      max: 0.15
+    kolonne: 2 Gerüstbauer
+    hinweis: Höherer Aufwand durch Sicherheitsanforderungen DIN 4420
+    quellen:
+    - PRAXIS
+klempner:
+  dachrinne_halbrund:
+    bezeichnung: Dachrinne halbrund Titanzink/Alu montieren mit Haltern
+    einheit: m
+    aufwandswert:
+      min: 0.25
+      mittel: 0.25
+      max: 0.25
+    kolonne: 1 Klempner + 1 Helfer
+    hinweis: Inkl. Rinnenhalter alle 70 cm, Dehnungsausgleicher, Endstücke
+    quellen:
+    - PRAXIS
+  fallrohr_rund:
+    bezeichnung: Regenfallrohr rund DN 87-100 montieren mit Schellen
+    einheit: m
+    aufwandswert:
+      min: 0.3
+      mittel: 0.3
+      max: 0.3
+    kolonne: 1 Klempner + 1 Helfer
+    hinweis: Inkl. Rohrschellen alle 2,0 m, Bögen, Anschluss oben+unten
+    quellen:
+    - PRAXIS
+  rinnenkessel:
+    bezeichnung: Rinnenkessel/Wasserfangkasten einsetzen
+    einheit: St
+    aufwandswert:
+      min: 0.4
+      mittel: 0.4
+      max: 0.4
+    kolonne: 1 Klempner
+    hinweis: Anschluss Rinne→Fallrohr, inkl. Laubfangsieb
+    quellen:
+    - PRAXIS
+  mauerabdeckung:
+    bezeichnung: Mauerabdeckung/Attikaabdeckung Titanzink oder Alu
+    einheit: m
+    aufwandswert:
+      min: 0.35
+      mittel: 0.35
+      max: 0.35
+    kolonne: 1 Klempner
+    hinweis: Abwicklung 20-40 cm, Haften + Schrauben, Überlappung 5 cm
+    quellen:
+    - PRAXIS
+  fensterbank_aussen:
+    bezeichnung: Fensterbank außen Titanzink oder Alu montieren
+    einheit: m
+    aufwandswert:
+      min: 0.3
+      mittel: 0.3
+      max: 0.3
+    kolonne: 1 Klempner
+    hinweis: Ausladung 10-20 cm, seitliche Aufkantung, Tropfkante
+    quellen:
+    - PRAXIS
+  blechverkleidung:
+    bezeichnung: Blechverkleidung Ortgang/Traufe/Gesimskasten
+    einheit: m
+    aufwandswert:
+      min: 0.4
+      mittel: 0.4
+      max: 0.4
+    kolonne: 1 Klempner + 1 Helfer
+    hinweis: Inkl. Unterkonstruktion Holzlattung, Edelstahlschrauben
+    quellen:
+    - PRAXIS
+landschaftsbau:
+  mutterboden_verteilen:
+    bezeichnung: Mutterboden liefern, verteilen, Feinplanum herstellen
+    einheit: m3
+    aufwandswert:
+      min: 0.15
+      mittel: 0.15
+      max: 0.15
+    kolonne: 1 Radlader + 1 Helfer
+    hinweis: Mit Radlader grob verteilen, Helfer harkt Feinplanum
+    quellen:
+    - PRAXIS
+  rasen_ansaeen:
+    bezeichnung: Rasensaat RSM ausbringen, einrechen, anwalzen
+    einheit: m2
+    aufwandswert:
+      min: 0.02
+      mittel: 0.02
+      max: 0.02
+    kolonne: 1 Gärtner
+    hinweis: Feinplanum muss fertig sein, ca. 25 g/m2 Saatgut
+    quellen:
+    - PRAXIS
+  rollrasen_verlegen:
+    bezeichnung: Rollrasen fugenversetzt verlegen, anwalzen, wässern
+    einheit: m2
+    aufwandswert:
+      min: 0.05
+      mittel: 0.05
+      max: 0.05
+    kolonne: 2 Gärtner
+    hinweis: Feinplanum muss fertig sein, 100 m2/h zu zweit realistisch
+    quellen:
+    - PRAXIS
+  heckenpflanzung:
+    bezeichnung: Heckenpflanze setzen inkl. Pflanzloch und Angießen
+    einheit: St
+    aufwandswert:
+      min: 0.1
+      mittel: 0.1
+      max: 0.1
+    kolonne: 1 Gärtner
+    hinweis: Pflanzabstand je nach Art 30-50 cm, ca. 3-5 St/lfm
+    quellen:
+    - PRAXIS
+  baumpflanzung_hochstamm:
+    bezeichnung: Hochstamm pflanzen mit Pflanzgrube, Verankerung, Bewässerung
+    einheit: St
+    aufwandswert:
+      min: 0.5
+      mittel: 0.5
+      max: 0.5
+    kolonne: 1 Gärtner + 1 Helfer
+    hinweis: Pflanzgrube 1×1×0,8m, Dreibock, 100l Wasser, Stammschutz
+    quellen:
+    - PRAXIS

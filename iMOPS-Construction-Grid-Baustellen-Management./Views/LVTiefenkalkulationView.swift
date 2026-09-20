@@ -360,6 +360,7 @@ struct LVTiefenkalkulationView: View {
                 leerHinweis("Noch kein Material hinterlegt")
             } else {
                 ForEach(position.materialArray, id: \.objectID) { pm in
+                    HoverZeile {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pm.materialName ?? "–")
@@ -387,6 +388,7 @@ struct LVTiefenkalkulationView: View {
                         Button(role: .destructive) { loescheMaterial(pm) } label: {
                             Label("Löschen", systemImage: "trash")
                         }
+                    }
                     }
                 }
             }
@@ -416,6 +418,7 @@ struct LVTiefenkalkulationView: View {
                 leerHinweis("Noch kein Lohnanteil hinterlegt")
             } else {
                 ForEach(position.lohnArray, id: \.objectID) { pl in
+                    HoverZeile {
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(pl.qualifikation ?? "–")
@@ -445,6 +448,7 @@ struct LVTiefenkalkulationView: View {
                         Button(role: .destructive) { loescheLohn(pl) } label: {
                             Label("Löschen", systemImage: "trash")
                         }
+                    }
                     }
                 }
             }
@@ -511,6 +515,7 @@ struct LVTiefenkalkulationView: View {
                 leerHinweis("Keine Gerätekosten hinterlegt")
             } else {
                 ForEach(position.geraeteArray, id: \.objectID) { pg in
+                    HoverZeile {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pg.geraetName ?? "–")
@@ -545,6 +550,7 @@ struct LVTiefenkalkulationView: View {
                         Button(role: .destructive) { loescheGeraet(pg) } label: {
                             Label("Löschen", systemImage: "trash")
                         }
+                    }
                     }
                 }
             }
@@ -949,5 +955,30 @@ struct LVTiefenkalkulationView: View {
     private func loescheGeraet(_ pg: PositionGeraet) {
         viewContext.delete(pg)
         try? viewContext.save()
+    }
+}
+
+// MARK: - HoverZeile
+// Mac: Maus über einer Kostenzeile → oranger Rahmen, damit klar ist, welche Zeile
+// unter dem Zeiger liegt (wie in der LV-Liste). Eigene kleine View, weil per-Zeile-
+// Status in einer ForEach nur über eine Sub-View geht. iPad ohne Zeiger: onHover
+// feuert nicht — harmlos.
+private struct HoverZeile<Inhalt: View>: View {
+    @ViewBuilder var inhalt: () -> Inhalt
+    @State private var isHovered = false
+
+    var body: some View {
+        inhalt()
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered ? Color.orange.opacity(0.10) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(isHovered ? Color.orange.opacity(0.65) : Color.clear, lineWidth: 1.5)
+            )
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.12)) { isHovered = hovering }
+            }
     }
 }
