@@ -399,6 +399,7 @@ struct EventDetailView: View {
                     lvCard
                     PreisCheckCard(positionen: (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
                         .filter { !LVPositionHelper.isAlternative($0) })
+                    AngebotsCheckCard(positionen: (event.lvPositionen?.allObjects as? [LVPosition] ?? []))
                     normenSpurCard
                 }
 
