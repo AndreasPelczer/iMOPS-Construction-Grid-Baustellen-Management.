@@ -137,8 +137,11 @@ struct EventDetailView: View {
     @State private var gruppePlaene = false
     @State private var gruppeImport = false
     @State private var gruppeLV = false
+    @State private var gruppeMaterialBestellung = false
     @State private var gruppeGewerke = false
     @State private var gruppeMaengel = false
+    @State private var showingLager = false
+    @State private var showingBestellliste = false
     @State private var pinnedMaterials: [CDLexikonEntry] = []
     @State private var newStepText: String = ""
     @State private var showingMaengelListe = false
@@ -394,8 +397,29 @@ struct EventDetailView: View {
 
                 kartenGruppe("Leistungsverzeichnis und Kalkulation", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
                     lvCard
-                    materialCard
                     normenSpurCard
+                }
+
+                // Material & Bestellung: die Beschaffungs-Ecke. Der Material-Bedarf (aus dem
+                // Auslesen geboren) wohnt jetzt HIER — mit Lager (Soll/Ist) und Bestellliste
+                // gleich daneben, statt versteckt unter der Kalkulation.
+                kartenGruppe("Material & Bestellung", systemImage: "shippingbox", isExpanded: $gruppeMaterialBestellung) {
+                    materialCard
+                    lagerCard
+                    bestelllisteCard
+                }
+                .sheet(isPresented: $showingLager) {
+                    NavigationStack { LagerView() }
+                }
+                .sheet(isPresented: $showingBestellliste) {
+                    NavigationStack {
+                        LieferantenBestelllisteView(
+                            event: event,
+                            positionen: (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
+                                .filter { !LVPositionHelper.isAlternative($0) }
+                        )
+                    }
+                    .environment(\.managedObjectContext, viewContext)
                 }
 
                 kartenGruppe("Aufträge für Arbeit", systemImage: "hammer", isExpanded: $gruppeGewerke) {
@@ -1546,6 +1570,46 @@ struct EventDetailView: View {
     // Die Materialliste zeigt die GEPLANTEN Materialien dieser Baustelle (echte Mengen),
     // je Zeile geplant · auf Lager · fehlt · und ob vor Ort GEPRÜFT. Grundlage ist
     // `extras.materialBedarf` (mit Katalog-Code → „auf Lager" gegen den echten Bestand).
+    // Sprungbrett zum Lager (Bestand = Summe der Buchungen) — der „Ist".
+    private var lagerCard: some View {
+        Button { showingLager = true } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "tray.full").font(.title3).frame(width: 30)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Lager").font(.headline)
+                    Text("Bestand · Meldebestand · Nachbestellen")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // Sprungbrett zur Bestellliste: was fehlt → Bestellschein je Lieferant (das „Soll minus Ist").
+    private var bestelllisteCard: some View {
+        Button { showingBestellliste = true } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "cart").font(.title3).frame(width: 30)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Bestellliste").font(.headline)
+                    Text("Was fehlt → Bestellschein je Lieferant")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     // Die Prüfung selbst passiert im Auftrag „Material prüfen" (dort mit Nachweis
     // wer/wann); hier wird sie nur gespiegelt — EINE Wahrheit.
     private var materialCard: some View {
