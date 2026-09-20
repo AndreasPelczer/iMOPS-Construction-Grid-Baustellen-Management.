@@ -946,6 +946,25 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Dienstplan"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Dienstplan"
+    - "wer macht was"
+    - "wer arbeitet wann"
+    - "Mitarbeiter zuweisen"
+    - "Crew Zeit"
+  antwort: |
+    In der Baustelle unter "Aufträge für Arbeit" gibt es neben dem Terminplan die Karte
+    "Dienstplan". Sie gruppiert die Aufträge nach zugewiesenem Mitarbeiter
+    (Auftrag.employeeName) und zeigt je Person ihre Aufgaben mit Tag-Bereich (aus dem
+    Terminplan-Motor). "Nicht zugewiesen" steht oben, damit offene Arbeit auffällt.
+    Zusammen: Terminplan sagt WANN eine Aufgabe läuft, die BrigadePlanung WIE VIELE
+    Leute, der Dienstplan WER — wann. Zuweisen selbst passiert im Auftrag/Anlegen.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_LV_Gruppen_Bearbeiten"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
