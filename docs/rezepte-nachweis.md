@@ -63,7 +63,8 @@ mitzuziehen, schlägt der Test an.
 | Kimmschicht LM 21 (MG III) | kein Aufwandswert im Repo, keine belastbare Fremdquelle. Von Raphi eintragen lassen. |
 | Fundamenterder umlaufend | dito. Material ist belegt (Erdungsband 30×3,5 mm im Firmenkatalog), die Arbeitszeit nicht. |
 | Plattendruckversuch Ev2 | Fremdleistung eines Prüfinstituts — kein Eigenleistungsrezept sinnvoll, Angebot einholen. |
-| Drempelstützen | Rezept existiert (betonarbeiten.stuetze 5,0 h/m³), aber die Position rechnet in Stück. Entweder Position auf m³ umstellen (4 × 0,24 × 0,17 × 2,02 = 0,33 m³) oder einen Stück-Wert eintragen. |
+*(Drempelstützen: geschlossen — Position auf m³ umgestellt, 4 × 0,24 × 0,17 × 2,02 = 0,33 m³,
+Tags an BET-005 ergänzt. Kein neuer Wert nötig.)*
 
 Diese vier hält `RezepteRohbauTests.bewussteLueckenBleibenLeer` fest. Schlägt der Test an,
 hat jemand eine Zahl ohne Herkunft nachgeschoben — oder eine Lücke sauber geschlossen.
@@ -84,6 +85,6 @@ Beides soll auffallen.
 
 ## Wirkung
 
-Rohbau-Positionen einer laufenden Baustelle mit Rezept: **65 von 80 → 76 von 80.**
+Rohbau-Positionen einer laufenden Baustelle mit Rezept: **65 von 80 → 77 von 80.**
 Gemessen mit dem echten Katalog gegen die echten Positionsbezeichnungen, nicht gegen
 Katalogtexte.

@@ -485,7 +485,7 @@ beton:
     din: "DIN 18331"
     aufwandswert_key: "betonarbeiten.stuetze"
     maschinen_keys: ["beton.innenruettler"]
-    tags: ["Stütze", "Betonstütze", "Pfeiler"]
+    tags: ["Stütze", "Betonstütze", "Pfeiler", "Drempelstütze", "Drempelstuetze", "Drempelstützen", "Drempelstuetzen", "Drempel", "Stahlbetonstütze", "Wandstütze"]
 
   BET-006:
     kurztext: "Stahlbeton Unterzüge"
