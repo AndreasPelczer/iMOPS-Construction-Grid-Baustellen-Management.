@@ -20,7 +20,10 @@ import CoreData
 //   material;Beton C25/30;m3;130,00;Transportbeton (Markt)
 //   material;Ytong 24 PPW2/0,35;m2;34,00;Xella-Liste
 //   lohn;Eisenflechter;h;47,00;
-// - typ: "material" -> KalkMaterial, "lohn" -> Lohnsatz. Fehlt/unklar -> material.
+//   leistung;Baustelle einrichten;pau;1921,72;Firma-Katalog
+//   geraet;Bagger 9to;Std;45,60;Firma-Katalog
+// - typ: "material" -> KalkMaterial, "lohn" -> Lohnsatz, "leistung" -> Firma-Katalog,
+//   "geraet" -> Geraet (fester Std-Satz für die Auswahlliste). Fehlt/unklar -> material.
 // - lieferant ist optional und trägt die HERKUNFT der Zahl (Xella, Markt, dein Wert …).
 // - Eine Kopfzeile (beginnt mit "typ" oder enthält "name") wird erkannt und übersprungen.
 
@@ -37,15 +40,20 @@ struct PreisImportBericht: Identifiable {
     var neuLeistung: [String] = []          // Firma-Preis-Katalog: EH-Preis je Leistung
     var aktualisiertLeistung: [Aenderung] = []
     var unveraendertLeistung: [String] = []
+    var neuGeraet: [String] = []            // Gerät-Auswahlliste: fester Std-Satz je Gerät
+    var aktualisiertGeraet: [Aenderung] = []
+    var unveraendertGeraet: [String] = []
     var uebersprungen: [String] = []      // Zeile + Grund
     var gesamtZeilen = 0
 
     var landetGesamt: Int {
         neuMaterial.count + aktualisiertMaterial.count + neuLohn.count + aktualisiertLohn.count
             + neuLeistung.count + aktualisiertLeistung.count
+            + neuGeraet.count + aktualisiertGeraet.count
     }
     var alleLiegen: Int {
         landetGesamt + unveraendertMaterial.count + unveraendertLohn.count + unveraendertLeistung.count
+            + unveraendertGeraet.count
     }
 }
 
@@ -105,6 +113,8 @@ struct StammdatenPreisImportService {
             } else if typ == "leistung" {
                 verarbeiteLeistung(name: name, einheit: einheit, preis: preis,
                                    lieferant: lieferant, in: ctx, bericht: &bericht)
+            } else if typ == "geraet" || typ == "gerät" {
+                verarbeiteGeraet(name: name, satz: preis, in: ctx, bericht: &bericht)
             } else {
                 verarbeiteMaterial(name: name, einheit: einheit, preis: preis,
                                    lieferant: lieferant, in: ctx, bericht: &bericht)
@@ -174,6 +184,29 @@ struct StammdatenPreisImportService {
         }
     }
 
+    // MARK: - Gerät -> Geraet (fester Std-Satz für die Auswahlliste)
+
+    /// Fremdgerät/Miete: den Std-Satz je Gerät in die Auswahlliste schreiben.
+    /// Match über den Namen. Idempotent. stundensatz treibt kostenProStunde direkt.
+    private func verarbeiteGeraet(name: String, satz: Double, in ctx: NSManagedObjectContext,
+                                  bericht: inout PreisImportBericht) {
+        if let vorhanden = findeGeraet(name: name, in: ctx) {
+            let alt = vorhanden.stundensatz
+            if abs(alt - satz) < 0.001 {
+                bericht.unveraendertGeraet.append(name)
+            } else {
+                vorhanden.stundensatz = satz
+                bericht.aktualisiertGeraet.append(.init(name: name, alt: alt, neu: satz, einheit: "h"))
+            }
+        } else {
+            let g = Geraet(context: ctx)
+            g.id = UUID()
+            g.name = name
+            g.stundensatz = satz
+            bericht.neuGeraet.append(name)
+        }
+    }
+
     // MARK: - Lohn -> Lohnsatz
 
     private func verarbeiteLohn(name: String, preis: Double, in ctx: NSManagedObjectContext,
@@ -227,6 +260,13 @@ struct StammdatenPreisImportService {
     private func findeLohn(qualifikation: String, in ctx: NSManagedObjectContext) -> Lohnsatz? {
         let req: NSFetchRequest<Lohnsatz> = Lohnsatz.fetchRequest()
         req.predicate = NSPredicate(format: "qualifikation ==[c] %@", qualifikation)
+        req.fetchLimit = 1
+        return (try? ctx.fetch(req))?.first
+    }
+
+    private func findeGeraet(name: String, in ctx: NSManagedObjectContext) -> Geraet? {
+        let req: NSFetchRequest<Geraet> = Geraet.fetchRequest()
+        req.predicate = NSPredicate(format: "name ==[c] %@", name)
         req.fetchLimit = 1
         return (try? ctx.fetch(req))?.first
     }

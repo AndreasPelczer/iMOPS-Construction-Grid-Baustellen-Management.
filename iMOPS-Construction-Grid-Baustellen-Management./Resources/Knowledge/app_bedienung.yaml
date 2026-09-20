@@ -985,6 +985,28 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Preise_Aendern"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "meine Preise ändern"
+    - "Preise eintragen"
+    - "Materialpreis ändern"
+    - "Lohnpreis ändern"
+    - "Firmenpreise"
+    - "warum zeigt der Mops die Preise nicht"
+    - "nur Mopspreise"
+  antwort: |
+    Deine eigenen Preise trägst du unter Einstellungen → Preise → "Meine Preise &
+    Stammdaten" ein. Dort gibt es Reiter für Material, Lohn und Geräte: eine Zeile
+    antippen → Preis (EK) ändern → fertig. Ganze Preislisten kommen über "Preise laden"
+    (CSV) rein.
+    WICHTIG: Ohne eigene Preise rechnet der Mops mit STANDARDWERTEN (Mops-Profil) — dann
+    „stimmen die Preise nicht". Genau dann hier deine echten Zahlen eintragen. Die Preise
+    bleiben lokal auf deinem Gerät (nichts wandert ins Repo oder zu anderen).
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_LV_Gruppen_Bearbeiten"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

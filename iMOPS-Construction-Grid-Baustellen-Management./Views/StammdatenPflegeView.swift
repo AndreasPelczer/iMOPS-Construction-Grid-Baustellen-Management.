@@ -417,11 +417,11 @@ private struct GeraetListe: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(g.name ?? "—").font(.headline).foregroundStyle(.primary)
-                                Text("\(g.nutzungsdauerStunden) h Nutzungsdauer")
+                                Text(g.stundensatz > 0 ? "Fester Std-Satz" : "\(g.nutzungsdauerStunden) h Nutzungsdauer")
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Text(g.anschaffungsKosten.formatted(.currency(code: "EUR")))
+                            Text("\(g.kostenProStunde.formatted(.currency(code: "EUR")))/h")
                                 .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
                         }
                     }
@@ -459,6 +459,7 @@ private struct GeraetEditSheet: View {
     let geraet: Geraet?
 
     @State private var name: String
+    @State private var satz: String
     @State private var kosten: String
     @State private var stunden: String
     @State private var notiz: String
@@ -466,13 +467,16 @@ private struct GeraetEditSheet: View {
     init(geraet: Geraet?) {
         self.geraet = geraet
         _name = State(initialValue: geraet?.name ?? "")
+        _satz = State(initialValue: geraet.map { $0.stundensatz > 0 ? stammFormat($0.stundensatz) : "" } ?? "")
         _kosten = State(initialValue: geraet.map { stammFormat($0.anschaffungsKosten) } ?? "")
         _stunden = State(initialValue: geraet.map { String($0.nutzungsdauerStunden) } ?? "")
         _notiz = State(initialValue: geraet?.notiz ?? "")
     }
 
+    // Gültig, wenn ein fester Std-Satz ODER (Anschaffung als Abschreibungs-Basis) da ist.
     private var valid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty && stammParse(kosten) != nil
+        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
+        return stammParse(satz) != nil || stammParse(kosten) != nil
     }
 
     var body: some View {
@@ -481,7 +485,17 @@ private struct GeraetEditSheet: View {
                 Section("Gerät") {
                     TextField("z. B. Kettenbagger 5 t", text: $name)
                 }
-                Section("Anschaffungskosten") {
+                Section {
+                    HStack {
+                        TextField("0,00", text: $satz).keyboardType(.decimalPad)
+                        Text("€/h").foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Fester Stundensatz (Miete / Fremdgerät)")
+                } footer: {
+                    Text("Für gemietete oder fremd-verrechnete Geräte: der Satz gilt direkt. Ist er gesetzt, wird die Abschreibung unten ignoriert.")
+                }
+                Section("Anschaffungskosten (eigenes Gerät)") {
                     HStack {
                         TextField("0,00", text: $kosten).keyboardType(.decimalPad)
                         Text("€").foregroundStyle(.secondary)
@@ -495,7 +509,7 @@ private struct GeraetEditSheet: View {
                 } header: {
                     Text("Nutzungsdauer")
                 } footer: {
-                    Text("Gesamte Nutzungsdauer in Stunden — Basis für den Stundensatz (Kosten ÷ Stunden).")
+                    Text("Nur ohne festen Satz: Anschaffung ÷ Nutzungsdauer ergibt den Stundensatz.")
                 }
                 Section("Notiz (optional)") {
                     TextField("z. B. inkl. Wartung", text: $notiz, axis: .vertical).lineLimit(1...3)
@@ -516,6 +530,7 @@ private struct GeraetEditSheet: View {
         let obj = geraet ?? Geraet(context: ctx)
         if geraet == nil { obj.id = UUID() }
         obj.name = name.trimmingCharacters(in: .whitespaces)
+        obj.stundensatz = stammParse(satz) ?? 0
         obj.anschaffungsKosten = stammParse(kosten) ?? 0
         obj.nutzungsdauerStunden = Int32(stunden.trimmingCharacters(in: .whitespaces)) ?? 0
         obj.notiz = notiz.isEmpty ? nil : notiz
@@ -566,15 +581,16 @@ struct PreisImportBerichtView: View {
                     }
                 }
 
-                if !bericht.neuMaterial.isEmpty || !bericht.neuLohn.isEmpty || !bericht.neuLeistung.isEmpty {
+                if !bericht.neuMaterial.isEmpty || !bericht.neuLohn.isEmpty || !bericht.neuLeistung.isEmpty || !bericht.neuGeraet.isEmpty {
                     Section("Neu angelegt") {
                         ForEach(bericht.neuMaterial, id: \.self) { zeile($0, farbe: .green, symbol: "plus.circle.fill") }
                         ForEach(bericht.neuLohn, id: \.self) { zeile($0 + " (Lohn)", farbe: .green, symbol: "plus.circle.fill") }
                         ForEach(bericht.neuLeistung, id: \.self) { zeile($0 + " (Firma-Preis)", farbe: .green, symbol: "plus.circle.fill") }
+                        ForEach(bericht.neuGeraet, id: \.self) { zeile($0 + " (Gerät)", farbe: .green, symbol: "plus.circle.fill") }
                     }
                 }
 
-                if !bericht.aktualisiertMaterial.isEmpty || !bericht.aktualisiertLohn.isEmpty || !bericht.aktualisiertLeistung.isEmpty {
+                if !bericht.aktualisiertMaterial.isEmpty || !bericht.aktualisiertLohn.isEmpty || !bericht.aktualisiertLeistung.isEmpty || !bericht.aktualisiertGeraet.isEmpty {
                     Section("Preis aktualisiert") {
                         ForEach(bericht.aktualisiertMaterial.indices, id: \.self) { i in
                             aenderung(bericht.aktualisiertMaterial[i])
@@ -585,12 +601,16 @@ struct PreisImportBerichtView: View {
                         ForEach(bericht.aktualisiertLeistung.indices, id: \.self) { i in
                             aenderung(bericht.aktualisiertLeistung[i])
                         }
+                        ForEach(bericht.aktualisiertGeraet.indices, id: \.self) { i in
+                            aenderung(bericht.aktualisiertGeraet[i])
+                        }
                     }
                 }
 
-                if !bericht.unveraendertMaterial.isEmpty || !bericht.unveraendertLohn.isEmpty {
+                if !bericht.unveraendertMaterial.isEmpty || !bericht.unveraendertLohn.isEmpty
+                    || !bericht.unveraendertLeistung.isEmpty || !bericht.unveraendertGeraet.isEmpty {
                     Section("Schon aktuell (unverändert)") {
-                        Text("\(bericht.unveraendertMaterial.count + bericht.unveraendertLohn.count) Positionen waren bereits mit diesem Preis hinterlegt.")
+                        Text("\(bericht.unveraendertMaterial.count + bericht.unveraendertLohn.count + bericht.unveraendertLeistung.count + bericht.unveraendertGeraet.count) Positionen waren bereits mit diesem Preis hinterlegt.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }

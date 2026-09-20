@@ -41,6 +41,13 @@ struct StammdatenPreisImportTests {
     }
 
     @MainActor
+    private func geraet(_ name: String) throws -> Geraet {
+        let r: NSFetchRequest<Geraet> = Geraet.fetchRequest()
+        r.predicate = NSPredicate(format: "name == %@", name)
+        return try #require(try ctx.fetch(r).first)
+    }
+
+    @MainActor
     private func anzahl<T: NSManagedObject>(_ typ: T.Type, _ entity: String) throws -> Int {
         try ctx.count(for: NSFetchRequest<T>(entityName: entity))
     }
@@ -94,6 +101,39 @@ struct StammdatenPreisImportTests {
         // Persistiert, nicht verdoppelt.
         #expect(try anzahl(KalkMaterial.self, "KalkMaterial") == 2)
         #expect(abs(try material("Beton C25/30").preisProEinheit - 135.50) < 0.001)
+    }
+
+    // MARK: - Gerät: fester Std-Satz landet in der Auswahlliste
+
+    @Test @MainActor
+    func importLegtGeraetMitStundensatzAn() throws {
+        let bericht = service.importiere(
+            csv: "geraet;Bagger 9to;Std;45,60;Firma-Katalog", in: ctx)
+
+        #expect(bericht.neuGeraet.count == 1)
+        #expect(bericht.uebersprungen.isEmpty)
+        #expect(try anzahl(Geraet.self, "Geraet") == 1)
+
+        let g = try geraet("Bagger 9to")
+        #expect(abs(g.stundensatz - 45.60) < 0.001)
+        // Der feste Satz treibt kostenProStunde direkt (nicht die Abschreibung).
+        #expect(abs(g.kostenProStunde - 45.60) < 0.001)
+    }
+
+    @Test @MainActor
+    func geraetReimportAendertNichtUndVerdoppeltNicht() throws {
+        let csvG = "geraet;Minibagger;Std;37,20;Firma-Katalog"
+        _ = service.importiere(csv: csvG, in: ctx)
+        let zweiter = service.importiere(csv: csvG, in: ctx)
+        #expect(zweiter.neuGeraet.isEmpty)
+        #expect(zweiter.unveraendertGeraet.count == 1)
+        #expect(try anzahl(Geraet.self, "Geraet") == 1)
+
+        // Satz geändert -> aktualisiert, nicht verdoppelt.
+        let geaendert = service.importiere(csv: "geraet;Minibagger;Std;39,00;neu", in: ctx)
+        #expect(geaendert.aktualisiertGeraet.count == 1)
+        #expect(abs(try geraet("Minibagger").stundensatz - 39.00) < 0.001)
+        #expect(try anzahl(Geraet.self, "Geraet") == 1)
     }
 
     @Test @MainActor
