@@ -1,0 +1,125 @@
+<title>Klickplan — heute gebaut</title>
+<style>
+  :root{
+    --ground:#f5f2ec; --paper:#fffefb; --ink:#22201c; --muted:#6c6659;
+    --line:#e3ddd1; --orange:#d9600f; --orange-soft:#f7e7d6; --char:#26231f;
+    --green:#3a6b1f; --blue:#2b5a8a;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --ground:#1b1917; --paper:#26231f; --ink:#f0ece4; --muted:#a49b8b;
+    --line:#39342d; --orange:#f2842f; --orange-soft:#3a2a1a; --char:#100f0d;
+    --green:#8fce6a; --blue:#7fb0e0; } }
+  :root[data-theme="dark"]{
+    --ground:#1b1917; --paper:#26231f; --ink:#f0ece4; --muted:#a49b8b;
+    --line:#39342d; --orange:#f2842f; --orange-soft:#3a2a1a; --char:#100f0d;
+    --green:#8fce6a; --blue:#7fb0e0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--ground); color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  .wrap{ max-width:820px; margin:0 auto; padding:0 18px 72px; }
+  header.top{ background:var(--char); color:#f4efe6; margin:0 -18px 28px; padding:34px 24px 26px; }
+  header.top .kicker{ color:var(--orange); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+  header.top h1{ margin:6px 0 8px; font-size:30px; line-height:1.1; }
+  header.top p{ margin:0; color:#c7bfb0; font-size:15px; max-width:62ch; }
+  .paw{ font-size:26px; }
+  .vorbereitung{ background:var(--orange-soft); border:1px solid var(--line); border-left:4px solid var(--orange);
+    border-radius:10px; padding:14px 16px; margin-bottom:30px; font-size:14.5px; }
+  .vorbereitung b{ color:var(--orange); }
+  .akt{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:20px 22px 22px; margin-bottom:20px; }
+  .akt > h2{ margin:0 0 3px; font-size:19px; display:flex; align-items:baseline; gap:10px; }
+  .akt .nr{ color:var(--orange); font-weight:800; font-variant-numeric:tabular-nums; font-size:15px; }
+  .akt .zeig{ margin:0 0 16px; color:var(--muted); font-size:14px; }
+  ol.steps{ list-style:none; margin:0; padding:0; counter-reset:s; }
+  ol.steps > li{ counter-increment:s; position:relative; padding:0 0 14px 34px; margin-bottom:14px; border-bottom:1px dashed var(--line); }
+  ol.steps > li:last-child{ border-bottom:0; margin-bottom:0; padding-bottom:0; }
+  ol.steps > li::before{ content:counter(s); position:absolute; left:0; top:-1px; width:23px; height:23px; border-radius:50%;
+    background:var(--char); color:#f4efe6; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .path{ display:inline-block; font:600 13.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    background:var(--orange-soft); color:var(--orange); padding:2px 8px; border-radius:6px; border:1px solid var(--line); }
+  .say{ display:block; margin-top:5px; color:var(--muted); font-size:14px; }
+  .say b{ color:var(--ink); font-weight:600; }
+  .pill{ display:inline-block; font-size:11px; font-weight:700; padding:1px 7px; border-radius:10px; vertical-align:middle; }
+  .g{ background:rgba(58,107,31,.14); color:var(--green); } .b{ background:rgba(43,90,138,.14); color:var(--blue); }
+  .o{ background:var(--orange-soft); color:var(--orange); }
+  .neu{ font-size:10px; font-weight:800; letter-spacing:.05em; background:var(--orange); color:#fff; padding:1px 6px; border-radius:8px; vertical-align:middle; }
+  .schluss{ margin-top:34px; border-top:2px solid var(--line); padding-top:20px; }
+  .schluss h2{ font-size:17px; margin:0 0 8px; } .schluss p{ color:var(--muted); font-size:14.5px; margin:0 0 8px; }
+  .foot{ margin-top:26px; color:var(--muted); font-size:12.5px; text-align:center; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">iMOPS · Vorführung · 20.09.2026</div>
+    <h1><span class="paw">🐕</span> Was heute dazukam</h1>
+    <p>Sechs neue Dinge an einem Sonntag — vom größeren Katalog über zwei Wächter, die
+       Fehler fangen, bis zur Zeit im Bauablauf. Der Reihe nach zum Durchklicken.</p>
+  </header>
+
+  <div class="vorbereitung">
+    <b>Vorbereitung:</b> In Xcode einmal <b>▶ (Run)</b> mit „My Mac (Designed for iPad)", dann
+    eine Baustelle mit ein paar LV-Positionen und ein paar Aufträgen öffnen.
+  </div>
+
+  <section class="akt">
+    <h2><span class="nr">01</span> Der Katalog kennt mehr Gewerke <span class="neu">NEU</span></h2>
+    <p class="zeig">Deine drei vorbereiteten YAML-Kataloge sind eingezogen — als reiner Gewinn, ohne das Alte zu stören.</p>
+    <ol class="steps">
+      <li><span class="say">Beim Anlegen/Bepreisen kennt der Mops jetzt auch <b>Gerüst, Klempner und Landschaftsbau</b> (16 neue Bausteine, 133 → 149) — samt Aufwandswerten. Goldschmitt-Positionen und die Preis-Verknüpfungen blieben unangetastet.</span></li>
+    </ol>
+  </section>
+
+  <section class="akt">
+    <h2><span class="nr">02</span> Material &amp; Bestellung — eigene Ecke <span class="neu">NEU</span></h2>
+    <p class="zeig">Die Materialliste ist raus aus der Kalkulation, dorthin gezogen, wo man damit arbeitet.</p>
+    <ol class="steps">
+      <li><span class="path">Baustelle → Material &amp; Bestellung</span>
+        <span class="say">Eigene Gruppe. Je Bedarfszeile steht jetzt <b>„bestellen: X"</b> oder grün <b>„auf Lager"</b> — Soll (geplant) minus Lager-Ist. Oben: „N von M Positionen bestellen".</span></li>
+      <li><span class="say">Daneben Sprungbretter zu <span class="pill b">Lager</span> und <span class="pill o">Bestellliste</span> — alles an einem Ort.</span></li>
+    </ol>
+  </section>
+
+  <section class="akt">
+    <h2><span class="nr">03</span> Der Preis-Wächter <span class="neu">NEU</span></h2>
+    <p class="zeig">Fängt die <b>falsche Zahl</b>, bevor das Angebot rausgeht.</p>
+    <ol class="steps">
+      <li><span class="path">Baustelle → Leistungsverzeichnis und Kalkulation → Preis-Wächter</span>
+        <span class="say">Vergleicht jeden Einheitspreis mit den gleichartigen Positionen. Ein Wert 10× daneben (verrutschtes Komma — 8,02 statt 80,21) wird rot gemeldet. Tippen → Position + Grund.</span></li>
+    </ol>
+  </section>
+
+  <section class="akt">
+    <h2><span class="nr">04</span> Der Angebots-Wächter <span class="neu">NEU</span></h2>
+    <p class="zeig">Das Geschwister: fängt die <b>fehlende</b> Zahl (Lücken), nicht die falsche.</p>
+    <ol class="steps">
+      <li><span class="path">…Leistungsverzeichnis und Kalkulation → Angebots-Wächter</span>
+        <span class="say">Meldet Positionen <b>ohne Preis</b> oder <b>ohne Menge</b>, bevor du abschickst. Überschriften und Alternativen zählen nicht. Steht „N Lücken" → aufklappen.</span></li>
+    </ol>
+  </section>
+
+  <section class="akt">
+    <h2><span class="nr">05</span> Zeit im Canvas — der Terminplan <span class="neu">NEU</span></h2>
+    <p class="zeig">Zeit, in der niemand arbeitet (Beton härten, Estrich trocknen), gehört trotzdem in den Plan.</p>
+    <ol class="steps">
+      <li><span class="path">Baustelle → Aufträge für Arbeit → Terminplan</span>
+        <span class="say">Setz je Auftrag die <b>Dauer</b> (Stepper, Tage) → der Mops rechnet aus dem Abhängigkeitsgraph die <b>frühesten Start-/Endtage</b> als Balken. Die Wartezeit (Härten) sitzt auf der Verbindung. Ein Ringschluss wird ehrlich gemeldet.</span></li>
+    </ol>
+  </section>
+
+  <section class="akt">
+    <h2><span class="nr">06</span> Kleinigkeiten, die den Alltag glätten <span class="neu">NEU</span></h2>
+    <ol class="steps">
+      <li><span class="say"><b>Ablage-Ordner in der App:</b> Baustelle → Pläne/Unterlagen → „Ablage-Ordner (iCloud)" zeigt den Pfad + „Pfad kopieren". (Kein iCloud → ehrlicher Hinweis statt totem Pfad.)</span></li>
+      <li><span class="say"><b>Hover</b> (Mac): Maus über eine LV- oder Tiefenkalk-Zeile → oranger Rahmen, man sieht sofort, welche Zeile.</span></li>
+      <li><span class="say"><b>Umbenannt für Klarheit:</b> „Pläne/Unterlagen" + „Importieren" getrennt · „Leistungsverzeichnis und Kalkulation" · „Aufträge für Arbeit".</span></li>
+    </ol>
+  </section>
+
+  <div class="schluss">
+    <h2>Der Bogen in einem Satz</h2>
+    <p>Der Mops kennt heute mehr Gewerke, sortiert Material und Bestellung an ihren richtigen Ort,
+       <b>fängt die falsche und die fehlende Zahl</b>, bevor ein Angebot rausgeht, und weiß jetzt,
+       <b>wann</b> gebaut wird — nicht nur in welcher Reihenfolge. Jede Zahl trägt ihre Herkunft; nichts ist erfunden.</p>
+  </div>
+
+  <p class="foot">iMOPS · Goldschmitt Bau-GmbH · Klickplan zum Vorführen · Stand 20.09.2026</p>
+</div>

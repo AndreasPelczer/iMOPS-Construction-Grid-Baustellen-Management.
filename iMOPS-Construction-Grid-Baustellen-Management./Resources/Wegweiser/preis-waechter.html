@@ -1,0 +1,103 @@
+<title>Preis-Wächter</title>
+<style>
+  :root{
+    --grund:#f5f2ec; --karte:#fffefb; --tinte:#22201c; --gedaempft:#6c6659;
+    --linie:#e3ddd1; --orange:#e8722a; --orange-weich:#f7e7d6; --char:#26231f;
+    --rot:#c0491f; --rot-weich:#f6e0d7; --gruen:#3a6b1f;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --grund:#1b1917; --karte:#26231f; --tinte:#f0ece4; --gedaempft:#a49b8b;
+    --linie:#39342d; --orange:#f2842f; --orange-weich:#3a2a1a; --char:#100f0d;
+    --rot:#e8895f; --rot-weich:#3a1f16; --gruen:#8fce6a; } }
+  :root[data-theme="dark"]{
+    --grund:#1b1917; --karte:#26231f; --tinte:#f0ece4; --gedaempft:#a49b8b;
+    --linie:#39342d; --orange:#f2842f; --orange-weich:#3a2a1a; --char:#100f0d;
+    --rot:#e8895f; --rot-weich:#3a1f16; --gruen:#8fce6a; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--grund); color:var(--tinte);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  .wrap{ max-width:720px; margin:0 auto; padding:0 18px 64px; }
+  header.top{ background:var(--char); color:#f4efe6; margin:0 -18px 26px; padding:32px 22px 26px; }
+  .kicker{ color:var(--orange); font-weight:700; letter-spacing:.09em; text-transform:uppercase; font-size:12px; }
+  header.top h1{ margin:8px 0 8px; font-size:28px; line-height:1.1; }
+  header.top p{ margin:0; color:#c7bfb0; font-size:15px; max-width:58ch; }
+  h2{ font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--gedaempft);
+    margin:30px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--linie); }
+  table{ width:100%; border-collapse:collapse; background:var(--karte); border:1px solid var(--linie);
+    border-radius:11px; overflow:hidden; font-variant-numeric:tabular-nums; }
+  th,td{ padding:10px 13px; text-align:left; border-bottom:1px solid var(--linie); }
+  th{ background:var(--orange-weich); font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--gedaempft); }
+  td.num,th.num{ text-align:right; }
+  tr:last-child td{ border-bottom:0; }
+  tr.treffer{ background:var(--rot-weich); }
+  tr.treffer td{ font-weight:700; color:var(--rot); }
+  .flag{ font-size:12px; font-weight:700; color:var(--rot); }
+  .ok{ color:var(--gruen); }
+  .karten{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media(max-width:520px){ .karten{ grid-template-columns:1fr; } }
+  .k{ background:var(--karte); border:1px solid var(--linie); border-radius:12px; padding:14px 16px; }
+  .k h3{ margin:0 0 5px; font-size:15px; color:var(--orange); }
+  .k p{ margin:0; font-size:13.5px; color:var(--gedaempft); line-height:1.5; }
+  .satz{ background:var(--orange-weich); border-left:4px solid var(--orange); border-radius:10px;
+    padding:13px 15px; font-size:14.5px; margin-top:24px; }
+  .satz b{ color:var(--orange); }
+  .fuss{ margin-top:22px; color:var(--gedaempft); font-size:12.5px; }
+  code{ font-family:ui-monospace,Menlo,monospace; font-size:12px; background:var(--orange-weich); padding:1px 5px; border-radius:5px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">iMOPS · Spike · Überraschung</div>
+    <h1>🔎 Preis-Wächter</h1>
+    <p>Fängt die <b>falsche Zahl</b>, bevor das Angebot rausgeht. Kein Bauchgefühl —
+       die App vergleicht jeden Einheitspreis mit den gleichartigen Positionen und meldet,
+       was aus dem Rahmen fällt.</p>
+  </header>
+
+  <h2>Am echten Fall: eine Pflaster-Reihe</h2>
+  <table>
+    <thead><tr><th>Position</th><th>Einheit</th><th class="num">EP</th><th>Wächter</th></tr></thead>
+    <tbody>
+      <tr><td>Pflaster A</td><td>m²</td><td class="num">58,00 €</td><td class="ok">✓</td></tr>
+      <tr><td>Pflaster B</td><td>m²</td><td class="num">61,00 €</td><td class="ok">✓</td></tr>
+      <tr><td>Pflaster C</td><td>m²</td><td class="num">55,00 €</td><td class="ok">✓</td></tr>
+      <tr class="treffer"><td>Pflaster D</td><td>m²</td><td class="num">5,80 €</td><td><span class="flag">⚠ Komma?</span></td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13.5px;color:var(--gedaempft);margin-top:10px">
+    Der Wächter sieht: vier m²-Preise um ~58 €, einer bei 5,80 € — <b>rund 1/10 vom Mittel</b>.
+    Das ist fast immer ein verrutschtes Komma. Meldung: „<i>prüf diese Zahl</i>" — nicht „falsch".
+    <b>Genau die Frage, die beim Stützwinkel offen stand</b> (8,02 oder 80,21?).
+  </p>
+
+  <h2>Zwei Diagnosen</h2>
+  <div class="karten">
+    <div class="k">
+      <h3>Komma / Zehnerpotenz</h3>
+      <p>Ein EP ist ~10× / 100× (oder 1/10, 1/100) vom Mittel der Nachbarn. Der teuerste
+         Fehler, am leichtesten übersehen — hier zuerst gemeldet.</p>
+    </div>
+    <div class="k">
+      <h3>Ausreißer (robust)</h3>
+      <p>Median + MAD statt Durchschnitt — ein einzelner Extremwert verzerrt nichts.
+         Streng eingestellt: lieber selten melden als nerven.</p>
+    </div>
+  </div>
+
+  <h2>Was er NICHT tut</h2>
+  <p style="font-size:14px;color:var(--gedaempft)">
+    Nicht bei normaler Preisstreuung meckern. Nicht m² gegen Stück vergleichen (Einheiten getrennt).
+    Nicht raten, wenn es zu wenige gleichartige Positionen gibt — dann schweigt er.
+    Und nie „falsch" behaupten: er zeigt, der Mensch entscheidet. <b>Nachweis statt Behauptung.</b>
+  </p>
+
+  <div class="satz">
+    <b>Stand:</b> <b>verdrahtet</b> — Karte „Preis-Wächter" in der LV-Gruppe (prüft beim Öffnen,
+    meldet „N Zahlen prüfen", aufklappbar mit Preis + Grund). Rechen-Kern <code>PreisWaechter.swift</code>
+    + Adapter + 4 Tests grün, Build grün, auf Branch <code>feature/preis-waechter-wiring</code> —
+    <b>bereit zum Merge auf dein OK.</b> Bedienungshilfe ist nachgezogen.
+  </div>
+
+  <p class="fuss">Ein Experiment auf sicherem Branch — main bleibt unberührt. Idee: die Maschine sieht
+     die Verteilung, der Mensch sieht die Zeile. Zusammen fängt man den Zahlendreher, der Geld kostet.</p>
+</div>

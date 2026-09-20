@@ -128,6 +128,19 @@ struct SettingsView: View {
         @Bindable var session = session
         Form {
 
+            // --- Hilfe & Wegweiser ---
+            Section {
+                NavigationLink {
+                    MopsBrowserView()
+                } label: {
+                    Label("Mops-Wegweiser", systemImage: "book.pages")
+                }
+            } header: {
+                Text("Hilfe")
+            } footer: {
+                Text("Klickpläne und Erklär-Seiten direkt in der App — zum Vorführen und Verstehen.")
+            }
+
             // --- Firmendaten ---
             Section {
                 TextField("Firmenname", text: $firmaName)

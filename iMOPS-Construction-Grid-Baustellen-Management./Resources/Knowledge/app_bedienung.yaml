@@ -928,6 +928,24 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Mops_Wegweiser"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Mops-Wegweiser"
+    - "Hilfe"
+    - "Klickplan in der App"
+    - "Anleitung"
+    - "Onboarding"
+    - "wie geht das"
+  antwort: |
+    Unter Einstellungen → Hilfe → "Mops-Wegweiser" gibt es Klickpläne und Erklär-Seiten
+    direkt in der App — offline, „iPad auf dem Schoß". Zum Vorführen (Kunde, Kollege)
+    und zum Selberverstehen: durchklicken statt lesen. Die Seiten sind dieselben wie im
+    muckupmops-Repo; neue kommen dazu, indem man eine HTML in den Wegweiser-Ordner legt.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_LV_Gruppen_Bearbeiten"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
