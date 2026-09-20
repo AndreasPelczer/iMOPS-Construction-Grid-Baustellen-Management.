@@ -163,6 +163,17 @@ struct GAEBExporter {
         // Alternative marker
         let altLine = LVPositionHelper.isAlternative(pos) ? "            <Alt/>\n" : ""
 
+        // GAEB trennt Kurztext (OutlineText) und Langtext (DetailTxt). Hier stand beide
+        // Male die Bezeichnung — der gespeicherte Langtext wurde nie exportiert. An einer
+        // echten Baustelle (21.09.2026) hiess das: rein 280 Zeichen mit Mengenherkunft und
+        // Preisquelle, raus 52 Zeichen nackte Bezeichnung. Wer die Datei weitergibt, gibt
+        // die Nachvollziehbarkeit weg, ohne es zu merken.
+        let langtext = (pos.langtext ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let detailZeilen = (langtext.isEmpty ? bez : langtext)
+            .components(separatedBy: .newlines)
+            .map { "                      <span>\(e($0))</span>" }
+            .joined(separator: "\n                    </p>\n                    <p>\n")
+
         let xml = """
           <Item ID="\(e(posID))" RNoPart="\(e(rNoPart))">
 \(altLine)            <Qty>\(qty)</Qty>
@@ -172,7 +183,7 @@ struct GAEBExporter {
                 <DetailTxt>
                   <Text>
                     <p>
-                      <span>\(e(bez))</span>
+\(detailZeilen)
                     </p>
                   </Text>
                 </DetailTxt>
