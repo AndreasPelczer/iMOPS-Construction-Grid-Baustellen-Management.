@@ -190,6 +190,21 @@ betonarbeiten:
     hinweis: "Inkl. Schalung+Stützen, Bewehrung, Betonieren"
     quellen: ["HOF", "BNW"]
 
+  elementdecke_verlegen:
+    bezeichnung: "Filigran-/Elementdecke verlegen (Halbfertigteilplatten)"
+    einheit: "m2"
+    aufwandswert:
+      min: 0.55
+      mittel: 0.75
+      max: 1.0
+    kolonne: "3-4 Betonbauer + Kran"
+    hinweis: >
+      ABGELEITET, nachrechenbar: Ortbetondecke (stahlbeton_decke, 1,2 h/m2) MINUS
+      Deckenschalung (schalarbeiten.schalung_decke, 0,45 h/m2) = 0,75 h/m2. Eine
+      Elementdecke braucht keine Deckenschalung, nur Montageunterstuetzung. Min/Max
+      im selben Verhaeltnis. Ersetzen, sobald ein Firmenwert vorliegt.
+    quellen:
+      - "abgeleitet aus aufwandswerte.yaml betonarbeiten.stahlbeton_decke minus schalarbeiten.schalung_decke"
   stuetze:
     bezeichnung: "Stahlbetonstütze, komplett"
     einheit: "m3"
