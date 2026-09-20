@@ -1,73 +1,183 @@
-# BKI-Marktpreise — Referenz/Orakel, NICHT Kalkulationsgrundlage.
-# ============================================================================
-# Der Mops rechnet WEITER von unten auf (Material + Lohn + Gerät = deine echten
-# Kosten + Aufschlag). Diese Datei ist nur der MARKT-VERGLEICH daneben: BKI-
-# Baupreise aus abgerechneten Objekten. So siehst du, ob dein Einheitspreis
-# plausibel liegt — ohne dass eine fremde Zahl deine Kalkulation überschreibt.
-#
-# NACHWEIS: jeder Eintrag trägt seine BKI-Position + BKI-ID. Kein Raten, kein
-# Internet — Baudatenbank der Deutschen Architektenkammern, mit Abo lizenziert.
-#
-# PFLICHT je Eintrag: einheit + mittel (der Ø aus der BKI-Trefferliste).
-# OPTIONAL: min/von/bis/max (die volle Spanne — nur wenn per Klick geerntet).
-# Schlüssel = STLB-Baustein-ID (wie in stlb_bausteine.yaml).
-
+# BKI-Marktpreise als Referenz — siehe docs/bki-ernten.md für das Ernte-Verfahren
 meta:
-  quelle: "BKI Baupreise Online 2026 — Neubau"
-  regionalfaktor: "Main-Tauber-Kreis (RF 1,027)"
-  stand: "geerntet 18.09.2026"
-  aktualisierung: "jährlich (BKI-Abo)"
-  hinweis: "Preise netto. Marktpreise als Referenz. Jeder Preis trägt quelle: BKI."
-
+  quelle: BKI Baupreise Online 2026 — Neubau
+  regionalfaktor: Main-Tauber-Kreis (RF 1,027) — im Portal oben rechts einstellen!
+  baupreisindex: BPI Q2/2026 = 140,3
+  stand: geerntet 18.09.2026 und 20.09.2026
+  aktualisierung: jährlich (BKI-Abo)
+  hinweis: Preise netto, MARKTPREISE (mittlere Angebotspreise inkl. BGK/AGK/Wagnis+Gewinn). NICHT direkt
+    als Firmenpreis verwenden — jede Firma kalkuliert auf ihrem eigenen Niveau. Das Verhältnis Firmenpreis/BKI
+    ist Betriebswissen und gehört NICHT ins Repo, sondern in die Stammdaten (siehe docs/bki-ernten.md).
 marktpreise:
-
-  # ---- ECHTE BKI-Werte (Main-Tauber, netto), geerntet 18.09.2026 ----
-
-  STR-002:            # Schottertragschicht 0/32
-    bki_position: "Tragschicht, Schotter 0/32, bis 30cm"
-    bki_lb: "LB 013 / KG 325"
-    einheit: "m2"
+  STR-002:
+    bki_position: Tragschicht, Schotter 0/32, bis 30cm
+    bki_lb: LB 013 / KG 325
+    einheit: m2
     mittel: 19
-
-  ERD-005:            # Frostschutzschicht einbauen
-    bki_position: "Frostschutzschicht, Schotter 0/32, bis 30cm"
-    bki_lb: "LB 013 / KG 325"
-    einheit: "m2"
+  ERD-005:
+    bki_position: Frostschutzschicht, Schotter 0/32, bis 30cm
+    bki_lb: LB 013 / KG 325
+    einheit: m2
     mittel: 21
-
-  PFL-002:            # Betonverbundpflaster verlegen
-    bki_position: "Pflasterdecke, Betonpflaster"
-    bki_lb: "LB 028 / KG 353"
-    einheit: "m2"
+  PFL-002:
+    bki_position: Pflasterdecke, Betonpflaster
+    bki_lb: LB 080
+    einheit: m2
     mittel: 46
-
-  PFL-003:            # Natursteinpflaster verlegen
-    bki_position: "Pflasterdecke, Granit, 10x10"
-    bki_lb: "LB 028 / KG 353"
-    einheit: "m2"
+    regionalfaktor: 1.027
+    stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  PFL-003:
+    bki_position: Pflasterdecke, Granit, 10x10
+    bki_lb: LB 028 / KG 353
+    einheit: m2
     mittel: 149
-
-  PFL-004:            # Tiefbordsteine setzen
-    bki_position: "Bordstein, Beton, 12x18x30, L=100"
-    bki_lb: "LB 028 / KG 353"
-    einheit: "m"
+  PFL-004:
+    bki_position: Bordstein, Beton, 12x18x30, L=100
+    bki_lb: LB 028 / KG 353
+    einheit: m
     mittel: 50
-
-  # Beispiel MIT voller Spanne (per Klick geerntet) — so sieht ein kompletter Eintrag aus:
-  # (allgemeine Schotter-Tragschicht 0/45, 30cm — Referenz, nicht material-genau zu STR-002)
-  # STR-002-alt:
-  #   bki_position: "Tragschicht, Schotter, 30cm (0/45)"
-  #   bki_id: "BKI-013000092"
-  #   einheit: "m2"
-  #   min: 13
-  #   von: 21
-  #   mittel: 25
-  #   bis: 25
-  #   max: 37
-
-  # ---- NOCH ZU ERNTEN (Platzhalter) ----
-  BET-010:            # Schalung Fundamente
-    bki_position: "PLATZHALTER - in BKI nach Schalung / Fundamentschalung suchen"
-    einheit: "m2"
-    mittel: 40
-    platzhalter: true
+  BET-010:
+    bki_position: Schalung, Fundament, rau
+    bki_lb: LB 013
+    einheit: m2
+    mittel: 55
+    regionalfaktor: 1.027
+    stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  MAU-008:
+    bki_position: Öffnungen, Mauerwerk bis 24cm, 1,01x2,13m
+    bki_lb: LB 012
+    einheit: St
+    mittel: 61
+    regionalfaktor: 1.027
+    stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  BET-002:
+    bki_position: Bodenplatte, Ortbeton, C25/30, bis 35cm
+    bki_lb: LB 013
+    einheit: m3
+    mittel: 239
+    regionalfaktor: 1.027
+    stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  BEW-002:
+    bki_position: Betonstahlmatten, BSt B500A/B500B
+    bki_lb: LB 013
+    einheit: t
+    mittel: 2349
+    regionalfaktor: 1.027
+    stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+    bki_id: BKI-013000219
+  ABD-006:
+    bki_position: Trennlage, Bodenplatte, Folie, zweilagig
+    bki_lb: LB 013
+    einheit: m2
+    mittel: 2.99
+    regionalfaktor: 1.027
+    stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  BET-012:
+    bki_position: Elementdecke, 22cm, inkl. Aufbeton
+    bki_lb: LB 013
+    einheit: m2
+    mittel: 106
+    regionalfaktor: 1.027
+    stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  ERD-012:
+    bki_position: Streifenfundamentaushub, bis 1,75m, lagern, GK1
+    bki_lb: LB 002
+    einheit: m3
+    mittel: 50
+    regionalfaktor: 1.027
+    stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+    bki_id: BKI-002001134
+  ERD-006:
+    bki_position: Fundament, Hinterfüllung, Liefermaterial, bis 1,00m
+    bki_lb: LB 002
+    einheit: m3
+    mittel: 37
+    regionalfaktor: 1.027
+    stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+weitere_positionen:
+- bki_position: Innenwand, HLz-Planstein 24cm, 12DF
+  bki_lb: LB 012
+  einheit: m2
+  mittel: 115
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Innenwand, HLz-Planstein 17,5cm, 12DF
+  bki_lb: LB 012
+  einheit: m2
+  mittel: 97
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Innenwand, HLz-Planstein 11,5cm, 8DF
+  bki_lb: LB 012
+  einheit: m2
+  mittel: 78
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Innenwand, KS L 11,5cm, bis 3DF
+  bki_lb: LB 012
+  einheit: m2
+  mittel: 82
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Innenwand, Mauerziegel, 24cm, 5DF
+  bki_lb: LB 012
+  einheit: m2
+  mittel: 110
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Querschnittsabdichtung, Mauerwerk bis 24cm
+  bki_lb: LB 012
+  einheit: m
+  mittel: 6.76
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Mauerwerk abgleichen, 24cm
+  bki_lb: LB 012
+  einheit: m
+  mittel: 22
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  bki_id: BKI-012000114
+- bki_position: Bodenplatte, WU-Ortbeton C30/37, bis 35cm
+  bki_lb: LB 013
+  einheit: m3
+  mittel: 267
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  bki_id: BKI-013000009
+- bki_position: Bewehrung, Gitterträger
+  bki_lb: LB 013
+  einheit: t
+  mittel: 2418
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Randschalung, Bodenplatte
+  bki_lb: LB 013
+  einheit: m
+  mittel: 18.49
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Elementdecke, 18cm, inkl. Aufbeton
+  bki_lb: LB 013
+  einheit: m2
+  mittel: 102
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Schalung, Fundament, verloren
+  bki_lb: LB 013
+  einheit: m2
+  mittel: 64
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Streifenfundamentaushub, bis 1,75m, entsorgen, GK1
+  bki_lb: LB 002
+  einheit: m3
+  mittel: 61
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Fundament, Hinterfüllung, Lagermaterial, bis 1,00m
+  bki_lb: LB 002
+  einheit: m3
+  mittel: 33
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
