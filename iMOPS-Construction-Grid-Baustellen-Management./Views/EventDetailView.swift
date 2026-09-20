@@ -432,6 +432,23 @@ struct EventDetailView: View {
                     ablaufplanCard
                     TerminplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     DienstplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
+                    NavigationLink {
+                        ZeitstrahlView(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "chart.bar.xaxis").font(.title3).frame(width: 30)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Zeitstrahl (Gantt)").font(.headline)
+                                Text("Alle Aufgaben auf einer Tag-Achse").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                        }
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
                     lehrlingWarmupCard
                     jobsCard
                         .sheet(isPresented: $showingWarmup) {
