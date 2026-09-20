@@ -3,6 +3,7 @@ import SafariServices
 import CoreData
 import Combine
 import UniformTypeIdentifiers
+import UIKit
 
 
 // MARK: - Helpers: Extras JSON (Checkliste)
@@ -134,6 +135,7 @@ struct EventDetailView: View {
     // Einklappbare Karten-Gruppen — „Übersicht" ist beim Öffnen aufgeklappt, Rest zu.
     @State private var gruppeUebersicht = true
     @State private var gruppePlaene = false
+    @State private var gruppeImport = false
     @State private var gruppeLV = false
     @State private var gruppeGewerke = false
     @State private var gruppeMaengel = false
@@ -179,7 +181,6 @@ struct EventDetailView: View {
     @State private var showingBauQuiz = false
 
     // Import-Katalog: die Auswerte-Werkzeuge klappen hinter EINEM Knopf auf
-    @State private var zeigeImportKatalog = false
 
     // Stufe 2: Unterlagen auswerten (/extract-doc)
     @State private var showingUnterlagenPicker = false
@@ -375,28 +376,29 @@ struct EventDetailView: View {
                     WetterKarteView(ort: event.location ?? "")
                 }
 
-                kartenGruppe("Pläne & Unterlagen", systemImage: "doc.on.doc", isExpanded: $gruppePlaene) {
+                kartenGruppe("Pläne/Unterlagen", systemImage: "doc.on.doc", isExpanded: $gruppePlaene) {
+                    BaustelleAblageCard(baustelleName: event.title ?? "")   // iCloud-Ablage-Ordner dieser Baustelle
                     cadCard                       // Vorhandene Pläne (Dateien + 3D-Ansicht)
-                    importKatalogButton
-                    if zeigeImportKatalog {
-                        gaebCard                  // Ausschreibung → LV (GAEB DA XML)
-                        wandLeserCard             // Zeichnung → Wände (DXF/DWG)
-                        verlegeplanCard           // Zeichnung → Pflaster/Flächen-Mengen (DXF)
-                        erdmassenCard             // Gelände (DGM1) → Aushub-Mengen (Cut & Fill)
-                        geländeCard               // Gelände → Aushub (DXF/DWG)
-                        materiallisteCard         // Mengen aus Excel (.xlsx)
-                        unterlagenCard            // Unterlagen (PDF) → Fakten
-                    }
                     BPlanVorgabenCard(event: event)   // nur wenn ein B-Plan ausgewertet ist
                 }
 
-                kartenGruppe("Leistungsverzeichnis", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
+                kartenGruppe("Importieren", systemImage: "square.and.arrow.down", isExpanded: $gruppeImport) {
+                    gaebCard                  // Ausschreibung → LV (GAEB DA XML)
+                    wandLeserCard             // Zeichnung → Wände (DXF/DWG)
+                    verlegeplanCard           // Zeichnung → Pflaster/Flächen-Mengen (DXF)
+                    erdmassenCard             // Gelände (DGM1) → Aushub-Mengen (Cut & Fill)
+                    geländeCard               // Gelände → Aushub (DXF/DWG)
+                    materiallisteCard         // Mengen aus Excel (.xlsx)
+                    unterlagenCard            // Unterlagen (PDF) → Fakten
+                }
+
+                kartenGruppe("Leistungsverzeichnis und Kalkulation", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
                     lvCard
                     materialCard
                     normenSpurCard
                 }
 
-                kartenGruppe("Gewerke & Ausführung", systemImage: "hammer", isExpanded: $gruppeGewerke) {
+                kartenGruppe("Aufträge für Arbeit", systemImage: "hammer", isExpanded: $gruppeGewerke) {
                     SchichtUebergabeCard(event: event)
                     brigadeCard
                     maschinenCard
@@ -1281,33 +1283,6 @@ struct EventDetailView: View {
     }
 
     // MARK: - CAD CARD
-    /// Ein Knopf statt sechs Karten: klappt die Auswerte-Werkzeuge auf.
-    /// „Import" zeigt, was der Mops lesen kann — an einer Stelle.
-    private var importKatalogButton: some View {
-        Button {
-            withAnimation(.snappy) { zeigeImportKatalog.toggle() }
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "square.and.arrow.down.fill").font(.title3)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Import").font(.headline)
-                    Text(zeigeImportKatalog
-                         ? "Was der Mops lesen kann — tippen zum Einklappen"
-                         : "Zeichnung · 3D · Gelände · Excel · Unterlagen")
-                        .font(.caption).foregroundStyle(.white.opacity(0.9))
-                }
-                Spacer()
-                Image(systemName: zeigeImportKatalog ? "chevron.up" : "chevron.down")
-                    .font(.subheadline.weight(.semibold))
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .foregroundStyle(.white)
-        }
-        .buttonStyle(.plain)
-    }
-
     private var cadCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -2559,6 +2534,68 @@ struct EventDetailHelpView: View {
                     Button("Fertig") { dismiss() }.tint(.orange)
                 }
             }
+        }
+    }
+}
+
+// MARK: - Ablage-Ordner-Karte
+// Zeigt den iCloud-Ablage-Pfad DIESER Baustelle (Übersicht) + „Pfad kopieren".
+// `MopsAblage.wurzel()` kann blockieren → immer im Hintergrund ermitteln, nie im
+// View-Body. Kein iMOPS-Container (z. B. App-Signierung ohne iCloud-Berechtigung) →
+// ehrlicher Hinweis statt totem Pfad (so verwirrt es Raphi am Mac nicht).
+private struct BaustelleAblageCard: View {
+    let baustelleName: String
+    @State private var zustand: Zustand = .laden
+
+    private enum Zustand: Sendable {
+        case laden, keinCloud, kartei(String)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Ablage-Ordner (iCloud)", systemImage: "folder")
+                .font(.subheadline.weight(.semibold))
+            switch zustand {
+            case .laden:
+                Text("Ordner wird gesucht …")
+                    .font(.caption).foregroundStyle(.secondary)
+            case .keinCloud:
+                Text("Auf diesem Gerät gibt es keinen iMOPS-Ordner in iCloud. Prüfen: iCloud Drive aktiv, und die App mit iCloud-Berechtigung signiert.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            case .kartei(let pfad):
+                Text(pfad)
+                    .font(.caption.monospaced()).foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    UIPasteboard.general.string = pfad
+                } label: {
+                    Label("Pfad kopieren", systemImage: "doc.on.doc").font(.caption)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 4)
+        .onAppear { ladePfad() }
+    }
+
+    // Hintergrund (GCD) wie im Rest der App: `wurzel()` kann blockieren und darf nie
+    // auf den Main-Thread. Danach zurück auf Main, um den @State zu setzen.
+    private func ladePfad() {
+        let name = baustelleName
+        DispatchQueue.global(qos: .utility).async {
+            let z: Zustand
+            if let wurzel = MopsAblage.wurzel(), let sicher = MopsAblage.sichererOrdnername(name) {
+                z = .kartei(wurzel
+                    .appendingPathComponent("Baustellen", isDirectory: true)
+                    .appendingPathComponent(sicher, isDirectory: true).path)
+            } else {
+                z = .keinCloud
+            }
+            DispatchQueue.main.async { self.zustand = z }
         }
     }
 }

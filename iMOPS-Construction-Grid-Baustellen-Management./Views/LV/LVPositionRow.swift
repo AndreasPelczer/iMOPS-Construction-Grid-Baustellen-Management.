@@ -60,6 +60,10 @@ struct LVPositionRow: View {
 
     var onOpenSourceDocument: ((URL) -> Void)? = nil
 
+    // Mac: Maus über der Zeile → sofort sichtbar, welche Position unter dem Zeiger ist.
+    // Auf dem iPad ohne Zeiger passiert nichts (onHover feuert dort nicht).
+    @State private var isHovered = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -211,6 +215,17 @@ struct LVPositionRow: View {
         }
         .padding(.vertical, 2)
         .opacity(isAlt ? 0.85 : 1.0)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isHovered ? Color.orange.opacity(0.10) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(isHovered ? Color.orange.opacity(0.65) : Color.clear, lineWidth: 1.5)
+        )
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) { isHovered = hovering }
+        }
     }
 }
 

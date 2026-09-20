@@ -1829,3 +1829,281 @@ ausstattung:
     gewerk: "Ausstattung"
     aufwandswert_key: "ausstattung.bohrung_montage"
     tags: ["Fahrradanlehnbügel", "Fahrradbügel", "Bohrung", "Anlehnbügel"]
+
+# === MERGE 2026-09-20: Gerüst/Klempner/Landschaftsbau (Andreas' Vorbereitung) — additiv ===
+geruest:
+  GER-001:
+    kurztext: Fassadengerüst aufstellen
+    langtext: 'Standgerüst als Arbeits- und Schutzgerüst nach DIN EN 12810 und DIN 4420 aufstellen. Gerüstgruppe
+      {{gruppe}}, Lastklasse {{lastklasse}}, Breitenklasse W09. Standhöhe ca. {{hoehe_m}} m, Länge ca.
+      {{laenge_m}} m. Einschl. Auf- und Abstieg, Seitenschutz (Geländer, Knieleiste, Bordbrett), Verankerung
+      nach Standsicherheitsnachweis, Fußspindeln, Konsolen. Aufbau komplett mit Belag.
+
+      '
+    einheit: m2
+    gewerk: Gerüstarbeiten
+    din: DIN 18451
+    aufwandswert_key: geruest.fassadengeruest_aufstellen
+    tags:
+    - Gerüst
+    - Fassadengerüst
+    - Standgerüst
+    - aufstellen
+    - Arbeitsgerüst
+    - DIN 4420
+  GER-002:
+    kurztext: Fassadengerüst vorhalten
+    langtext: 'Standgerüst nach DIN EN 12810, Gerüstfläche ca. {{flaeche_m2}} m², vorhalten für die Dauer
+      von {{vorhaltung_wo}} Wochen. Vorhaltezeit beginnt mit Fertigstellung des Aufbaus. Einschl. aller
+      Prüfungen und Unterhaltung während der Standzeit.
+
+      '
+    einheit: m2/Monat
+    gewerk: Gerüstarbeiten
+    din: DIN 18451
+    aufwandswert_key: geruest.fassadengeruest_vorhalten
+    tags:
+    - Gerüst
+    - vorhalten
+    - Vorhaltung
+    - Miete
+    - Standzeit
+  GER-003:
+    kurztext: Fassadengerüst abbauen
+    langtext: 'Standgerüst nach DIN EN 12810 abbauen und abtransportieren. Gerüstfläche ca. {{flaeche_m2}}
+      m². Einschl. Demontage aller Verankerungen, Fußspindeln, Beläge und Seitenschutz. Abbau und Verladung
+      komplett.
+
+      '
+    einheit: m2
+    gewerk: Gerüstarbeiten
+    din: DIN 18451
+    aufwandswert_key: geruest.fassadengeruest_abbauen
+    tags:
+    - Gerüst
+    - abbauen
+    - Demontage
+    - Abbau
+  GER-004:
+    kurztext: Gerüst umsetzen
+    langtext: 'Bestehendes Standgerüst teilweise abbauen und an anderer Stelle des Gebäudes wieder aufstellen.
+      Umsetzlänge ca. {{laenge_m}} m. Einschl. Anpassung der Verankerungen an neue Position.
+
+      '
+    einheit: m2
+    gewerk: Gerüstarbeiten
+    din: DIN 18451
+    aufwandswert_key: geruest.geruest_umsetzen
+    tags:
+    - Gerüst
+    - umsetzen
+    - versetzen
+    - Umsetzung
+  GER-005:
+    kurztext: Schutzgerüst / Fanggerüst
+    langtext: 'Schutz- und Fanggerüst nach DIN 4420 als Dachfanggerüst oder Seitenschutz an Absturzkanten
+      aufstellen. Einschl. Netzschutz oder Planenschutz nach Anforderung. Höhe ca. {{hoehe_m}} m, Länge
+      ca. {{laenge_m}} m. Aufbau, Vorhaltung {{vorhaltung_wo}} Wochen und Abbau komplett.
+
+      '
+    einheit: m2
+    gewerk: Gerüstarbeiten
+    din: DIN 4420
+    aufwandswert_key: geruest.schutzgeruest
+    tags:
+    - Schutzgerüst
+    - Fanggerüst
+    - Absturzsicherung
+    - Dachfanggerüst
+    - Netz
+klempner:
+  KLE-001:
+    kurztext: Dachrinne halbrund montieren
+    langtext: 'Dachrinne halbrund aus {{material}}, Nenngröße {{nenngroesse}}, liefern und montieren.
+      Einschl. Rinnenhalter (Abstand max. 70 cm), Rinnenstutzen, Rinnenboden, Dehnungsausgleicher. Gefälle
+      zum Ablauf herstellen. Befestigung an Traufbohle/Sparren.
+
+      '
+    einheit: m
+    gewerk: Klempnerarbeiten
+    din: DIN 18339
+    aufwandswert_key: klempner.dachrinne_halbrund
+    tags:
+    - Dachrinne
+    - Rinne
+    - halbrund
+    - Regenrinne
+    - Traufe
+    - Zink
+    - Titanzink
+  KLE-002:
+    kurztext: Fallrohr rund montieren
+    langtext: 'Regenfallrohr rund aus {{material}}, DN {{dn}}, liefern und montieren. Einschl. Rohrschellen
+      (Abstand max. 2,0 m), Rohrbogen, Anschluss an Rinnenkessel oben und Grundleitung/Prallblech unten.
+
+      '
+    einheit: m
+    gewerk: Klempnerarbeiten
+    din: DIN 18339
+    aufwandswert_key: klempner.fallrohr_rund
+    tags:
+    - Fallrohr
+    - Regenrohr
+    - Regenfallrohr
+    - DN 87
+    - DN 100
+  KLE-003:
+    kurztext: Rinnenkessel / Wasserfangkasten
+    langtext: 'Rinnenkessel (Wasserfangkasten) aus {{material}} für Dachrinne Nenngröße {{nenngroesse}},
+      liefern und einbauen. Anschluss an Dachrinne und Fallrohr. Einschl. Laubfangsieb.
+
+      '
+    einheit: St
+    gewerk: Klempnerarbeiten
+    din: DIN 18339
+    aufwandswert_key: klempner.rinnenkessel
+    tags:
+    - Rinnenkessel
+    - Wasserfangkasten
+    - Ablauf
+    - Laubfang
+  KLE-004:
+    kurztext: Mauerabdeckung Titanzink/Alu
+    langtext: 'Mauerabdeckung aus {{material}}, Abwicklung ca. {{abwicklung_cm}} cm, liefern und montieren.
+      Befestigung mit Haften und Edelstahlschrauben. Überlappung der Schüsse mind. 5 cm. Einschl. Endstücke
+      und Eckenausbildung.
+
+      '
+    einheit: m
+    gewerk: Klempnerarbeiten
+    din: DIN 18339
+    aufwandswert_key: klempner.mauerabdeckung
+    tags:
+    - Mauerabdeckung
+    - Attikaabdeckung
+    - Abdeckblech
+    - Mauerkrone
+  KLE-005:
+    kurztext: Fensterbank außen Titanzink/Alu
+    langtext: 'Fensterbank (Sohlbank) außen aus {{material}}, Ausladung ca. {{ausladung_cm}} cm, liefern
+      und montieren. Einschl. seitliche Aufkantung (Aufbordung), Tropfkante, Anschluss an Putz/Dämmung.
+      Unterfütterung mit Mörtel/PU-Schaum.
+
+      '
+    einheit: m
+    gewerk: Klempnerarbeiten
+    din: DIN 18339
+    aufwandswert_key: klempner.fensterbank_aussen
+    tags:
+    - Fensterbank
+    - Sohlbank
+    - Fensterbrett
+    - außen
+    - Tropfkante
+  KLE-006:
+    kurztext: Blechverkleidung Ortgang/Traufe
+    langtext: 'Blechverkleidung aus {{material}} an Ortgang, Traufe oder Gesimskasten. Abwicklung ca.
+      {{abwicklung_cm}} cm. Liefern und montieren einschl. Unterkonstruktion aus Holzlattung, Befestigung
+      mit Edelstahlschrauben. Überlappung mind. 5 cm.
+
+      '
+    einheit: m
+    gewerk: Klempnerarbeiten
+    din: DIN 18339
+    aufwandswert_key: klempner.blechverkleidung
+    tags:
+    - Blechverkleidung
+    - Ortgang
+    - Traufe
+    - Gesimskasten
+    - Untersicht
+    - Verkleidung
+landschaftsbau:
+  LAN-001:
+    kurztext: Mutterboden liefern und verteilen
+    langtext: 'Mutterboden (Oberboden) nach DIN 18915, Güte nach DIN 19731, liefern und verteilen. Schichtdicke
+      ca. {{dicke_cm}} cm. Fläche ca. {{flaeche_m2}} m². Einschl. Feinplanum und Abharken. Bei Bedarf
+      Einarbeitung von Bodenverbesserungsmittel.
+
+      '
+    einheit: m3
+    gewerk: Landschaftsbauarbeiten
+    din: DIN 18915
+    aufwandswert_key: landschaftsbau.mutterboden_verteilen
+    tags:
+    - Mutterboden
+    - Oberboden
+    - verteilen
+    - liefern
+    - Gartenerde
+    - Planum
+  LAN-002:
+    kurztext: Rasen ansäen
+    langtext: 'Rasenansaat nach DIN 18917. Regelaatgutmischung RSM {{rsm_typ}}. Fläche vorbereiten (Feinplanum,
+      walzen), einsäen mit ca. {{menge_g}} g/m², einrechen und anwalzen. Einschl. Erstbewässerung.
+
+      '
+    einheit: m2
+    gewerk: Landschaftsbauarbeiten
+    din: DIN 18917
+    aufwandswert_key: landschaftsbau.rasen_ansaeen
+    tags:
+    - Rasen
+    - Rasensaat
+    - ansäen
+    - einsäen
+    - RSM
+    - Gras
+  LAN-003:
+    kurztext: Rollrasen verlegen
+    langtext: 'Fertigrasen (Rollrasen) liefern und verlegen nach DIN 18917. Fläche vorbereiten (Feinplanum),
+      Rollen fugenversetzt verlegen, anwalzen und wässern. Einschl. Startdüngung. Fläche ca. {{flaeche_m2}}
+      m².
+
+      '
+    einheit: m2
+    gewerk: Landschaftsbauarbeiten
+    din: DIN 18917
+    aufwandswert_key: landschaftsbau.rollrasen_verlegen
+    tags:
+    - Rollrasen
+    - Fertigrasen
+    - verlegen
+    - Rasen
+  LAN-004:
+    kurztext: Pflanzung Heckenpflanzen
+    langtext: 'Heckenpflanzen {{art}} liefern und pflanzen. Pflanzgröße {{hoehe_cm}} cm. Pflanzabstand
+      ca. {{abstand_cm}} cm. Einschl. Pflanzloch ausheben, Pflanzschnitt, Angießen, Anwachspflege für
+      die Dauer von {{pflege_wo}} Wochen.
+
+      '
+    einheit: St
+    gewerk: Landschaftsbauarbeiten
+    din: DIN 18916
+    aufwandswert_key: landschaftsbau.heckenpflanzung
+    tags:
+    - Hecke
+    - Heckenpflanzung
+    - Pflanzung
+    - Thuja
+    - Kirschlorbeer
+    - Liguster
+    - Buche
+  LAN-005:
+    kurztext: Baumpflanzung Hochstamm
+    langtext: 'Laubbaum als Hochstamm, {{art}}, Stammumfang {{stammumfang_cm}} cm, liefern und fachgerecht
+      pflanzen. Einschl. Pflanzgrube 1,0×1,0×0,8 m ausheben, Bodenaustausch mit Pflanzerde, Dreibockverankerung,
+      Stammschutz, Bewässerungsring, Angießen (100 l). Anwachspflege {{pflege_wo}} Wochen.
+
+      '
+    einheit: St
+    gewerk: Landschaftsbauarbeiten
+    din: DIN 18916
+    aufwandswert_key: landschaftsbau.baumpflanzung_hochstamm
+    tags:
+    - Baum
+    - Hochstamm
+    - Baumpflanzung
+    - Pflanzung
+    - Laubbaum
+    - Obstbaum
