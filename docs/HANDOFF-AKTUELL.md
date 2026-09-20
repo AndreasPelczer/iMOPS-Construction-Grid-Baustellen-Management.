@@ -2,6 +2,20 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 20.09.2026 — Geräte-Import + Goldschmitts ECHTER Katalog (aus Raphis Mail geborgen)
+
+**Branch `feature/geraete-katalog-import` (lokal, NICHT gepusht).** Baut auf `feature/preise-in-einstellungen`.
+
+**Der Fund:** Goldschmitts kompletter Kalkulations-Katalog lag als saubere PDFs in Raphis Mail „Listen und Preise RDLCT 20.09." (nicht die schlechten BauSu-Fotos). Lokal entpackt + per `pdftotext -layout` + Parser extrahiert → `~/Desktop/Lieferanten-Preise/Goldschmitt-Katalog/` (Preise bleiben LOKAL, NIE ins Repo): `Goldschmitt-Preise-komplett.csv` = **2.271 Import-Zeilen** (1.026 `leistung` B-Elemente · 1.144 `material` A-Elemente + Entsorgung · 101 `geraet` Std-Maschinen). ZG-Aufschlag-Legende dokumentiert. Details: Memory `goldschmitt-katalog-ab-elemente`. Andreas hat Raphi die Import-CSV + Klick-Anleitung gemailt.
+
+**Geräte-Import GEBAUT (Tests grün, `TEST SUCCEEDED`):**
+- **Modell:** `Geraet` neues Attribut **`stundensatz: Double`** (optional, Default 0 → leichte Migration, automatisch aktiv). `Geraet+CoreDataProperties.kostenProStunde`: wenn `stundensatz > 0` gilt DER (Miete/Fremdgerät), sonst Abschreibung Anschaffung÷Nutzungsdauer.
+- **Importer:** `StammdatenPreisImportService` kennt jetzt Zeilen-Typ **`geraet`** (`geraet;name;Std;satz;quelle` → find-or-create `Geraet`, setzt `stundensatz`, idempotent). Bericht um `neuGeraet`/`aktualisiertGeraet`/`unveraendertGeraet` erweitert (Ankunfts-Bericht zeigt „(Gerät)").
+- **UI:** `StammdatenPflegeView` GeraetListe zeigt `kostenProStunde €/h`; GeraetEditSheet hat Feld „Fester Stundensatz (Miete/Fremdgerät)".
+- **Tests:** `StammdatenPreisImportTests` +2 (`importLegtGeraetMitStundensatzAn`, `geraetReimportAendertNichtUndVerdoppeltNicht`) → 6/6 grün.
+- Backups in `_backups/20260920_155730/`.
+- **🔴 OFFEN:** kein Push (Andreas' OK abwarten). Raphi importiert die komplett-CSV + schickt Sibiadji-Zeichnung → geplanter End-to-End-Durchlauf (Zeichnung→Mengen→LV→Kalk mit seinen Preisen→Angebot) als echte Demo. Stadtvergleich-Foto = Nachtschicht-Backlog. `docs/material-stammliste.csv` (untracked, leere Vorlage) sollte lokal/gitignored bleiben.
+
 ## Delta 19.09.2026 (Abend) — Goldschmitt-Katalog · Xcode-27-Fix · Firma-Preis-Katalog (Schritt 2)
 
 **Feldforschung mit echten Goldschmitt-Angeboten (Andreas' Originale):**
