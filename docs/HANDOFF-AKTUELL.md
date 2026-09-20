@@ -2,6 +2,29 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 21.09.2026 (00:10) — BESTÄTIGT AN ECHTEN DATEN: die Rundreise schließt
+
+Andreas hat die vier Schritte gemacht (neu gebaut 00:04, LV geleert, `Setiadji-Baustelle.x84`
+importiert). Ergebnis in der App: **263.304,97 € Angebotssumme**, jede Position grün mit
+„EP (Angebot)" — die beiden Einheiten-Funde stehen sichtbar drin (Randschalung 115,56 €/m²,
+Betonstahlmatten 2,35 €/kg).
+
+**Rundreise-Probe** (der Nachweis, der gestern fehlte): dieselbe Baustelle wieder als X84
+exportiert (`mops-BV-Setiadji-Artanti-Retzbach-X84`, 00:09) und gegengerechnet —
+109 Items, 109 `<UP>`, DP 84, Summe **263.304,97 €**. Rein und raus identisch, keine
+Position ohne Preis. Der Weg Datei → Angebotsspeicher → LV → Export ist damit an echten
+Daten dicht.
+
+Zum Vergleich der Stand davor (Mischbestand aus zwei Importen, PDF von 00:06):
+162 Positionen, 92 ohne Preis, 169.876,69 € — die vier Stützwinkel-Positionen standen leer.
+
+**🔴 Offen:** das Angebots-PDF neu exportieren (das von 00:06 hat noch die alten Zahlen).
+Dabei fällt die **Titelfolge** auf: Titel 01 heißt „Baukonstruktionen" und mischt Innenwände
+(341/342) mit Bauzaun, Bau-WC und Gerüst (391/392), danach erst Baugrube. Raphis Angebote
+laufen nach Bauablauf — Baustelleneinrichtung, Erdbau, dann aufgehend. Kosmetik, aber einem
+Bauleiter fällt es sofort auf. Ebenfalls offen: Filigranplatten-Lieferpreis (~1.900 € Lücke)
+und Stützwinkel H 2050 (5.600 €, extrapoliert, rosa ⚠) beim Fertigteilwerk anfragen.
+
 ## Delta 21.09.2026 (00:xx) — Der Import meldete „fertig" und hatte nichts geliefert
 
 **Branch `feature/gelaende-dxf-aushub`, weiter lokal, NICHT gepusht.**
