@@ -397,6 +397,8 @@ struct EventDetailView: View {
 
                 kartenGruppe("Leistungsverzeichnis und Kalkulation", systemImage: "list.bullet.rectangle.portrait", isExpanded: $gruppeLV) {
                     lvCard
+                    PreisCheckCard(positionen: (event.lvPositionen?.allObjects as? [LVPosition] ?? [])
+                        .filter { !LVPositionHelper.isAlternative($0) })
                     normenSpurCard
                 }
 
