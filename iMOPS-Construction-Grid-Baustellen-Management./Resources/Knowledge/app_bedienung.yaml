@@ -880,6 +880,31 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Terminplan_Zeit"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Terminplan"
+    - "Zeit im Canvas"
+    - "wann ist was fertig"
+    - "Bauablauf Zeit"
+    - "Dauer je Auftrag"
+    - "Härtezeit Trocknungszeit"
+  antwort: |
+    In der Baustelle unter "Aufträge für Arbeit" gibt es die Karte "Terminplan".
+    Sie rechnet aus dem Abhängigkeitsgraph (welcher Auftrag auf welchen wartet) die
+    frühesten Start-/Endtage — als Tage-Balken je Auftrag, relativ zum Baustellenstart.
+    - Dauer je Auftrag setzt man direkt mit dem Stepper (Tage).
+    - Wartezeit, in der NIEMAND arbeitet (Beton härten, Estrich trocknen), gehört an
+      die VERBINDUNG zwischen zwei Aufträgen (Übergangszeit) — die wird mitgerechnet,
+      sobald sie gesetzt ist.
+    - Eine Ringabhängigkeit (A wartet auf B wartet auf A) wird ehrlich gemeldet statt
+      still falsch gerechnet.
+    Ein Termin ist eine Schätzung mit Herkunft, kein Vertrag — Wetter/Lieferung
+    verschieben, der Mensch bestätigt.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_LV_Gruppen_Bearbeiten"
   kategorie: "app-bedienung"
   app_version_min: "1.0"

@@ -429,6 +429,7 @@ struct EventDetailView: View {
                     brigadeCard
                     maschinenCard
                     ablaufplanCard
+                    TerminplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     lehrlingWarmupCard
                     jobsCard
                         .sheet(isPresented: $showingWarmup) {
