@@ -1,0 +1,338 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Was muss deine Stunde kosten?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --ground:#edeae4;--paper:#faf8f4;--paper2:#f2efe8;--ink:#181613;--muted:#6a655d;
+    --faint:#948f86;--line:#ddd8ce;--line2:#c9c3b6;--accent:#d1620f;--accent-soft:#f7e5d5;
+    --netto:#2f7d46;--netto-soft:#e2f0e6;--betrieb:#7c6a52;--betrieb-soft:#ece4d8;
+    --gold:#b07d16;--gold-soft:#f6ecd6;--rot:#b23b2e;
+    --shadow:0 1px 2px rgba(24,22,19,.05),0 10px 30px rgba(24,22,19,.07);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#100f0d;--paper:#1a1815;--paper2:#221f1b;--ink:#f0ece5;--muted:#a29c92;
+    --faint:#6f6a60;--line:#2e2a24;--line2:#3c372f;--accent:#f0862e;--accent-soft:#3a2413;
+    --netto:#5cbd7c;--netto-soft:#16281d;--betrieb:#b3a488;--betrieb-soft:#262019;
+    --gold:#e0aa4c;--gold-soft:#2c2416;--rot:#e8695a;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.4);
+  }}
+  :root[data-theme="dark"]{
+    --ground:#100f0d;--paper:#1a1815;--paper2:#221f1b;--ink:#f0ece5;--muted:#a29c92;
+    --faint:#6f6a60;--line:#2e2a24;--line2:#3c372f;--accent:#f0862e;--accent-soft:#3a2413;
+    --netto:#5cbd7c;--netto-soft:#16281d;--betrieb:#b3a488;--betrieb-soft:#262019;
+    --gold:#e0aa4c;--gold-soft:#2c2416;--rot:#e8695a;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);margin:0;
+       font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  h1,h2,h3,.big,.ey,.lbl,.snum{font-family:"Archivo","IBM Plex Sans",sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:0 18px 72px}
+  header{padding:46px 0 22px}
+  .ey{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(30px,6vw,50px);font-weight:900;line-height:1.02;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+  .lede{font-size:17px;color:var(--muted);max-width:60ch;margin:0}
+  .lede b{color:var(--ink);font-weight:600}
+  .fall{font-size:12px;font-weight:700;color:var(--gold);background:var(--gold-soft);
+        display:inline-block;padding:4px 10px;border-radius:20px;margin-top:16px}
+
+  section{margin-top:38px}
+  .snum{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.05em}
+  h2{font-size:23px;font-weight:800;letter-spacing:-.015em;margin:3px 0 4px}
+  .intro{color:var(--muted);max-width:64ch;margin:0 0 18px;font-size:15px}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:22px}
+  .card + .card{margin-top:16px}
+
+  /* Regler */
+  .ctrl{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .ctrl:last-child{border-bottom:0}
+  .ctrl .lbl{font-weight:600;font-size:14.5px}
+  .ctrl .hint{grid-column:1;font-size:12.5px;color:var(--faint);margin-top:-2px}
+  .ctrl .val{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-weight:600;font-size:15px;color:var(--accent);white-space:nowrap}
+  .ctrl input[type=range]{grid-column:1/3;width:100%;accent-color:var(--accent);margin:2px 0 0;height:22px}
+
+  /* Hero-Stundensatz */
+  .hero{margin-top:18px;text-align:center;padding:26px 18px;border-radius:18px;
+        background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+  .hero .big{font-size:clamp(46px,13vw,84px);font-weight:900;line-height:.95;color:var(--accent);letter-spacing:-.03em}
+  .hero .cap{font-size:14px;color:var(--muted);margin-top:8px;max-width:46ch;margin-left:auto;margin-right:auto}
+  .hero .cap b{color:var(--ink)}
+
+  /* Aufteilungs-Balken */
+  .bar{display:flex;height:44px;border-radius:10px;overflow:hidden;margin:18px 0 16px;border:1px solid var(--line2)}
+  .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;
+       min-width:0;overflow:hidden;white-space:nowrap;transition:flex-grow .25s ease}
+  .seg.netto{background:var(--netto)}
+  .seg.betrieb{background:var(--betrieb)}
+  .seg.steuer{background:var(--gold)}
+  .rows{display:flex;flex-direction:column}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .dot{width:12px;height:12px;border-radius:3px;flex:none}
+  .row .nm{font-weight:600}
+  .row .sub{font-size:12.5px;color:var(--muted)}
+  .row .amt{margin-left:auto;font-weight:700;font-size:15px;white-space:nowrap}
+  .row .pct{font-size:12px;color:var(--faint);min-width:44px;text-align:right}
+
+  .zoom{margin-top:14px;background:var(--paper2);border:1px dashed var(--line2);border-radius:14px;padding:16px 18px;
+        font-size:14px;color:var(--muted)}
+  .zoom b{color:var(--ink)}
+  .zoom .big2{font-family:"Archivo";font-weight:800;color:var(--ink);font-size:17px}
+
+  /* Projekt/Pflege Ergebnis */
+  .out{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:14px;
+       padding-top:14px;border-top:2px solid var(--ink)}
+  .out .t{font-family:"Archivo";font-weight:800;font-size:15px}
+  .out .v{font-family:"Archivo";font-weight:900;font-size:26px;color:var(--accent)}
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .preset{font:600 12.5px/1 "IBM Plex Sans";color:var(--ink);background:var(--paper2);
+          border:1px solid var(--line2);border-radius:20px;padding:8px 13px;cursor:pointer}
+  .preset:hover{border-color:var(--accent);color:var(--accent)}
+  .preset:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .cardhead{font-family:"Archivo";font-weight:800;font-size:15px;margin:0 0 2px}
+  .cardsub{font-size:12.5px;color:var(--muted);margin:0 0 6px}
+
+  .note{margin-top:14px;padding:14px 16px;border-radius:12px;background:var(--paper);
+        border:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+  .note b{color:var(--ink)}
+  .note + .note{margin-top:10px}
+  .annahmen{margin-top:24px;font-size:12.5px;color:var(--faint);border-top:1px solid var(--line);padding-top:16px}
+  .annahmen b{color:var(--muted)}
+  footer{margin-top:32px;color:var(--faint);font-size:12.5px}
+  @media (max-width:520px){ .seg{font-size:0} }
+  @media (prefers-reduced-motion:reduce){ .seg{transition:none} }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="ey">B.I.N.D.A. · Freiberuf-Kalkulation</p>
+    <h1>Was muss deine Stunde kosten?</h1>
+    <p class="lede">Mops bauen, Webseiten pflegen, Funk und Glanzgarage betreuen — das ist Arbeit, und die hat einen Preis. Aber genau wie beim Chef auf dem Bau gilt: <b>der Satz ist kein Gewinn.</b> Dreh deine echten Zahlen rein — der Rechner sagt dir, was deine Stunde kosten <i>muss</i>, damit unten für dich was bleibt.</p>
+    <span class="fall">Alle Startwerte sind Beispiele — zieh sie auf deine echten.</span>
+  </header>
+
+  <!-- 01 Stundensatz -->
+  <section>
+    <div class="snum">01</div>
+    <h2>Dein ehrlicher Stundensatz</h2>
+    <p class="intro">Nicht „was trau ich mich zu verlangen", sondern: was <i>muss</i> die abgerechnete Stunde bringen, damit dein Ziel-Netto, dein Betrieb und das Finanzamt gedeckt sind.</p>
+    <div class="card">
+      <div class="ctrl">
+        <span class="lbl">Ziel: was soll netto für dich übrig bleiben?</span>
+        <span class="val" id="v_ziel">1.200 €/Mon</span>
+        <span class="hint">Dein „Unternehmerlohn" aus der Freiberuflichkeit — pro Monat, nach Steuer.</span>
+        <input type="range" id="zielNetto" min="300" max="4000" step="50" value="1200">
+      </div>
+      <div class="ctrl">
+        <span class="lbl">Stunden pro Woche fürs Business</span>
+        <span class="val" id="v_std">15 h</span>
+        <span class="hint">Alles am PC: bauen, pflegen, Kunden, Angebote, lernen.</span>
+        <input type="range" id="stdWoche" min="3" max="45" step="1" value="15">
+      </div>
+      <div class="ctrl">
+        <span class="lbl">…davon wirklich abrechenbar</span>
+        <span class="val" id="v_abr">55 %</span>
+        <span class="hint">Der Rest (Akquise, Angebote schreiben, Lernen, Verwaltung) ist unbezahlt — muss aber im Satz mitverdient werden.</span>
+        <input type="range" id="abrechenbar" min="30" max="90" step="5" value="55">
+      </div>
+      <div class="ctrl">
+        <span class="lbl">Arbeitswochen im Jahr</span>
+        <span class="val" id="v_wo">45 Wo</span>
+        <span class="hint">52 minus Urlaub, Feiertage, Krankheit.</span>
+        <input type="range" id="wochen" min="30" max="48" step="1" value="45">
+      </div>
+      <div class="ctrl">
+        <span class="lbl">Betriebskosten pro Monat</span>
+        <span class="val" id="v_betr">150 €/Mon</span>
+        <span class="hint">Software-Abos (Claude, Adobe…), Hosting &amp; Domains, Hardware/Heimlab, Versicherung.</span>
+        <input type="range" id="betriebMonat" min="0" max="600" step="10" value="150">
+      </div>
+      <div class="ctrl">
+        <span class="lbl">Steuern &amp; Abgaben</span>
+        <span class="val" id="v_st">35 %</span>
+        <span class="hint">Einkommensteuer grob auf den Gewinn (Größenordnung).</span>
+        <input type="range" id="steuer" min="20" max="45" step="1" value="35">
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="big mono" id="h_satz">— €</div>
+      <div class="cap">so viel muss deine <b>abgerechnete Stunde</b> kosten. Runde in der Praxis auf <b id="h_rund">—</b>. Netto bleiben dir davon <b id="h_netto">—</b>/h.</div>
+    </div>
+
+    <div class="bar" role="img" aria-label="Aufteilung einer abgerechneten Stunde" id="bar">
+      <div class="seg netto"   id="seg_netto"></div>
+      <div class="seg betrieb" id="seg_betrieb"></div>
+      <div class="seg steuer"  id="seg_steuer"></div>
+    </div>
+    <div class="card">
+      <div class="rows">
+        <div class="row">
+          <span class="dot" style="background:var(--netto)"></span>
+          <div><div class="nm">Bleibt dir netto</div><div class="sub">dein Unternehmerlohn, nach Steuer</div></div>
+          <span class="amt mono" id="a_netto">—</span><span class="pct mono" id="p_netto">—</span>
+        </div>
+        <div class="row">
+          <span class="dot" style="background:var(--betrieb)"></span>
+          <div><div class="nm">Betrieb trägt sich</div><div class="sub">Abos, Hosting, Hardware, Versicherung — auf die Stunde umgelegt</div></div>
+          <span class="amt mono" id="a_betrieb">—</span><span class="pct mono" id="p_betrieb">—</span>
+        </div>
+        <div class="row">
+          <span class="dot" style="background:var(--gold)"></span>
+          <div><div class="nm">Finanzamt</div><div class="sub">Steuer auf den Gewinn</div></div>
+          <span class="amt mono" id="a_steuer">—</span><span class="pct mono" id="p_steuer">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="zoom">
+      Für jede <b>bezahlte</b> Stunde arbeitest du rund <span class="big2" id="z_unbez">—</span> unbezahlt — Akquise, Angebote, Lernen. Das ist keine verlorene Zeit: sie steckt <b>im Satz</b>. Deshalb kostet die Stunde mehr, als „nur deine Zeit" wert scheint.
+    </div>
+  </section>
+
+  <!-- 02 Projekt & Pflege -->
+  <section>
+    <div class="snum">02</div>
+    <h2>Vom Satz zum Angebot</h2>
+    <p class="intro">Zwei Wege, Geld zu verdienen: das einmalige <b>Projekt</b> (Stunden × Satz) und die wiederkehrende <b>Pflege</b> (planbarer Sockel, Monat für Monat).</p>
+
+    <div class="card">
+      <p class="cardhead">Projekt-Rechner</p>
+      <p class="cardsub">Geschätzte Stunden × dein Stundensatz = fairer Angebotspreis (netto).</p>
+      <div class="ctrl">
+        <span class="lbl">Geschätzter Aufwand</span>
+        <span class="val" id="v_proj">24 h</span>
+        <input type="range" id="projStunden" min="2" max="120" step="1" value="24">
+      </div>
+      <div class="presets" id="presets">
+        <button class="preset" type="button" data-h="10">Onepager / Landing · ~10 h</button>
+        <button class="preset" type="button" data-h="24">Kleine Website · ~24 h</button>
+        <button class="preset" type="button" data-h="45">Relaunch · ~45 h</button>
+        <button class="preset" type="button" data-h="16">Aufräum-Job (Funk Phase 1) · ~16 h</button>
+      </div>
+      <div class="out"><span class="t">Angebotspreis (netto)</span><span class="v mono" id="o_proj">— €</span></div>
+    </div>
+
+    <div class="card">
+      <p class="cardhead">Pflege-Sockel</p>
+      <p class="cardsub">Wiederkehrende Betreuung ist Gold: planbares Geld, ohne jedes Mal neu zu verkaufen.</p>
+      <div class="ctrl">
+        <span class="lbl">Pflege pro Kunde &amp; Monat</span>
+        <span class="val" id="v_pfM">90 €</span>
+        <input type="range" id="pflegeMonat" min="0" max="300" step="10" value="90">
+      </div>
+      <div class="ctrl">
+        <span class="lbl">Anzahl Pflege-Kunden</span>
+        <span class="val" id="v_pfK">3</span>
+        <span class="hint">z. B. Glanzgarage, Funk, Ronny …</span>
+        <input type="range" id="pflegeKunden" min="0" max="15" step="1" value="3">
+      </div>
+      <div class="out"><span class="t">Planbarer Sockel</span><span class="v mono" id="o_pf">— €/Mon</span></div>
+      <div class="zoom" style="margin-top:14px">Dieser Sockel deckt schon <b id="z_deckung">—</b> deiner Betriebskosten — <b>bevor</b> du das erste Projekt verkaufst. Fünf solche Kunden, und dein Betrieb trägt sich von allein.</div>
+    </div>
+  </section>
+
+  <!-- 03 Notizen -->
+  <section>
+    <div class="snum">03</div>
+    <h2>Warum das kein Wucher ist</h2>
+    <div class="note"><b>Dein Verrechnungssatz ist kein Stundenlohn.</b> Wie beim Chef auf dem Bau hängt zwischen „kostet" und „bleibt was übrig" ein ganzer Betrieb: Abos, Hardware, unbezahlte Zeit, Steuer. Der Teil, der wirklich dir bleibt, ist der dünnste.</p></div>
+    <div class="note"><b>Unbezahlte Zeit ist echte Arbeit.</b> Angebote schreiben, dazulernen, Kunden betreuen — das steckt <i>im Satz</i>, nicht obendrauf. Rechnest du nur die „reine Bauzeit", zahlst du drauf. Genau der Fehler, vor dem der Mops den Horst bewahrt.</p></div>
+    <div class="note"><b>Pflege schlägt Projekte.</b> Ein einmaliges Website-Projekt ist ein Sprint; ein Pflege-Abo ist ein Sockel, der jeden Monat trägt. Kleine feste Beträge über viele Kunden geben dir das, was Einzelaufträge nie geben: Planbarkeit.</p></div>
+    <div class="annahmen"><b>Annahmen (Größenordnung, nicht in Stein):</b> Nötiger Umsatz = Ziel-Netto ÷ (1 − Steuersatz) + Betriebskosten. Stundensatz = Umsatz ÷ abrechenbare Stunden im Jahr. Steuer als grobe Quote auf den Gewinn, nicht die exakte Progression. Preise netto (ohne USt / Kleinunternehmer). <b>Deine echten Zahlen kennst nur du</b> — dreh die Regler, dann wird aus der Schätzung deine Wahrheit.</div>
+  </section>
+
+  <footer>B.I.N.D.A. · dein Satz ist kein Gewinn — er trägt einen Betrieb.</footer>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  function eur(n){return Math.round(n).toLocaleString('de-DE')+' €';}
+  function eur1(n){return (Math.round(n*10)/10).toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:1})+' €';}
+  var KEY='binda_satz_v1';
+  var ids=['zielNetto','stdWoche','abrechenbar','wochen','betriebMonat','steuer','projStunden','pflegeMonat','pflegeKunden'];
+
+  function load(){
+    try{var s=JSON.parse(localStorage.getItem(KEY)||'{}');
+      ids.forEach(function(k){ if(s[k]!=null && $(k)) $(k).value=s[k]; });}catch(e){}
+  }
+  function save(){
+    try{var s={};ids.forEach(function(k){s[k]=$(k).value;});localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}
+  }
+
+  function update(){
+    var zielM=+$('zielNetto').value, stdW=+$('stdWoche').value, abr=+$('abrechenbar').value/100,
+        wo=+$('wochen').value, betrM=+$('betriebMonat').value, st=+$('steuer').value/100;
+
+    // Regler-Beschriftungen
+    $('v_ziel').textContent=zielM.toLocaleString('de-DE')+' €/Mon';
+    $('v_std').textContent=stdW+' h';
+    $('v_abr').textContent=Math.round(abr*100)+' %';
+    $('v_wo').textContent=wo+' Wo';
+    $('v_betr').textContent=betrM.toLocaleString('de-DE')+' €/Mon';
+    $('v_st').textContent=Math.round(st*100)+' %';
+
+    var abrStd=stdW*abr*wo;              // abrechenbare Std/Jahr
+    var zielJ=zielM*12, betrJ=betrM*12;
+    var gewinnVorSt=zielJ/(1-st);
+    var umsatz=gewinnVorSt+betrJ;
+    var satz=abrStd>0?umsatz/abrStd:0;
+
+    var betrH=abrStd>0?betrJ/abrStd:0;
+    var steuerH=abrStd>0?(gewinnVorSt*st)/abrStd:0;
+    var nettoH=satz-betrH-steuerH;
+
+    $('h_satz').textContent=eur(satz)+'/h';
+    $('h_rund').textContent=eur(Math.round(satz/5)*5)+'/h';
+    $('h_netto').textContent=eur1(nettoH);
+
+    // Balken
+    var tot=satz>0?satz:1;
+    $('seg_netto').style.flexGrow=Math.max(0,nettoH).toFixed(2);
+    $('seg_betrieb').style.flexGrow=Math.max(0,betrH).toFixed(2);
+    $('seg_steuer').style.flexGrow=Math.max(0,steuerH).toFixed(2);
+    $('seg_netto').textContent='Netto';
+    $('seg_betrieb').textContent='Betrieb';
+    $('seg_steuer').textContent='Steuer';
+
+    $('a_netto').textContent=eur1(nettoH)+'/h'; $('p_netto').textContent=Math.round(nettoH/tot*100)+' %';
+    $('a_betrieb').textContent=eur1(betrH)+'/h'; $('p_betrieb').textContent=Math.round(betrH/tot*100)+' %';
+    $('a_steuer').textContent=eur1(steuerH)+'/h'; $('p_steuer').textContent=Math.round(steuerH/tot*100)+' %';
+
+    var unbez=abr>0?(1-abr)/abr:0;
+    $('z_unbez').textContent=(Math.round(unbez*10)/10).toLocaleString('de-DE')+' h';
+
+    // Projekt
+    var pj=+$('projStunden').value;
+    $('v_proj').textContent=pj+' h';
+    $('o_proj').textContent=eur(pj*satz);
+
+    // Pflege
+    var pfM=+$('pflegeMonat').value, pfK=+$('pflegeKunden').value;
+    $('v_pfM').textContent=pfM.toLocaleString('de-DE')+' €';
+    $('v_pfK').textContent=pfK;
+    var sockel=pfM*pfK;
+    $('o_pf').textContent=eur(sockel)+'/Mon';
+    var deck=betrJ>0?(sockel*12)/betrJ:0;
+    $('z_deckung').textContent=Math.round(deck*100)+' %';
+
+    save();
+  }
+
+  load();
+  ids.forEach(function(k){ $(k).addEventListener('input',update); });
+  document.getElementById('presets').addEventListener('click',function(e){
+    var b=e.target.closest('.preset'); if(!b)return;
+    $('projStunden').value=b.getAttribute('data-h'); update();
+  });
+  update();
+})();
+</script>
+
+</body></html>

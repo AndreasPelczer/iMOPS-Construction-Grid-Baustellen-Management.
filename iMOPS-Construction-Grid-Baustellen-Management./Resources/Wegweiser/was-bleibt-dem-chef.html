@@ -1,0 +1,189 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Was bleibt dem Chef?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --ground:#edeae4;--paper:#faf8f4;--paper2:#f2efe8;--ink:#181613;--muted:#6a655d;
+    --faint:#948f86;--line:#ddd8ce;--line2:#c9c3b6;--accent:#d1620f;--accent-soft:#f7e5d5;
+    --arbeit:#2f7d46;--arbeit-soft:#e2f0e6;--gk:#7c6a52;--gk-soft:#ece4d8;
+    --gold:#b07d16;--gold-soft:#f6ecd6;--rot:#b23b2e;
+    --shadow:0 1px 2px rgba(24,22,19,.05),0 10px 30px rgba(24,22,19,.07);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#100f0d;--paper:#1a1815;--paper2:#221f1b;--ink:#f0ece5;--muted:#a29c92;
+    --faint:#6f6a60;--line:#2e2a24;--line2:#3c372f;--accent:#f0862e;--accent-soft:#3a2413;
+    --arbeit:#5cbd7c;--arbeit-soft:#16281d;--gk:#b3a488;--gk-soft:#262019;
+    --gold:#e0aa4c;--gold-soft:#2c2416;--rot:#e8695a;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.4);
+  }}
+  :root[data-theme="dark"]{
+    --ground:#100f0d;--paper:#1a1815;--paper2:#221f1b;--ink:#f0ece5;--muted:#a29c92;
+    --faint:#6f6a60;--line:#2e2a24;--line2:#3c372f;--accent:#f0862e;--accent-soft:#3a2413;
+    --arbeit:#5cbd7c;--arbeit-soft:#16281d;--gk:#b3a488;--gk-soft:#262019;
+    --gold:#e0aa4c;--gold-soft:#2c2416;--rot:#e8695a;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);margin:0;
+       font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  h1,h2,h3,.big,.ey,.lbl{font-family:"Archivo","IBM Plex Sans",sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:0 18px 72px}
+  header{padding:48px 0 26px}
+  .ey{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(30px,6vw,52px);font-weight:900;line-height:1;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+  .lede{font-size:17px;color:var(--muted);max-width:60ch;margin:0}
+  .lede b{color:var(--ink);font-weight:600}
+  .fall{font-size:12px;font-weight:700;color:var(--gold);background:var(--gold-soft);
+        display:inline-block;padding:4px 10px;border-radius:20px;margin-top:16px}
+
+  section{margin-top:40px}
+  .snum{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.05em}
+  h2{font-size:23px;font-weight:800;letter-spacing:-.015em;margin:3px 0 4px}
+  .intro{color:var(--muted);max-width:64ch;margin:0 0 20px;font-size:15px}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:22px}
+
+  /* Wasserfall-Balken */
+  .bar{display:flex;height:46px;border-radius:10px;overflow:hidden;margin:4px 0 18px;border:1px solid var(--line2)}
+  .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;
+       min-width:0;overflow:hidden;white-space:nowrap}
+  .seg.arbeit{background:var(--arbeit)}
+  .seg.bgk{background:var(--gk)}
+  .seg.agk{background:#9a8a6e}
+  .seg.wg{background:var(--gold)}
+  .seg.sk{background:var(--line2);color:var(--ink)}
+
+  .rows{display:flex;flex-direction:column}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .dot{width:12px;height:12px;border-radius:3px;flex:none}
+  .row .nm{font-weight:600}
+  .row .sub{font-size:12.5px;color:var(--muted)}
+  .row .amt{margin-left:auto;font-weight:700;font-size:15px;white-space:nowrap}
+  .row .pct{font-size:12px;color:var(--faint);min-width:44px;text-align:right}
+
+  /* „bleibt dem Chef" Fokus */
+  .zoom{margin-top:14px;background:var(--paper2);border:1px dashed var(--line2);border-radius:16px;padding:20px}
+  .step{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .step:last-of-type{border-bottom:0}
+  .step .t{font-size:14.5px}
+  .step .t small{color:var(--muted);font-size:12.5px}
+  .step .v{margin-left:auto;font-weight:700;white-space:nowrap}
+  .step.minus .v{color:var(--rot)}
+  .step.result{border-top:2px solid var(--ink);border-bottom:0;margin-top:6px;padding-top:14px}
+  .step.result .t{font-weight:800;font-family:"Archivo"}
+  .step.result .v{font-size:20px;font-family:"Archivo"}
+
+  .hero{margin-top:22px;text-align:center;padding:26px 18px;border-radius:18px;
+        background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+  .hero .big{font-size:clamp(44px,12vw,80px);font-weight:900;line-height:.95;color:var(--accent);letter-spacing:-.03em}
+  .hero .cap{font-size:14px;color:var(--muted);margin-top:6px}
+  .hero .cap b{color:var(--ink)}
+
+  .note{margin-top:18px;padding:14px 16px;border-radius:12px;background:var(--paper);
+        border:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+  .note b{color:var(--ink)}
+  .note + .note{margin-top:10px}
+
+  .annahmen{margin-top:26px;font-size:12.5px;color:var(--faint);border-top:1px solid var(--line);padding-top:16px}
+  .annahmen b{color:var(--muted)}
+  footer{margin-top:34px;color:var(--faint);font-size:12.5px}
+  @media (max-width:520px){ .seg{font-size:0} .seg.arbeit::after{content:"73%";font-size:11px} }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="ey">Hofeinfahrt · 100,31 m² · Angebot 9.570 € netto</p>
+    <h1>Was bleibt dem Chef?</h1>
+    <p class="lede">Ein Auftrag über <b>9.570 €</b> klingt nach viel. Aber der Preis ist kein Gewinn — er deckt einen ganzen Betrieb. Hier: wohin das Geld fließt, und wie dünn übrig bleibt, was der Chef behält.</p>
+    <span class="fall">Fall: der Chef arbeitet selbst nicht mit — er bekommt keinen Lohn, nur den Gewinn.</span>
+  </header>
+
+  <!-- 1: Wasserfall -->
+  <section>
+    <div class="snum">01</div>
+    <h2>Wohin die 9.570 € fließen</h2>
+    <p class="intro">Fast drei Viertel sind die eigentliche Arbeit — Löhne, Material, Maschinen. Der Rest sind die Kosten, den Betrieb am Laufen zu halten, ein Risiko­puffer und ganz zuletzt der Gewinn.</p>
+    <div class="card">
+      <div class="bar" role="img" aria-label="Aufteilung der 9.570 Euro">
+        <div class="seg arbeit" style="flex:7017">Selbstkosten 73 %</div>
+        <div class="seg bgk"    style="flex:842">BGK</div>
+        <div class="seg agk"    style="flex:786">AGK</div>
+        <div class="seg wg"     style="flex:692">W&amp;G</div>
+        <div class="seg sk"     style="flex:233">Sk.</div>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="dot" style="background:var(--arbeit)"></span>
+          <div><div class="nm">Selbstkosten — die Arbeit</div><div class="sub">Löhne + Sozialkassen, Material (EK), Maschinen</div></div>
+          <span class="amt mono">7.017 €</span><span class="pct mono">73 %</span>
+        </div>
+        <div class="row">
+          <span class="dot" style="background:var(--gk)"></span>
+          <div><div class="nm">BGK — Baustellengemeinkosten</div><div class="sub">Einrichtung, Bauleitung anteilig, Kleingerät</div></div>
+          <span class="amt mono">842 €</span><span class="pct mono">9 %</span>
+        </div>
+        <div class="row">
+          <span class="dot" style="background:#9a8a6e"></span>
+          <div><div class="nm">AGK — Allgemeine Geschäftskosten</div><div class="sub">Büro, Verwaltung, Angebot schreiben, Telefon</div></div>
+          <span class="amt mono">786 €</span><span class="pct mono">8 %</span>
+        </div>
+        <div class="row">
+          <span class="dot" style="background:var(--gold)"></span>
+          <div><div class="nm">Wagnis &amp; Gewinn</div><div class="sub">Risikopuffer für Pannen — <i>und</i> der Gewinn</div></div>
+          <span class="amt mono">692 €</span><span class="pct mono">7 %</span>
+        </div>
+        <div class="row">
+          <span class="dot" style="background:var(--line2)"></span>
+          <div><div class="nm">Skonto-Puffer</div><div class="sub">falls der Kunde 2,5 % Skonto zieht</div></div>
+          <span class="amt mono">233 €</span><span class="pct mono">2 %</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2: von W&G zu „bleibt" -->
+  <section>
+    <div class="snum">02</div>
+    <h2>Von den 692 € Gewinn zu dem, was wirklich bleibt</h2>
+    <p class="intro">„Wagnis &amp; Gewinn" ist <b>eine</b> Position — und der Wagnis-Teil ist kein Gewinn, sondern ein Puffer für das, was schiefgeht. Was übrig bleibt, versteuert der Chef noch.</p>
+    <div class="zoom">
+      <div class="step"><div class="t">Wagnis &amp; Gewinn (kalkuliert)</div><div class="v mono">692 €</div></div>
+      <div class="step minus"><div class="t">− Wagnis (Puffer für Pannen, Nachträge, Bruch) <small>läuft der Job sauber → Gewinn; sonst weg</small></div><div class="v mono">− 346 €</div></div>
+      <div class="step"><div class="t">= Gewinn vor Steuer</div><div class="v mono">346 €</div></div>
+      <div class="step minus"><div class="t">− Steuer <small>Gewerbe- + Einkommensteuer, grob 40 %</small></div><div class="v mono">− 138 €</div></div>
+      <div class="step result"><div class="t">bleibt dem Chef</div><div class="v mono">≈ 208 €</div></div>
+    </div>
+
+    <div class="hero">
+      <div class="big mono">≈ 208 €</div>
+      <div class="cap">von einem <b>9.570-€-Auftrag</b> — das sind <b>gut 2 %.</b><br>Und nur, wenn alles glatt läuft.</div>
+    </div>
+  </section>
+
+  <!-- 3: ehrliche Notizen -->
+  <section>
+    <div class="snum">03</div>
+    <h2>Warum das ehrlich ist — und nicht wenig verdient</h2>
+    <div class="note">
+      <b>Sein Gehalt steckt schon in den AGK.</b> Die Zeit, die der Chef fürs Kalkulieren, Angebote-Schreiben und Verwalten braucht, ist in den 786 € AGK bezahlt — <i>vor</i> dem Gewinn. „Bleibt dem Chef" meint also den Gewinn <b>obendrauf</b>, nicht sein Auskommen.
+    </div>
+    <div class="note">
+      <b>Wenn er selbst mitschaffen würde</b>, käme sein <b>Lohn</b> dazu — der steckt in den Selbstkosten (den 7.017 €), nicht im Gewinn. Genau davon leben viele kleine Betriebe: der Chef verdient als <i>Arbeiter</i>, nicht als <i>Unternehmer</i>. Hier aber: er arbeitet nicht mit → nur die ~208 €.
+    </div>
+    <div class="note">
+      <b>Der Verrechnungssatz ist keine Gier.</b> Dass die Stunde mit 74 € verrechnet wird, obwohl der Lohn ~38 € kostet, ist genau das: zwischen „kostet" und „bleibt was übrig" hängt ein ganzer Betrieb — Sozialkassen, Maschinen, Büro, Risiko. Der Gewinn ist der dünnste Teil davon.
+    </div>
+
+    <div class="annahmen">
+      <b>Annahmen (Größenordnung, nicht Raphis echte Zahlen):</b> Zuschläge = Standard-Kette des Mops (BGK 12 % · AGK 10 % · Wagnis&nbsp;&amp;&nbsp;Gewinn 8 % · Skonto 2,5 %). Selbstkosten aus dem 9.570-€-Angebot rückgerechnet. Wagnis ≈ halbe W&amp;G-Position. Steuer grob 40 %. <b>Raphis echte Marge kennen wir nicht</b> — das ist das 74-Orakel. Mit dem Gewinn-Schieber lässt sich seine echte einstellen, dann wird auch „was bleibt" echt statt geschätzt.
+    </div>
+  </section>
+
+  <footer>iMOPS · Baukalkulation ehrlich — der Preis ist kein Gewinn.</footer>
+</div>
+
+</body></html>

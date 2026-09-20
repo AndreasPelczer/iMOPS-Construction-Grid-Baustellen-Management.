@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iMOPS Feature-Tracker</title>
+<style>
+:root{--bg:#f8f7f4;--card:#fff;--border:#d3d1c7;--text:#2c2c2a;--sec:#5f5e5a;--mut:#888;--accent:#185fa5;--green:#4a8c1c;--greenBg:#eaf5e0;--amber:#9a6400;--amberBg:#fef6e0;--red:#a32d2d;--redBg:#fce8e8;--done:#639922;--sans:-apple-system,'Segoe UI',sans-serif}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1a18;--card:#242422;--border:#3a3a38;--text:#e8e6dc;--sec:#b4b2a9;--mut:#777;--accent:#85b7eb;--green:#7cb342;--greenBg:#2a3a20;--amber:#ef9f27;--amberBg:#3a3020;--red:#ef6b6b;--redBg:#3a2020;--done:#97c459}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);max-width:860px;margin:0 auto;padding:1rem}
+h1{font-size:20px;font-weight:600;text-align:center;margin-bottom:2px}
+.sub{text-align:center;font-size:12px;color:var(--sec);margin-bottom:1rem}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem}
+.stat{text-align:center;padding:10px;background:var(--card);border:0.5px solid var(--border);border-radius:8px}
+.stat .n{font-size:22px;font-weight:600}
+.stat .l{font-size:11px;color:var(--mut);margin-top:2px}
+.bar{height:6px;background:var(--border);border-radius:3px;margin:12px 0 16px;overflow:hidden}
+.bar-fill{height:100%;background:var(--done);border-radius:3px;transition:width 0.3s}
+.cat{font-size:13px;font-weight:500;color:var(--accent);padding:8px 10px;background:var(--card);border:0.5px solid var(--border);border-radius:8px 8px 0 0;margin-top:12px;display:flex;justify-content:space-between;align-items:center}
+.cat .cc{font-size:11px;color:var(--mut);font-weight:400}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-size:11px;font-weight:500;padding:6px 8px;background:var(--card);border-bottom:1px solid var(--border);text-align:center}
+.tbl th:first-child{text-align:left;width:30%}
+.tbl th:nth-child(2){color:var(--accent);width:28%}
+.tbl td{padding:5px 8px;border-bottom:0.5px solid var(--border);background:var(--card);text-align:center;vertical-align:middle}
+.tbl td:first-child{text-align:left;color:var(--sec)}
+.tbl tr.done td{opacity:0.6}
+.tbl tr.done td:first-child{text-decoration:line-through}
+.y{color:var(--green);font-weight:500;font-size:12px}
+.n{color:var(--mut);font-size:12px}
+.p{color:var(--amber);font-weight:500;font-size:12px}
+.cb{width:16px;height:16px;cursor:pointer;accent-color:var(--done)}
+.legend{display:flex;gap:12px;justify-content:center;margin:8px 0;font-size:11px;color:var(--sec);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:3px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.footer{text-align:center;font-size:11px;color:var(--mut);margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)}
+@media print{.cb{display:none}body{max-width:100%}}
+</style>
+</head>
+<body>
+
+<h1>🐕 iMOPS Feature-Tracker</h1>
+<p class="sub">Abhaken was fertig ist · Vergleich mit PlanCraft & BauSU</p>
+
+<div class="stats">
+<div class="stat"><div class="n" id="s-done">0</div><div class="l">Fertig</div></div>
+<div class="stat"><div class="n" id="s-total">0</div><div class="l">Features gesamt</div></div>
+<div class="stat"><div class="n" id="s-pct">0%</div><div class="l">Abdeckung</div></div>
+</div>
+<div class="bar"><div class="bar-fill" id="bar"></div></div>
+
+<div class="legend">
+<span><span class="dot" style="background:var(--green)"></span> hat der Mops</span>
+<span><span class="dot" style="background:var(--amber)"></span> in Arbeit</span>
+<span><span class="dot" style="background:var(--mut)"></span> fehlt noch</span>
+<span>☑ = erledigt abhaken</span>
+</div>
+
+<div id="app"></div>
+
+<div class="footer">
+iMOPS Construction Grid · Andreas Pelczer · Stand September 2026<br>
+"Code lügt nicht, Fantasie schon."
+</div>
+
+<script>
+const DATA = [
+  {cat:"Kalkulation", features:[
+    {id:"lv",       name:"LV erstellen + kalkulieren",      mops:"✓", pc:"✓", bs:"✓"},
+    {id:"mittellohn",name:"Mittellohn exakt berechnen",     mops:"✓", pc:"✓", bs:"✓"},
+    {id:"aufschlag", name:"Aufschlags-Kette BGK/AGK/W&G",  mops:"✓", pc:"~", bs:"✓"},
+    {id:"gaeb",      name:"GAEB X83/X84 Import + Export",   mops:"✓", pc:"✓", bs:"✓"},
+    {id:"autokalk",  name:"Auto-Kalkulation 'Mops fass'",   mops:"~", pc:"—", bs:"—"},
+    {id:"quellen",   name:"Quellen-Badges",                 mops:"✓", pc:"—", bs:"—"},
+    {id:"nachkalk",  name:"Nachkalkulation Soll vs. Ist",   mops:"~", pc:"✓", bs:"✓"},
+    {id:"datanorm",  name:"DATANORM Material-Import",       mops:"~", pc:"✓", bs:"✓"},
+    {id:"bki",       name:"BKI Marktpreis-Referenz",        mops:"~", pc:"—", bs:"—"},
+    {id:"ifc",       name:"BIM/IFC-Schnittstelle",          mops:"—", pc:"—", bs:"✓"},
+  ]},
+  {cat:"Baustelle", features:[
+    {id:"aufmass",   name:"Aufmaß mobil",                   mops:"✓", pc:"✓", bs:"✓"},
+    {id:"mangel",    name:"Mängelmanagement + Foto",        mops:"✓", pc:"✓", bs:"~"},
+    {id:"btb",       name:"Bautagesbericht PDF",            mops:"✓", pc:"✓", bs:"✓"},
+    {id:"planabgr",  name:"Plan abgreifen (PDF messen)",    mops:"✓", pc:"—", bs:"—"},
+    {id:"dxfcad",    name:"DXF/CAD Import + Viewer",        mops:"✓", pc:"—", bs:"~"},
+    {id:"erdmass",   name:"Erdmassen aus Vermessungs-DXF",  mops:"✓", pc:"—", bs:"—"},
+    {id:"hauslage",  name:"Hauslage auf Gelände platzieren", mops:"✓", pc:"—", bs:"—"},
+    {id:"cutfill",   name:"Cut/Fill Geländebrücke",         mops:"✓", pc:"—", bs:"—"},
+    {id:"grap8",     name:"Grap8 Workflow-Canvas",          mops:"✓", pc:"—", bs:"—"},
+    {id:"3dmodell",  name:"3D-Modell aus Bauplänen",        mops:"✓", pc:"—", bs:"—"},
+    {id:"ampel",     name:"Voraussetzungs-Ampel",           mops:"~", pc:"—", bs:"—"},
+  ]},
+  {cat:"Kaufmännisch", features:[
+    {id:"angebot",   name:"Angebote erstellen",             mops:"~", pc:"✓", bs:"✓"},
+    {id:"rechnung",  name:"Rechnungen schreiben",           mops:"—", pc:"✓", bs:"✓"},
+    {id:"abschlag",  name:"Abschlagsrechnung",              mops:"—", pc:"✓", bs:"✓"},
+    {id:"xrechnung", name:"XRechnung (E-Rechnung)",         mops:"✓", pc:"✓", bs:"✓"},
+    {id:"mahnung",   name:"Mahnwesen",                      mops:"—", pc:"✓", bs:"✓"},
+    {id:"datev",     name:"DATEV-Export",                    mops:"—", pc:"✓", bs:"✓"},
+    {id:"fibu",      name:"Finanzbuchhaltung",              mops:"—", pc:"—", bs:"✓"},
+    {id:"baulohn",   name:"Baulohn",                        mops:"—", pc:"—", bs:"✓"},
+  ]},
+  {cat:"Team & Planung", features:[
+    {id:"zeit",      name:"Zeiterfassung Mitarbeiter",      mops:"—", pc:"✓", bs:"✓"},
+    {id:"plantafel", name:"Plantafel / Disposition",        mops:"—", pc:"✓", bs:"✓"},
+    {id:"geraete",   name:"Geräteverwaltung",               mops:"~", pc:"—", bs:"✓"},
+    {id:"material",  name:"Materialwirtschaft / Lager",     mops:"~", pc:"—", bs:"✓"},
+  ]},
+  {cat:"KI & Automatisierung", features:[
+    {id:"kiassist",  name:"KI-Assistent (Fachfragen)",      mops:"✓", pc:"✓", bs:"—"},
+    {id:"kiangebot", name:"KI-Angebotserstellung",          mops:"~", pc:"✓", bs:"—"},
+    {id:"pdfai",     name:"PDF-Analyse (LV, Gutachten)",    mops:"✓", pc:"—", bs:"—"},
+    {id:"determ",    name:"Deterministische Kalkulation",   mops:"✓", pc:"—", bs:"—"},
+    {id:"stlb93",    name:"STLB-Match 93%",                 mops:"✓", pc:"—", bs:"—"},
+  ]},
+  {cat:"Architektur", features:[
+    {id:"offline",   name:"Offline-First",                  mops:"✓", pc:"—", bs:"~"},
+    {id:"daten",     name:"Daten gehören dem Nutzer",       mops:"✓", pc:"—", bs:"~"},
+    {id:"refusal",   name:"SYSTEM_REFUSAL (Nein sagen)",    mops:"✓", pc:"—", bs:"—"},
+    {id:"eventchain",name:"Append-Only EventChain",         mops:"✓", pc:"—", bs:"—"},
+    {id:"derive",    name:"deriveState()",                  mops:"✓", pc:"—", bs:"—"},
+    {id:"cross",     name:"Cross-Domain Kernel",            mops:"✓", pc:"—", bs:"—"},
+    {id:"bourdain",  name:"BourdainGuard",                  mops:"✓", pc:"—", bs:"—"},
+    {id:"oss",       name:"Open Source",                    mops:"✓", pc:"—", bs:"—"},
+  ]},
+];
+
+function statusClass(v){return v==="✓"?"y":v==="~"?"p":"n"}
+function statusLabel(v){return v==="✓"?"✓":v==="~"?"⏳":"—"}
+
+let checks={};
+try{const s=localStorage.getItem("imops-checks");if(s)checks=JSON.parse(s)}catch(e){}
+function save(){try{localStorage.setItem("imops-checks",JSON.stringify(checks))}catch(e){}}
+
+function render(){
+  const app=document.getElementById("app");
+  let html="";
+  let total=0,done=0;
+  DATA.forEach(cat=>{
+    let catDone=0;
+    cat.features.forEach(f=>{total++;if(checks[f.id]){done++;catDone++}});
+    html+=`<div class="cat">${cat.cat}<span class="cc">${catDone}/${cat.features.length}</span></div>`;
+    html+=`<table class="tbl"><tr><th>Feature</th><th>🐕 iMOPS</th><th>PlanCraft</th><th>BauSU</th><th>✓</th></tr>`;
+    cat.features.forEach(f=>{
+      const ck=checks[f.id]?"checked":"";
+      const cls=checks[f.id]?"done":"";
+      html+=`<tr class="${cls}"><td>${f.name}</td><td class="${statusClass(f.mops)}">${statusLabel(f.mops)}</td><td class="${statusClass(f.pc)}">${statusLabel(f.pc)}</td><td class="${statusClass(f.bs)}">${statusLabel(f.bs)}</td><td><input type="checkbox" class="cb" data-id="${f.id}" ${ck}></td></tr>`;
+    });
+    html+=`</table>`;
+  });
+  app.innerHTML=html;
+  document.getElementById("s-done").textContent=done;
+  document.getElementById("s-total").textContent=total;
+  const pct=Math.round(done/total*100);
+  document.getElementById("s-pct").textContent=pct+"%";
+  document.getElementById("bar").style.width=pct+"%";
+  document.querySelectorAll(".cb").forEach(cb=>{
+    cb.addEventListener("change",function(){
+      const id=this.dataset.id;
+      if(this.checked){checks[id]=true}else{delete checks[id]}
+      save();render();
+    });
+  });
+}
+render();
+</script>
+</body>
+</html>

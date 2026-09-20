@@ -1,0 +1,201 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Wie der Mops jede Zahl rechnet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#edeae4;--paper:#faf8f4;--paper2:#f2efe8;--ink:#181613;--muted:#6a655d;
+    --faint:#948f86;--line:#ddd8ce;--line2:#c9c3b6;--accent:#d1620f;--accent-soft:#f7e5d5;
+    --hart:#2f7d46;--hart-soft:#e2f0e6;--folg:#b07d16;--folg-soft:#f6ecd6;
+    --stamm:#2d5c8a;--stamm-soft:#e0eaf3;
+    --shadow:0 1px 2px rgba(24,22,19,.05),0 10px 30px rgba(24,22,19,.07);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#100f0d;--paper:#1a1815;--paper2:#221f1b;--ink:#f0ece5;--muted:#a29c92;
+    --faint:#6f6a60;--line:#2e2a24;--line2:#3c372f;--accent:#f0862e;--accent-soft:#3a2413;
+    --hart:#5cbd7c;--hart-soft:#16281d;--folg:#e0aa4c;--folg-soft:#2c2416;
+    --stamm:#6ba3dd;--stamm-soft:#152532;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.4);
+  }}
+  :root[data-theme="dark"]{
+    --ground:#100f0d;--paper:#1a1815;--paper2:#221f1b;--ink:#f0ece5;--muted:#a29c92;
+    --faint:#6f6a60;--line:#2e2a24;--line2:#3c372f;--accent:#f0862e;--accent-soft:#3a2413;
+    --hart:#5cbd7c;--hart-soft:#16281d;--folg:#e0aa4c;--folg-soft:#2c2416;
+    --stamm:#6ba3dd;--stamm-soft:#152532;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);margin:0;
+       font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  h1,h2,h3,.ey,.big{font-family:"Archivo","IBM Plex Sans",sans-serif}
+  .wrap{max-width:780px;margin:0 auto;padding:0 18px 72px}
+  header{padding:46px 0 22px}
+  .ey{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(28px,5.5vw,48px);font-weight:900;line-height:1.02;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+  .lede{font-size:17px;color:var(--muted);max-width:62ch;margin:0}
+  .lede b{color:var(--ink);font-weight:600}
+
+  /* Prinzip-Box */
+  .prinzip{margin-top:22px;background:var(--ink);color:var(--paper);border-radius:16px;padding:22px 22px}
+  :root[data-theme="dark"] .prinzip, :root:not([data-theme="light"]) .prinzip{background:#000}
+  @media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .prinzip{background:var(--ink);color:var(--paper)}}
+  .prinzip .k{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.6;margin-bottom:10px}
+  .formel{font-family:"Archivo";font-size:clamp(17px,3.6vw,24px);font-weight:800;letter-spacing:-.01em;line-height:1.3}
+  .formel .a{color:var(--folg)}.formel .b{color:var(--stamm)}.formel .c{color:var(--accent)}
+  .prinzip p{margin:12px 0 0;font-size:14px;opacity:.85;max-width:60ch}
+  .prinzip .warn{margin-top:12px;font-size:14px;font-weight:600;color:#ffd9a0}
+
+  section{margin-top:44px}
+  .snum{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.05em}
+  h2{font-size:23px;font-weight:800;letter-spacing:-.015em;margin:3px 0 4px}
+  .intro{color:var(--muted);max-width:64ch;margin:0 0 18px;font-size:15px}
+
+  /* Eine Zeile ausführlich */
+  .zeile{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+         padding:18px 20px;margin-bottom:14px}
+  .zh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:2px}
+  .zh .nm{font-size:16px;font-weight:700}
+  .zh .kat{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+  .kat.mat{background:var(--accent-soft);color:var(--accent)}
+  .kat.lohn{background:var(--hart-soft);color:var(--hart)}
+  .kat.geraet{background:color-mix(in srgb,var(--stamm) 16%,transparent);color:var(--stamm)}
+  .rechnung{font-family:"Archivo";font-size:clamp(15px,3.4vw,20px);font-weight:800;margin:10px 0;letter-spacing:-.01em}
+  .rechnung .m{color:var(--folg)}.rechnung .p{color:var(--stamm)}.rechnung .r{color:var(--accent)}
+  .herkunft{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .hk{display:flex;gap:10px;font-size:13.5px;align-items:flex-start}
+  .hk .tag{flex:none;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.03em;margin-top:1px}
+  .tag.g{background:var(--hart-soft);color:var(--hart)}
+  .tag.f{background:var(--folg-soft);color:var(--folg)}
+  .tag.s{background:var(--stamm-soft);color:var(--stamm)}
+  .hk .txt{color:var(--muted)}.hk .txt b{color:var(--ink);font-weight:600}
+  .gesamt{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line2);font-size:13.5px;color:var(--muted)}
+  .gesamt b{color:var(--ink)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:8px 0 0;font-size:13px;color:var(--muted)}
+  .legend .li{display:inline-flex;align-items:center;gap:7px}
+  .legend .tag{font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:6px;text-transform:uppercase}
+
+  .warnbox{margin-top:16px;background:var(--folg-soft);border:1px solid color-mix(in srgb,var(--folg) 35%,transparent);
+           border-radius:14px;padding:16px 18px;font-size:14px}
+  .warnbox b{color:var(--ink)}
+  .warnbox .h{font-family:"Archivo";font-weight:800;color:var(--folg);margin-bottom:4px}
+
+  .kette{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px}
+  .kstep{display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+  .kstep:last-child{border-bottom:0}
+  .kstep .v{margin-left:auto;font-weight:700;white-space:nowrap}
+  .kstep.tot{border-top:2px solid var(--ink);border-bottom:0;margin-top:4px;padding-top:12px;font-family:"Archivo";font-weight:800}
+  .kstep.tot .v{color:var(--accent);font-size:19px}
+  .kstep small{color:var(--muted);font-size:12.5px;font-weight:400}
+  footer{margin-top:34px;color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="ey">Kalkulation · Hofeinfahrt · Position 100,31 m²</p>
+    <h1>Wie der Mops jede Zahl rechnet</h1>
+    <p class="lede">Jede Zeile links folgt <b>demselben Muster</b>. Wer es einmal sieht, liest die ganze Kalkulation. Der Trick, der stutzig macht: <b>alle Mengen sind pro m²</b> — nicht die Gesamtmenge.</p>
+
+    <div class="prinzip">
+      <div class="k">Das Muster hinter jeder Zeile</div>
+      <div class="formel"><span class="a">Menge je m²</span> &nbsp;×&nbsp; <span class="b">Einzelpreis</span> &nbsp;=&nbsp; <span class="c">Kosten je m²</span></div>
+      <p>Darum steht beim Pflaster <b>„12,9 Stk"</b> und nicht 1294. Es ist die Menge <b>pro Quadratmeter</b>. Erst × 100,31 m² (die ganze Fläche) ergibt die echte Gesamtmenge.</p>
+      <div class="warn">⚠︎ 12,9 Stk/m² × 100,31 m² = 1294 Steine — die gezählte Wahrheit.</div>
+    </div>
+  </header>
+
+  <!-- Legende -->
+  <section style="margin-top:30px">
+    <div class="legend">
+      <span class="li"><span class="tag g" style="background:var(--hart-soft);color:var(--hart)">Gemessen</span> aus der Zeichnung — Fakt</span>
+      <span class="li"><span class="tag f" style="background:var(--folg-soft);color:var(--folg)">Folgerung</span> aus einer Annahme (Tiefe, Dichte, Aufwand)</span>
+      <span class="li"><span class="tag s" style="background:var(--stamm-soft);color:var(--stamm)">Stammdaten</span> Preis aus dem Katalog / Richtwert</span>
+    </div>
+  </section>
+
+  <!-- 01 Material -->
+  <section>
+    <div class="snum">01 · Material</div>
+    <h2>Pflasterstein — 39,22 € je m²</h2>
+
+    <div class="zeile">
+      <div class="zh"><span class="nm">Pasand Pflaster Vollstein Nr. 59</span><span class="kat mat">Material</span></div>
+      <div class="rechnung"><span class="m">12,9 Stk</span> × <span class="p">3,04 €</span> = <span class="r">39,22 €</span></div>
+      <div class="herkunft">
+        <div class="hk"><span class="tag g">Gemessen</span><span class="txt"><b>12,9 Stk je m²</b> = 1294 gezählte Steine ÷ 100,31 m². Die 1294 hat der Mops im DXF ausgezählt.</span></div>
+        <div class="hk"><span class="tag f">Folgerung</span><span class="txt"><b>3,04 € je Stein</b> = 40 €/m² (Marktanker) × 0,076 m² (ein Stein). Kein Händlerpreis für genau diesen Stein — trägt Raphi einen echten Angebotspreis ein, ersetzt er die 3,04.</span></div>
+      </div>
+      <div class="gesamt">→ je m² 39,22 € &nbsp;×&nbsp; <b>100,31 m²</b> &nbsp;=&nbsp; <b>3.934 €</b> für die ganze Pflasterdecke.</div>
+    </div>
+
+    <h2 style="margin-top:26px">Schotter — 5,70 € je m²</h2>
+    <div class="zeile">
+      <div class="zh"><span class="nm">Schotter 0/32 (Tragschicht)</span><span class="kat mat">Material</span></div>
+      <div class="rechnung"><span class="m">0,57 to</span> × <span class="p">10,00 €</span> = <span class="r">5,70 €</span></div>
+      <div class="herkunft">
+        <div class="hk"><span class="tag f">Folgerung</span><span class="txt"><b>0,57 to je m²</b> = 57,18 to ÷ 100,31 m². Und die 57,18 to = 100,31 m² × <b>0,30 m dick</b> × <b>1,9 t/m³ Dichte</b>. Dicke und Dichte sind Annahmen.</span></div>
+        <div class="hk"><span class="tag s">Stammdaten</span><span class="txt"><b>10,00 € je Tonne</b> = Raphis Einkaufspreis aus dem Katalog.</span></div>
+      </div>
+      <div class="gesamt">→ je m² 5,70 € &nbsp;×&nbsp; 100,31 m² &nbsp;=&nbsp; <b>572 €</b> (≈ 57 to Schotter).</div>
+    </div>
+  </section>
+
+  <!-- 02 Lohn -->
+  <section>
+    <div class="snum">02 · Lohn</div>
+    <h2>Facharbeiter/Helfer — 51,64 € je m²</h2>
+    <div class="zeile">
+      <div class="zh"><span class="nm">Facharbeiter/Helfer (Mischsatz)</span><span class="kat lohn">Lohn</span></div>
+      <div class="rechnung"><span class="m">0,70 h</span> × <span class="p">74,00 €/h</span> = <span class="r">51,64 €</span></div>
+      <div class="herkunft">
+        <div class="hk"><span class="tag f">Folgerung</span><span class="txt"><b>0,70 h je m²</b> = 70 Stunden Gesamtaufwand ÷ 100,31 m². Die 70 h sind ein <b>Aufwandswert</b> (Erfahrung: ~0,7 h/m² für Unterbau + Pflastern) — eine Schätzung, kein Aufmaß.</span></div>
+        <div class="hk"><span class="tag s">Stammdaten</span><span class="txt"><b>74,00 €/h</b> = der <b>Verrechnungssatz</b> aus Raphis Stammdaten. <b>Achtung: das ist NICHT der Lohn</b> (~38 €), sondern was der Betrieb je Stunde verlangt (Lohn + alle Zuschläge). Das ist die 74 aus dem Orakel.</span></div>
+      </div>
+      <div class="gesamt">→ je m² 51,64 € &nbsp;×&nbsp; 100,31 m² &nbsp;=&nbsp; <b>5.180 €</b> Lohn (≈ 70 h × 74 €).</div>
+    </div>
+    <div class="warnbox">
+      <div class="h">Der wackeligste Wert der ganzen Kalkulation</div>
+      Die <b>70 Stunden</b> (0,7 h/m²) sind eine <b>Schätzung</b>. Ändert sich der Aufwand auf 0,8 h/m², steigt der Lohn je m² von 51,64 € auf 59,20 € — und das ganze Angebot merklich. Genau hier gehören <b>Raphis echte Aufwandswerte</b> hin, nicht ein Richtwert.
+    </div>
+  </section>
+
+  <!-- 03 Geräte -->
+  <section>
+    <div class="snum">03 · Geräte</div>
+    <h2>Minibagger — 5,18 € je m²</h2>
+    <div class="zeile">
+      <div class="zh"><span class="nm">Minibagger inkl. Bediener</span><span class="kat geraet">Gerät</span></div>
+      <div class="rechnung"><span class="m">0,08 h</span> × <span class="p">65,00 €/h</span> = <span class="r">5,18 €</span></div>
+      <div class="herkunft">
+        <div class="hk"><span class="tag f">Folgerung</span><span class="txt"><b>0,08 h je m²</b> = 8 Stunden Bagger ÷ 100,31 m². 8 h für den Aushub — Schätzung.</span></div>
+        <div class="hk"><span class="tag s">Stammdaten</span><span class="txt"><b>65,00 €/h</b> = Geräte-Stundensatz aus dem Katalog (Miete + Diesel + Bediener).</span></div>
+      </div>
+    </div>
+    <div class="warnbox">
+      <div class="h">Eine begriffliche Schwäche im Modell</div>
+      Bei den <b>LKW-Fuhren</b> steht „0,06 h × 120 €". In Wahrheit sind das <b>6 Fahrten à 120 €</b> = 720 € gesamt, geteilt durch 100,31 m² = 7,18 €/m². Rechnerisch richtig, aber begrifflich schief: das Modell kennt nur <b>Stunden × Satz</b>, keine <b>Stückzahl</b> (Fahrten). Die Fuhren wurden als „Stunden" getarnt, damit die Zahl stimmt.
+    </div>
+  </section>
+
+  <!-- 04 die Kette zum Preis -->
+  <section>
+    <div class="snum">04 · vom Zettel zum Preis</div>
+    <h2>Alle Zeilen zusammen — und dann der Aufschlag</h2>
+    <p class="intro">Die Summe aller Zeilen je m² ist der <b>Einkaufspreis (EK)</b> je m². Darauf kommen die Zuschläge (Baustellengemeinkosten, Wagnis & Gewinn) — das ergibt den <b>Verkaufspreis (VK)</b>. × 100,31 m² = die Position im Angebot.</p>
+    <div class="kette">
+      <div class="kstep">Material je m² <small>(alle Stein-/Schotter-/Splitt-Zeilen)</small> <span class="v mono">~ 52 €</span></div>
+      <div class="kstep">+ Lohn je m² <small>0,7 h × 74 €</small> <span class="v mono">51,64 €</span></div>
+      <div class="kstep">+ Geräte je m² <small>Bagger, Rüttler, Fuhren</small> <span class="v mono">13,56 €</span></div>
+      <div class="kstep">= Einkaufspreis (EK) je m² <span class="v mono">~ 117 €</span></div>
+      <div class="kstep">+ Zuschläge <small>BGK, Wagnis & Gewinn</small> <span class="v mono">×(1 + …)</span></div>
+      <div class="kstep tot">= Verkaufspreis je m² &nbsp;×&nbsp;100,31 m² <span class="v mono">Angebot</span></div>
+    </div>
+    <p class="intro" style="margin-top:12px">Hinweis: die EK-Summe hier ist gröber als Raphis All-in-Preis (95 €/m²), weil Aufwandswerte und einzelne Preise noch Richtwerte sind. Die <b>Struktur</b> stimmt — die <b>Zutaten</b> schärft man mit echten Zahlen.</p>
+  </section>
+
+  <footer>iMOPS · jede Zahl nachvollziehbar: Menge je m² × Einzelpreis. Grün = gemessen, gelb = gefolgert, blau = Stammdaten. Die 74 €/h ist der Verrechnungssatz, nicht der Lohn.</footer>
+</div>
+
+</body></html>
