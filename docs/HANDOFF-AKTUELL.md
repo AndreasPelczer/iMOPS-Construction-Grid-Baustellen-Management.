@@ -45,14 +45,33 @@ Schwester im Repo: `PreisImportBerichtView` (Preislisten-CSV) — gleiche Idee, 
 **Dazu die Doppel-Import-Warnung:** hat die Baustelle schon Positionen, steht das jetzt
 orange über der Auswahlliste, samt Satz „der Import hängt an, er ersetzt nicht".
 
-**Tests:** `GAEBAnkunftsPruefungTests` (5 neu) — der Totalausfall von heute, der reparierte
-Weg, eine Datei ohne Preise (darf keinen Alarm geben), Teilausfall mit exaktem Fehlbetrag,
-Bestandszähler je Baustelle. Drift-Regel erfüllt: `app_bedienung.yaml` +2 Einträge
+**Tests:** `GAEBAnkunftsPruefungTests` (6 neu, **488/488 grün**) — der Totalausfall von heute,
+der reparierte Weg, eine Datei ohne Preise (darf keinen Alarm geben), Teilausfall mit exaktem
+Fehlbetrag, Bestandszähler je Baustelle. Dazu `derSchluesselMussDiePermanenteObjectIDSein`:
+baut beide Reihenfolgen nebeneinander nach (Schlüssel vor dem Speichern = temporäre ID =
+Preis weg / `obtainPermanentIDs` zuerst = Preis da). Ohne den wäre der Nachweis blind für
+genau den Fehler, für den es ihn gibt. Drift-Regel erfüllt: `app_bedienung.yaml` +2 Einträge
 (`App_GAEB_Ankunftsbericht`, `App_GAEB_Import_haengt_an`) → 51 gesamt.
+
+**Befund am Rand, NICHT geändert (Andreas entscheidet):** eine Baustelle wird in der Liste
+per **Swipe nach links ohne jede Rückfrage** gelöscht (`EventListView.swift:27`
+`.onDelete(perform:)` → `EventListViewModel.swift:158-163`). `Event.lvPositionen` steht im
+Modell auf **`deletionRule="Cascade"`** — ein verrutschter Daumen nimmt also das komplette
+LV mit, hier wären das 162 Positionen und die ganze Kalkulation. Das widersprüche der
+eigenen Regel für destruktives Löschen (kein Full-Swipe, `.alert` mit benannten Folgen —
+so gelöst beim Auftrag-Löschen am 18.09.). Das LV selbst ist dagegen sauber geschützt:
+Einzelposition mit Alert, Gesamt-LV nur über GOAT-PIN. Nur die Baustelle darüber nicht.
 
 **🔴 Was Andreas tun muss, damit die Baustelle stimmt** (in dieser Reihenfolge):
 1. In Xcode **Stop, dann Run** — sonst läuft weiter die 22:00-Binary und alles wiederholt sich.
-2. Die Baustelle **„BV Setiadji-Artanti Retzbach" löschen** und neu anlegen (162 Altpositionen).
+2. Das alte LV leeren (162 Altpositionen): in der Baustelle **Rechtsklick / langes Drücken
+   auf die LV-Karte → „Gesamtes LV löschen" → GOAT-PIN → „LV LEEREN"**
+   (`Views/LVAbrissView.swift`). Die Baustelle selbst bleibt dabei stehen — Mängel,
+   Bautagesberichte, Aufmaße gehen nicht verloren.
+   *Nicht* der „Duplikate entfernen"-Knopf im LV: der vergleicht Bezeichnung+Einheit+Menge,
+   und die alten Positionen heißen anders („Stützwinkel L_995 …" / Einheit „Stk" gegen
+   „Stützwinkel L 995 … liefern und versetzen" / „Stück"). An diesem Bestand nachgemessen:
+   er würde **0** Positionen entfernen, obwohl 16 Positionsnummern doppelt sind.
 3. `~/Desktop/Setiadji/Setiadji-Baustelle.x84` importieren.
 4. Der Ankunfts-Bericht muss grün **„Alle 109 Preise sind da"** und **263.304,97 €** zeigen.
    Zeigt er rot, ist der Fix unvollständig — dann die Liste der vermissten Positionen lesen.

@@ -1617,9 +1617,20 @@
     loeschen. Sonst steht alles doppelt in der Summe, und die Endsumme ist eine
     Mischung aus zwei Staenden - nicht nachvollziehbar.
 
-    Am schnellsten geht das ueber die Baustelle selbst: Baustelle loeschen, neu
-    anlegen, dann importieren. Einzelne Positionen loeschen geht im LV ueber
-    Wischen oder Auswaehlen.
+    So leert man das alte LV, OHNE die Baustelle zu verlieren:
+    In der Baustelle auf die LV-Karte rechtsklicken (Laptop) bzw. lange druecken
+    (iPad) -> "Gesamtes LV loeschen" -> GOAT-PIN eingeben -> "LV LEEREN".
+    Maengel, Bautagesberichte und Aufmasse bleiben erhalten, nur die
+    LV-Positionen gehen weg.
+
+    Einzelne Positionen loeschen geht im LV ueber Wischen nach links, Rechtsklick
+    oder den Dialog beim Antippen der Zeile - jeweils mit Rueckfrage. Mehrere auf
+    einmal geht ueber die Auswahl NICHT (die kann nur "Zusammenfuehren").
+
+    Der Knopf "Duplikate entfernen" hilft hier meist NICHT: er vergleicht
+    Bezeichnung + Einheit + Menge. Stammen die doppelten Positionen aus zwei
+    verschiedenen Import-Staenden, sind die Texte leicht anders geschrieben - dann
+    findet er nichts, obwohl die Positionsnummern doppelt sind.
 
     Merkhilfe: importieren = dazulegen, nicht austauschen.
   quelle_kurz: "iMOPS GAEBImportView, GAEBAnkunftsPruefung.bestandVorImport"
