@@ -2,6 +2,17 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 20.09.2026 (Abend) — Mops SCHARFGESTELLT (Demos/Seeder/Zauberstäbe raus)
+
+**Branch `chore/mops-scharfstellen` (lokal, Commit 6da29b7, NICHT gepusht).** Der Mops läuft ab jetzt nur auf ECHTEN Daten — frischer Mops ist leer bis zum Import.
+
+**Entfernt (15 Dateien + Referenzen):** Demo-/Fake-Seeder (Demo, Debug, BeispielKalkulation, BauerHorst, Hofauffahrt, Sandsteinstufen, Marktbreit, StammdatenSeeder) · `RaphaelStammdatenSeeder` (echte Goldschmitt-Preise waren hardcoded → **DSGVO-Fix**, kommen jetzt per Import-CSV) · `SnapshotHostView` (+ `--snapshot-mode`-Weiche in iMOPSApp) · Zauberstab-/Demo-Knöpfe (ContentView „Demo", Grap8-Text, Hausplaner „Beispielprojekt laden", `LieferwarnungDemoFactory`) · `TheBrain.shared.seed()` beim Start.
+
+**Bewusst BEHALTEN (echte Logik, kein Demo — Falle vermieden):** `ScharpeggeSeeder` (Lieferanten-Sortiment aus Bundle-CSV, im Onboarding/Bestellliste) · `YtongBedarf` · `TiefbauRezepte` · `HouseProjectGenerator`/`ProjektGenerator`/`HouseConfiguratorView` (**echtes Hausplaner-Feature, ist ein Tab in RootTabView!**) · `TheBrain`-Datei (KernelGuardStatusView liest sie) · Firmenprofil-`.mops`-Demo-Schalter (DSGVO-Schutz, kein Fake).
+
+**Tests:** 5 Demo-Seeder-Testdateien entfernt; `KnotenAufwandswertTests` + `KatalogSichtenUndMasseTests` nutzen jetzt Inline-Fixture (Maurer 28,50×1,65 / Helfer 18,50×1,55) statt `StammdatenSeeder`. **445/445 grün, TEST SUCCEEDED.** Backups `_backups/20260920_170535/scharf/`.
+- **🔴 OFFEN:** Andreas' OK zum Merge abwarten. Frischer Start seedet nur noch Scharpegge/Ytong/Tiefbau; Firmen-Zuschläge/Löhne kommen aus Einstellungen bzw. Import (nicht mehr aus Seeder).
+
 ## Delta 20.09.2026 — Geräte-Import + Goldschmitts ECHTER Katalog (aus Raphis Mail geborgen)
 
 **Branch `feature/geraete-katalog-import` (lokal, NICHT gepusht).** Baut auf `feature/preise-in-einstellungen`.
