@@ -181,3 +181,74 @@ weitere_positionen:
   mittel: 33
   regionalfaktor: 1.027
   stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Grundleitung, PVC-U, DN100
+  bki_lb: LB 009
+  einheit: m
+  mittel: 35
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  passt_zu_baustein: KAN-006
+- bki_position: Dichtheitsprüfung Grundleitung
+  bki_lb: LB 009
+  einheit: m
+  mittel: 8.85
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  hinweis: bei Neubau Pflicht, wird im LV gern vergessen. Alternative Abrechnung je Strang 566 EUR/St.
+- bki_position: Stundensatz Facharbeiter
+  bki_lb: LB 006
+  einheit: h
+  mittel: 79
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  hinweis: Marktpreis inkl. BGK/AGK/Wagnis+Gewinn. Gegenprobe für den eigenen Verrechnungssatz,
+    KEIN Lohn. Siehe auch Helfer 70 EUR/h.
+- bki_position: Stundensatz Helfer
+  bki_lb: LB 006
+  einheit: h
+  mittel: 70
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Lagerplatz einrichten und räumen
+  bki_lb: LB 006
+  einheit: m2
+  mittel: 19
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+# Winkelstützelemente: BKI rechnet je LAUFENDEM METER Wand, nicht je Stück.
+# Der Leistungstext nennt ausdrücklich die BETONBETTUNG als enthalten — eine eigene
+# Position "Fundamentbett unter Stützwinkel" wäre daneben eine Doppelzählung.
+# Stahlbetonfertigteil C30/37, Breite 50 cm, Fußlänge 50 cm.
+- bki_position: Winkelstützmauerelement Beton, Höhe 55
+  bki_lb: LB 080
+  bki_kg: 543
+  einheit: m
+  mittel: 175
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Winkelstützmauerelement Beton, Höhe 80
+  bki_lb: LB 080
+  bki_kg: 543
+  einheit: m
+  mittel: 210
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Winkelstützmauerelement Beton, Höhe 130
+  bki_lb: LB 080
+  bki_kg: 543
+  einheit: m
+  mittel: 398
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+- bki_position: Winkelstützmauerelement Beton, Höhe 155
+  bki_lb: LB 080
+  bki_kg: 543
+  bki_id: BKI-080000421
+  einheit: m
+  von: 418
+  mittel: 452
+  bis: 526
+  regionalfaktor: 1.027
+  stand: BKI Baupreise Online, Ernte 20.09.2026, BPI Q2/2026 = 140,3
+  hinweis: inkl. Betonbettung. Höher als 155 cm führt BKI nicht — darüber ist jeder Wert
+    eine Extrapolation und gehört im LV als Annahme markiert (Steigung 130->155 = 2,16 EUR/cm).

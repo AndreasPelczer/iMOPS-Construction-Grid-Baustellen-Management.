@@ -53,35 +53,61 @@ VON / BIS:      xx € / xx €
 Die **Spanne** ist wichtig, nicht nur der Mittelwert — sie zeigt, wie sicher der Wert ist.
 Liegt VON/BIS weit auseinander, ist die Position unscharf definiert.
 
-## Der Firmenfaktor — der eigentliche Trick
+## Es gibt KEINEN einheitlichen Firmenfaktor
+
+*Korrigiert am 20.09.2026. Hier stand vorher das Gegenteil — dass Goldschmitt durchgehend
+bei rund 0,730 × BKI liegt, "dreifach bestätigt". Das war falsch und hätte eine Kalkulation
+verdorben. Wie der Fehler entstand, steht unten; er ist lehrreicher als die Regel.*
 
 BKI liefert **Marktpreise**: mittlere Angebotspreise inklusive Baustellengemeinkosten,
-Verwaltung, Wagnis und Gewinn. Eure eigene Kalkulation liegt woanders. Diese Werte
-danebenzustellen, ohne das zu berücksichtigen, macht die Endsumme unbrauchbar.
-
-**So ermittelst du den Faktor:** Such dir drei bis vier Positionen, die **beide** Kataloge
-führen — eure und BKI. Rechne je Position `euer Preis / BKI-Preis`. Kommen ähnliche Werte
-heraus, hast du den Faktor.
-
-Beispiel aus der Praxis (20.09.2026), drei verschiedene Gewerke:
+Verwaltung, Wagnis und Gewinn. Eure eigene Kalkulation liegt woanders — aber **nicht überall
+gleich weit weg.** Gemessen an echten Zeilen:
 
 ```
-Bodenplatte Ortbeton C25/30   174,00 / 239,29 = 0,727
-Pflasterdecke Betonpflaster    33,50 /  46,21 = 0,725
-Öffnungen im Mauerwerk         45,00 /  61,00 = 0,738
-                                       Mittel  0,730
+Pflasterdecke Betonpflaster     33,50 /  46,21 = 0,725   ← deutlich unter Markt
+Mauerwerk GP2/0,5 d=30 cm      125,83 / 124,00 = 1,015   ← auf Marktniveau
 ```
 
-Spanne 1,3 Prozentpunkte über Beton, Pflaster und Mauerwerk. Damit ist der Faktor belastbar.
+Das sind keine 1,3 Prozentpunkte Streuung, sondern **40 %.** Ein Mittelwert daraus wäre
+für beide Positionen falsch. Goldschmitt ist im Tiefbau/Pflaster günstig und im Mauerwerk
+marktüblich — das ist ein normales Firmenprofil, kein Messfehler.
 
-Ab dann gilt: `Firmenpreis = BKI-Mittelwert × Faktor`. Mit Rechenweg dokumentieren —
-BKI-Position, Mittelwert, Regionalfaktor, Faktor.
+**Also: Position für Position vergleichen, nie hochrechnen.** Der BKI-Wert ist eine
+Plausibilitätsprobe für die einzelne Zeile, kein Umrechnungsschlüssel für den Katalog.
 
-**Ein Ausreißer ist ein Befund, kein Fehler.** Fällt eine Position aus der Reihe, sind die
-beiden Positionen nicht dasselbe. Beispiel: die Elementdecke kam auf 0,451 statt 0,730 — weil
-die Katalogzeile der Firma nur Verlegen und Aufbeton enthält, die BKI-Position aber die
+### Wie der falsche Faktor entstand — die Falle
+
+Drei Zahlen schienen ihn zu bestätigen. Nur eine war ein echter Vergleich:
+
+| angeblicher Beleg | was es wirklich war |
+|---|---|
+| Bodenplatte 174,00 / 239,29 = 0,727 | die 239,29 hatte ich mir aus mehreren BKI-Zeilen **selbst zusammenaddiert** — kein abgelesener Wert |
+| Öffnungen im Mauerwerk 45,00 / 61,00 = 0,738 | die 45,00 war **mein eigener Richtwert**, nicht Goldschmitts Katalog → Zirkelschluss |
+| Pflasterdecke 33,50 / 46,21 = 0,725 | echt: Katalogzeile gegen BKI-Zeile |
+
+Aus **einem** Datenpunkt wurde eine Regel, weil zwei Scheinbelege danebenstanden. Die
+Gegenprobe kam erst, als eine echte Katalogzeile (Mauerwerk) dagegenstand.
+
+**Regel daraus:** Ein Faktor zählt nur, wenn **beide** Zahlen abgelesen sind — links eine
+Zeile aus dem Firmenkatalog, rechts eine Zeile aus BKI. Selbst zusammengesetzte Summen und
+eigene Richtwerte sind keine Belege, sie sehen nur so aus.
+
+### Wenn eine Position weit daneben liegt
+
+Dann sind es meist **nicht dieselben Leistungen.** Die Elementdecke kam auf 0,451 — weil die
+Katalogzeile der Firma nur Verlegen und Aufbeton enthält, die BKI-Position aber die
 Filigranplatten mitliefert. Die Differenz von rund 41 €/m² waren genau die fehlenden Platten.
-Der Ausreißer hat einen Kalkulationsfehler aufgedeckt.
+Der Ausreißer hat eine Lücke in der Kalkulation aufgedeckt. **Erst die Leistungstexte
+vergleichen, dann die Zahlen.**
+
+Gleiches Muster beim Winkelstützelement: BKI-080000421 nennt die **Betonbettung** im
+Leistungstext. Wer daneben eine eigene Position "Fundamentbett" führt, kassiert zweimal.
+
+### Die Einheit ist die zweite Falle
+
+BKI rechnet Winkelstützelemente **je laufendem Meter Wand**, nicht je Stück. Bei 995 mm
+breiten Elementen ist das fast dasselbe — bei 500 mm breiten wäre es der Faktor 2. Vor jedem
+Übernehmen prüfen, worauf sich die BKI-Einheit bezieht.
 
 ## Wohin die Werte gehören
 

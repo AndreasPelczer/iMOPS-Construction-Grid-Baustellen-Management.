@@ -21,10 +21,21 @@ struct BKIMarktpreisKatalogTests {
         #expect(e?.min == nil)            // nur Ø geerntet, keine Spanne
         #expect(e?.platzhalter == false)  // echter Wert
         #expect(e?.spanneText == "19 €/m2 (Ø)")
-        // Platzhalter (noch nicht geerntet) ist als solcher markiert.
-        #expect(BKIMarktpreisKatalog.shared.eintrag(bausteinID: "BET-010")?.platzhalter == true)
         // Kein Eintrag → nil (dann zeigt der Mops keinen Vergleich).
         #expect(BKIMarktpreisKatalog.shared.eintrag(bausteinID: "GIBTS-NICHT") == nil)
+    }
+
+    /// Hier stand vorher „BET-010 ist ein Platzhalter". Am 20.09.2026 wurde BET-010 geerntet
+    /// und der Test ging rot — er hielt einen Zustand fest, den das Ernten planmäßig auflöst.
+    /// Ein Test darf nicht rot werden, weil jemand seine Arbeit gemacht hat. Also prüft er
+    /// jetzt die Regel statt einer einzelnen Zeile: **ein Eintrag ohne echten Wert muss als
+    /// Platzhalter markiert sein** — sonst behauptet der Mops einen Marktvergleich, den er
+    /// nicht hat. Dass aktuell keiner mehr markiert ist, ist der gewünschte Zustand.
+    @Test func keinUngeernteterWertGibtSichAlsEchterMarktpreisAus() {
+        for e in BKIMarktpreisKatalog.shared.alle() where !e.platzhalter {
+            #expect(e.mittel > 0,
+                    "\(e.bausteinID): kein Wert, aber auch nicht als platzhalter markiert")
+        }
     }
 
     @Test @MainActor func marktpreisWirdInPositionsEinheitUmgerechnet() {
