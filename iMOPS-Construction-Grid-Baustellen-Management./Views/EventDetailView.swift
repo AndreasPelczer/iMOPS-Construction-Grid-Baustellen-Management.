@@ -431,6 +431,7 @@ struct EventDetailView: View {
                     maschinenCard
                     ablaufplanCard
                     TerminplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
+                    UebergangszeitenCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     DienstplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     NavigationLink {
                         ZeitstrahlView(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
