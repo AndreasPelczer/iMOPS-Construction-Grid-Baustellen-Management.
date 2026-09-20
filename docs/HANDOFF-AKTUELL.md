@@ -4,13 +4,13 @@
 
 ## Delta 21.09.2026 (00:10) — BESTÄTIGT AN ECHTEN DATEN: die Rundreise schließt
 
-Andreas hat die vier Schritte gemacht (neu gebaut 00:04, LV geleert, `Setiadji-Baustelle.x84`
+Andreas hat die vier Schritte gemacht (neu gebaut 00:04, LV geleert, der fertigen X84 der laufenden Baustelle
 importiert). Ergebnis in der App: **263.304,97 € Angebotssumme**, jede Position grün mit
 „EP (Angebot)" — die beiden Einheiten-Funde stehen sichtbar drin (Randschalung 115,56 €/m²,
 Betonstahlmatten 2,35 €/kg).
 
 **Rundreise-Probe** (der Nachweis, der gestern fehlte): dieselbe Baustelle wieder als X84
-exportiert (`mops-BV-Setiadji-Artanti-Retzbach-X84`, 00:09) und gegengerechnet —
+exportiert (Mops-Export, 00:09) und gegengerechnet —
 109 Items, 109 `<UP>`, DP 84, Summe **263.304,97 €**. Rein und raus identisch, keine
 Position ohne Preis. Der Weg Datei → Angebotsspeicher → LV → Export ist damit an echten
 Daten dicht.
@@ -29,7 +29,7 @@ und Stützwinkel H 2050 (5.600 €, extrapoliert, rosa ⚠) beim Fertigteilwerk 
 
 **Branch `feature/gelaende-dxf-aushub`, weiter lokal, NICHT gepusht.**
 
-**Was passiert ist.** Andreas importierte um 23:18 die fertige `Setiadji-Baustelle.x84`
+**Was passiert ist.** Andreas importierte um 23:18 die fertige der fertigen X84 der laufenden Baustelle
 (109 Positionen, 109 Einheitspreise, 263.304,97 €). Die App zeigte danach drei Zahlen für
 dieselbe Baustelle: LV **164.788,03 €**, Canvas-Rechnung **4.076,08 €**, Datei **263.304,97 €**.
 
@@ -95,7 +95,7 @@ Einzelposition mit Alert, Gesamt-LV nur über GOAT-PIN. Nur die Baustelle darüb
    und die alten Positionen heißen anders („Stützwinkel L_995 …" / Einheit „Stk" gegen
    „Stützwinkel L 995 … liefern und versetzen" / „Stück"). An diesem Bestand nachgemessen:
    er würde **0** Positionen entfernen, obwohl 16 Positionsnummern doppelt sind.
-3. `~/Desktop/Setiadji/Setiadji-Baustelle.x84` importieren.
+3. die X84 vom Desktop importieren.
 4. Der Ankunfts-Bericht muss grün **„Alle 109 Preise sind da"** und **263.304,97 €** zeigen.
    Zeigt er rot, ist der Fix unvollständig — dann die Liste der vermissten Positionen lesen.
 
@@ -175,7 +175,7 @@ H 205, die BKI nicht führt). **Belegt: 68,2 %** — vorher lag der Richtwert-An
 
 - **🔴 OFFEN:** kein Push. Filigranplatten-Lieferpreis und Stützwinkel H 205 beim Werk anfragen —
   das sind die beiden letzten großen ungeprüften Zahlen. Danach Baustelle 101 im Mops löschen,
-  `Setiadji-Baustelle.x84` neu importieren, „Mops fass".
+  der fertigen X84 der laufenden Baustelle neu importieren, „Mops fass".
 
 ## Delta 20.09.2026 (Nacht) — Geländebrücke offline: Aushub aus zwei DXF
 

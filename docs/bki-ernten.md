@@ -64,11 +64,14 @@ Verwaltung, Wagnis und Gewinn. Eure eigene Kalkulation liegt woanders — aber *
 gleich weit weg.** Gemessen an echten Zeilen:
 
 ```
-Pflasterdecke Betonpflaster     33,50 /  46,21 = 0,725   ← deutlich unter Markt
-Mauerwerk GP2/0,5 d=30 cm      125,83 / 124,00 = 1,015   ← auf Marktniveau
+Pflasterdecke Betonpflaster     Katalogzeile / BKI = 0,73   ← deutlich unter Markt
+Außenwand-Mauerwerk 30 cm       Katalogzeile / BKI = 1,02   ← auf Marktniveau
 ```
 
-Das sind keine 1,3 Prozentpunkte Streuung, sondern **40 %.** Ein Mittelwert daraus wäre
+*(Die absoluten Preise stehen bewusst nicht hier — sie sind Betriebswissen und gehören in
+die Stammdaten, siehe Tabelle unten. Die Methode gehört ins Repo, die Zahlen nicht.)*
+
+Das sind keine 1,3 Prozentpunkte Streuung, sondern **rund 40 %.** Ein Mittelwert daraus wäre
 für beide Positionen falsch. Goldschmitt ist im Tiefbau/Pflaster günstig und im Mauerwerk
 marktüblich — das ist ein normales Firmenprofil, kein Messfehler.
 
@@ -81,9 +84,9 @@ Drei Zahlen schienen ihn zu bestätigen. Nur eine war ein echter Vergleich:
 
 | angeblicher Beleg | was es wirklich war |
 |---|---|
-| Bodenplatte 174,00 / 239,29 = 0,727 | die 239,29 hatte ich mir aus mehreren BKI-Zeilen **selbst zusammenaddiert** — kein abgelesener Wert |
-| Öffnungen im Mauerwerk 45,00 / 61,00 = 0,738 | die 45,00 war **mein eigener Richtwert**, nicht Goldschmitts Katalog → Zirkelschluss |
-| Pflasterdecke 33,50 / 46,21 = 0,725 | echt: Katalogzeile gegen BKI-Zeile |
+| Bodenplatte, Faktor 0,73 | der BKI-Vergleichswert war aus mehreren Zeilen **selbst zusammenaddiert** — kein abgelesener Wert |
+| Öffnungen im Mauerwerk, Faktor 0,74 | links stand **mein eigener Richtwert**, keine Katalogzeile → Zirkelschluss |
+| Pflasterdecke, Faktor 0,73 | echt: Katalogzeile gegen BKI-Zeile |
 
 Aus **einem** Datenpunkt wurde eine Regel, weil zwei Scheinbelege danebenstanden. Die
 Gegenprobe kam erst, als eine echte Katalogzeile (Mauerwerk) dagegenstand.
