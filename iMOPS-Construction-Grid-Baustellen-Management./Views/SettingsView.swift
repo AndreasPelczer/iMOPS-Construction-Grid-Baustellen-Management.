@@ -141,6 +141,19 @@ struct SettingsView: View {
                 Text("Klickpläne und Erklär-Seiten direkt in der App — zum Vorführen und Verstehen.")
             }
 
+            // --- Preise & Stammdaten ---
+            Section {
+                NavigationLink {
+                    StammdatenPflegeView()
+                } label: {
+                    Label("Meine Preise & Stammdaten", systemImage: "eurosign.circle")
+                }
+            } header: {
+                Text("Preise")
+            } footer: {
+                Text("Deine eigenen Material-, Lohn- und Gerätepreise eintragen und ändern — antippen und tippen. Ohne eigene Preise rechnet der Mops mit Standardwerten. (Preise bleiben lokal auf dem Gerät.)")
+            }
+
             // --- Firmendaten ---
             Section {
                 TextField("Firmenname", text: $firmaName)
