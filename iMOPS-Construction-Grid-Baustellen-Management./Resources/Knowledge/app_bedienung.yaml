@@ -905,6 +905,29 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Angebots_Waechter"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Angebots-Wächter"
+    - "Position ohne Preis"
+    - "Position ohne Menge"
+    - "Lücke im Angebot"
+    - "Angebot vollständig"
+    - "was fehlt im Angebot"
+  antwort: |
+    In der Baustelle unter "Leistungsverzeichnis und Kalkulation" gibt es neben dem
+    Preis-Wächter die Karte "Angebots-Wächter". Sie meldet LÜCKEN, bevor das Angebot
+    rausgeht:
+    - Position ohne Einheitspreis (noch nicht bepreist).
+    - Position ohne Menge (im Angebot stünde 0).
+    Überschriften/Titel (keine Menge, keine Einheit, kein Preis) sind Gliederung und
+    keine Lücke; Alternativpositionen zählen auch nicht. Steht "N Lücken", tippt man
+    die Karte auf und sieht je Fund die Position + Grund. Ergänzt den Preis-Wächter:
+    der prüft falsche Zahlen, dieser fehlende.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_LV_Gruppen_Bearbeiten"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
