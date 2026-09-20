@@ -130,6 +130,47 @@ struct GAEBAnkunftsPruefungTests {
         #expect(!b.totalausfall)                    // einer kam ja an
     }
 
+    /// Die objectID-Falle, festgenagelt — der Grund, warum `importSelected()` erst
+    /// `obtainPermanentIDs` ruft und dann den Schlüssel bildet.
+    ///
+    /// Eine frisch angelegte Position hat eine TEMPORÄRE objectID. Wer den Preis darunter
+    /// ablegt, legt ihn unter einer Adresse ab, die es nach dem `save()` nicht mehr gibt:
+    /// die Datei behält den Eintrag, die Position findet ihn nie wieder. Dieser Test baut
+    /// beide Reihenfolgen nach. Die falsche MUSS auffliegen — täte sie es nicht, wäre der
+    /// Ankunfts-Nachweis blind für genau den Fehler, für den es ihn gibt.
+    @Test func derSchluesselMussDiePermanenteObjectIDSein() throws {
+        let controller = PersistenceController(inMemory: true)
+        let ctx = controller.container.viewContext
+        let store = AngebotsStore.shared
+
+        // FALSCH: Schlüssel vor dem Speichern gebildet (temporäre ID)
+        let falsch = position(ctx, "543.0010", 19)
+        let tempID = falsch.objectID.uriRepresentation().absoluteString
+        #expect(falsch.objectID.isTemporaryID, "Vorbedingung: die ID ist noch temporaer")
+        store.upsert(Angebot(lieferant: "GAEB-Import", einzelpreis: 452), for: tempID)
+
+        // RICHTIG: erst permanente ID besorgen, dann Schlüssel bilden
+        let richtig = position(ctx, "543.0020", 10)
+        try ctx.obtainPermanentIDs(for: [richtig])
+        let festeID = richtig.objectID.uriRepresentation().absoluteString
+        store.upsert(Angebot(lieferant: "GAEB-Import", einzelpreis: 560), for: festeID)
+
+        try ctx.save()
+        defer { store.remove(lieferant: "GAEB-Import", for: tempID)
+                store.remove(lieferant: "GAEB-Import", for: festeID) }
+
+        let b = GAEBAnkunftsPruefung.pruefe([(falsch,  item("543.0010", 19, 452)),
+                                             (richtig, item("543.0020", 10, 560))])
+
+        // Der unter der temporaeren ID abgelegte Preis ist weg — und der Bericht sagt es.
+        #expect(b.vermisst.count == 1)
+        #expect(b.vermisst.first?.posNr == "543.0010")
+        #expect(abs(b.fehlbetrag - 8588) < 0.001)
+        // Der richtig abgelegte ist da.
+        #expect(b.preiseAbrufbar == 1)
+        #expect(abs(b.summeAbrufbar - 5600) < 0.001)
+    }
+
     /// Der Bestandszähler ist die Grundlage der Doppel-Import-Warnung. Zählt er falsch,
     /// hängt der nächste Import wieder unbemerkt an einen vollen Topf an.
     @Test func bestandZaehltNurDieEigeneBaustelle() throws {
