@@ -603,6 +603,62 @@ mauer:
 # ============================================================================
 # 05 — ABDICHTUNG (DIN 18533)
 # ============================================================================
+  MAU-007:
+    kurztext: "Mauerwerk Porenbeton (Ytong/Hebel)"
+    langtext: |
+      Mauerwerk aus Porenbeton-Plansteinen {{material}}, Wanddicke {{dicke_cm}} cm,
+      im Dünnbettverfahren mit Dünnbettmörtel versetzt. Einschl. Zuschnitt, Anschlüsse an
+      Stahlbetonbauteile, Mauerkronen bei Arbeitsunterbrechung abdecken. Kimmschicht,
+      Stürze und Ringbalken nach gesonderten Positionen.
+      HINWEIS: Bedarfswerte je m³ Mauerwerk (Steine Stück/m³, Dünnbettmörtel kg/m³) stehen
+      in `YtongBedarf` — öffentlicher Xella-Vordruck. Der Preis je Stein/Sack ist
+      Betriebswissen und kommt aus den Stammdaten, nicht aus dem Katalog.
+    einheit: m2
+    gewerk: Mauerarbeiten
+    din: "DIN 18330, DIN EN 771-4"
+    aufwandswert_key: mauerarbeiten.mauerwerk_porenbeton
+    maschinen_keys:
+      - heben.teleskoplader
+    material:
+      text: "Porenbeton-Planstein"
+      einheit: m2
+      richtpreis: 0.0
+      verschnitt: 0.03
+    tags:
+      - Porenbeton
+      - Ytong
+      - Hebel
+      - Planstein
+      - Plansteine
+      - Mauerwerk
+      - Dünnbettmörtel
+      - Dünnbettverfahren
+      - Gasbeton
+      - Giebelmauerwerk
+      - PPW
+      - tragend
+
+  MAU-008:
+    kurztext: "Aussparungen und Durchbrüche im Mauerwerk"
+    langtext: |
+      Aussparungen, Wanddurchbrüche und Schlitze im Mauerwerk herstellen, Kanten sauber
+      arbeiten, Schutt aufnehmen und entsorgen. Nach Einbau der Leitungen schließen,
+      soweit gefordert. Abrechnung je Stück nach Aufmaß.
+    einheit: St
+    gewerk: Mauerarbeiten
+    din: "DIN 18330"
+    aufwandswert_key: mauerarbeiten.sturz_einbauen
+    tags:
+      - Aussparung
+      - Aussparungen
+      - Wanddurchbruch
+      - Wanddurchbrüche
+      - Durchbruch
+      - Durchbrüche
+      - Deckendurchbrüche
+      - Bodendurchbrüche
+      - Schlitze
+
 abdichtung:
 
   ABD-006:
