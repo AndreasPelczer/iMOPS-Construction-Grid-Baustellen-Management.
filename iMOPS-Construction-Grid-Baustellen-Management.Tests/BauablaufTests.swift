@@ -71,4 +71,56 @@ struct BauablaufTests {
         #expect(Bauablauf.istGueltigeReihenfolge([a, e, b]))
         #expect(!Bauablauf.istGueltigeReihenfolge([b, a, e]))    // a muss vorne bleiben
     }
+
+    // MARK: - Zeit im Canvas (Vorwärtsrechnung, rein — kein Core Data nötig)
+
+    /// Betonieren (1) → 3 Tage härten (Kante) → Ausschalen (1) → Anschluss (2).
+    @Test func haertezeitAufDerKanteVerschiebt() {
+        let knoten = [
+            AblaufKnoten(id: "beton", name: "Betonieren", dauerTage: 1),
+            AblaufKnoten(id: "schal", name: "Ausschalen", dauerTage: 1),
+            AblaufKnoten(id: "anschluss", name: "Anschlussarbeit", dauerTage: 2),
+        ]
+        let kanten = [
+            AblaufKante(von: "beton", zu: "schal", wartezeitTage: 3),   // härten
+            AblaufKante(von: "schal", zu: "anschluss", wartezeitTage: 0),
+        ]
+        let r = Bauablauf.vorwaertsrechnung(knoten: knoten, kanten: kanten)
+        let t = Dictionary(uniqueKeysWithValues: r.termine.map { ($0.knotenID, $0) })
+        #expect(t["beton"]?.fruehestesEndeTag == 1)
+        #expect(t["schal"]?.fruehesterStartTag == 4)   // EF(beton)=1 + 3 härten
+        #expect(t["anschluss"]?.fruehestesEndeTag == 7)
+        #expect(r.gesamtdauerTage == 7)
+        #expect(r.zyklus.isEmpty)
+    }
+
+    /// Ein Nachfolger, der auf zwei Vorgänger wartet, startet nach dem SPÄTEREN.
+    @Test func parallelNimmtDenSpaeteren() {
+        let knoten = [
+            AblaufKnoten(id: "a", name: "A", dauerTage: 2),
+            AblaufKnoten(id: "b", name: "B", dauerTage: 5),
+            AblaufKnoten(id: "c", name: "C", dauerTage: 1),
+        ]
+        let kanten = [
+            AblaufKante(von: "a", zu: "c", wartezeitTage: 0),
+            AblaufKante(von: "b", zu: "c", wartezeitTage: 0),
+        ]
+        let r = Bauablauf.vorwaertsrechnung(knoten: knoten, kanten: kanten)
+        #expect(r.termine.first { $0.knotenID == "c" }?.fruehesterStartTag == 5)
+    }
+
+    /// Ringabhängigkeit → ehrlich als Zyklus gemeldet, keine (falschen) Termine.
+    @Test func zyklusWirdErkannt() {
+        let knoten = [
+            AblaufKnoten(id: "x", name: "X", dauerTage: 1),
+            AblaufKnoten(id: "y", name: "Y", dauerTage: 1),
+        ]
+        let kanten = [
+            AblaufKante(von: "x", zu: "y", wartezeitTage: 0),
+            AblaufKante(von: "y", zu: "x", wartezeitTage: 0),
+        ]
+        let r = Bauablauf.vorwaertsrechnung(knoten: knoten, kanten: kanten)
+        #expect(!r.zyklus.isEmpty)
+        #expect(r.termine.isEmpty)
+    }
 }
