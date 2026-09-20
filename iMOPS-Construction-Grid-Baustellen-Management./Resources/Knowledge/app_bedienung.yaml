@@ -856,6 +856,30 @@
   quelle_kurz: "iMOPS App-Bedienung"
   license_note: "Eigene Bedienungshilfe"
 
+- id: "App_Preis_Waechter"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Preis-Wächter"
+    - "Preis prüfen"
+    - "falscher Preis"
+    - "Komma-Fehler Preis"
+    - "Ausreißer Preis"
+    - "Zahl prüfen Angebot"
+  antwort: |
+    In der Baustelle unter "Leistungsverzeichnis und Kalkulation" gibt es die Karte
+    "Preis-Wächter". Sie prüft die Einheitspreise DIESER Baustelle gegen die
+    gleichartigen Positionen (gleiche Einheit) und meldet Auffälligkeiten, BEVOR das
+    Angebot rausgeht:
+    - Komma-/Zehnerpotenz-Falle: ein EP ist ~10× / 100× (oder 1/10, 1/100) vom Mittel
+      der Nachbarn — fast immer ein verrutschtes Komma (z. B. 8,02 statt 80,21).
+    - Ausreißer: ein EP fällt robust (Median + MAD) aus dem Rahmen.
+    Steht "N Zahlen prüfen", tippt man die Karte auf und sieht je Fund den Preis + Grund.
+    Der Wächter sagt "prüf diese Zahl", nie "falsch" — der Mensch entscheidet. Bei
+    normaler Preisstreuung oder zu wenigen gleichartigen Positionen schweigt er.
+  quelle_kurz: "iMOPS App-Bedienung"
+  license_note: "Eigene Bedienungshilfe"
+
 - id: "App_LV_Gruppen_Bearbeiten"
   kategorie: "app-bedienung"
   app_version_min: "1.0"
