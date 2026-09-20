@@ -1566,3 +1566,60 @@
 
     Die Karte merkt sich, ob sie auf- oder zugeklappt war.
   quelle_kurz: "iMOPS CanvasRechnungBox, LVKalkulator.gesamtAufschluesselung"
+
+- id: "App_GAEB_Ankunftsbericht"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Ankunfts-Bericht"
+    - "Preise fehlen nach GAEB-Import"
+    - "Wo sind meine Preise"
+    - "Import fertig aber keine Preise"
+    - "Summe stimmt nicht nach Import"
+    - "Preise verschwunden"
+  antwort: |
+    Nach dem Import einer GAEB-Datei MIT Preisen (DP 84 / X84) kommt kein blankes
+    "Import fertig" mehr, sondern der Ankunfts-Bericht. Er liest zurueck, was
+    wirklich in der Baustelle liegt - ueber denselben Weg, den das LV und die
+    Angebotssumme gehen.
+
+    Was er zeigt:
+    - Positionen uebernommen
+    - Preise in der Datei / davon jetzt abrufbar
+    - Summenprobe: Summe in der Datei gegen Summe in der Baustelle
+    - bei Luecken: jede betroffene Position, teuerste zuerst, mit Fehlbetrag
+
+    GRUEN = Soll und Ist stimmen ueberein, man darf weiterrechnen.
+    ROT = Preise standen in der Datei und sind nicht angekommen. Dann NICHT
+    weiterrechnen: die Baustelle wuerde mit einer zu niedrigen Summe arbeiten.
+    Das ist ein Fehler im Import, nicht in der Datei - bitte melden.
+
+    Warum es das gibt: am 20.09.2026 hat ein Import 109 Positionen angelegt und
+    "fertig" gemeldet, obwohl KEINER der 109 Preise (263.304,97 EUR) angekommen
+    war. Aufgefallen ist es erst, weil die Endsumme im LV komisch aussah.
+  quelle_kurz: "iMOPS GAEBAnkunftsPruefung, GAEBAnkunftsBerichtView"
+
+- id: "App_GAEB_Import_haengt_an"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Positionen doppelt nach Import"
+    - "LV doppelt"
+    - "GAEB zweimal importiert"
+    - "Alte Positionen loeschen vor Import"
+    - "Import ersetzt nicht"
+  antwort: |
+    Ein GAEB-Import HAENGT AN, er ersetzt das vorhandene LV NICHT. Hat die
+    Baustelle schon Positionen, steht im Import-Fenster oben eine orange Warnung
+    mit der Anzahl.
+
+    Soll das neue LV den alten Stand abloesen, VORHER die alten Positionen
+    loeschen. Sonst steht alles doppelt in der Summe, und die Endsumme ist eine
+    Mischung aus zwei Staenden - nicht nachvollziehbar.
+
+    Am schnellsten geht das ueber die Baustelle selbst: Baustelle loeschen, neu
+    anlegen, dann importieren. Einzelne Positionen loeschen geht im LV ueber
+    Wischen oder Auswaehlen.
+
+    Merkhilfe: importieren = dazulegen, nicht austauschen.
+  quelle_kurz: "iMOPS GAEBImportView, GAEBAnkunftsPruefung.bestandVorImport"

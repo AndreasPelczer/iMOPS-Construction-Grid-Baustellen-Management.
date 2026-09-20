@@ -21,6 +21,15 @@ struct GAEBImportView: View {
     // „Mops fass": Review nach dem X83-Import
     @State private var fassErgebnisse: [AutoKalkulationsService.Ergebnis] = []
     @State private var showFassReview = false
+    // Ankunfts-Nachweis: was nach dem Speichern WIRKLICH abrufbar ist
+    @State private var ankunft: GAEBAnkunftsPruefung.Bericht?
+    @State private var showAnkunft = false
+    @State private var dateiname = "der Datei"
+
+    /// Wie viele LV-Positionen schon an dieser Baustelle haengen (siehe Warnung oben).
+    private var bestand: Int {
+        GAEBAnkunftsPruefung.bestandVorImport(event: event, in: viewContext)
+    }
 
     private var selectedCount: Int { items.filter { $0.isSelected }.count }
     private var allSelected: Bool  { items.allSatisfy { $0.isSelected } }
@@ -67,6 +76,11 @@ struct GAEBImportView: View {
             }
             .sheet(isPresented: $showFassReview) {
                 MopsFassReviewView(ergebnisse: fassErgebnisse, event: event) { dismiss() }
+            }
+            .sheet(isPresented: $showAnkunft, onDismiss: { dismiss() }) {
+                if let a = ankunft {
+                    GAEBAnkunftsBerichtView(bericht: a, dateiname: dateiname)
+                }
             }
             .overlay {
                 if isParsing {
@@ -150,6 +164,25 @@ struct GAEBImportView: View {
                         Label("Angebot enthält Einheitspreise — werden in Angebotsvergleich übernommen",
                               systemImage: "tag.fill")
                             .font(.caption).foregroundStyle(.orange)
+                    }
+                }
+
+                // Ein GAEB-Import HAENGT AN, er ersetzt nicht. Wer dieselbe Baustelle
+                // zweimal befuellt, hat alles doppelt — am 20.09.2026 standen 162
+                // Positionen statt 109 im LV, 17 Positionsnummern doppelt, und die
+                // Endsumme war eine Mischung aus zwei Staenden.
+                if bestand > 0 {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Diese Baustelle hat schon \(bestand) Positionen")
+                                .font(.subheadline.weight(.semibold))
+                            Text("Der Import hängt an, er ersetzt nicht. Wenn dieses LV den "
+                                 + "alten Stand ablösen soll, vorher die alten Positionen löschen "
+                                 + "— sonst steht alles doppelt in der Summe.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                     }
                 }
 
@@ -257,10 +290,12 @@ struct GAEBImportView: View {
 
             do {
                 let result = try GAEBImporter.parse(url: quelle)
+                let name = url.lastPathComponent
                 DispatchQueue.main.async {
                     isParsing = false
                     importResult = result
                     items = result.items
+                    dateiname = name.isEmpty ? "der Datei" : name
                 }
             } catch {
                 DispatchQueue.main.async {
@@ -277,6 +312,8 @@ struct GAEBImportView: View {
         var gesamt = 0
         var kalkuliert = 0
         var erstellt: [LVPosition] = []
+        // Paar (Position, gelesenes Item) — Grundlage des Ankunfts-Nachweises weiter unten.
+        var paare: [(pos: LVPosition, item: GAEBImportItem)] = []
         for item in items where item.isSelected {
             gesamt += 1
             let pos = LVPosition(context: viewContext)
@@ -288,6 +325,7 @@ struct GAEBImportView: View {
             pos.kostenGruppeNummer = item.guessedKG
             pos.event              = event
             erstellt.append(pos)
+            paare.append((pos, item))
 
             // Ein Einheitspreis in der Datei IST ein Preis — unabhaengig davon, was die
             // Kopfzeile als Datenart (DP) behauptet. Vorher haengte dieser Zweig zusaetzlich
@@ -315,6 +353,22 @@ struct GAEBImportView: View {
             // Kein Treffer = bewusst OHNE Preis (keine erfundene Zahl).
         }
         try? viewContext.save()
+
+        // NACHWEIS statt Behauptung: erst jetzt — nach dem save(), mit permanenten
+        // objectIDs — denselben Weg gehen wie das LV und die Angebotssumme. Was hier
+        // nicht auftaucht, taucht auch dort nicht auf. `kalkuliert` ist dafuer KEIN
+        // Beleg: es zaehlt, was der Import zu tun glaubte.
+        let bericht = GAEBAnkunftsPruefung.pruefe(paare)
+        if bericht.preiseInDatei > 0 {
+            // Brachte die Datei Preise mit, gibt es KEIN blankes „Import fertig" mehr,
+            // sondern immer den Nachweis — bei Lücken rot, sonst grün. Am 20.09.2026 hat
+            // ein freundliches „fertig" verdeckt, dass 109 Preise (263.304,97 €) nicht
+            // angekommen waren; aufgefallen ist es erst an der Endsumme im LV.
+            ankunft = bericht
+            showAnkunft = true
+            return
+        }
+
         if kalkuliert == 0 || !isX84 {
             // „Mops fass": über alle importierten Positionen kalkulieren → Ampel-Review
             fassErgebnisse = AutoKalkulationsService.fass(positionen: erstellt, in: viewContext)
