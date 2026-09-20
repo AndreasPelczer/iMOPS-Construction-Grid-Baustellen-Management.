@@ -1532,3 +1532,37 @@
     Steht unten eine viel zu kleine Summe, obwohl Preise importiert wurden: die
     Kostenuebersicht gegenpruefen. Zeigt die den richtigen Betrag, sind die Preise da.
   quelle_kurz: "iMOPS AutoKalkulationsService, LVKalkulator.effektiverEP"
+
+- id: "App_Canvas_Rechnung"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Rechnung im Canvas"
+    - "Rechnung ganze Baustelle"
+    - "Endpreis Canvas"
+    - "Angebotssumme Canvas"
+    - "Rechnung aufklappen"
+    - "Selbstkosten und Aufschlaege"
+  antwort: |
+    Die Rechnungskarte unten rechts im Canvas zeigt zwei verschiedene Dinge -
+    das ist Absicht:
+
+    ANGEBOTSSUMME (netto) - immer sichtbar, oben.
+    Das ist der Endpreis, der auch im LV, im PDF und im GAEB-Export steht.
+    Alle rechnen ueber dieselbe Rangfolge: hinterlegter Preis vor Element vor
+    Eigenkalkulation.
+
+    Auf die Karte tippen klappt sie auf. Dann kommen dazu:
+    - "Woraus der Preis kommt": wie viel aus hinterlegten Preisen (GAEB-Import,
+      Firma-Katalog, Lieferantenangebot) und wie viel aus eigener Kalkulation.
+    - "Was es den Betrieb kostet": Material + Lohn + Geraet = Selbstkosten,
+      dazu die Aufschlaege (BGK, AGK, Wagnis und Gewinn).
+      Material/Lohn/Geraet sind antippbar - dann sieht man, welche Positionen
+      den Betrag treiben (groesste zuerst, gut zum Ausreisser-Suchen).
+
+    WICHTIG: Bei Positionen mit hinterlegtem Preis gibt es keine Material/Lohn/
+    Geraet-Aufteilung. Der Preis IST der Preis. Der Unterschied zwischen
+    Angebotssumme und Selbstkosten ist die Marge - kein Fehler.
+
+    Die Karte merkt sich, ob sie auf- oder zugeklappt war.
+  quelle_kurz: "iMOPS CanvasRechnungBox, LVKalkulator.gesamtAufschluesselung"

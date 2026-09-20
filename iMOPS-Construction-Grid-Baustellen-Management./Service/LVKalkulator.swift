@@ -196,19 +196,35 @@ enum LVKalkulator {
     /// Netto-Gesamtpreis. Alle Teile summieren sich exakt auf (kein Angebots-Fremdpreis),
     /// damit die kleine Rechnung im Canvas nicht auseinanderlaeuft.
     struct Gesamtaufschluesselung {
+        // KOSTENSEITE — was die Baustelle den Betrieb kostet.
         var material  = 0.0
         var lohn      = 0.0
         var geraet    = 0.0
         var aufschlag = 0.0
 
+        // PREISSEITE — was auf dem Angebot steht. Getrennt gefuehrt, weil ein
+        // hinterlegter Einheitspreis (GAEB-Import, Firma-Katalog, Lieferant) keine
+        // Material/Lohn/Geraet-Struktur hat: er IST der Preis. Die Differenz zur
+        // Kostenseite ist die Marge, kein Widerspruch.
+        var ausAngeboten = 0.0
+        var positionenMitAngebot = 0
+        var ausKalkulation = 0.0
+        var positionenOhneAngebot = 0
+
         var selbstkosten: Double { material + lohn + geraet }
         var gesamtNetto:  Double { selbstkosten + aufschlag }
+
+        /// Was auf dem Angebot steht — dieselbe Zahl wie im LV, im PDF und im GAEB-Export
+        /// (alle rechnen ueber `effektiverEP`).
+        var angebotssumme: Double { ausAngeboten + ausKalkulation }
+        var positionen: Int { positionenMitAngebot + positionenOhneAngebot }
     }
 
     /// Summiert die Tiefenkalkulation ueber die zaehlbaren Positionen (Unterpunkte und
     /// doppelte Bewehrung fallen raus). Element vor Baustein — `kalkulationFuer` waehlt
     /// den richtigen Weg, damit nichts doppelt zaehlt.
-    static func gesamtAufschluesselung(positionen: [LVPosition]) -> Gesamtaufschluesselung {
+    static func gesamtAufschluesselung(positionen: [LVPosition],
+                                       store: AngebotsStore = .shared) -> Gesamtaufschluesselung {
         var g = Gesamtaufschluesselung()
         for pos in positionen.zaehlbarePositionen() {
             let k = kalkulationFuer(pos)
@@ -216,6 +232,18 @@ enum LVKalkulator {
             g.lohn      += k.lohnKosten     * k.menge
             g.geraet    += k.geraeteKosten  * k.menge
             g.aufschlag += k.zuschlagGesamt * k.menge
+
+            // Preisseite, gleiche Rangfolge wie ueberall: Angebot zuerst.
+            let id = pos.objectID.uriRepresentation().absoluteString
+            let hatAngebot = (store.guenstigster(for: id)?.einzelpreis ?? 0) > 0
+            let betrag = effektiverEP(for: pos, store: store) * pos.menge
+            if hatAngebot {
+                g.ausAngeboten += betrag
+                g.positionenMitAngebot += 1
+            } else {
+                g.ausKalkulation += betrag
+                g.positionenOhneAngebot += 1
+            }
         }
         return g
     }

@@ -26,6 +26,9 @@ struct CanvasRechnungBox: View {
     @ObservedObject var event: Event
     @State private var erklaerungOffen = false
     @State private var herkunft: Kostenart?
+    /// Zusammengeklappt zeigt die Karte nur den Endpreis — sie soll auf dem Canvas
+    /// nicht die halbe Flaeche belegen. Der Zustand haelt ueber Sitzungen.
+    @AppStorage("canvasRechnungOffen") private var offen = false
 
     /// Zählbare, nicht-alternative Positionen der Baustelle → durchkalkuliert und summiert.
     private var summe: LVKalkulator.Gesamtaufschluesselung {
@@ -38,34 +41,69 @@ struct CanvasRechnungBox: View {
         let s = summe
         VStack(alignment: .leading, spacing: 6) {
 
-            HStack(spacing: 6) {
-                Image(systemName: "eurosign.circle.fill").foregroundStyle(.orange)
-                Text("Rechnung — ganze Baustelle")
-                    .font(.caption.weight(.semibold))
-                Spacer(minLength: 8)
-                Button { erklaerungOffen = true } label: {
-                    Image(systemName: "questionmark.circle")
-                        .font(.caption)
+            Button {
+                withAnimation(.snappy(duration: 0.22)) { offen.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "eurosign.circle.fill").foregroundStyle(.orange)
+                    Text("Rechnung — ganze Baustelle")
+                        .font(.caption.weight(.semibold))
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(offen ? 0 : -90))
                 }
-                .buttonStyle(.plain)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
+
+            // Immer sichtbar: der Endpreis. Dieselbe Zahl wie im LV, im PDF und im
+            // GAEB-Export — alle rechnen ueber effektiverEP.
+            zeile("Angebotssumme (netto)", s.angebotssumme, fett: true, farbe: .orange)
+            if !offen {
+                Text("\(s.positionen) Positionen · antippen für die Aufschlüsselung")
+                    .font(.caption2).foregroundStyle(.secondary)
             }
 
-            zeileTippbar("Material", s.material, art: .material)
-            zeileTippbar("Lohn", s.lohn, art: .lohn)
-            zeileTippbar("Gerät", s.geraet, art: .geraet)
+            if offen {
+                if s.positionenMitAngebot > 0 {
+                    Divider()
+                    Text("Woraus der Preis kommt")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    zeile("hinterlegte Preise (\(s.positionenMitAngebot))", s.ausAngeboten)
+                    zeile("eigene Kalkulation (\(s.positionenOhneAngebot))", s.ausKalkulation)
+                }
 
-            Divider()
-            zeile("Selbstkosten", s.selbstkosten, fett: true)
-            zeile("+ Aufschläge", s.aufschlag, farbe: .orange)
+                Divider()
+                HStack(spacing: 4) {
+                    Text("Was es den Betrieb kostet")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    Spacer(minLength: 4)
+                    Button { erklaerungOffen = true } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                zeileTippbar("Material", s.material, art: .material)
+                zeileTippbar("Lohn", s.lohn, art: .lohn)
+                zeileTippbar("Gerät", s.geraet, art: .geraet)
+                zeile("Selbstkosten", s.selbstkosten, fett: true)
+                zeile("+ Aufschläge", s.aufschlag, farbe: .orange)
+                zeile("Selbstkosten + Aufschläge", s.gesamtNetto)
 
-            Divider()
-            zeile("Gesamt (netto)", s.gesamtNetto, fett: true, farbe: .orange)
-
-            Text("Material/Lohn/Gerät antippen — woraus besteht die Summe?")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
+                // Der ehrliche Hinweis: bei hinterlegten Preisen ist die Kostenseite
+                // NICHT die Angebotssumme. Die Differenz ist die Marge.
+                if s.positionenMitAngebot > 0 {
+                    Text("Bei hinterlegten Preisen gibt es keine Material/Lohn/Gerät-Aufteilung — der Preis IST der Preis. Der Unterschied zur Kostenseite ist die Marge.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("Material/Lohn/Gerät antippen — woraus besteht die Summe?")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
         }
         .padding(12)
         .frame(width: 230)

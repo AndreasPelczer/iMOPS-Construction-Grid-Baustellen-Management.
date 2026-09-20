@@ -224,3 +224,66 @@ struct GAEBPreisUnabhaengigVonDPTests {
         #expect(r.items.first?.unitPrice == 3.94)
     }
 }
+
+// MARK: - Die Canvas-Rechnung zeigt den Endpreis, nicht nur die Kosten
+
+struct CanvasRechnungPreisseiteTests {
+
+    private let s = AngebotsStore.shared
+
+    private func pos(_ ctx: NSManagedObjectContext, nr: String, menge: Double) -> LVPosition {
+        let p = LVPosition(context: ctx)
+        p.posNr = nr; p.bezeichnung = "Position \(nr)"; p.einheit = "m³"; p.menge = menge
+        return p
+    }
+
+    private func lohn(_ p: LVPosition, _ ctx: NSManagedObjectContext, stunden: Double) {
+        let l = PositionLohn(context: ctx)
+        l.id = UUID(); l.qualifikation = "Facharbeiter"
+        l.stundenBruttoEK = 42.0; l.stunden = stunden; l.position = p
+    }
+
+    /// Der Fall vom 20.09.: Positionen mit importiertem Preis UND Lohnzeilen.
+    /// Die Kostenseite zeigt den Lohn, die Angebotssumme den echten Preis.
+    @Test func angebotssummeUndKostenseiteWerdenGetrennt() throws {
+        let pc = PersistenceController(inMemory: true)
+        let ctx = pc.container.viewContext
+
+        let mitPreis = pos(ctx, nr: "01.01", menge: 10)
+        lohn(mitPreis, ctx, stunden: 1.0)                 // Kosten: 42 €/Einheit
+        let ohnePreis = pos(ctx, nr: "01.02", menge: 5)
+        lohn(ohnePreis, ctx, stunden: 1.0)
+
+        try? ctx.obtainPermanentIDs(for: [mitPreis, ohnePreis])
+        let id = mitPreis.objectID.uriRepresentation().absoluteString
+        s.upsert(Angebot(lieferant: "GAEB-Import", einzelpreis: 174.00), for: id)
+
+        let g = LVKalkulator.gesamtAufschluesselung(positionen: [mitPreis, ohnePreis], store: s)
+
+        #expect(g.positionenMitAngebot == 1)
+        #expect(g.positionenOhneAngebot == 1)
+        #expect(g.positionen == 2)
+        // Preisseite: 10 × 174 aus dem Angebot, dazu die kalkulierte Position.
+        #expect(abs(g.ausAngeboten - 1740.0) < 0.01)
+        #expect(g.ausKalkulation > 0)
+        #expect(abs(g.angebotssumme - (g.ausAngeboten + g.ausKalkulation)) < 0.001)
+        // Die Angebotssumme ist deutlich groesser als die reine Kostenseite.
+        #expect(g.angebotssumme > g.selbstkosten)
+        // Kostenseite steht trotzdem: der Lohn beider Positionen ist erfasst.
+        #expect(g.lohn > 0)
+
+        s.remove(lieferant: "GAEB-Import", for: id)
+    }
+
+    @Test func ohneAngeboteBleibtAllesWieVorher() throws {
+        let pc = PersistenceController(inMemory: true)
+        let ctx = pc.container.viewContext
+        let p = pos(ctx, nr: "02.01", menge: 4)
+        lohn(p, ctx, stunden: 2.0)
+        let g = LVKalkulator.gesamtAufschluesselung(positionen: [p], store: s)
+        #expect(g.positionenMitAngebot == 0)
+        #expect(g.ausAngeboten == 0)
+        // Ohne Angebot ist die Angebotssumme die durchgerechnete Kalkulation.
+        #expect(abs(g.angebotssumme - LVKalkulator.kalkuliere(position: p).einheitspreisVK * 4) < 0.01)
+    }
+}
