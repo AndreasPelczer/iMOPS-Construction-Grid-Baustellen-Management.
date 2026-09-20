@@ -27,6 +27,16 @@ struct KnotenAufwandswertTests {
     @MainActor
     private var ctx: NSManagedObjectContext { controller.container.viewContext }
 
+    /// Fixture: die zwei Lohnsätze, die früher der (entfernte) StammdatenSeeder anlegte.
+    @MainActor
+    private func seedMaurerHelfer(_ ctx: NSManagedObjectContext) {
+        for (q, l, f) in [("Maurer", 28.50, 1.65), ("Helfer", 18.50, 1.55)] {
+            let ls = Lohnsatz(context: ctx)
+            ls.id = UUID(); ls.qualifikation = q; ls.stundenlohn = l; ls.zuschlagFaktor = f
+        }
+        try? ctx.save()
+    }
+
     // MARK: - Draht 1: der Knoten trägt seine eigene Position
 
     @Test @MainActor func knotenBekommtEigenePositionUndFindetSieZurueck() throws {
@@ -55,7 +65,7 @@ struct KnotenAufwandswertTests {
     // MARK: - Draht 3: die Stunden werden zur kalkulierten Lohnsumme
 
     @Test @MainActor func aufwandswertLandetAlsLohnMalMengeMalSatz() throws {
-        StammdatenSeeder.seedIfNeeded(context: ctx)
+        seedMaurerHelfer(ctx)
 
         // Die Stammdaten-Vorlagen, aus denen der Brutto-EK-Satz kommt.
         let maurerSatz = try #require(lohnsatz("Maurer"))

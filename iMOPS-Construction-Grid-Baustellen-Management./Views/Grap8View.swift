@@ -309,8 +309,7 @@ private struct Baustellenwahl: View {
             ContentUnavailableView {
                 Label("Keine Baustelle", systemImage: "point.3.connected.trianglepath.dotted")
             } description: {
-                Text("Grap8 zeigt die Kette einer Baustelle. Lege zuerst eine an — "
-                     + "oder lade die Demo-Daten über den Zauberstab.")
+                Text("Grap8 zeigt die Kette einer Baustelle. Lege zuerst eine an.")
             }
         } else {
             List(baustellen) { baustelle in

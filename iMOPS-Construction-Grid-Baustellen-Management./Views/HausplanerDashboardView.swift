@@ -49,13 +49,6 @@ struct HausplanerDashboardView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
-                    
-                    Button {
-                        ausgewaehlteBaustelle = "projekt_1" // Test-Klick simuliert Auswahl
-                    } label: {
-                        Text("Beispielprojekt laden (Die schöne Ansicht)")
-                    }
-                    .buttonStyle(.borderedProminent)
                 }
             }
         }

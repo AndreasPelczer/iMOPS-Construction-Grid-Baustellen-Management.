@@ -22,10 +22,20 @@ struct KatalogSichtenUndMasseTests {
     @MainActor
     private var ctx: NSManagedObjectContext { controller.container.viewContext }
 
+    /// Fixture: die zwei Lohnsätze, die früher der (entfernte) StammdatenSeeder anlegte.
+    @MainActor
+    private func seedMaurerHelfer(_ ctx: NSManagedObjectContext) {
+        for (q, l, f) in [("Maurer", 28.50, 1.65), ("Helfer", 18.50, 1.55)] {
+            let ls = Lohnsatz(context: ctx)
+            ls.id = UUID(); ls.qualifikation = q; ls.stundenlohn = l; ls.zuschlagFaktor = f
+        }
+        try? ctx.save()
+    }
+
     // MARK: - Teil A: gemeinsamer Lohn-Schreiber
 
     @Test @MainActor func aufwandAlsLohnSchreibtMitStammdatenSatzUndIstIdempotent() throws {
-        StammdatenSeeder.seedIfNeeded(context: ctx)
+        seedMaurerHelfer(ctx)
         let maurerBrutto = 28.50 * 1.65
         let helferBrutto = 18.50 * 1.55
 

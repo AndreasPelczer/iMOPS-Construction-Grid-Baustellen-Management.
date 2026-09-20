@@ -50,13 +50,6 @@ struct ContentView: View {
                 .tint(.orange)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    DemoSeeder.seedIfNeeded(into: viewContext)
-                } label: {
-                    Label("Demo", systemImage: "wand.and.stars")
-                }
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showingHousePlanner = true } label: {
                     Label("Hausplaner", systemImage: "house.and.flag")
                 }
@@ -109,7 +102,6 @@ struct ContentView: View {
             withAnimation { eventListVM.applyFilterAndSearch(filter: selectedFilter, query: searchText, sort: newSort) }
         }
         .onAppear {
-            DebugSeeder.seedIfNeeded(context: viewContext)
             eventListVM.applyFilterAndSearch(filter: selectedFilter, query: searchText, sort: sortOrder)
         }
         .alert(
