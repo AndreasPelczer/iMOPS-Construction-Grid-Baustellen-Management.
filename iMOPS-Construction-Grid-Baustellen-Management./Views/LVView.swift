@@ -198,18 +198,16 @@ struct LVView: View {
 
     private var gesamtSumme: Double {
         ohneDuplikate(Array(positionen).filter { !LVPositionHelper.isAlternative($0) }).reduce(0.0) { sum, pos in
-            let preis: Double
-            if pos.istElement {
-                // B-Element: der Preis steckt in den Bausteinen, nicht in einer eigenen
-                // Kalkulation. Ohne diesen Zweig faellt das Element aus der Summe.
-                preis = LVKalkulator.kalkuliereElement(pos).einheitspreisVK
-            } else if pos.hatKalkulation {
-                preis = LVKalkulator.kalkuliere(position: pos).einheitspreisVK
-            } else if let best = store.guenstigster(for: pos.objectID.uriRepresentation().absoluteString) {
-                preis = best.einzelpreis
-            } else {
-                preis = pos.value(forKey: "einkaufspreis") as? Double ?? 0
-            }
+            // EINE Wahrheit fuer Bildschirm UND Export: derselbe Rang wie in
+            // LVKalkulator.effektiverEP — Angebot ZUERST, dann Element, dann Eigenkalkulation.
+            //
+            // Vorher stand hier die umgekehrte Reihenfolge (Kalkulation vor Angebot). Folge:
+            // ein importierter X84-Angebotspreis wurde von einer spaeter durch "Mops fass"
+            // geschriebenen Lohn-Kalkulation VERDRAENGT — die Kostenuebersicht zeigte die
+            // richtige Summe, der Balken unten im LV eine viel kleinere. 20.09.2026 an einer
+            // echten Baustelle aufgefallen: 15.255 EUR im LV gegen 256.742 EUR in der Uebersicht.
+            let ep = LVKalkulator.effektiverEP(for: pos, store: store)
+            let preis = ep > 0 ? ep : (pos.value(forKey: "einkaufspreis") as? Double ?? 0)
             return sum + (pos.menge * preis)
         }
     }
