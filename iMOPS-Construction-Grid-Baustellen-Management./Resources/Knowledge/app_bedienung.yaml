@@ -1451,3 +1451,51 @@
     Zwischenschritte (A wartet auf B, B auf C, C kann nicht auf A warten).
 
     Die Verknuepfungen sind dasselbe, was Grap8 als Pfeile zeichnet.
+
+- id: "App_Aushub_aus_zwei_DXF"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Aushub aus DXF"
+    - "Aushub rechnen"
+    - "zwei DXF"
+    - "Gelaendeplan ohne Haus"
+    - "Zeichnung mit Haus"
+    - "Baugrube rechnen"
+    - "Aushubsohle"
+    - "Hoehenanker"
+    - "Zollfalle SketchUp"
+    - "Massstab DXF"
+  antwort: |
+    "Aushub aus DXF" rechnet die Baugrube aus ZWEI Zeichnungen, die sich ergaenzen:
+    dem Gelaendeplan OHNE Haus (die Hoehen) und der Grundstueckszeichnung MIT Haus
+    (der Umriss). Beide muessen aus demselben Koordinatensystem kommen.
+
+    Wo: Baustelle oeffnen -> "Erdmassen aus Gelaende" -> Knopf
+    "Aushub aus zwei DXF (Gelaende + Haus)". Rechnet offline im Mops, ohne Server.
+
+    So gehst du vor:
+    1. Gelaende-DXF waehlen. Der Mops loest verschachtelte Bloecke selbst auf.
+    2. Massstab bestaetigen. Spannt das Modell nur ein paar Einheiten, ist es die
+       SketchUp-Zollfalle (1 Einheit = 39,37 m) - der Mops schlaegt das vor, rechnet
+       aber NICHT heimlich um. Darunter steht, wie gross das Grundstueck damit waere.
+    3. Haus-DXF waehlen. Der Umriss kommt aus den Wand-Layern; ueber die Auswahl
+       "Umriss aus" laesst sich auch ein anderer Layer nehmen (z. B. nur die Garage).
+    4. Hoehenanker setzen: Rohfussboden EG in mueNN aus dem Werkplan eintragen und
+       dazu, auf welchem Z das Modell die OK Bodenplatte hat ("Wandfuss aus der
+       Hauszeichnung uebernehmen" macht das automatisch). Liegt das Gelaende schon
+       in mueNN, den Schalter oben umlegen.
+    5. Aufbau pruefen: Bodenaufbau, Plattendicke, Polster, Arbeitsraum. Daraus wird
+       die Aushubsohle: Rohfussboden minus Bodenaufbau minus Platte minus Polster.
+    6. "Aushub rechnen" -> Abtrag/Auftrag, Flaeche, Gelaende von/bis, mittlere Tiefe.
+    7. "Aushub ins LV uebernehmen" schreibt die Position mit dem ganzen Rechenweg
+       in den Langtext.
+
+    Gegenprobe (wichtig): nach dem Anker zeigt das Ergebnis die Gelaendespanne in
+    mueNN. Die gegen einen bekannten Wert halten - Strassenhoehe, Nachbarhoehe,
+    Hoehe aus dem Lageplan. Passt die nicht, stimmt der Anker nicht.
+
+    EHRLICH: das ist ein geometrisches Volumen im gewachsenen Zustand - ohne
+    Auflockerung, ohne Boeschungsausrundung, kein Vermesser-Aufmass. Rasterzellen
+    ausserhalb des Gelaendemodells werden gezaehlt und angezeigt.
+  quelle_kurz: "iMOPS AushubAusDXFView"

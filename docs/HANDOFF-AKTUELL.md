@@ -2,6 +2,51 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 20.09.2026 (Nacht) — Geländebrücke offline: Aushub aus zwei DXF
+
+**Branch `feature/gelaende-dxf-aushub` (lokal, NICHT gepusht, baut auf `chore/mops-scharfstellen`).**
+Andreas' Weg: der Architekt liefert einen Geländeplan OHNE Haus und danach die Grundstücks-
+zeichnung MIT Haus. Beide im selben Koordinatensystem → der Aushub ist rechenbar statt geschätzt.
+
+**Neu — `Service/DXFGelaende.swift`:**
+- `DXFGelaendeLeser.lies(dxf:)` — zeilenbasierter DXF-Leser, der den **Blockbaum rekursiv auflöst**
+  (`q = R(rot)·S(scale)·(p − Blockbasis) + Einfügepunkt`, verkettet). SketchUp legt ALLES in
+  verschachtelte Blöcke; der ENTITIES-Abschnitt hat nur die obersten INSERTs. Liest VERTEX,
+  POINT, LINE, 3DFACE, LWPOLYLINE. POLYLINE-Köpfe bewusst NICHT (sonst Geisterpunkte im Ursprung).
+- `DXFMassstab.vorschlag(fuer:)` — die **SketchUp-Zollfalle**: Exporte kommen oft als
+  „Zoll-als-Meter" (1 Einheit = 39,37 m), `$INSUNITS` lügt dabei. Erkannt an der Spannweite
+  (< 5 Einheiten = unplausibel), **vorgeschlagen, nie still angewendet**.
+- `Gelaendemodell.ausPunktwolke(_:ausschnitt:zellgroesse:hoehenversatz:)` — unregelmäßige
+  Punktwolke → Raster (nächster Nachbar über Eimer-Index). Zellen ohne Geländepunkt werden
+  **gezählt und gemeldet**, nicht heimlich interpoliert.
+- `Aushubvorgabe` / `Aushubrechner` — Sohle = Rohfußboden − Bodenaufbau − Plattendicke − Polster;
+  Umriss + Arbeitsraum → `ErdmassenRechner.gegenEbene` (der lag schon da, Bogen 1).
+- `Umriss` (Bounding Box, `erweitert(um:)`, `skaliert(_:)`) + `gebaeudeUmriss()` über Wand-Layer.
+
+**Neu — `Views/AushubAusDXFView.swift`:** fünf Schritte (Gelände → Maßstab → Haus/Umriss →
+Höhenanker + Aufbau → rechnen), Ergebniskarte, „Aushub ins LV übernehmen" mit dem **Rechenweg
+im Langtext**. Eingehängt in `ErdmassenView` (Knopf „Aushub aus zwei DXF"). Rechnen läuft
+auf einem Hintergrund-Thread.
+
+**Tests:** `DXFGelaendeTests.swift`, 13 neue → **460/460 grün, TEST SUCCEEDED**
+(vorher 445). Falle dabei: lange `+`-Ketten aus Tupel-Arrays lassen den Swift-Typechecker
+aufgeben („unable to type-check this expression in reasonable time") — Test-DXF werden
+jetzt imperativ über einen kleinen `DXFBauer` gebaut.
+
+**Nachweis an echten Daten (nicht nur Unit-Test):** `Service/Erdmassen.swift` + `DXFGelaende.swift`
+mit `swiftc` gegen Raphis echte `Raphi-Haus-Layer.dxf` (11 MB) laufen lassen — 61.319 Punkte in
+1,7 s, Hausumriss 8,00 × 9,50 m automatisch erkannt, Wandfuß Z 2,30 → Versatz 193,58,
+Gelände 193,02–200,96 müNN, **Abtrag 130,2 m³** bei 0,50 m Arbeitsraum. Deckt sich mit der
+Handrechnung. Der Höhenanker ist dreifach geprüft (Straßenhöhe, Garagen-RFB 194,26 müNN
+auf den Zentimeter, Terrassenhöhe).
+
+**Drift-Regel erfüllt:** `app_bedienung.yaml` +1 Eintrag `App_Aushub_aus_zwei_DXF` (47 gesamt).
+
+- **🔴 OFFEN:** kein Push (Andreas' OK abwarten). Am echten Gerät noch nicht angefasst —
+  der Datei-Picker-Weg (zwei DXF nacheinander) ist ungetestet. Nicht gebaut, bewusst:
+  Geländemodellierung gegen ein **geplantes** Endgelände (`ErdmassenRechner.gegenFlaeche`
+  kann das schon, es fehlt nur die zweite Zeichnung) und der Fundamentgraben der Hangseite.
+
 ## Delta 20.09.2026 (Abend) — Mops SCHARFGESTELLT (Demos/Seeder/Zauberstäbe raus)
 
 **Branch `chore/mops-scharfstellen` (lokal, Commit 6da29b7, NICHT gepusht).** Der Mops läuft ab jetzt nur auf ECHTEN Daten — frischer Mops ist leer bis zum Import.
