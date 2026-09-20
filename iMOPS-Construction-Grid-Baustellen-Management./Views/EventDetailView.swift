@@ -1641,11 +1641,27 @@ struct EventDetailView: View {
                     .background(Color.red.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
             }
 
+            // Bestellvorschlag auf einen Blick: was fehlt (Soll − Lager-Ist)?
+            let zuBestellen = bedarf.filter {
+                max(0, $0.menge - lagerStore.gesamtbestand(artikelCode: $0.code)) > 0.0001
+            }
+            if !bedarf.isEmpty {
+                Label(zuBestellen.isEmpty
+                      ? "Alles auf Lager — nichts zu bestellen."
+                      : "\(zuBestellen.count) von \(bedarf.count) Positionen bestellen — je Zeile „bestellen: …“, Sammelbestellung über „Bestellliste“.",
+                      systemImage: zuBestellen.isEmpty ? "checkmark.seal" : "cart")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(zuBestellen.isEmpty ? .green : .orange)
+                    .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                    .background((zuBestellen.isEmpty ? Color.green : Color.orange).opacity(0.10),
+                                in: RoundedRectangle(cornerRadius: 10))
+            }
+
             if bedarf.isEmpty && pinnedMaterials.isEmpty {
                 materialLeerHinweis
             } else {
                 if !bedarf.isEmpty {
-                    Text("Geplant für diese Baustelle. Geprüft wird im Auftrag „Material prüfen“ (Gewerke & Ausführung) — hier gespiegelt.")
+                    Text("Geplant für diese Baustelle. Geprüft wird im Auftrag „Material prüfen“ (Aufträge für Arbeit) — hier gespiegelt.")
                         .font(.caption).foregroundStyle(.secondary)
                     VStack(spacing: 8) {
                         ForEach(bedarf, id: \.code) { b in
@@ -1688,12 +1704,27 @@ struct EventDetailView: View {
         let mengeText = b.menge.formatted(.number.precision(.fractionLength(0...2)))
         let orte = lagerStore.bestandJeOrt(artikelCode: b.code)     // WO liegt es
         let widerspruch = gemeldetFehlt && !orte.isEmpty            // Lager sagt da, vor Ort fehlt
+        // Soll/Ist → Bestellvorschlag: geplant (Soll) minus Lagerbestand (Ist) = was fehlt.
+        let ist = lagerStore.gesamtbestand(artikelCode: b.code)
+        let fehlmenge = max(0, b.menge - ist)
+        func mengeStr(_ w: Double) -> String { w.formatted(.number.precision(.fractionLength(0...2))) }
         return HStack(spacing: 12) {
             Image(systemName: iconForKategorie(entry?.kategorie)).font(.title3).foregroundStyle(.orange).frame(width: 28)
             VStack(alignment: .leading, spacing: 4) {
                 Text(name).font(.body)
                 Text("geplant \(mengeText) \(b.einheit)").font(.caption).foregroundStyle(.secondary)
                 materialStatusChip(code: b.code)
+                // Das Urteil: bestellen oder auf Lager (Soll − Ist).
+                if fehlmenge > 0.0001 {
+                    Label(ist > 0.0001
+                          ? "bestellen: \(mengeStr(fehlmenge)) \(b.einheit)  ·  \(mengeStr(ist)) \(b.einheit) auf Lager"
+                          : "bestellen: \(mengeStr(fehlmenge)) \(b.einheit)",
+                          systemImage: "cart.badge.plus")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.orange)
+                } else {
+                    Label("auf Lager — \(mengeStr(ist)) \(b.einheit) vorhanden", systemImage: "checkmark.circle")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.green)
+                }
                 // WO liegt es — der fehlende Bezug zum Lagerort.
                 if !orte.isEmpty {
                     Label(orte.map { "\($0.ort.name) (\($0.menge.formatted(.number.precision(.fractionLength(0...2)))))" }
