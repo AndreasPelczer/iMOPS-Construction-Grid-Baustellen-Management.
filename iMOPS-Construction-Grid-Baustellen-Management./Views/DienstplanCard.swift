@@ -7,17 +7,24 @@ import CoreData
 // (WIE VIELE Leute): hier wird sichtbar, WELCHER Mensch WELCHE Aufgabe macht — und
 // dank dem Netzplan-Motor auch WANN (früheste Tage). Gruppiert die Aufträge dieser
 // Baustelle nach zugewiesenem Mitarbeiter (`employeeName`); „Nicht zugewiesen" steht
-// oben, damit offene Arbeit auffällt.
+// oben, damit offene Arbeit auffällt. Zuweisen geht direkt hier (Menü je Aufgabe).
 //
-// Nutzt, was schon da ist: die Zuordnung (Auftrag.employeeName) und den Terminplan
-// (Bauablauf.terminplan). Kein neues Datenmodell.
+// Nutzt, was schon da ist: die Zuordnung (Auftrag.employeeName), die Mitarbeiter
+// (Employee) und den Terminplan (Bauablauf.terminplan). Kein neues Datenmodell.
 struct DienstplanCard: View {
     let jobs: [Auftrag]
 
+    @Environment(\.managedObjectContext) private var ctx
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)],
+        predicate: NSPredicate(format: "isActive == YES")
+    ) private var mitarbeiter: FetchedResults<Employee>
+
     @State private var termine: [String: AblaufTermin] = [:]
+    @State private var gruppen: [Gruppe] = []
 
     private struct Gruppe: Identifiable {
-        let id: String          // Mitarbeitername (oder "—")
+        let id: String
         let name: String
         let zugewiesen: Bool
         let jobs: [Auftrag]
@@ -47,15 +54,16 @@ struct DienstplanCard: View {
                     .background(g.zugewiesen ? Color(.tertiarySystemBackground) : Color.orange.opacity(0.06),
                                 in: RoundedRectangle(cornerRadius: 10))
                 }
+                if mitarbeiter.isEmpty {
+                    Text("Tipp: Im Crew-Tab Mitarbeiter anlegen, dann kannst du hier zuweisen.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
             }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .task(id: jobs.count) {
-            let e = Bauablauf.terminplan(fuer: jobs)
-            termine = Dictionary(uniqueKeysWithValues: e.termine.map { ($0.knotenID, $0) })
-        }
+        .task(id: jobs.count) { berechne() }
     }
 
     private func jobZeile(_ j: Auftrag) -> some View {
@@ -69,24 +77,53 @@ struct DienstplanCard: View {
                 Text("Tag \(tag(t.fruehesterStartTag))–\(tag(t.fruehestesEndeTag))")
                     .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
             }
+            // Direkt zuweisen: Menü mit den aktiven Mitarbeitern (+ „Nicht zugewiesen").
+            Menu {
+                ForEach(mitarbeiter, id: \.objectID) { m in
+                    Button { zuweisen(j, m.name) } label: {
+                        Label(m.name ?? "—", systemImage: (j.employeeName == m.name) ? "checkmark" : "person")
+                    }
+                }
+                if !(j.employeeName ?? "").isEmpty {
+                    Divider()
+                    Button(role: .destructive) { zuweisen(j, nil) } label: {
+                        Label("Nicht zugewiesen", systemImage: "person.slash")
+                    }
+                }
+            } label: {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+            .disabled(mitarbeiter.isEmpty)
         }
     }
 
     private func tag(_ d: Double) -> String { d.formatted(.number.precision(.fractionLength(0...1))) }
 
-    private var gruppen: [Gruppe] {
+    /// Mitarbeiter zuweisen (oder lösen) und neu gruppieren. Persistiert sofort.
+    private func zuweisen(_ j: Auftrag, _ name: String?) {
+        j.employeeName = (name ?? "").isEmpty ? nil : name
+        try? ctx.save()
+        berechne()
+    }
+
+    /// Termine + Gruppen (nach Mitarbeiter) neu rechnen — in @State, damit die Sicht
+    /// nach dem Zuweisen sofort umsortiert.
+    private func berechne() {
+        let e = Bauablauf.terminplan(fuer: jobs)
+        termine = Dictionary(uniqueKeysWithValues: e.termine.map { ($0.knotenID, $0) })
+
         let byName = Dictionary(grouping: jobs) { (j: Auftrag) -> String in
-            let n = (j.employeeName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            return n.isEmpty ? "" : n
+            (j.employeeName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        return byName.map { name, js in
+        gruppen = byName.map { name, js in
             Gruppe(id: name.isEmpty ? "—" : name,
                    name: name.isEmpty ? "Nicht zugewiesen" : name,
                    zugewiesen: !name.isEmpty,
                    jobs: js)
         }
         .sorted { a, b in
-            if a.zugewiesen != b.zugewiesen { return !a.zugewiesen }   // Nicht zugewiesen oben
+            if a.zugewiesen != b.zugewiesen { return !a.zugewiesen }   // „Nicht zugewiesen" oben
             return a.name.localizedCompare(b.name) == .orderedAscending
         }
     }
