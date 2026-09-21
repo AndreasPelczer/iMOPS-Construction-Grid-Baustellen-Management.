@@ -969,8 +969,11 @@ struct LVView: View {
                 }
             }
         }
+        // Neu anlegen laeuft ueber die schlanke Maske: zwei Angaben (was, wie viel),
+        // alles andere kommt mit dem Textbaustein. BEARBEITEN bleibt bei AddLVPositionView
+        // — dort haengen Alternativposition, Artikelnummer, Lieferant und der EK.
         .fullScreenCover(isPresented: $showingAdd) {
-            AddLVPositionView(event: event)
+            PositionSchnellView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
         .fullScreenCover(item: $editPosition) { pos in
@@ -1043,8 +1046,11 @@ struct LVView: View {
             GAEBImportView(event: event, initialURL: droppedGAEBURL)
                 .environment(\.managedObjectContext, viewContext)
         }
+        // Frueher ein eigenes Formular mit neun Feldern und einer Suche, die Titel statt
+        // Positionen fand. Dieselbe Aufgabe, also dieselbe Maske — die Suche darin IST
+        // der Katalog.
         .fullScreenCover(isPresented: $showBausteine) {
-            LVBausteinAuswahlView(event: event)
+            PositionSchnellView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
         .onChange(of: importedFileHandler.pendingGAEBURL) { _, newURL in
