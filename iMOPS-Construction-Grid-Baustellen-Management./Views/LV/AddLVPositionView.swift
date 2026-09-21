@@ -17,7 +17,11 @@ struct AddLVPositionView: View {
     @State private var lieferant = ""
     @State private var isAlternative = false
     @State private var showKatalog = false
-    @State private var katalogVorschlaege: [STLBBaustein] = []   // Live-Vorschläge aus dem LV-Katalog
+    @State private var katalogVorschlaege: [STLBBaustein] = []   // Live-Vorschläge aus dem STLB-Katalog (YAML, Rezepte)
+    /// Vorschläge aus dem EIGENEN Katalog (Core Data) — da liegen die Firmenzeilen MIT Preis.
+    /// Die Maske fragte bisher nur den STLB-Topf ab; wer seinen Firmenkatalog importierte,
+    /// bekam trotzdem nichts vorgeschlagen. (21.09.2026 an 1.043 importierten Zeilen gesehen.)
+    @State private var firmaVorschlaege: [Leistungsbaustein] = []
     @State private var kgProposal: KGProposal?
     @State private var selectedGeschoss: Geschoss?   // Welle 9 — Ebene der Position
     @State private var rezeptMass = ""               // B-Element: Aufwand je Element-Einheit
@@ -61,6 +65,30 @@ struct AddLVPositionView: View {
                     TextField("Bezeichnung *", text: $bezeichnung, axis: .vertical).lineLimit(2...4)
                     // Live-Vorschläge aus dem LV-Katalog: beim Tippen echte Positionen picken
                     // (Text + Einheit kommen mit; der Firma-Preis greift dann beim Rechnen).
+                    if !firmaVorschlaege.isEmpty {
+                        ForEach(firmaVorschlaege, id: \.objectID) { b in
+                            Button {
+                                bezeichnung = b.leistung ?? ""
+                                if let e = b.einheit, !e.isEmpty { einheit = e }
+                                firmaVorschlaege = []; katalogVorschlaege = []
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "eurosign.circle.fill")
+                                        .foregroundStyle(.green).font(.caption)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(b.leistung ?? "—").font(.subheadline).foregroundStyle(.primary)
+                                        Text(b.einheitspreisVK > 0
+                                             ? "eigener Preis · \(b.einheitspreisVK.formatted(.number.precision(.fractionLength(2)))) € / \(b.einheit ?? "")"
+                                             : "eigener Katalog · \(b.einheit ?? "")")
+                                            .font(.caption2).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "arrow.up.left").font(.caption2).foregroundStyle(.green)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                     if !katalogVorschlaege.isEmpty {
                         ForEach(katalogVorschlaege) { b in
                             Button {
@@ -215,10 +243,16 @@ struct AddLVPositionView: View {
             .onAppear { prefill(); setupGeschoss() }
             .onChange(of: bezeichnung) { _, neu in
                 refreshKGProposal()
-                let vs = neu.trimmingCharacters(in: .whitespaces).count >= 3
-                    ? STLBKatalog.shared.vorschlaege(zu: neu) : []
+                let suchtext = neu.trimmingCharacters(in: .whitespaces)
+                let langGenug = suchtext.count >= 3
+                let vs = langGenug ? STLBKatalog.shared.vorschlaege(zu: neu) : []
                 // Exakter Treffer = gerade gepickt → keine Liste mehr zeigen.
                 katalogVorschlaege = vs.contains { $0.kurztext == neu } ? [] : vs
+                // Der eigene Katalog: hier liegen die Firmenzeilen mit dem eigenen Preis.
+                let fs = langGenug
+                    ? LeistungskatalogService.vorschlaege(fuer: suchtext, limit: 8, in: viewContext)
+                    : []
+                firmaVorschlaege = fs.contains { $0.leistung == neu } ? [] : fs
             }
             .onChange(of: einheit) { _, _ in
                 refreshKGProposal()
