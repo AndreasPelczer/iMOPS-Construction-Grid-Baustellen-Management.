@@ -77,6 +77,100 @@ enum Tagesblick {
         let event: Event
     }
 
+    // MARK: - Die Lage je Baustelle
+
+    /// In welcher Phase steckt eine Baustelle? Danach richtet sich der TON.
+    ///
+    /// Andreas, 21.09.: „Erst wenn wirklich Alarm ist, auch Alarm rufen — denn bis
+    /// jetzt haben wir doch nur eine Baustelle, die noch geplant werden muss."
+    /// Eine Baustelle in Planung kann gar nicht blockiert sein. Dort gibt es keine
+    /// Not, nur offene Vorbereitung — und die meldet man freundlich, nicht rot.
+    enum Phase {
+        case planung      // nichts angefangen
+        case laeuft       // jemand arbeitet, oder es ist schon etwas fertig
+        case fertig       // alles erledigt
+
+        var text: String {
+            switch self {
+            case .planung: return "wird geplant"
+            case .laeuft:  return "läuft"
+            case .fertig:  return "fertig"
+            }
+        }
+    }
+
+    /// Etwas, das anstünde. Kein Mangel, kein Alarm — ein Angebot.
+    struct Anstehend: Identifiable {
+        let id = UUID()
+        let text: String
+        /// Wohin es führt: das LV oder die Baustelle selbst.
+        let insLV: Bool
+    }
+
+    struct Lage: Identifiable {
+        let id = UUID()
+        let baustelle: String
+        let event: Event
+        let phase: Phase
+        let pakete: Int
+        let positionen: Int
+        var anstehend: [Anstehend] = []
+
+        /// Ein Satz, der die Lage beschreibt — ohne Wertung.
+        var satz: String {
+            switch phase {
+            case .planung:
+                if pakete == 0 && positionen > 0 {
+                    return "\(positionen) Positionen eingelesen, noch keine Arbeitspakete."
+                }
+                if pakete == 0 { return "Noch nichts drin." }
+                return "\(pakete) Arbeitspakete, \(positionen) Positionen. Noch hat keiner angefangen."
+            case .laeuft:
+                return "\(pakete) Arbeitspakete. Es wird gearbeitet."
+            case .fertig:
+                return "Alle \(pakete) Arbeitspakete sind erledigt."
+            }
+        }
+    }
+
+    /// Was an einer Baustelle anstünde — in der Reihenfolge, in der es Sinn ergibt.
+    @MainActor
+    private static func lage(_ event: Event) -> Lage {
+        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        let positionen = ((event.lvPositionen as? Set<LVPosition>) ?? [])
+        let fertig = jobs.filter { $0.status == .completed }.count
+        let laufend = jobs.filter { $0.status == .inProgress }.count
+
+        let phase: Phase
+        if !jobs.isEmpty && fertig == jobs.count { phase = .fertig }
+        else if laufend > 0 || fertig > 0        { phase = .laeuft }
+        else                                      { phase = .planung }
+
+        var l = Lage(baustelle: event.title ?? "Baustelle", event: event, phase: phase,
+                     pakete: jobs.count, positionen: positionen.count)
+
+        if event.eventStartTime == nil {
+            l.anstehend.append(Anstehend(text: "Einen Baubeginn festlegen — ohne den bleibt der Kalender leer.", insLV: false))
+        }
+        if jobs.isEmpty && !positionen.isEmpty {
+            l.anstehend.append(Anstehend(text: "Arbeitspakete vorschlagen lassen — der Mops macht aus \(positionen.count) Positionen ein gutes Dutzend Pakete.", insLV: true))
+        }
+        let ohneDauer = jobs.filter { $0.dauerTage <= 0 }.count
+        if ohneDauer > 0 {
+            l.anstehend.append(Anstehend(text: "\(ohneDauer) Pakete haben keine Dauer — ohne die steht nichts im Kalender.", insLV: false))
+        }
+        let ohneMann = jobs.filter { ($0.employeeName ?? "").isEmpty }.count
+        if !jobs.isEmpty && ohneMann == jobs.count {
+            l.anstehend.append(Anstehend(text: "Niemand ist zugeteilt.", insLV: false))
+        }
+        let zaehlbar = positionen.sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }.zaehlbarePositionen()
+        let ohnePreis = zaehlbar.filter { LVKalkulator.effektiverEP(for: $0) <= 0 }.count
+        if ohnePreis > 0 {
+            l.anstehend.append(Anstehend(text: "\(ohnePreis) Positionen haben noch keinen Preis.", insLV: true))
+        }
+        return l
+    }
+
     /// Wo zuletzt gearbeitet wurde — der Wiedereinstieg nach der Unterbrechung.
     struct Zuletzt {
         let baustelle: String
@@ -89,6 +183,7 @@ enum Tagesblick {
         var startklar: [Startklar] = []
         var preisluecken: [Preisluecke] = []
         var fristen: [Fristsache] = []
+        var lagen: [Lage] = []
         var zuletzt: Zuletzt?
         var baustellenAktiv = 0
 
@@ -113,6 +208,7 @@ enum Tagesblick {
             guard !offen.isEmpty || !positionen.isEmpty else { continue }
             e.baustellenAktiv += 1
             let name = event.title ?? "Baustelle"
+            e.lagen.append(lage(event))
 
             // 1) Blockaden: ein laufender Auftrag, dessen Voraussetzung nicht erfüllt ist.
             //    Die Daten dafür liegen längst (523 Voraussetzungen mit Reihenfolge und

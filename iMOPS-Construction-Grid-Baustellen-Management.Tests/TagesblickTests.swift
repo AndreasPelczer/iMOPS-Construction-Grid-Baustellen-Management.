@@ -224,4 +224,55 @@ struct TagesblickTests {
         #expect(t.blockaden.first?.fehlt == "Schalung stellen",
                 "eine namenlose Kante wird nach ihrem Vorgänger benannt")
     }
+
+    /// 🔴 Eine Baustelle in PLANUNG kann gar nicht blockiert sein. Andreas, 21.09.:
+    /// „Erst wenn wirklich Alarm ist, auch Alarm rufen — bis jetzt haben wir doch nur
+    /// eine Baustelle, die noch geplant werden muss."
+    @Test func einePlanungsbaustelleSchlaegtKeinenAlarm() throws {
+        let c = PersistenceController(inMemory: true)
+        let ctx = c.container.viewContext
+        defer { aufraeumen() }
+
+        let e = baustelle(ctx, "BV Planung")
+        e.eventStartTime = nil
+        for name in ["Aushub", "Bodenplatte", "Mauerwerk"] {
+            let a = Auftrag(context: ctx)
+            a.processingDetails = name; a.status = .pending
+            a.storageNote = ""; a.dauerTage = 0; a.event = e
+        }
+        position(ctx, e, "01.0010", preis: nil)
+        try ctx.save()
+
+        let t = Tagesblick.fuerHeute(in: ctx)
+        #expect(t.blockaden.isEmpty, "in der Planung steht niemand")
+
+        let l = try #require(t.lagen.first)
+        #expect(l.phase == .planung)
+        #expect(l.pakete == 3)
+        // Was anstünde, freundlich statt rot:
+        let texte = l.anstehend.map(\.text).joined(separator: " | ")
+        #expect(texte.contains("Baubeginn"), "kein Starttermin gesetzt")
+        #expect(texte.contains("keine Dauer"))
+        #expect(texte.contains("Niemand ist zugeteilt"))
+        #expect(texte.contains("keinen Preis"))
+    }
+
+    /// Sobald jemand arbeitet, heißt die Baustelle „läuft" — und erst dort sind
+    /// Blockaden überhaupt möglich.
+    @Test func sobaldJemandArbeitetLaeuftDieBaustelle() throws {
+        let c = PersistenceController(inMemory: true)
+        let ctx = c.container.viewContext
+        defer { aufraeumen() }
+
+        let e = baustelle(ctx, "BV Läuft")
+        let a = Auftrag(context: ctx)
+        a.processingDetails = "Aushub"; a.status = .inProgress
+        a.storageNote = ""; a.dauerTage = 2; a.employeeName = "Paolo"; a.event = e
+        e.eventStartTime = Date()
+        try ctx.save()
+
+        let l = try #require(Tagesblick.fuerHeute(in: ctx).lagen.first)
+        #expect(l.phase == .laeuft)
+        #expect(l.anstehend.isEmpty, "alles gesetzt — nichts steht an")
+    }
 }

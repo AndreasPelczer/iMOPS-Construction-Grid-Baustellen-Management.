@@ -38,6 +38,45 @@ struct TagesblickView: View {
                 }
             }
 
+            ForEach(blick.lagen) { l in
+                Section {
+                    NavigationLink { SpaeterLaden { EventDetailView(event: l.event) } } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 8) {
+                                Text(l.baustelle).font(.body.weight(.semibold))
+                                Text(l.phase.text)
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 7).padding(.vertical, 2)
+                                    .background(farbe(l.phase).opacity(0.16), in: Capsule())
+                                    .foregroundStyle(farbe(l.phase))
+                            }
+                            Text(l.satz).font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    }
+
+                    ForEach(l.anstehend) { a in
+                        NavigationLink {
+                            SpaeterLaden {
+                                if a.insLV { AnyView(LVView(event: l.event)) }
+                                else { AnyView(EventDetailView(event: l.event)) }
+                            }
+                        } label: {
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: "circle.dashed")
+                                    .foregroundStyle(.secondary)
+                                Text(a.text).font(.subheadline)
+                            }
+                        }
+                    }
+                } footer: {
+                    if !l.anstehend.isEmpty {
+                        Text(l.phase == .planung
+                             ? "Kein Alarm — hier wird noch geplant. Das stünde an, wenn du Lust hast."
+                             : "Das stünde noch an.")
+                    }
+                }
+            }
+
             Section {
                 NavigationLink { SpaeterLaden { WochenstrahlView() } } label: {
                     HStack(spacing: 12) {
@@ -115,32 +154,18 @@ struct TagesblickView: View {
                 }
             }
 
-            if !blick.preisluecken.isEmpty {
-                Section {
-                    ForEach(blick.preisluecken) { p in
-                        NavigationLink { SpaeterLaden { LVView(event: p.event) } } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(p.baustelle).font(.body.weight(.semibold))
-                                    Text("\(p.betroffeneMenge) von \(p.anzahl) Positionen ohne unseren Preis")
-                                        .font(.subheadline).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Text("\(p.betroffeneMenge)")
-                                    .font(.title3.weight(.bold)).foregroundStyle(.orange)
-                            }
-                        }
-                    }
-                } header: {
-                    kopf("Daraus wird noch kein Angebot", zahl: nil)
-                } footer: {
-                    Text("Gerechnet wie im LV: Angebot vor Element vor Eigenkalkulation.")
-                }
-            }
         }
         .navigationTitle("Wo war ich?")
         .refreshable { laden() }
         .onAppear { laden() }
+    }
+
+    private func farbe(_ p: Tagesblick.Phase) -> Color {
+        switch p {
+        case .planung: return .blue
+        case .laeuft:  return .green
+        case .fertig:  return .secondary
+        }
     }
 
     private func kopf(_ text: String, zahl: Int?) -> some View {
