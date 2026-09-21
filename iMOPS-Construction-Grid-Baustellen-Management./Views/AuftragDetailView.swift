@@ -412,90 +412,173 @@ struct AuftragDetailView: View {
     // (Die Übergabe lebt jetzt an EINER Stelle: der Baustelle — SchichtUebergabeCard.
     //  Der einzelne Auftrag ist zum Tun da: JETZT → Schritte → Material.)
 
+    // MARK: - Arbeitsschritte: schreiben ODER abarbeiten
+
+    /// Andreas, 21.09.: „Was ich jetzt erwartet hätte: eine Liste, die beschreibt, was
+    /// zu erreichen ist. Kontrollieren ob sie stimmt, und den nächsten Punkt angehen.
+    /// Nicht erst eine Vorlage suchen und irgendwas einstellen müssen — das ist doch
+    /// für Paolo, den Lehrling und den Polen."
+    ///
+    /// Er hat recht. Die Karte war ein AUTORENWERKZEUG („Neuer Schritt…", Zauberstab,
+    /// Vorlagenmenü) und wurde jedem gezeigt. Das sind aber zwei Tätigkeiten:
+    ///
+    ///   Anweisung SCHREIBEN   → Büro/Raphi, vorher, am Schreibtisch
+    ///   Anweisung ABARBEITEN  → Paolo, Lehrling, Kamil, auf der Baustelle
+    ///
+    /// 🔴 Und das braucht keinen Rollenschalter — der ZUSTAND sagt es:
+    /// keine Schritte da → jemand muss sie schreiben. Schritte da → abarbeiten.
+    /// Dasselbe Muster wie die Baustellen-Phase im Tagesblick.
     private var checklistCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Arbeitsschritte").font(.headline)
-                Spacer()
-                Menu {
-                    ForEach(AuftragTemplate.allCases) { tpl in
-                        Button("Vorlage: \(tpl.rawValue)") {
-                            applyTemplate(tpl, mode: .append)
-                        }
-                    }
-                    Divider()
-                    Button(role: .destructive) {
-                        extras.checklist.removeAll()
-                        job.setzeFertig(false)
-                        saveExtras(extras)
-                    } label: {
-                        Label("Leeren", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "wand.and.stars")
-                }
-            }
-
-            if extras.trainingMode {
-                HStack(spacing: 10) {
-                    TextField("Neuer Schritt...", text: $newStepText)
-                        .textFieldStyle(.roundedBorder)
-                    Button { addStep(newStepText) } label: {
-                        Image(systemName: "plus.circle.fill").font(.title3)
-                    }
-                    .disabled(newStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-
-                if extras.checklist.isEmpty {
-                    Text("Noch keine Schritte. Nutze eine Vorlage oder fuege Schritte hinzu.")
-                        .foregroundStyle(.secondary).font(.subheadline)
-                } else {
-                    VStack(spacing: 8) {
-                        ForEach(extras.checklist) { item in
-                            trainingStepRow(item)
-                        }
-                    }
-                }
+            if extras.checklist.isEmpty {
+                anweisungFehlt
             } else {
-                HStack(spacing: 10) {
-                    Button { markJobCompleted() } label: {
-                        Label(job.istFertig
-                                ? "Auftrag ist fertig"
-                                : "Ich bestätige, dass jeder einzelne Schritt erledigt ist",
-                              systemImage: job.istFertig ? "checkmark.seal.fill" : "checkmark.circle.fill")
-                            .font(.headline)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button(role: .destructive) { resetCompletion() } label: {
-                        Label("Reset", systemImage: "arrow.counterclockwise")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(!job.istFertig)
-                }
-
-                if extras.checklist.isEmpty {
-                    Text("Keine Arbeitsschritte hinterlegt.")
-                        .font(.subheadline).foregroundStyle(.secondary).padding(.top, 4)
-                } else {
-                    DisclosureGroup("Schritte anzeigen (\(extras.checklist.count))") {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(extras.checklist) { item in
-                                proStepRow(item)
-                            }
-                        }
-                        .padding(.top, 6)
-                    }
-                    .padding(.top, 6)
-                }
+                anweisungAbarbeiten
             }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
+
+    /// Es gibt noch keine Anweisung. Das ist Vorbereitung, nicht Baustellenarbeit —
+    /// also wird es auch so benannt, statt ein leeres Eingabefeld hinzustellen.
+    private var anweisungFehlt: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Für diese Arbeit gibt es noch keine Anweisung",
+                  systemImage: "list.bullet.rectangle")
+                .font(.headline)
+            Text("Wer sie einmal schreibt, spart sie allen danach.")
+                .font(.subheadline).foregroundStyle(.secondary)
+
+            if let passend = AuftragTemplate.passend(zu: whatToDoText) {
+                Button { applyTemplate(passend, mode: .replace) } label: {
+                    Label("Vorlage \u{201E}\(passend.rawValue)\u{201C} nehmen \u{2014} \(passend.steps.count) Schritte",
+                          systemImage: "sparkles")
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                Text("Zu dieser Arbeit passt keine der \(AuftragTemplate.allCases.count) Vorlagen. "
+                     + "Schreib die Schritte einmal \u{2014} dann stehen sie da.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+
+            Menu {
+                ForEach(AuftragTemplate.allCases) { tpl in
+                    Button("\(tpl.rawValue) \u{2014} \(tpl.steps.count) Schritte") {
+                        applyTemplate(tpl, mode: .replace)
+                    }
+                }
+            } label: {
+                Label("Vorlage wählen", systemImage: "square.grid.2x2")
+            }
+            .buttonStyle(.bordered)
+
+            HStack(spacing: 10) {
+                TextField("Ersten Schritt schreiben…", text: $newStepText)
+                    .textFieldStyle(.roundedBorder)
+                    .id("neuer-schritt")
+                Button { addStep(newStepText) } label: {
+                    Image(systemName: "plus.circle.fill").font(.title3)
+                }
+                .disabled(newStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+    }
+
+    /// EIN Punkt groß, der Rest klein darunter. Aus Andreas' abgenommenem
+    /// Hilfsarbeiter-Muster: eine Aufgabe, nicht zehn — er weiß wohin es geht, muss
+    /// aber nicht wählen.
+    private var anweisungAbarbeiten: some View {
+        let offen = extras.checklist.filter { !$0.isDone }
+        let fertig = extras.checklist.count - offen.count
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Arbeitsschritte").font(.headline)
+                Spacer()
+                Text("\(fertig) von \(extras.checklist.count)")
+                    .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
+            }
+
+            if let naechster = offen.first {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("JETZT").font(.caption.weight(.bold)).foregroundStyle(.orange)
+                    Text(naechster.title)
+                        .font(.title3.weight(.semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button { toggleStep(naechster.id) } label: {
+                        Label("Erledigt", systemImage: "checkmark.circle.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
+                    if offen.count > 1 {
+                        Text("Danach: \(offen[1].title)")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.tertiarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                Button { markJobCompleted() } label: {
+                    Label(job.istFertig ? "Auftrag ist fertig"
+                                        : "Alle Schritte erledigt \u{2014} Auftrag abschließen",
+                          systemImage: job.istFertig ? "checkmark.seal.fill" : "checkmark.circle.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(job.istFertig)
+            }
+
+            DisclosureGroup("Alle Schritte ansehen (\(extras.checklist.count))") {
+                VStack(spacing: 8) {
+                    ForEach(extras.checklist) { item in trainingStepRow(item) }
+                }
+                .padding(.top, 6)
+            }
+            .font(.subheadline)
+
+            DisclosureGroup("Anweisung ändern") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        TextField("Schritt anhängen…", text: $newStepText)
+                            .textFieldStyle(.roundedBorder)
+                            .id("schritt-anhaengen")
+                        Button { addStep(newStepText) } label: {
+                            Image(systemName: "plus.circle.fill").font(.title3)
+                        }
+                        .disabled(newStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    Menu {
+                        ForEach(AuftragTemplate.allCases) { tpl in
+                            Button("Vorlage anhängen: \(tpl.rawValue)") {
+                                applyTemplate(tpl, mode: .append)
+                            }
+                        }
+                        Divider()
+                        Button(role: .destructive) {
+                            extras.checklist.removeAll()
+                            job.setzeFertig(false)
+                            saveExtras(extras)
+                        } label: { Label("Alle Schritte leeren", systemImage: "trash") }
+                    } label: {
+                        Label("Vorlage oder leeren", systemImage: "wand.and.stars")
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(.top, 6)
+            }
+            .font(.subheadline)
+            .tint(.secondary)
+        }
+    }
+
 
     // MARK: - Übernommene Verantwortung
 
