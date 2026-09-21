@@ -98,6 +98,7 @@ struct LVView: View {
     // „Mops fass": das ganze LV automatisch bepreisen → Ampel-Review
     @State private var fassErgebnisse: [AutoKalkulationsService.Ergebnis] = []
     @State private var showFassReview = false
+    @State private var zeigeArbeitspakete = false
     @State private var brueckeInfo: String?   // Rückmeldung „auf den Canvas holen"
     @State private var showingCanvas = false  // öffnet den Grap8-Canvas („Canvas ansehen")
 
@@ -656,6 +657,33 @@ struct LVView: View {
                     }
                     .tint(.primary)
 
+                    // Vom Angebot zur Arbeit: die Titel des LV als Arbeitspakete.
+                    // Meldet sich von selbst, sobald Positionen da sind - der Moment
+                    // direkt nach Mops fass, in dem man sich fragt: und jetzt?
+                    // NICHT jede Position ein Auftrag (das ist der Canvas-Knopf
+                    // darunter und ergibt bei 109 Positionen 109 Knoten). Ein LV ist
+                    // die Abrechnung, ein Arbeitspaket ist die Arbeit.
+                    if !positionen.isEmpty {
+                        Button { zeigeArbeitspakete = true } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "shippingbox.and.arrow.backward")
+                                    .font(.title3).foregroundStyle(.orange)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text((event.jobs?.count ?? 0) > 0
+                                         ? "Weitere Arbeitspakete vorschlagen"
+                                         : "Arbeitspakete vorschlagen")
+                                        .font(.subheadline.weight(.medium))
+                                    Text("aus den Titeln des LV - mit Dauer, zum Durchsehen")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption).foregroundStyle(.tertiary)
+                            }
+                        }
+                        .tint(.primary)
+                    }
+
                     // Brücke LV → Grap8-Canvas: erst anlegen, danach ansehen (derselbe Knopf)
                     if (event.jobs?.count ?? 0) > 0 {
                         Button {
@@ -1010,6 +1038,9 @@ struct LVView: View {
         }
         .fullScreenCover(isPresented: $showFassReview) {
             MopsFassReviewView(ergebnisse: fassErgebnisse, event: event)
+        }
+        .sheet(isPresented: $zeigeArbeitspakete) {
+            ArbeitspaketeVorschlagView(event: event)
         }
         .alert("Canvas", isPresented: Binding(get: { brueckeInfo != nil },
                                               set: { if !$0 { brueckeInfo = nil } })) {
