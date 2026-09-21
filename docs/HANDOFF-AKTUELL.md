@@ -30,7 +30,32 @@ echten DB gemessen: `startTime` leer, `lastStartTime` bei allen 34 Aufträgen le
 verschwinden live (`NSManagedObjectContextObjectsDidChange`), Einzahl/Mehrzahl,
 **`docs/WESEN-DES-MOPS.md`** (Ton-Doktrin, aus der Pflichtspur verlinkt).
 
-### 🔴 Was als Nächstes dran ist
+### ☀️ MORGEN FRÜH ZUERST (von Andreas so gelegt, Nacht 21./22.09.)
+
+**Sein Grundsatz:** jede Wartezeit braucht eine **belegte** Zahl. Rangfolge:
+Lieferschein/Datenblatt dieser Baustelle → Statik → Fundus → Katalog.
+🔴 **Internet ist raus** — er hat es ausdrücklich gestrichen: eine Netz-Zahl belegt
+nichts, weil niemand prüfen kann, ob es dasselbe Produkt ist. Bestätigt sie ein
+Mensch, ist ER der Beleg. Widersprechen sich Quellen, entscheidet der Mensch — aber
+der Mops muss den Widerspruch SAGEN.
+
+Und: *„Eine Baustelle ist nicht fertig geplant, wenn nicht für jedes Teil ein
+Sicherheitsdatenblatt vorhanden ist."*
+
+1. **Fundus fragen** (kleinstes Stück, zwei echte Quellen statt einer).
+   `MopsClient.ask` gibt es; die Antwort wird **Kandidat mit Herkunft „Fundus"**,
+   nie Wahrheit. Gemessen: von vier Quellen liefert heute nur der Katalog — die
+   Rohre sind alle da, es fragt nur niemand.
+2. **Papiere je Material.** 🔴 Zwei Dokumente, nicht verwechseln:
+   **Sicherheitsdatenblatt** = Gefahren/Schutz, Pflicht nach GefStoffV/REACH ·
+   **technisches Merkblatt** = Verarbeitung, DORT steht die Wartezeit.
+   🔴 Nur für **Gefahrstoffe** verlangen (Zement ja, Schotter nein) — sonst stehen
+   80 % auf rot, und ein Zustand, der immer rot ist, ist Rauschen.
+   `KalkMaterial` hat weder Dokumentfeld noch Gefahrstoff-Merkmal → eigener
+   JSON-Speicher wie `LiegezeitBuch`, mit Ablaufdatum (ein SDB muss aktuell sein).
+3. Als Punkt unter „Das stünde an", kein Alarm.
+
+### 🔴 Was danach dran ist
 - **Auftrag ↔ LV echt verbinden** — toOne→toMany, neue Modellversion + Migration.
   Andreas hat Daten drin: bewusst, mit Backup. Davor hängt der Bestellvorschlag.
 - **931 Waisen** (von 965 Aufträgen!) — `Event.jobs` ist Nullify, alles andere Cascade.
