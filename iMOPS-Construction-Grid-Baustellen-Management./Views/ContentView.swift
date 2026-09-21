@@ -19,7 +19,9 @@ struct ContentView: View {
         List {
             // Die Klammer über ALLE Baustellen — steht vor der Auswahl einer einzelnen.
             Section {
-                NavigationLink { TagesblickView() } label: { TagesblickKarte() }
+                // SpaeterLaden: sonst baut NavigationLink das Ziel bei JEDEM
+                // Neuzeichnen mit auf — daran ist die App am 21.09. abgestürzt.
+                NavigationLink { SpaeterLaden { TagesblickView() } } label: { TagesblickKarte() }
             }
             Section {
                 EventFilterPicker(selectedFilter: $selectedFilter)

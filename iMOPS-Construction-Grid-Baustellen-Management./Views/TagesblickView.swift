@@ -20,13 +20,12 @@ import CoreData
 struct TagesblickView: View {
     @Environment(\.managedObjectContext) private var ctx
     @State private var blick = Tagesblick.Ergebnis()
-    @State private var zielBaustelle: Event?
 
     var body: some View {
         List {
             if let z = blick.zuletzt {
                 Section {
-                    Button { zielBaustelle = z.event } label: {
+                    NavigationLink { EventDetailView(event: z.event) } label: {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("WO DU WARST")
                                 .font(.caption2.weight(.bold))
@@ -36,12 +35,11 @@ struct TagesblickView: View {
                                 .font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
-                    .buttonStyle(.plain)
                 }
             }
 
             Section {
-                NavigationLink { WochenstrahlView() } label: {
+                NavigationLink { SpaeterLaden { WochenstrahlView() } } label: {
                     HStack(spacing: 12) {
                         Image(systemName: "calendar")
                             .font(.title3).foregroundStyle(.secondary)
@@ -66,8 +64,7 @@ struct TagesblickView: View {
             if !blick.blockaden.isEmpty {
                 Section {
                     ForEach(blick.blockaden) { b in
-                        Button { zielBaustelle = b.event } label: { zeile(b) }
-                            .buttonStyle(.plain)
+                        NavigationLink { EventDetailView(event: b.event) } label: { zeile(b) }
                     }
                 } header: {
                     kopf("Blockiert gerade jemanden", zahl: blick.blockaden.count)
@@ -79,7 +76,7 @@ struct TagesblickView: View {
             if !blick.fristen.isEmpty {
                 Section {
                     ForEach(blick.fristen) { f in
-                        Button { zielBaustelle = f.event } label: {
+                        NavigationLink { EventDetailView(event: f.event) } label: {
                             HStack(alignment: .top, spacing: 12) {
                                 Text(f.ueberfaellig ? "🔴" : "🟠")
                                 VStack(alignment: .leading, spacing: 2) {
@@ -90,7 +87,6 @@ struct TagesblickView: View {
                                 }
                             }
                         }
-                        .buttonStyle(.plain)
                     }
                 } header: {
                     kopf("Hat eine Frist", zahl: blick.fristen.count)
@@ -100,7 +96,7 @@ struct TagesblickView: View {
             if !blick.preisluecken.isEmpty {
                 Section {
                     ForEach(blick.preisluecken) { p in
-                        Button { zielBaustelle = p.event } label: {
+                        NavigationLink { EventDetailView(event: p.event) } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(p.baustelle).font(.body.weight(.semibold))
@@ -112,7 +108,6 @@ struct TagesblickView: View {
                                     .font(.title3.weight(.bold)).foregroundStyle(.orange)
                             }
                         }
-                        .buttonStyle(.plain)
                     }
                 } header: {
                     kopf("Daraus wird noch kein Angebot", zahl: nil)
@@ -122,7 +117,6 @@ struct TagesblickView: View {
             }
         }
         .navigationTitle("Wo war ich?")
-        .navigationDestination(item: $zielBaustelle) { EventDetailView(event: $0) }
         .refreshable { laden() }
         .onAppear { laden() }
     }
@@ -164,31 +158,67 @@ struct TagesblickView: View {
 /// Suchleiste kapert am iPad die Navileiste (siehe `searchable-verdeckt-toolbar`).
 struct TagesblickKarte: View {
     @Environment(\.managedObjectContext) private var ctx
-    @State private var blick = Tagesblick.Ergebnis()
+
+    /// 🔴 Nur Zahlen und ein Name — KEINE Core-Data-Objekte. Diese Karte steht dauerhaft
+    /// in der Baustellenliste; was sie festhält, wird bei jedem Neuzeichnen mitgeschleppt.
+    private struct Kurz: Equatable {
+        var blockiert = 0
+        var ueberfaellig = 0
+        var ohnePreis = 0
+        var zuletzt = ""
+        var ruhig = true
+    }
+    @State private var kurz = Kurz()
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: blick.istRuhig ? "checkmark.circle" : "exclamationmark.triangle.fill")
+            Image(systemName: kurz.ruhig ? "checkmark.circle" : "exclamationmark.triangle.fill")
                 .font(.title2)
-                .foregroundStyle(blick.blockaden.isEmpty ? Color.secondary : .red)
+                .foregroundStyle(kurz.blockiert == 0 ? Color.secondary : .red)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Wo war ich?").font(.body.weight(.semibold))
                 Text(zusammenfassung).font(.subheadline).foregroundStyle(.secondary)
             }
         }
-        .onAppear { blick = Tagesblick.fuerHeute(in: ctx) }
+        .onAppear { laden() }
+    }
+
+    private func laden() {
+        let b = Tagesblick.fuerHeute(in: ctx)
+        kurz = Kurz(blockiert: b.blockaden.count,
+                    ueberfaellig: b.fristen.filter(\.ueberfaellig).count,
+                    ohnePreis: b.preisluecken.reduce(0) { $0 + $1.betroffeneMenge },
+                    zuletzt: b.zuletzt?.baustelle ?? "",
+                    ruhig: b.istRuhig)
     }
 
     private var zusammenfassung: String {
         var teile: [String] = []
-        if !blick.blockaden.isEmpty { teile.append("\(blick.blockaden.count) blockiert") }
-        let ueberfaellig = blick.fristen.filter(\.ueberfaellig).count
-        if ueberfaellig > 0 { teile.append("\(ueberfaellig) überfällig") }
-        let ohnePreis = blick.preisluecken.reduce(0) { $0 + $1.betroffeneMenge }
-        if ohnePreis > 0 { teile.append("\(ohnePreis) ohne Preis") }
+        if kurz.blockiert > 0 { teile.append("\(kurz.blockiert) blockiert") }
+        if kurz.ueberfaellig > 0 { teile.append("\(kurz.ueberfaellig) überfällig") }
+        if kurz.ohnePreis > 0 { teile.append("\(kurz.ohnePreis) ohne Preis") }
         if teile.isEmpty {
-            return blick.zuletzt.map { "zuletzt: \($0.baustelle)" } ?? "nichts steht"
+            return kurz.zuletzt.isEmpty ? "nichts steht" : "zuletzt: \(kurz.zuletzt)"
         }
         return teile.joined(separator: " · ")
     }
+}
+
+
+// MARK: - Erst beim Aufschlagen bauen
+
+/// `NavigationLink(destination:)` baut sein Ziel SOFORT mit auf — bei jedem Neuzeichnen
+/// der Liste. Für eine Ansicht mit eigenem `@State` voller Core-Data-Objekte heißt das:
+/// ständig anlegen und wieder wegräumen.
+///
+/// 🔴 Genau daran ist die App am 21.09. abgestürzt:
+/// `outlined destroy of TagesblickView` → `NavigationLink.init(destination:label:)`
+/// → `ContentView.swift:22`, zusammen mit `.searchable` im selben Bildschirm.
+///
+/// Dieser Wrapper hält nur eine Closure. Die Ansicht entsteht erst, wenn wirklich
+/// hingeblättert wird.
+struct SpaeterLaden<Inhalt: View>: View {
+    private let bauen: () -> Inhalt
+    init(@ViewBuilder _ bauen: @escaping () -> Inhalt) { self.bauen = bauen }
+    var body: Inhalt { bauen() }
 }

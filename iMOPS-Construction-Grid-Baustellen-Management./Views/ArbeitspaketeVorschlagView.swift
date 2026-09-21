@@ -94,6 +94,11 @@ struct ArbeitspaketeVorschlagView: View {
                         Text("\(v.wrappedValue.anzahlPositionen) Positionen · "
                              + v.wrappedValue.summe.formatted(.currency(code: "EUR")))
                             .font(.caption).foregroundStyle(.secondary)
+                        if v.wrappedValue.schonAngelegt {
+                            Text("gibt es schon")
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(.green)
+                        }
                     }
                 }
             }

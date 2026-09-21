@@ -19,7 +19,6 @@ struct WochenstrahlView: View {
     @Environment(\.managedObjectContext) private var ctx
     @State private var versatz = 0
     @State private var woche = Wochenstrahl.Ergebnis()
-    @State private var ziel: Event?
 
     var body: some View {
         List {
@@ -51,7 +50,7 @@ struct WochenstrahlView: View {
                         Text("—").foregroundStyle(.tertiary)
                     } else {
                         ForEach(tag.termine) { t in
-                            Button { ziel = t.event } label: {
+                            NavigationLink { EventDetailView(event: t.event) } label: {
                                 HStack(spacing: 10) {
                                     Text("🔴")
                                     VStack(alignment: .leading, spacing: 1) {
@@ -60,11 +59,9 @@ struct WochenstrahlView: View {
                                     }
                                 }
                             }
-                            .buttonStyle(.plain)
                         }
                         ForEach(tag.eintraege) { e in
-                            Button { ziel = e.event } label: { zeile(e) }
-                                .buttonStyle(.plain)
+                            NavigationLink { EventDetailView(event: e.event) } label: { zeile(e) }
                         }
                     }
                 } header: {
@@ -87,7 +84,6 @@ struct WochenstrahlView: View {
         }
         .navigationTitle("Diese Woche")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(item: $ziel) { EventDetailView(event: $0) }
         .refreshable { laden() }
         .onAppear { laden() }
     }

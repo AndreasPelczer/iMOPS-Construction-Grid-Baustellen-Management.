@@ -46,6 +46,12 @@ enum Arbeitspakete {
         var uebernehmen: Bool = true
         var dauerTage: Double
 
+        /// Für diesen Titel gibt es schon einen Auftrag. Dann ist der Haken von
+        /// vornherein raus — sonst legt ein zweiter Druck alles ein zweites Mal an.
+        /// 🔴 Genau das ist am 21.09. passiert: 34 Pakete statt 17. Der Canvas-Knopf
+        /// nebenan prüft das längst (`schonVerknuepft`), meiner tat es nicht.
+        var schonAngelegt: Bool = false
+
         /// 🔴 Keine Lohnstunden hinterlegt → die Dauer ist geraten, nicht gerechnet.
         /// Muss im Vorschlag sichtbar sein, sonst ist es eine erfundene Zahl.
         var dauerIstGeschaetzt: Bool { mannstunden <= 0 }
@@ -70,7 +76,9 @@ enum Arbeitspakete {
         }
 
         let leute = Double(max(1, kolonne))
+        let vorhanden = bereitsAngelegteTitel(event)
         return nachTitel.keys.sorted().map { nr in
+            let schon = vorhanden.contains(nr)
             let gruppe = nachTitel[nr] ?? []
             let plan = BrigadePlanung.fuer(positionen: gruppe)
             let tage = plan.mannstunden > 0
@@ -83,7 +91,9 @@ enum Arbeitspakete {
                 mannstunden: plan.mannstunden,
                 positionenOhneAufwand: plan.positionenOhneAufwand,
                 summe: gruppe.reduce(0) { $0 + $1.menge * LVKalkulator.effektiverEP(for: $1) },
-                dauerTage: (tage * 2).rounded() / 2)     // auf halbe Tage
+                uebernehmen: !schon,
+                dauerTage: (tage * 2).rounded() / 2,     // auf halbe Tage
+                schonAngelegt: schon)
         }
     }
 
@@ -101,7 +111,8 @@ enum Arbeitspakete {
         var angelegt: [Auftrag] = []
         var vorheriger: Auftrag?
 
-        for v in vorschlaege where v.uebernehmen {
+        let vorhanden = bereitsAngelegteTitel(event)
+        for v in vorschlaege where v.uebernehmen && !vorhanden.contains(v.titelNr) {
             let a = Auftrag(context: ctx)
             a.processingDetails = "\(v.titelNr) \(v.name)"
             a.status = .pending
@@ -124,6 +135,24 @@ enum Arbeitspakete {
 
     /// Der Titel einer Position: die Ziffern vor dem Punkt („31.0010“ → „31“).
     /// Ohne Punkt: die ersten beiden Zeichen. Ohne Nummer: „00“ (Sammeltitel).
+    /// Welche Titel hängen schon als Auftrag an dieser Baustelle?
+    /// Erkannt am Namen, den `anlegen` schreibt: "31 Erdarbeiten" -> Titel "31".
+    ///
+    /// 🔴 Ohne diesen Riegel legt ein zweiter Druck auf den Knopf alles ein zweites
+    /// Mal an — am 21.09. wurden so aus 17 Paketen 34. Der Canvas-Knopf nebenan
+    /// prüft das längst (`schonVerknuepft`); ich hatte danebengebaut.
+    @MainActor
+    static func bereitsAngelegteTitel(_ event: Event) -> Set<String> {
+        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        return Set(jobs.compactMap { j -> String? in
+            guard let erstes = j.processingDetails?
+                .trimmingCharacters(in: .whitespaces)
+                .split(separator: " ").first else { return nil }
+            let kopf = String(erstes)
+            return kopf.allSatisfy(\.isNumber) ? kopf : nil
+        })
+    }
+
     static func titelNummer(_ pos: LVPosition) -> String {
         let nr = (pos.posNr ?? "").trimmingCharacters(in: .whitespaces)
         guard !nr.isEmpty else { return "00" }

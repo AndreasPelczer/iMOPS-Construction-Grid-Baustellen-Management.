@@ -147,4 +147,36 @@ struct ArbeitspaketeTests {
         try ctx.save()
         #expect(Arbeitspakete.vorschlagen(fuer: e).isEmpty)
     }
+
+    /// 🔴 DER TEST, DER GEFEHLT HAT: zweimal auf den Knopf drücken darf nicht
+    /// alles ein zweites Mal anlegen. Am 21.09. wurden so aus 17 Paketen 34 —
+    /// gemerkt erst, als Andreas die Baustelle offen hatte.
+    @Test func zweimalDrueckenLegtNichtsDoppeltAn() throws {
+        let c = PersistenceController(inMemory: true)
+        let ctx = c.container.viewContext
+        let e = baustelle(ctx)
+        pos(ctx, e, "31.0010", "Aushub", kg: "310")
+        pos(ctx, e, "32.0010", "Bodenplatte", kg: "320")
+        try ctx.save()
+
+        let ersteRunde = Arbeitspakete.anlegen(Arbeitspakete.vorschlagen(fuer: e),
+                                               event: e, in: ctx)
+        try ctx.save()
+        #expect(ersteRunde.count == 2)
+
+        // zweiter Druck: der Vorschlag kennt die vorhandenen Titel
+        let nochmal = Arbeitspakete.vorschlagen(fuer: e)
+        let alleBekannt = nochmal.allSatisfy { $0.schonAngelegt }
+        #expect(alleBekannt, "beide Titel als vorhanden erkannt")
+        let keinerAngehakt = nochmal.allSatisfy { !$0.uebernehmen }
+        #expect(keinerAngehakt, "Haken sind von vornherein raus")
+
+        // und selbst wenn jemand die Haken wieder setzt: der Riegel im Anlegen hält
+        var trotzdem = nochmal
+        for i in trotzdem.indices { trotzdem[i].uebernehmen = true }
+        let zweiteRunde = Arbeitspakete.anlegen(trotzdem, event: e, in: ctx)
+        try ctx.save()
+        #expect(zweiteRunde.isEmpty, "nichts doppelt")
+        #expect((e.jobs?.count ?? 0) == 2, "es bleiben zwei, nicht vier")
+    }
 }
