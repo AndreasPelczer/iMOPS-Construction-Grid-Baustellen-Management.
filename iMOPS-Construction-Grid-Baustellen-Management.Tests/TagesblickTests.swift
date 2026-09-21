@@ -74,6 +74,37 @@ struct TagesblickTests {
         #expect(!t.istRuhig)
     }
 
+    /// 🔴 EINE KETTE IST KEIN ALARM. Ein Auftrag, der nur auf seinen Vorgänger wartet
+    /// und selbst noch gar nicht läuft, gehört NICHT in die Blockaden — sonst meldet
+    /// ein normaler Bauablauf mit 34 Paketen 33 rote Alarme (21.09. genau so passiert).
+    @Test func diePlanketteIstKeineBlockade() throws {
+        let c = PersistenceController(inMemory: true)
+        let ctx = c.container.viewContext
+        defer { aufraeumen() }
+
+        let e = baustelle(ctx, "BV Kette")
+        let erst = Auftrag(context: ctx)
+        erst.processingDetails = "Aushub"; erst.status = .pending; erst.storageNote = ""; erst.event = e
+        let dann = Auftrag(context: ctx)
+        dann.processingDetails = "Bodenplatte"; dann.status = .pending; dann.storageNote = ""; dann.event = e
+        let k = Voraussetzung(context: ctx)
+        k.id = UUID(); k.typ = VoraussetzungsTyp.automatisch.rawValue
+        k.quelle = erst; k.auftrag = dann
+        try ctx.save()
+
+        let t = Tagesblick.fuerHeute(in: ctx)
+        #expect(t.blockaden.isEmpty, "niemand steht — es hat noch keiner angefangen")
+        #expect(t.startklar.count == 1, "nur der Aushub kann anfangen")
+        #expect(t.startklar.first?.auftrag == "Aushub")
+
+        // Sobald der zweite LÄUFT und der erste nicht fertig ist, steht wirklich jemand.
+        dann.status = .inProgress
+        try ctx.save()
+        let t2 = Tagesblick.fuerHeute(in: ctx)
+        #expect(t2.blockaden.count == 1)
+        #expect(t2.blockaden.first?.auftrag == "Bodenplatte")
+    }
+
     /// Ein erledigter Auftrag blockiert niemanden mehr — auch wenn die Voraussetzung
     /// nie abgehakt wurde. Sonst steht die Liste voll mit alten Karteileichen.
     @Test func erledigteAuftraegeBlockierenNicht() throws {
@@ -182,8 +213,11 @@ struct TagesblickTests {
         #expect(Tagesblick.fuerHeute(in: ctx).blockaden.isEmpty,
                 "erfüllte Kante darf nicht als Blockade erscheinen")
 
-        // Gegenprobe: ist der Vorgänger NICHT fertig, muss sie erscheinen.
+        // Gegenprobe: Vorgänger läuft noch UND der Nachfolger ist bereits angefangen
+        // — erst dann steht wirklich jemand. (Wäre der Nachfolger nur „pending", wäre
+        // das bloß Plan; siehe `diePlanketteIstKeineBlockade`.)
         vorher.status = .inProgress
+        danach.status = .inProgress
         try ctx.save()
         let t = Tagesblick.fuerHeute(in: ctx)
         #expect(t.blockaden.count == 1)

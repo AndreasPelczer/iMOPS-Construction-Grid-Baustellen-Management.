@@ -57,7 +57,28 @@ struct TagesblickView: View {
                     ContentUnavailableView(
                         "Nichts steht",
                         systemImage: "checkmark.circle",
-                        description: Text("Keine Blockade, keine überfällige Frist, keine Position ohne Preis. \(blick.baustellenAktiv) Baustellen laufen."))
+                        description: Text("Nichts steht still, nichts ist überfällig, alles hat einen Preis. \(blick.baustellenAktiv) Baustellen."))
+                }
+            }
+
+            if !blick.startklar.isEmpty {
+                Section {
+                    ForEach(blick.startklar) { s in
+                        NavigationLink { SpaeterLaden { AuftragDetailView(job: s.job) } } label: {
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "play.circle.fill")
+                                    .foregroundStyle(.green)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(s.auftrag).font(.body.weight(.semibold))
+                                    Text(s.baustelle).font(.caption).foregroundStyle(.orange)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    kopf("Kann jetzt anfangen", zahl: nil)
+                } footer: {
+                    Text("Nichts hält diese Aufträge auf — alle Vorgänger sind fertig.")
                 }
             }
 
@@ -67,9 +88,10 @@ struct TagesblickView: View {
                         NavigationLink { SpaeterLaden { AuftragDetailView(job: b.job) } } label: { zeile(b) }
                     }
                 } header: {
-                    kopf("Blockiert gerade jemanden", zahl: blick.blockaden.count)
+                    kopf("Steht wirklich still", zahl: blick.blockaden.count)
                 } footer: {
-                    Text("Wer am längsten steht, steht oben.")
+                    Text("Aufträge, die LAUFEN und denen etwas fehlt. Was nur auf einen "
+                         + "Vorgänger wartet, steht hier bewusst nicht — das ist Plan, keine Not.")
                 }
             }
 

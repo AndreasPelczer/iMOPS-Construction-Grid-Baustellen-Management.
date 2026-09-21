@@ -46,6 +46,16 @@ enum Tagesblick {
         let job: Auftrag
     }
 
+    /// Ein Auftrag, der angefangen werden KÖNNTE: alle Vorgänger sind fertig, er
+    /// selbst läuft noch nicht. Das ist eine Gelegenheit, kein Alarm.
+    struct Startklar: Identifiable {
+        let id = UUID()
+        let baustelle: String
+        let auftrag: String
+        let event: Event
+        let job: Auftrag
+    }
+
     /// Eine Position ohne Preis — über ALLE Baustellen, nicht je Baustelle.
     struct Preisluecke: Identifiable {
         let id = UUID()
@@ -76,12 +86,15 @@ enum Tagesblick {
 
     struct Ergebnis {
         var blockaden: [Blockade] = []
+        var startklar: [Startklar] = []
         var preisluecken: [Preisluecke] = []
         var fristen: [Fristsache] = []
         var zuletzt: Zuletzt?
         var baustellenAktiv = 0
 
-        var istRuhig: Bool { blockaden.isEmpty && preisluecken.isEmpty && fristen.isEmpty }
+        var istRuhig: Bool {
+            blockaden.isEmpty && startklar.isEmpty && preisluecken.isEmpty && fristen.isEmpty
+        }
     }
 
     // MARK: - Sammeln
@@ -108,7 +121,15 @@ enum Tagesblick {
             //    `erfuellt` lügt bei Kanten — eine Kante ist erfüllt, wenn ihr VORGÄNGER
             //    fertig ist, das Häkchen bleibt dabei auf „nein". Wer roh filtert, meldet
             //    Blockaden, die längst keine mehr sind.
-            for auftrag in offen {
+            //    🔴 EINE KETTE IST KEIN ALARM. Bis zum 21.09. galt jede offene
+            //    Voraussetzung als Blockade — bei einem verketteten Bauablauf, der noch
+            //    gar nicht begonnen hat, meldete der Mops dann 33 rote Alarme für einen
+            //    völlig normalen Plan. Andreas beim Selbstversuch als Erstnutzer:
+            //    „ich klick drauf, denn da ist ein Problem" — es war keins.
+            //
+            //    Jemand steht nur in EINEM Fall: der Auftrag LÄUFT und ihm fehlt etwas.
+            //    Was auf einen noch nicht fertigen Vorgänger wartet, ist Plan, nicht Not.
+            for auftrag in offen where auftrag.status == .inProgress {
                 for v in auftrag.offeneVoraussetzungen {
                     e.blockaden.append(Blockade(
                         baustelle: name,
@@ -118,6 +139,17 @@ enum Tagesblick {
                         event: event,
                         job: auftrag))
                 }
+            }
+
+            //    Und die Gegenseite: was könnte man ANFANGEN? Alle Vorgänger fertig,
+            //    selbst noch nicht begonnen. Das ist die nützlichste Zeile des Tages —
+            //    und sie ist keine Warnung, sondern ein Angebot.
+            for auftrag in offen where auftrag.status != .inProgress && auftrag.istStartbar {
+                e.startklar.append(Startklar(
+                    baustelle: name,
+                    auftrag: Kausalkette.bezeichnung(auftrag),
+                    event: event,
+                    job: auftrag))
             }
 
             // 2) Preislücken: Positionen, die über KEINEN Weg zu einem Preis kommen.
