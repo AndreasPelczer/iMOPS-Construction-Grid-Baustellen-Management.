@@ -21,6 +21,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Erst wenn diese vier Punkte durch sind, Vorschläge machen. **Warum:** jeder Mac-Neustart = frische Instanz ohne Erinnerung an gestern. Das Repo + `docs/` SIND die Kontinuität, die die Instanz selbst nicht hat.
 
+**📖 Bevor du einen Text in die App schreibst:** `docs/WESEN-DES-MOPS.md` lesen.
+Der Mops ist der geduldige Lehrmeister, den die meisten nie hatten — ernst wo es
+ernst ist, nie belehrend, und **Warnschilder sind die zweitbeste Lösung: Fehler
+dürfen gar nicht erst passieren können.** Das musste Andreas mehrfach einfordern,
+weil es nirgends stand.
+
+
 **📌 Doku für die Pflichtspur wird sofort in `main` gemergt, nicht auf einem Branch geparkt.**
 Am 10.09.2026 lagen in beiden Repos Doku-Branches vom 07.09. ohne PR — `main` behauptete
 derweil, gemergte Arbeit liege noch auf einem Branch. Ein HANDOFF, der auf einem Branch

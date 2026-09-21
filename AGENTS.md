@@ -14,6 +14,13 @@ Inhaltsgleich mit CLAUDE.md — bei Aenderungen BEIDE Dateien nachziehen.
 
 Erst wenn diese vier Punkte durch sind, Vorschläge machen. **Warum:** jeder Mac-Neustart = frische Instanz ohne Erinnerung an gestern. Das Repo + `docs/` SIND die Kontinuität, die die Instanz selbst nicht hat.
 
+**📖 Bevor du einen Text in die App schreibst:** `docs/WESEN-DES-MOPS.md` lesen.
+Der Mops ist der geduldige Lehrmeister, den die meisten nie hatten — ernst wo es
+ernst ist, nie belehrend, und **Warnschilder sind die zweitbeste Lösung: Fehler
+dürfen gar nicht erst passieren können.** Das musste Andreas mehrfach einfordern,
+weil es nirgends stand.
+
+
 **⏹ Am Session-Ende (Pflicht):** `docs/HANDOFF-AKTUELL.md` auf einen Satz bringen — was ist *jetzt* der Stand, was offen? Sonst lügt der Zeiger die nächste Instanz an. Das ist der wichtigste Schritt der ganzen Spur.
 
 ## 👥 Wenn mehrere von uns arbeiten — die Hausordnung

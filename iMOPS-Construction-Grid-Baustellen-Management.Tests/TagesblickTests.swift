@@ -550,3 +550,34 @@ struct KatalogSchluesselTests {
              == AnweisungsKatalog.schluessel("Mauerwerk Innenwand 24cm"))
     }
 }
+
+// MARK: - Fehler dürfen gar nicht erst passieren können
+//
+// "ohne Warnschilder bei Fehlern, Fehler dürfen erst gar nicht passieren können"
+// (Andreas, 21.09.2026 — docs/WESEN-DES-MOPS.md)
+//
+// Die Vorbelegung beim Anlegen einer Baustelle stammte aus der Zeit, als diese App
+// Veranstaltungen verwaltete: Beginn "nächste volle Stunde", Ende "+ 3 Stunden".
+// Der Endtermin lag ab dem Folgetag in der Vergangenheit.
+
+struct VorbelegungBaustelleTests {
+
+    /// Die Bauzeit-Vorgabe muss in Wochen liegen, nicht in Stunden.
+    @Test func bauendeLiegtDeutlichNachDemBeginn() {
+        let kal = Calendar.current
+        let beginn = kal.startOfDay(for: Date())
+        let ende = kal.date(byAdding: .weekOfYear, value: 8, to: beginn)!
+        let tage = kal.dateComponents([.day], from: beginn, to: ende).day ?? 0
+        #expect(tage >= 28, "Eine Baustelle, die in Stunden fertig ist, gibt es nicht")
+    }
+
+    /// Ein Baubeginn faellt nie auf Samstag oder Sonntag.
+    @Test func baubeginnIstEinWerktag() {
+        let kal = Calendar.current
+        var tag = kal.startOfDay(for: Date())
+        repeat { tag = kal.date(byAdding: .day, value: 1, to: tag)! }
+        while kal.isDateInWeekend(tag)
+        #expect(!kal.isDateInWeekend(tag))
+        #expect(tag > Date(), "Der Vorschlag liegt in der Zukunft, nicht heute rückwärts")
+    }
+}

@@ -14,6 +14,30 @@ struct AddEventView: View {
     @State private var gaebFehler: String?
     
     // --- Initialisierungs-Helfer ---
+    /// 🔴 Erbstück aus der Zeit, als diese App Veranstaltungen verwaltete:
+    /// Baubeginn "nächste volle Stunde", Fertigstellung "+ 3 Stunden".
+    /// Eine Baustelle, die drei Stunden dauert, gibt es nicht — und ihr Endtermin
+    /// lag ab dem nächsten Tag in der Vergangenheit. Solange die Liste nach dem
+    /// Kalender filterte, stand jede neue Baustelle danach unter "Abgeschlossen".
+    ///
+    /// Statt später davor zu warnen: gleich einen Wert hinstellen, der stimmen kann.
+    /// (Fehler dürfen gar nicht erst passieren können — docs/WESEN-DES-MOPS.md)
+    private static func naechsterWerktagMorgens() -> Date {
+        let kal = Calendar.current
+        var tag = kal.startOfDay(for: Date())
+        repeat {
+            tag = kal.date(byAdding: .day, value: 1, to: tag) ?? tag
+        } while kal.isDateInWeekend(tag)
+        return kal.date(bySettingHour: 7, minute: 0, second: 0, of: tag) ?? tag
+    }
+
+    /// Acht Wochen — eine Bauzeit, die für die meisten Vorhaben in der richtigen
+    /// Größenordnung liegt und die man mit einem Griff ändert. Geraten, aber
+    /// plausibel; falsch wäre ein Wert, der garantiert nicht stimmt.
+    private static func plausiblesBauende(_ ab: Date) -> Date {
+        Calendar.current.date(byAdding: .weekOfYear, value: 8, to: ab) ?? ab
+    }
+
     private static func nextFullHour() -> Date {
         let calendar = Calendar.current
         var components = calendar.dateComponents([.year, .month, .day, .hour], from: Date())
@@ -44,9 +68,9 @@ struct AddEventView: View {
     @State private var grundflaeche: String = ""
     @State private var umfang: String = ""
     @State private var geschosse: String = ""
-    @State private var eventStartTime: Date = nextFullHour()
-    @State private var setupTime: Date = nextFullHour().addingTimeInterval(-3600)
-    @State private var eventEndTime: Date = nextFullHour().addingTimeInterval(3600 * 3)
+    @State private var eventStartTime: Date = naechsterWerktagMorgens()
+    @State private var setupTime: Date = naechsterWerktagMorgens().addingTimeInterval(-3600)
+    @State private var eventEndTime: Date = plausiblesBauende(naechsterWerktagMorgens())
 
     var body: some View {
         NavigationStack {
