@@ -40,6 +40,20 @@ struct TagesblickView: View {
                 }
             }
 
+            Section {
+                NavigationLink { WochenstrahlView() } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "calendar")
+                            .font(.title3).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Diese Woche").font(.body.weight(.semibold))
+                            Text("alle Baustellen nebeneinander, Mo–Fr")
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
             if blick.istRuhig && blick.fristen.isEmpty {
                 Section {
                     ContentUnavailableView(
