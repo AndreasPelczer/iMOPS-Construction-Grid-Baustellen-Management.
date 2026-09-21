@@ -47,7 +47,27 @@ final class AnweisungsKatalog {
     /// Der Leistungstext, auf das Wesentliche gebracht: klein, ohne Mengen und
     /// Sonderzeichen. „Kimmschicht Ytong 24 cm, 2 Lagen" und „KIMMSCHICHT YTONG 24CM"
     /// sollen denselben Eintrag finden.
+    /// 🔴 Ein Name, der nur eine DIN-276-Kostengruppe nennt, beschreibt KEINE Arbeit.
+    ///
+    /// Befund 21.09.2026: drei Arbeitspakete hiessen alle "Außenanlagen und
+    /// Freiflächen" (Titel 572, 544, 399) — die Titelnummer fällt aus dem Schlüssel
+    /// heraus, also teilten sich drei verschiedene Arbeiten EINEN Katalogeintrag.
+    /// Wer bei einem die Schritte abnimmt, hätte sie den anderen beiden untergeschoben.
+    /// Arbeitsanweisungen, die an Lehrlinge gehen, dürfen so nicht entstehen.
+    ///
+    /// Deshalb: Kostengruppen-Bezeichnungen sind kein Schlüssel. Lieber kein Treffer
+    /// als ein falscher.
+    static func istNurKostengruppe(_ leistung: String) -> Bool {
+        let text = leistung.lowercased()
+            .replacingOccurrences(of: #"^\s*\d+\s*"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return true }
+        return DIN276KostenGruppe.alle.contains { $0.bezeichnung.lowercased() == text }
+    }
+
     static func schluessel(_ leistung: String) -> String {
+        // Generische Gruppennamen bekommen gar keinen Schlüssel.
+        if istNurKostengruppe(leistung) { return "" }
         // 🔴 Erster Versuch war inkonsequent: „24 cm" fiel ganz weg (Zahl + zu kurzes
         //    Wort), „24cm" blieb als „24cm" stehen — derselbe Text, zwei Schlüssel.
         //    Jetzt werden Ziffern ZUERST aus jedem Wort gezogen, dann gefiltert.

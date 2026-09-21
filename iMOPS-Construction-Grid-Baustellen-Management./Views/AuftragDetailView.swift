@@ -49,6 +49,7 @@ struct AuftragDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 headerCard
                 wasIstDranBand
+                gehoertDazuCard
                 productionListCard
                 modeCard
                 checklistCard
@@ -168,22 +169,114 @@ struct AuftragDetailView: View {
     /// keinen nächsten Schritt. Und bei einem blockierten Auftrag ist die Antwort oft:
     /// hier kannst du gar nichts tun, die Lösung liegt beim Vorgänger. Das muss dastehen
     /// — samt Weg dorthin.
+    /// 🔴 "Was gehört denn alles zu dem Auftrag, gibt's da Pläne, Zeichnungen?"
+    ///
+    /// Ein Arbeitspaket fasst LV-Positionen zusammen — aber der Auftrag zeigte sie
+    /// nicht. Man stand vor "572 Außenanlagen und Freiflächen" und hatte keine Menge,
+    /// keine Summe, keine Positionsliste. Ohne die kann niemand entscheiden,
+    /// was hier zu tun ist.
+    @ViewBuilder private var gehoertDazuCard: some View {
+        let umfang = Arbeitspakete.umfang(fuer: job)
+        if umfang.positionen > 0 {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Label("Das gehört dazu", systemImage: "list.number")
+                        .font(.headline)
+                    Spacer()
+                    Text("\(umfang.positionen) Positionen")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+
+                // Die Mengen je Einheit — das ist die Zahl, nach der man greift.
+                if !umfang.einheiten.isEmpty {
+                    Text(umfang.einheiten.sorted { $0.value > $1.value }
+                            .map { "\(mengeKurz($0.value)) \($0.key)" }
+                            .joined(separator: " · "))
+                        .font(.title3.weight(.semibold))
+                }
+
+                if umfang.summe > 0 {
+                    Text("Angebotssumme: \(waehrung(umfang.summe))"
+                         + (umfang.ohnePreis > 0 ? " — \(umfang.ohnePreis) noch ohne Preis" : ""))
+                        .font(.subheadline).foregroundStyle(.secondary)
+                } else if umfang.ohnePreis > 0 {
+                    Text("\(umfang.ohnePreis) Positionen haben noch keinen Preis.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+
+                Divider()
+
+                ForEach(Arbeitspakete.positionen(fuer: job).prefix(8), id: \.objectID) { p in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(p.posNr ?? "—")
+                            .font(.caption.monospaced()).foregroundStyle(.secondary)
+                            .frame(width: 62, alignment: .leading)
+                        Text(p.bezeichnung ?? "ohne Text")
+                            .font(.subheadline).lineLimit(2)
+                        Spacer(minLength: 6)
+                        Text("\(mengeKurz(p.menge)) \(p.einheit ?? "")")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if umfang.positionen > 8 {
+                    Text("und \(umfang.positionen - 8) weitere")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+
+                if umfang.istGerechnet {
+                    Text("Zugeordnet über die Titelnummer im Auftragsnamen. "
+                         + "Eine feste Verbindung im Datenmodell gibt es noch nicht — "
+                         + "benennt jemand den Auftrag um, ist die Zuordnung weg.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private func mengeKurz(_ w: Double) -> String {
+        w == w.rounded() ? String(format: "%.0f", w) : String(format: "%.2f", w)
+    }
+
+    private func waehrung(_ w: Double) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .currency; f.currencyCode = "EUR"; f.maximumFractionDigits = 0
+        return f.string(from: NSNumber(value: w)) ?? String(format: "%.0f €", w)
+    }
+
     @ViewBuilder private var wasIstDranBand: some View {
         let offen = job.offeneVoraussetzungen
         if job.istFertig {
             band("Erledigt", "checkmark.seal.fill", .green,
                  "Dieser Auftrag ist abgeschlossen.")
         } else if let erste = offen.first {
+            // 🔴 "Nichts zu tun" gilt nur für die BAUSTELLE. Am Schreibtisch ist sehr
+            // wohl etwas zu tun, solange die Schritte fehlen — und dann darf hier nicht
+            // stehen, es sei nichts zu tun, während zwei Karten tiefer das Gegenteil steht.
+            let schreibtischArbeit = extras.checklist.isEmpty
             VStack(alignment: .leading, spacing: 10) {
-                Label("Hier ist gerade nichts zu tun", systemImage: "hand.raised.fill")
+                Label(schreibtischArbeit
+                      ? "Draussen noch nicht — hier am Schreibtisch schon"
+                      : "Hier ist gerade nichts zu tun",
+                      systemImage: schreibtischArbeit ? "pencil.and.list.clipboard" : "hand.raised.fill")
                     .font(.headline).foregroundStyle(.orange)
                 Text(offen.count == 1
-                     ? "Dieser Auftrag wartet auf: \(erste.anzeigename)."
-                     : "Dieser Auftrag wartet auf \(offen.count) Dinge, zuerst: \(erste.anzeigename).")
+                     ? "Angefangen wird erst, wenn fertig ist: \(erste.anzeigename)."
+                     : "Angefangen wird erst nach \(offen.count) Dingen, zuerst: \(erste.anzeigename).")
                     .font(.subheadline)
-                Text("Die Lösung liegt nicht hier, sondern dort. Entweder ist der "
-                     + "Vorgänger fertig und noch nicht gemeldet — oder er läuft wirklich noch.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                if schreibtischArbeit {
+                    Text("Die Arbeitsschritte kannst du trotzdem jetzt schon schreiben — "
+                         + "sie stehen weiter unten und warten auf niemanden.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                } else {
+                    Text("Die Lösung liegt nicht hier, sondern dort. Entweder ist der "
+                         + "Vorgänger fertig und noch nicht gemeldet — oder er läuft wirklich noch.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 HStack(spacing: 10) {
                     if let quelle = erste.quelle {
                         Button {
@@ -519,10 +612,26 @@ struct AuftragDetailView: View {
             }
             .buttonStyle(.borderedProminent)
 
-            if AnweisungsKatalog.shared.schritte(fuer: whatToDoText) != nil {
-                Label("Für diese Arbeit gibt es schon eine abgenommene Anweisung.",
-                      systemImage: "checkmark.seal")
-                    .font(.footnote).foregroundStyle(.green)
+            // 🔴 Das war ein grüner Satz, der nach Knopf aussah und keiner war.
+            // Wer liest "gibt es schon", tippt drauf — und nichts passiert.
+            // Jetzt ist es ein Knopf, und er sagt vorher, WAS er einsetzt.
+            if let ausKatalog = AnweisungsKatalog.shared.schritte(fuer: whatToDoText) {
+                Button {
+                    var neue = extras
+                    neue.checklist = ausKatalog.map { AuftragChecklistItem($0) }
+                    extras = neue
+                    saveExtras(neue)
+                } label: {
+                    Label("Abgenommene Anweisung übernehmen — \(ausKatalog.count) Schritte",
+                          systemImage: "checkmark.seal.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+
+                Text("Diese Schritte hat jemand für dieselbe Arbeit schon einmal geprüft "
+                     + "und abgenommen. Du kannst sie danach ändern.")
+                    .font(.footnote).foregroundStyle(.secondary)
             }
 
             if let passend = AuftragTemplate.passend(zu: whatToDoText) {
@@ -537,16 +646,28 @@ struct AuftragDetailView: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }
 
+            // 🔴 Andreas: "Vorlage wählen finde ich super, aber die Auswahl ist
+            // Restbestand von 1,5 Jahren App bauen." Stimmt — die 12 Vorlagen sind
+            // in der Anfangszeit entstanden, ohne Quelle und ohne Prüfer.
+            // Sie bleiben als Gerüst, aber sie geben sich nicht als geprüft aus.
             Menu {
-                ForEach(AuftragTemplate.allCases) { tpl in
-                    Button("\(tpl.rawValue) \u{2014} \(tpl.steps.count) Schritte") {
-                        applyTemplate(tpl, mode: .replace)
+                Section("Gerüst aus der Anfangszeit — ungeprüft") {
+                    ForEach(AuftragTemplate.allCases) { tpl in
+                        Button("\(tpl.rawValue) \u{2014} \(tpl.steps.count) Schritte") {
+                            applyTemplate(tpl, mode: .replace)
+                        }
                     }
                 }
             } label: {
                 Label("Vorlage wählen", systemImage: "square.grid.2x2")
             }
             .buttonStyle(.bordered)
+
+            Text("Die 12 Vorlagen sind aus der Anfangszeit der App und von niemandem "
+                 + "abgenommen — sie kommen als Gerüst herein, jeder Schritt gelb. "
+                 + "Was DU abnimmst, merkt sich der Mops und bietet es beim nächsten Mal "
+                 + "als geprüft an. So wächst der echte Bestand.")
+                .font(.caption).foregroundStyle(.secondary)
 
             HStack(spacing: 10) {
                 TextField("Ersten Schritt schreiben…", text: $newStepText)

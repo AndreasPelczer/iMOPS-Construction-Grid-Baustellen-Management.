@@ -196,4 +196,58 @@ enum Arbeitspakete {
         if sauber.count > 4 && sauber.count <= 60 { return sauber }
         return String(text.prefix(58)).trimmingCharacters(in: .whitespaces) + "…"
     }
+
+    // MARK: - Was gehört zu diesem Auftrag?
+
+    /// Die Titelnummer, die vorn im Auftragsnamen steht ("572 Außenanlagen…" → "572").
+    ///
+    /// 🔴 Das ist eine BRÜCKE ÜBER DEN NAMEN, keine echte Verbindung. Im Datenmodell
+    /// ist `Auftrag.lvPosition` eine 1:1-Beziehung — ein Auftrag kann darüber genau
+    /// EINE Position halten, ein Arbeitspaket fasst aber viele zusammen. Solange das
+    /// so ist, wird die Zugehörigkeit gerechnet statt gespeichert.
+    /// Folge: benennt jemand den Auftrag um und nimmt die Nummer weg, ist die
+    /// Zuordnung weg. Deshalb steht in der Ansicht dabei, woher sie kommt.
+    static func titelNummerAusName(_ auftrag: Auftrag) -> String? {
+        let name = (auftrag.processingDetails ?? "").trimmingCharacters(in: .whitespaces)
+        let ersterTeil = name.split(separator: " ", maxSplits: 1).first.map(String.init) ?? ""
+        let ziffern = ersterTeil.filter(\.isNumber)
+        guard !ziffern.isEmpty, ziffern.count == ersterTeil.count else { return nil }
+        return ersterTeil
+    }
+
+    /// Alle LV-Positionen, die zu diesem Arbeitspaket gehören — in Positionsreihenfolge.
+    @MainActor
+    static func positionen(fuer auftrag: Auftrag) -> [LVPosition] {
+        // Die echte Verbindung zuerst: wenn sie mal gesetzt ist, gewinnt sie.
+        if let einzelne = auftrag.lvPosition { return [einzelne] }
+
+        guard let titelNr = titelNummerAusName(auftrag),
+              let event = auftrag.event,
+              let alle = event.lvPositionen as? Set<LVPosition> else { return [] }
+        return alle
+            .filter { titelNummer($0) == titelNr }
+            .sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }
+    }
+
+    /// Was das Paket zusammenzählt: Positionen, Summe, und wie viele noch ohne Preis sind.
+    struct Umfang {
+        var positionen: Int = 0
+        var summe: Double = 0
+        var ohnePreis: Int = 0
+        var einheiten: [String: Double] = [:]   // "m²" → 340, "m³" → 12
+        var istGerechnet = true                 // über den Namen, nicht gespeichert
+    }
+
+    @MainActor
+    static func umfang(fuer auftrag: Auftrag) -> Umfang {
+        let liste = positionen(fuer: auftrag)
+        var u = Umfang(positionen: liste.count, istGerechnet: auftrag.lvPosition == nil)
+        for p in liste {
+            let ep = LVKalkulator.effektiverEP(for: p)
+            if ep <= 0 { u.ohnePreis += 1 } else { u.summe += ep * p.menge }
+            let einheit = (p.einheit ?? "").trimmingCharacters(in: .whitespaces)
+            if !einheit.isEmpty { u.einheiten[einheit, default: 0] += p.menge }
+        }
+        return u
+    }
 }

@@ -453,3 +453,100 @@ struct OhneAnweisungTests {
         #expect(b.brauchtAufmerksamkeit == false)
     }
 }
+
+// MARK: - Was gehört zu einem Arbeitspaket?
+//
+// "was gehört denn alles zu dem auftrag, gibts da pläne, zeichnungen?
+//  mir fehlen infos denke ich" (Andreas, 21.09.2026)
+//
+// Ein Arbeitspaket fasst LV-Positionen zusammen — der Auftrag zeigte sie nicht.
+// Im Modell ist Auftrag.lvPosition eine 1:1-Beziehung, ein Paket hat aber viele.
+// Solange das so ist, wird die Zugehörigkeit über die Titelnummer GERECHNET.
+
+@MainActor
+struct ArbeitspaketUmfangTests {
+
+    private func paket(_ ctx: NSManagedObjectContext, _ e: Event, _ name: String) -> Auftrag {
+        let a = Auftrag(context: ctx)
+        a.processingDetails = name
+        a.status = .pending
+        a.storageNote = ""
+        a.event = e
+        return a
+    }
+
+    @discardableResult
+    private func pos(_ ctx: NSManagedObjectContext, _ e: Event, _ nr: String,
+                     _ bez: String, menge: Double = 10, einheit: String = "m2") -> LVPosition {
+        let p = LVPosition(context: ctx)
+        p.posNr = nr; p.bezeichnung = bez; p.menge = menge; p.einheit = einheit; p.event = e
+        return p
+    }
+
+    @Test func dasPaketFindetSeinePositionenUeberDieTitelnummer() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Umfang"
+        pos(ctx, e, "572.0010", "Rasen ansäen", menge: 340)
+        pos(ctx, e, "572.0020", "Pflanzbeet herrichten", menge: 60)
+        pos(ctx, e, "544.0010", "Leuchte setzen", menge: 4, einheit: "St")
+
+        let a = paket(ctx, e, "572 Außenanlagen und Freiflächen")
+        let liste = Arbeitspakete.positionen(fuer: a)
+        #expect(liste.count == 2)
+        #expect(liste.first?.posNr == "572.0010")       // in Positionsreihenfolge
+    }
+
+    @Test func derUmfangZaehltMengenJeEinheit() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Mengen"
+        pos(ctx, e, "321.0010", "Oberboden abschieben", menge: 250, einheit: "m2")
+        pos(ctx, e, "321.0020", "Aushub Baugrube", menge: 130, einheit: "m3")
+        pos(ctx, e, "321.0030", "Aushub Garage", menge: 38, einheit: "m3")
+
+        let u = Arbeitspakete.umfang(fuer: paket(ctx, e, "321 Baugrube / Erdbau"))
+        #expect(u.positionen == 3)
+        #expect(u.einheiten["m2"] == 250)
+        #expect(u.einheiten["m3"] == 168)              // 130 + 38 zusammengezählt
+        #expect(u.ohnePreis == 3)                      // noch kein Preis hinterlegt
+        #expect(u.istGerechnet)                        // über den Namen, nicht gespeichert
+    }
+
+    /// Ein Auftrag ohne Nummer im Namen bekommt nichts zugeordnet — lieber nichts
+    /// als das Falsche.
+    @Test func ohneTitelnummerKeineZuordnung() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Ohne Nummer"
+        pos(ctx, e, "572.0010", "Rasen ansäen")
+        #expect(Arbeitspakete.positionen(fuer: paket(ctx, e, "Außenanlagen")).isEmpty)
+        #expect(Arbeitspakete.titelNummerAusName(paket(ctx, e, "Außenanlagen")) == nil)
+        #expect(Arbeitspakete.titelNummerAusName(paket(ctx, e, "572 Außenanlagen")) == "572")
+    }
+}
+
+// MARK: - 🔴 Der Katalog darf keine falschen Anweisungen verteilen
+//
+// Befund 21.09.2026: drei Arbeitspakete hiessen alle "Außenanlagen und Freiflächen"
+// (Titel 572, 544, 399). Der Katalogschlüssel zieht Ziffern heraus — also teilten
+// sich drei verschiedene Arbeiten EINEN Eintrag. Wer bei einem abnimmt, hätte die
+// Schritte den anderen beiden untergeschoben. Das geht an Lehrlinge.
+
+struct KatalogSchluesselTests {
+
+    @Test func kostengruppenNamenBekommenKeinenSchluessel() {
+        #expect(AnweisungsKatalog.schluessel("572 Außenanlagen und Freiflächen") == "")
+        #expect(AnweisungsKatalog.schluessel("Außenanlagen und Freiflächen") == "")
+        #expect(AnweisungsKatalog.istNurKostengruppe("445 Baukonstruktionen") == true)
+    }
+
+    @Test func echteArbeitBekommtWeiterhinEinenSchluessel() {
+        let k = AnweisungsKatalog.schluessel("Mauerwerk Außenwand Porenbeton, d = 24 cm")
+        #expect(!k.isEmpty)
+        #expect(k.contains("mauerwerk"))
+    }
+
+    /// Dieselbe Arbeit, verschieden geschrieben — ein Schlüssel. Das ist der Sinn.
+    @Test func dieselbeArbeitTrotzSchreibweiseGleich() {
+        #expect(AnweisungsKatalog.schluessel("Mauerwerk Innenwand 24 cm")
+             == AnweisungsKatalog.schluessel("Mauerwerk Innenwand 24cm"))
+    }
+}
