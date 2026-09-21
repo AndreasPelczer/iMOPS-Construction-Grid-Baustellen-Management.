@@ -2,7 +2,47 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
-## Delta 21.09.2026 (spät) — 29 Commits, alles lokal, NICHTS GEPUSHT
+## Delta 21.09.2026 (Abschluss) — 35 Commits, Branch GEPUSHT
+
+`feature/gelaende-dxf-aushub` steht auf GitHub (`6e39040`) und liegt auch auf
+**Raphis Mac** (`~/Documents/…`, ausgecheckt, Xcode offen). **578→605 Tests grün.**
+
+### Der Abend: Andreas klickte sich durch, sieben weitere Befunde
+
+1. 🔴 **Der Katalog hätte falsche Anweisungen verteilt** — drei Arbeitspakete hiessen
+   alle „Außenanlagen und Freiflächen" (Titel 572/544/399), der Schlüssel zieht Ziffern
+   raus → EIN Eintrag für drei Arbeiten. Gefixt: `AnweisungsKatalog.istNurKostengruppe`.
+2. Der grüne Satz „gibt es schon eine abgenommene Anweisung" war kein Knopf → ist einer.
+3. Das Band sagte „nichts zu tun", während unten „keine Anweisung" stand → trennt jetzt
+   Baustelle und Schreibtisch.
+4. **„Das gehört dazu"** im Auftrag: Positionen, Mengen je Einheit, Summe.
+   🔴 Über die Titelnummer GERECHNET — `Auftrag.lvPosition` ist im Modell 1:1.
+5. **„Wie lange, und wer"** im Auftrag — `dauerTage` kam dort vorher null mal vor.
+6. **`SchrittPassung`** — Schritte einzeln abwählbar, und der Mops prüft gegen das LV
+   („Bauzaun kommt im LV nicht vor"), wählt selbst ab. Katalog per Test ≤ 15 Einträge.
+7. **`SonderfallBuch`** — Andreas' „jaaa, des musst du so sehen"-Knopf. Erklären lässt
+   den Mops verstummen (mit Satz, Name, Datum) UND er **zählt**: ab dem 3. Mal steht
+   das Thema auf „Das sollte der Mops können".
+
+Dazu: Kopf über der Übersicht (`lageSatz`/`arbeitSatz`), `ZuletztBesucht` (in der
+echten DB gemessen: `startTime` leer, `lastStartTime` bei allen 34 Aufträgen leer —
+„Wo war ich?" konnte seine Frage nie beantworten), Meldungen führen auf EIN Ding und
+verschwinden live (`NSManagedObjectContextObjectsDidChange`), Einzahl/Mehrzahl,
+**`docs/WESEN-DES-MOPS.md`** (Ton-Doktrin, aus der Pflichtspur verlinkt).
+
+### 🔴 Was als Nächstes dran ist
+- **Auftrag ↔ LV echt verbinden** — toOne→toMany, neue Modellversion + Migration.
+  Andreas hat Daten drin: bewusst, mit Backup. Davor hängt der Bestellvorschlag.
+- **931 Waisen** (von 965 Aufträgen!) — `Event.jobs` ist Nullify, alles andere Cascade.
+  323 verschiedene, bis 23× dasselbe; 186 Kanten hängen dran. Braucht seine Entscheidung
+  (aufräumen + auf Cascade stellen, beides unwiderruflich).
+- **Pläne/Zeichnungen am Auftrag** — am `Event` hängen keine Dokumente. Er fragte danach.
+- Gleichnamige Arbeitspakete: `Arbeitspakete.name()` fällt zu oft auf DIN-276 zurück.
+- Firmenzuschlag: zwei Wahrheiten (`Lohnkalkulation` vs. `GewinnSchieberView`).
+- Für Raphi offen: 5 Nachweispunkte für EIN Gewerk · Pflaster/Tragschicht-Schritte
+  prüfen · echte Bauablauf-Reihenfolge der 34 Pakete · zwei Beispiele „lief anders".
+
+## Delta 21.09.2026 (spät) — 29 Commits, alles lokal
 
 **Wo Andreas stehengeblieben ist:** er klickte sich durch die Einricht-Arbeit
 (Übersicht → „Schritte schreiben" → ein Auftrag → Schritte holen/prüfen/abnehmen →
