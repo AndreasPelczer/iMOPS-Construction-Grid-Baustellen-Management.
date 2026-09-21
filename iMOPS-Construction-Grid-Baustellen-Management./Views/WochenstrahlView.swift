@@ -155,7 +155,13 @@ struct WochenstrahlView: View {
                     Image(systemName: "chevron.compact.left").font(.caption2)
                 }
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(b.auftrag).font(.caption.weight(.semibold)).lineLimit(1)
+                    HStack(spacing: 3) {
+                        if b.art == .liegezeit {
+                            Image(systemName: "hourglass").font(.caption2)
+                                .foregroundStyle(.orange)
+                        }
+                        Text(b.auftrag).font(.caption.weight(.semibold)).lineLimit(1)
+                    }
                     Text(b.baustelle).font(.caption2).lineLimit(1).opacity(0.75)
                 }
                 Spacer(minLength: 0)
@@ -165,10 +171,25 @@ struct WochenstrahlView: View {
             }
             .padding(.horizontal, 7)
             .frame(width: breite, height: zeilenHoehe - 4, alignment: .leading)
-            .background(b.fertig ? Color.green.opacity(0.22) : Color.blue.opacity(0.22),
-                        in: RoundedRectangle(cornerRadius: 7))
+            .background {
+                // Liegezeit wird schraffiert — wie in der Skizze, die Andreas
+                // „sofort verstanden" hat. Da arbeitet niemand, trotzdem vergeht Zeit.
+                if b.art == .liegezeit {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 7).fill(Color.orange.opacity(0.10))
+                        Schraffur().stroke(Color.orange.opacity(0.45), lineWidth: 1.5)
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                    }
+                } else {
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(b.fertig ? Color.green.opacity(0.22) : Color.blue.opacity(0.22))
+                }
+            }
             .overlay(RoundedRectangle(cornerRadius: 7)
-                .stroke(b.fertig ? Color.green.opacity(0.5) : Color.blue.opacity(0.5), lineWidth: 1))
+                .stroke(b.art == .liegezeit ? Color.orange.opacity(0.55)
+                        : b.fertig ? Color.green.opacity(0.5) : Color.blue.opacity(0.5),
+                        style: StrokeStyle(lineWidth: 1,
+                                           dash: b.art == .liegezeit ? [4, 3] : [])))
             .foregroundStyle(.primary)
         }
         .buttonStyle(.plain)
@@ -308,4 +329,20 @@ struct WochenstrahlView: View {
 
     private func blaettern(_ richtung: Int) { versatz += richtung; laden() }
     private func laden() { woche = Wochenstrahl.woche(versatz: versatz, in: ctx) }
+}
+
+/// Diagonale Schraffur für Liegezeiten — das Muster aus der Ablaufplan-Skizze.
+private struct Schraffur: Shape {
+    var abstand: CGFloat = 7
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        var x = -rect.height
+        while x < rect.width {
+            p.move(to: CGPoint(x: x, y: rect.height))
+            p.addLine(to: CGPoint(x: x + rect.height, y: 0))
+            x += abstand
+        }
+        return p
+    }
 }

@@ -20,6 +20,9 @@ struct AuftragDetailView: View {
     // Voraussetzungen — welcher Auftrag muss vorher fertig sein?
     @State private var zeigeVoraussetzungWahl = false
     @State private var kettenFehler: String?
+    /// Eine lange Liegezeit wird nie still gesetzt — 28 Tage Estrich verschieben
+    /// einen Termin um einen Monat.
+    @State private var wartezeitVorschlag: (w: Wartezeit, kante: Voraussetzung)?
 
     /// „Wer ein Nein übergeht, unterschreibt." — der Dialog erscheint, wenn jemand
     /// fertig meldet, obwohl Voraussetzungen offen sind. Er sperrt NICHT: er verlangt
@@ -92,6 +95,24 @@ struct AuftragDetailView: View {
             Text(kettenFehler ?? "")
         }
         .sheet(isPresented: $zeigeUebernahme) { uebernahmeDialog }
+        .alert("Liegezeit dazwischen?", isPresented: Binding(
+            get: { wartezeitVorschlag != nil },
+            set: { if !$0 { wartezeitVorschlag = nil } }
+        )) {
+            Button("\(zahlKurz(wartezeitVorschlag?.w.tage ?? 0)) Tage einrechnen") {
+                if let v = wartezeitVorschlag {
+                    v.kante.wartezeitTage = v.w.tage
+                    try? ctx.save()
+                }
+                wartezeitVorschlag = nil
+            }
+            Button("Ohne Liegezeit", role: .cancel) { wartezeitVorschlag = nil }
+        } message: {
+            if let v = wartezeitVorschlag {
+                Text("\(v.w.bezeichnung): \(zahlKurz(v.w.tage)) Tage, in denen niemand "
+                     + "arbeitet — aber alles Folgende schiebt sich.\n\n\(v.w.hinweis)")
+            }
+        }
         .sheet(isPresented: $zeigeAnweisungsVorschlag) {
             AnweisungVorschlagView(job: job) { schritte in
                 extras.checklist = schritte.map(AuftragChecklistItem.init)
@@ -961,9 +982,27 @@ struct AuftragDetailView: View {
             .sorted { Kausalkette.bezeichnung($0) < Kausalkette.bezeichnung($1) }
     }
 
+    private func zahlKurz(_ w: Double) -> String {
+        w == w.rounded() ? String(format: "%.0f", w) : String(format: "%.1f", w)
+    }
+
     private func verknuepfeMit(_ vorgaenger: Auftrag) {
         do {
-            try Kausalkette.verknuepfe(job, brauchtVorher: vorgaenger, in: ctx)
+            let kante = try Kausalkette.verknuepfe(job, brauchtVorher: vorgaenger, in: ctx)
+
+            // 🔴 Hier entsteht die Wartezeit — und hier wurde sie bisher vergessen.
+            // Gemessen: alle 598 Kanten in der Datenbank standen auf 0, obwohl
+            // `Bauablauf` sie seit jeher mitrechnet. Beton härtet trotzdem.
+            // Der Mops schlägt vor, der Mensch bestätigt; bei langen Zeiten (Estrich
+            // 28 Tage) wird ausdrücklich gefragt, statt still zu setzen.
+            if let w = WartezeitKatalog.vorschlag(von: Kausalkette.bezeichnung(vorgaenger),
+                                                  zu: Kausalkette.bezeichnung(job)) {
+                if w.brauchtRueckfrage {
+                    wartezeitVorschlag = (w, kante)
+                } else {
+                    kante.wartezeitTage = w.tage
+                }
+            }
             try ctx.save()
         } catch let fehler as KausalketteFehler {
             // Der Text aus `KausalketteFehler` erklärt den Kreis mit beiden Namen —

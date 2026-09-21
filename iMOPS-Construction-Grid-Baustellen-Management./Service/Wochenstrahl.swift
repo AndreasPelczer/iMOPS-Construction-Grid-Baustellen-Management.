@@ -51,7 +51,12 @@ enum Wochenstrahl {
     /// Dienstag UND Mittwoch und sah aus wie zwei Aufträge. Es war einer über zwei
     /// Tage. Genau das kann eine Liste nicht zeigen — ein Raster schon.
     struct Balken: Identifiable {
+        /// Arbeit oder Liegezeit — im Mockup der Unterschied zwischen vollem und
+        /// schraffiertem Balken. „Beton härten" ist kein Auftrag, aber es kostet Tage.
+        enum Art { case arbeit, liegezeit }
+
         let id = UUID()
+        var art: Art = .arbeit
         let baustelle: String
         let auftrag: String
         let event: Event
@@ -78,6 +83,7 @@ enum Wochenstrahl {
         let id = UUID()
         let datum: Date
         var eintraege: [Eintrag] = []
+        var liegezeiten: [Eintrag] = []
         var termine: [Termin] = []
 
         /// Fest verdrahtet statt über den DateFormatter: der liefert im Deutschen
@@ -89,7 +95,7 @@ enum Wochenstrahl {
             return namen[(wd - 1) % 7]
         }
         var istHeute: Bool { Calendar.current.isDateInToday(datum) }
-        var leer: Bool { eintraege.isEmpty && termine.isEmpty }
+        var leer: Bool { eintraege.isEmpty && liegezeiten.isEmpty && termine.isEmpty }
     }
 
     /// Was der Woche fehlt, damit sie überhaupt etwas zeigen kann.
@@ -128,21 +134,23 @@ enum Wochenstrahl {
     static func rasterAus(_ tage: [Tag]) -> Raster {
         // Schlüssel: Baustelle + Auftragsname. Gleichnamige Pakete derselben Baustelle
         // laufen in der Praxis nie gleichzeitig; käme das vor, stünden sie in einer Zeile.
-        var spannen: [String: (von: Int, bis: Int, e: Eintrag)] = [:]
+        var spannen: [String: (von: Int, bis: Int, e: Eintrag, art: Balken.Art)] = [:]
         for (spalte, tag) in tage.enumerated() {
-            for eintrag in tag.eintraege {
-                let schluessel = eintrag.baustelle + "|" + eintrag.auftrag
+            for (eintrag, art) in tag.eintraege.map({ ($0, Balken.Art.arbeit) })
+                                + tag.liegezeiten.map({ ($0, Balken.Art.liegezeit) }) {
+                let schluessel = "\(art)|" + eintrag.baustelle + "|" + eintrag.auftrag
                 if var da = spannen[schluessel] {
                     da.bis = max(da.bis, spalte)
                     spannen[schluessel] = da
                 } else {
-                    spannen[schluessel] = (spalte, spalte, eintrag)
+                    spannen[schluessel] = (spalte, spalte, eintrag, art)
                 }
             }
         }
 
         let balken = spannen.values.map { sp in
-            Balken(baustelle: sp.e.baustelle, auftrag: sp.e.auftrag, event: sp.e.event,
+            Balken(art: sp.art,
+                   baustelle: sp.e.baustelle, auftrag: sp.e.auftrag, event: sp.e.event,
                    job: sp.e.job, vonSpalte: sp.von, bisSpalte: sp.bis,
                    fertig: sp.e.fertig,
                    // Ein Balken, der am Montag ohne Anfang dasteht, kommt von letzter
@@ -223,6 +231,33 @@ enum Wochenstrahl {
             }
 
             let nachName = Dictionary(jobs.map { (kennung($0), $0) }, uniquingKeysWith: { a, _ in a })
+
+            // 🔴 Die Tage, an denen niemand arbeitet, gehören in den Kalender.
+            // Sie stecken auf den Kanten (`wartezeitTage`) und schoben den Plan
+            // bisher unsichtbar — man sah nur, dass etwas später anfing.
+            for auftrag in jobs {
+                for v in ((auftrag.voraussetzungen as? Set<Voraussetzung>) ?? []) {
+                    guard v.wartezeitTage > 0, let quelle = v.quelle,
+                          let vorTermin = plan.termine.first(where: { $0.knotenID == kennung(quelle) })
+                    else { continue }
+                    let vonIdx = Int(vorTermin.fruehestesEndeTag.rounded(.up))
+                    let bisIdx = vonIdx + Int(v.wartezeitTage.rounded(.up)) - 1
+                    guard bisIdx >= vonIdx else { continue }
+
+                    for (i, tag) in e.tage.enumerated() {
+                        guard let idx = arbeitstagIndex(von: start, bis: tag.datum, cal: cal),
+                              idx >= vonIdx, idx <= bisIdx else { continue }
+                        e.tage[i].liegezeiten.append(Eintrag(
+                            baustelle: name,
+                            auftrag: v.name ?? "Liegezeit",
+                            event: event,
+                            beginntHeute: idx == vonIdx,
+                            endetHeute: idx == bisIdx,
+                            fertig: false,
+                            job: auftrag))
+                    }
+                }
+            }
 
             for termin in plan.termine {
                 let vonIndex = Int(termin.fruehesterStartTag.rounded(.down))

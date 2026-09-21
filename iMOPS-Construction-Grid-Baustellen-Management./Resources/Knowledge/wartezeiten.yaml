@@ -1,0 +1,72 @@
+# Wartezeiten — die Tage, an denen NIEMAND arbeitet
+#
+# Andreas, 21.09.2026, über die Ablaufplan-Skizze: „erst hat man den Bagger gesehen,
+# dann ?? dann Zeit … es ging um Trockenzeit oder so, das habe ich sofort verstanden."
+#
+# Beton härten, Estrich trocknen, Putz abbinden: da steht niemand auf der Baustelle,
+# aber alles Folgende schiebt sich. Ohne diese Tage ist jeder Terminplan zu optimistisch.
+#
+# 🔴 Gemessen am 21.09.2026: `Bauablauf` RECHNET Wartezeiten seit jeher mit
+# (`AblaufKante.wartezeitTage`) — aber alle 598 Kanten in der Datenbank standen auf 0.
+# Es hat sie nur nie jemand eingetragen. Dieser Katalog schlägt sie vor.
+#
+# Die Werte sind ÜBLICHE PRAXISWERTE, keine Normvorgabe. Sie hängen von Zement,
+# Temperatur, Bauteil und Belastung ab — deshalb trägt jeder Eintrag seinen
+# `hinweis`, und der Mops schlägt sie nur VOR. Wer sie übernimmt, entscheidet.
+# Raphi muss da einmal drüberschauen.
+
+- id: "beton_ausschalen_seitlich"
+  aliases: ["beton ausschalen", "schalung entfernen", "seitenschalung"]
+  tage: 1
+  bezeichnung: "Seitenschalung ausschalen"
+  hinweis: "Nicht tragende Seitenschalung, Normalbeton ab C20/25, > 5 °C. Bei Frost länger."
+  quelle_kurz: "Praxiswert — von Raphi zu bestätigen"
+
+- id: "beton_haerten_decke"
+  aliases: ["beton härten", "decke ausschalen", "aushärten", "betondecke"]
+  tage: 3
+  bezeichnung: "Beton härten (tragende Bauteile)"
+  hinweis: "Bis zum Ausschalen tragender Bauteile. Je nach Statik und Zement auch 7–28 Tage — im Zweifel den Statiker fragen."
+  quelle_kurz: "Praxiswert — von Raphi zu bestätigen"
+
+- id: "estrich_begehbar"
+  aliases: ["estrich begehbar", "estrich betreten"]
+  tage: 3
+  bezeichnung: "Estrich begehbar"
+  hinweis: "Zementestrich, danach vorsichtig betretbar — noch nicht belastbar."
+  quelle_kurz: "Praxiswert — von Raphi zu bestätigen"
+
+- id: "estrich_belegreif"
+  aliases: ["estrich trocknen", "belegreif", "estrich belegen", "cm-messung"]
+  tage: 28
+  bezeichnung: "Estrich belegreif"
+  hinweis: "Zementestrich bis CM ≤ 2,0 % (bzw. 1,8 % bei Fußbodenheizung). NICHT raten — CM-Messung entscheidet."
+  quelle_kurz: "Praxiswert — von Raphi zu bestätigen"
+
+- id: "abdichtung_trocknen"
+  aliases: ["abdichtung trocknen", "bitumen trocknen", "abdichtung verfüllen"]
+  tage: 7
+  bezeichnung: "Abdichtung trocknen vor dem Verfüllen"
+  hinweis: "Steht so im STLB-Baustein: mind. 7 Tage vor Verfüllung."
+  quelle_kurz: "stlb_bausteine.yaml"
+
+- id: "putz_abbinden"
+  aliases: ["putz trocknen", "putz abbinden", "innenputz"]
+  tage: 14
+  bezeichnung: "Innenputz abbinden"
+  hinweis: "Faustregel 1 Tag je mm Schichtdicke, dann streichfähig. Bei Kalkputz länger."
+  quelle_kurz: "Praxiswert — von Raphi zu bestätigen"
+
+- id: "mauerwerk_belastbar"
+  aliases: ["mauerwerk aushärten", "mörtel abbinden", "mauerwerk belasten"]
+  tage: 1
+  bezeichnung: "Mauerwerk belastbar"
+  hinweis: "Dünnbettmörtel meist am Folgetag. Normalmörtel braucht länger."
+  quelle_kurz: "Praxiswert — von Raphi zu bestätigen"
+
+- id: "asphalt_abkuehlen"
+  aliases: ["asphalt abkühlen", "asphalt befahrbar"]
+  tage: 1
+  bezeichnung: "Asphalt abkühlen"
+  hinweis: "Bis zur Verkehrsfreigabe. Bei Hitze länger."
+  quelle_kurz: "Praxiswert — von Raphi zu bestätigen"
