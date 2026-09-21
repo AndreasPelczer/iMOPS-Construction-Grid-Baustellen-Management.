@@ -49,6 +49,15 @@ struct TagesblickView: View {
                                     .padding(.horizontal, 7).padding(.vertical, 2)
                                     .background(farbe(l.phase).opacity(0.16), in: Capsule())
                                     .foregroundStyle(farbe(l.phase))
+                                // Der Plan sagte einen Tag, die Arbeit sagt einen anderen.
+                                // Beides steht nebeneinander — eine Tatsache, kein Vorwurf.
+                                if Tagesblick.Phase.istUeberfaellig(l.event) {
+                                    Text("über den Termin")
+                                        .font(.caption2.weight(.bold))
+                                        .padding(.horizontal, 7).padding(.vertical, 2)
+                                        .background(Color.orange.opacity(0.16), in: Capsule())
+                                        .foregroundStyle(.orange)
+                                }
                             }
                             Text(l.satz).font(.subheadline).foregroundStyle(.secondary)
                         }

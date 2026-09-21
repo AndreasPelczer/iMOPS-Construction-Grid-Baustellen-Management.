@@ -581,3 +581,47 @@ struct VorbelegungBaustelleTests {
         #expect(tag > Date(), "Der Vorschlag liegt in der Zukunft, nicht heute rückwärts")
     }
 }
+
+// MARK: - Der Plan und die Arbeit sind zwei verschiedene Dinge
+//
+// "eine baustelle dauert keine 3 stunden. sie dauert so lange wie sie dauert.
+//  sie wurde geplant das sie eventuell x stunden dauert, aber fertig ist sie
+//  erst wenn sie fertig ist" (Andreas, 21.09.2026)
+
+@MainActor
+struct PlanUndArbeitTests {
+
+    private func auftrag(_ ctx: NSManagedObjectContext, _ e: Event, _ status: JobStatus) {
+        let a = Auftrag(context: ctx)
+        a.processingDetails = "Aushub"; a.status = status; a.storageNote = ""; a.event = e
+    }
+
+    @Test func ueberDenTerminAberNichtFertig() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Spät"
+        e.eventEndTime = Date().addingTimeInterval(-86400 * 10)
+        auftrag(ctx, e, .inProgress)
+
+        #expect(Tagesblick.Phase.istUeberfaellig(e))
+        #expect(Tagesblick.Phase.von(e) == .laeuft, "Überfällig ändert die Phase nicht")
+    }
+
+    /// Fertig ist fertig — auch wenn es länger gedauert hat als geplant.
+    @Test func spaetFertigIstNichtUeberfaellig() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Spät fertig"
+        e.eventEndTime = Date().addingTimeInterval(-86400 * 10)
+        auftrag(ctx, e, .completed)
+
+        #expect(!Tagesblick.Phase.istUeberfaellig(e))
+        #expect(Tagesblick.Phase.von(e) == .fertig)
+    }
+
+    /// Ohne geplanten Termin gibt es auch kein "zu spät".
+    @Test func ohneGeplantesEndeKeinUrteil() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Offen"
+        auftrag(ctx, e, .pending)
+        #expect(!Tagesblick.Phase.istUeberfaellig(e))
+    }
+}

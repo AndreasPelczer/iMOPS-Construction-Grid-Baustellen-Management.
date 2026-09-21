@@ -92,3 +92,24 @@ der Polier wartet. Der Mann liest deinen Satz.
 
 *Siehe auch: `docs/HANDOFF-AKTUELL.md` · Andreas' Buch „Thermodynamik der Arbeit"
 (Struktur statt Moral, Zustände statt Bewertungen, Nachweis statt Kontrolle).*
+
+---
+
+## Nachtrag, am selben Abend
+
+> „Eine Baustelle dauert keine 3 Stunden. Sie dauert so lange wie sie dauert.
+> Sie wurde geplant, dass sie eventuell x Stunden dauert — aber fertig ist sie
+> erst wenn sie fertig ist."
+
+Das sind **zwei verschiedene Dinge**, und der Mops darf sie nie verwechseln:
+
+| Der Plan | Die Arbeit |
+|---|---|
+| „Geplante Fertigstellung" — eine Absicht | `Tagesblick.Phase` — ein Zustand |
+| kann falsch sein, ohne dass jemand Schuld hat | ist, was sie ist |
+| darf nie „fertig" bedeuten | sagt allein, ob fertig ist |
+
+Wo beides auseinanderläuft, steht es **nebeneinander**: die Phase sagt „läuft",
+daneben das Merkmal „über den Termin". Keins überschreibt das andere, und das
+Merkmal ist eine Tatsache, kein Vorwurf — es geht auch nicht weg, wenn man es
+ignoriert, und es mahnt nicht, wenn man es ansieht.

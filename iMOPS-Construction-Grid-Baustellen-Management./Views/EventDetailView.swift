@@ -1248,7 +1248,7 @@ struct EventDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 if let setup = event.setupTime   { timeRow(icon: "timer",                          title: "Setup", date: setup, color: .orange) }
                 if let start = event.eventStartTime { timeRow(icon: "calendar.day.timeline.leading", title: "Start", date: start, color: Color(uiColor: .tintColor)) }
-                if let end   = event.eventEndTime   { timeRow(icon: "clock.badge.checkmark",          title: "Ende",  date: end,   color: .green) }
+                if let end   = event.eventEndTime   { timeRow(icon: "clock.badge.checkmark",          title: "geplant fertig",  date: end,   color: .secondary) }
                 EventTimelineBar(event: event)
             }
             let beteiligte: [(String, String)] = [

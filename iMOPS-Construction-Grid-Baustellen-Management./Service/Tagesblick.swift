@@ -112,6 +112,20 @@ enum Tagesblick {
             }
         }
 
+        /// Der geplante Endtermin ist vorbei, die Arbeit aber nicht fertig.
+        ///
+        /// 🔴 Andreas: "eine Baustelle dauert keine 3 Stunden. Sie dauert so lange
+        /// wie sie dauert. Sie wurde geplant, dass sie eventuell x Stunden dauert,
+        /// aber fertig ist sie erst wenn sie fertig ist."
+        /// Deshalb ist das hier eine TATSACHE, kein Urteil: der Plan sagte einen Tag,
+        /// die Arbeit sagt einen anderen. Beides steht nebeneinander, keins überschreibt
+        /// das andere — und die Phase bleibt, was sie ist.
+        @MainActor
+        static func istUeberfaellig(_ event: Event) -> Bool {
+            guard let geplant = event.eventEndTime else { return false }
+            return geplant < Date() && von(event) != .fertig
+        }
+
         /// Die Phase einer Baustelle — aus der ARBEIT, nicht aus dem Kalender.
         /// 🔴 Eine Baustelle, deren Endtermin verstrichen ist, ist nicht fertig.
         /// Sie ist überfällig. Das ist ein Unterschied, den die Liste lange nicht kannte.

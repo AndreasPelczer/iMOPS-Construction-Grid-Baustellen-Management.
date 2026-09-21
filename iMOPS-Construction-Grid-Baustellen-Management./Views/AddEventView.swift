@@ -162,7 +162,7 @@ struct AddEventView: View {
                 Section(header: Text("Zeitplan")) {
                     DatePicker("Baustelleneinrichtung", selection: $setupTime, displayedComponents: [.date, .hourAndMinute])
                     DatePicker("Baubeginn", selection: $eventStartTime, displayedComponents: [.date, .hourAndMinute])
-                    DatePicker("Fertigstellung", selection: $eventEndTime, displayedComponents: [.date, .hourAndMinute])
+                    DatePicker("Geplante Fertigstellung", selection: $eventEndTime, displayedComponents: [.date, .hourAndMinute])
                 }
             }
             .navigationTitle("Neue Baustelle")
