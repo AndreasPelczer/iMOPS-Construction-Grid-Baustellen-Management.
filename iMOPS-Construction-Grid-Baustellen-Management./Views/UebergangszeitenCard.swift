@@ -65,7 +65,8 @@ struct UebergangszeitenCard: View {
         .sheet(item: $belegBearbeiten) { k in
             LiegezeitBelegView(
                 kanteID: k.v.id?.uuidString ?? k.v.objectID.uriRepresentation().absoluteString,
-                von: k.von, zu: k.zu, aktuelleTage: k.v.wartezeitTage
+                von: k.von, zu: k.zu, aktuelleTage: k.v.wartezeitTage,
+                event: k.v.auftrag?.event
             ) { beleg in
                 // Der Beleg setzt die Zahl auch an der Kante — eine Wahrheit.
                 k.v.wartezeitTage = beleg.tage

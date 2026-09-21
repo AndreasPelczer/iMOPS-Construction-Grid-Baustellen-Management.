@@ -18,6 +18,8 @@ struct LiegezeitBelegView: View {
     let von: String
     let zu: String
     let aktuelleTage: Double
+    /// Für die Dokumente dieser Baustelle.
+    var event: Event?
     var gespeichert: (LiegezeitBeleg) -> Void = { _ in }
 
     @State private var tage: Double = 0
@@ -26,6 +28,8 @@ struct LiegezeitBelegView: View {
     @State private var wer = ""
     @State private var begruendung = ""
     @State private var geladen = false
+    @State private var gefunden = LiegezeitSucher.Ergebnis()
+    @State private var suchtImFundus = false
 
     /// Der vorhandene Beleg — gegen den wird gemessen, ob jemand darunter geht.
     private var bestehend: LiegezeitBeleg? { LiegezeitBuch.shared.beleg(fuer: kanteID) }
@@ -52,6 +56,77 @@ struct LiegezeitBelegView: View {
                     Text("\(von)  →  \(zu)").font(.subheadline)
                 } header: {
                     Text("Zwischen diesen beiden")
+                }
+
+                // 🔴 „wenn eine Auswahl besteht, entscheidet der Mensch." Der Mops
+                // trägt zusammen, sortiert nach Nähe zu DIESER Baustelle — und sagt,
+                // wenn die Quellen sich widersprechen, statt heimlich die erste zu nehmen.
+                Section {
+                    if gefunden.kandidaten.isEmpty && !suchtImFundus {
+                        Text("Keine belegte Zahl gefunden.")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    ForEach(gefunden.kandidaten) { k in
+                        Button {
+                            tage = k.tage
+                            herkunft = k.herkunft
+                            quelle = k.quelle
+                        } label: {
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: tage == k.tage && quelle == k.quelle
+                                      ? "largecircle.fill.circle" : "circle")
+                                    .foregroundStyle(.tint)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack(spacing: 6) {
+                                        Text("\(kurz(k.tage)) Tage").font(.body.weight(.semibold))
+                                        Text(k.herkunft.kurz)
+                                            .font(.caption2.weight(.bold))
+                                            .padding(.horizontal, 6).padding(.vertical, 2)
+                                            .background(k.herkunft.istBelegt
+                                                        ? Color.green.opacity(0.16)
+                                                        : Color.gray.opacity(0.16),
+                                                        in: Capsule())
+                                            .foregroundStyle(k.herkunft.istBelegt ? .green : .secondary)
+                                    }
+                                    if !k.quelle.isEmpty {
+                                        Text(k.quelle).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    if !k.hinweis.isEmpty {
+                                        Text(k.hinweis).font(.caption2).foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if suchtImFundus {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("Der Mops fragt seinen Fundus…")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Button {
+                            Task { await fundusFragen() }
+                        } label: {
+                            Label("Den Fundus fragen", systemImage: "questionmark.bubble")
+                                .font(.subheadline)
+                        }
+                    }
+                    if let fehler = gefunden.fundusFehler {
+                        Text("Fundus nicht erreichbar: \(fehler)")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Was der Mops gefunden hat")
+                } footer: {
+                    if gefunden.widersprechenSich {
+                        Label(gefunden.satz, systemImage: "exclamationmark.triangle")
+                            .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                    } else if !gefunden.kandidaten.isEmpty {
+                        Text(gefunden.satz)
+                    }
                 }
 
                 Section {
@@ -110,6 +185,12 @@ struct LiegezeitBelegView: View {
                 if let b = bestehend, !b.istUnterschreitung {
                     herkunft = b.herkunft; quelle = b.quelle; wer = b.von
                 }
+                // Dokumente und Katalog sofort — der Fundus nur auf Knopfdruck,
+                // er kostet bis zu drei Minuten.
+                Task {
+                    gefunden = await LiegezeitSucher.suche(nach: von, event: event,
+                                                            mitFundus: false)
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -136,6 +217,12 @@ struct LiegezeitBelegView: View {
         LiegezeitBuch.shared.merken(b)
         gespeichert(b)
         dismiss()
+    }
+
+    private func fundusFragen() async {
+        suchtImFundus = true
+        defer { suchtImFundus = false }
+        gefunden = await LiegezeitSucher.suche(nach: von, event: event, mitFundus: true)
     }
 
     private func kurz(_ w: Double) -> String {
