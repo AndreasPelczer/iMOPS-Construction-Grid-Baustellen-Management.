@@ -1962,7 +1962,8 @@
     - "Der Mops meckert zu unrecht"
     - "Warum meldet der Mops das nicht mehr"
   antwort: |
-    In "Wo war ich?" jede Zeile nach links wischen -> "Ist hier anders".
+    In "Wo war ich?" steht rechts an jeder Meldung ein kleiner Knopf
+    "ist hier anders" — antippen.
     Dann eintragen, was hier stattdessen gilt (z.B. "Bauzaun stellt der Bauherr"),
     Namen dazu, und ob es NUR HIER oder IMMER gilt.
     Was dann passiert:
@@ -1974,6 +1975,8 @@
       "Das sollte der Mops koennen".
     🔴 "Nur hier" gilt wirklich nur auf dieser Baustelle bei diesem Ding —
     sonst wuerden echte Luecken auf anderen Baustellen verschwinden.
+    Alles Erklaerte steht in "Wo war ich?" unter "Sonderfaelle" — dort auch die
+    Liste "Das sollte der Mops koennen".
     Der Mops baut aus den Sonderfaellen KEINE Regel von selbst. Er sammelt nur
     den Beleg, dass eine fehlt; was daraus wird, entscheidet ein Mensch.
   quelle_kurz: "iMOPS Bedienung"

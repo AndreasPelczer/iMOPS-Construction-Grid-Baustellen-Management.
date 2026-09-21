@@ -86,29 +86,38 @@ struct TagesblickView: View {
                     }
 
                     ForEach(l.anstehend) { a in
-                        NavigationLink {
-                            SpaeterLaden {
-                                // Ein einzelnes Ding führt auf das Ding.
-                                if let job = a.job { AnyView(AuftragDetailView(job: job)) }
-                                else if a.insLV { AnyView(LVView(event: l.event)) }
-                                else { AnyView(EventDetailView(event: l.event)) }
+                        // 🔴 Der Erklär-Knopf war eine WISCHGESTE — also unsichtbar.
+                        // Andreas: „du hast wirklich einen ‚jaaa nneee' Knopf eingebaut?
+                        // wo sehe ich den?" Genau. Ein Knopf, den man nicht sieht,
+                        // ist keiner. Jetzt steht er in der Zeile.
+                        HStack(alignment: .top, spacing: 10) {
+                            NavigationLink {
+                                SpaeterLaden {
+                                    // Ein einzelnes Ding führt auf das Ding.
+                                    if let job = a.job { AnyView(AuftragDetailView(job: job)) }
+                                    else if a.insLV { AnyView(LVView(event: l.event)) }
+                                    else { AnyView(EventDetailView(event: l.event)) }
+                                }
+                            } label: {
+                                HStack(alignment: .top, spacing: 10) {
+                                    Image(systemName: "circle.dashed")
+                                        .foregroundStyle(.secondary)
+                                    Text(a.text).font(.subheadline)
+                                }
                             }
-                        } label: {
-                            HStack(alignment: .top, spacing: 10) {
-                                Image(systemName: "circle.dashed")
-                                    .foregroundStyle(.secondary)
-                                Text(a.text).font(.subheadline)
-                            }
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+
                             if !a.thema.isEmpty {
                                 Button {
                                     erklaeren = (a.thema, a.text, l.baustelle,
                                                  a.job.map { Kausalkette.bezeichnung($0) } ?? l.baustelle)
                                 } label: {
-                                    Label("Ist hier anders", systemImage: "hand.raised")
+                                    Text("ist hier anders")
+                                        .font(.caption)
+                                        .padding(.horizontal, 9).padding(.vertical, 4)
+                                        .background(Color.indigo.opacity(0.13), in: Capsule())
+                                        .foregroundStyle(.indigo)
                                 }
-                                .tint(.indigo)
+                                .buttonStyle(.borderless)
                             }
                         }
                     }
@@ -170,6 +179,24 @@ struct TagesblickView: View {
                     Text("Für diese Aufträge gibt es noch keine Arbeitsschritte. "
                          + "Einen antippen, \"Mops, wie geht das?\" drücken, durchlesen, "
                          + "abnehmen — danach bringt dich der Auftrag selbst zum nächsten.")
+                }
+            }
+
+            // Die Tür zum Sonderfall-Buch. Ohne sie wäre die Liste gebaut, getestet
+            // und von niemandem aufrufbar — genau das Muster, das wir heute früh
+            // gejagt haben (`ruft-keiner.py`).
+            if !SonderfallBuch.shared.alle.isEmpty {
+                Section {
+                    NavigationLink { SonderfaelleView() } label: {
+                        HStack {
+                            Image(systemName: "hand.raised")
+                                .foregroundStyle(.indigo)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Sonderfälle").font(.body.weight(.semibold))
+                                Text(sonderfallSatz).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -285,6 +312,15 @@ struct TagesblickView: View {
     }
 
     private func laden() { blick = Tagesblick.fuerHeute(in: ctx) }
+
+    private var sonderfallSatz: String {
+        let alle = SonderfallBuch.shared.alle.count
+        let reif = SonderfallBuch.shared.reifeThemen().count
+        if reif > 0 {
+            return "\(alle) erklärt · \(reif) davon so oft, dass eine Regel fehlt"
+        }
+        return alle == 1 ? "1 erklärt" : "\(alle) erklärt"
+    }
 }
 
 // MARK: - Die Karte oben in der Baustellenliste
