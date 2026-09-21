@@ -173,3 +173,118 @@ struct WochenstrahlTests {
         #expect(mi.termine.map(\.was) == ["Estrich nacharbeiten"])
     }
 }
+
+// MARK: - Aus Tagen werden Balken
+//
+// "ich mag die ansicht nicht. ich bin icalender und google und outlook gewohnt und
+//  die meisten user auch, haben wir da was nicht bedacht?" (Andreas, 21.09.2026)
+//
+// Die Liste log obendrein: "311 Baugrube / Erdbau" stand an Dienstag UND Mittwoch
+// und sah aus wie zwei Aufträge. Es war einer über zwei Tage.
+
+@MainActor
+struct WochenRasterTests {
+
+    private func tag(_ tage: Int, _ eintraege: [Wochenstrahl.Eintrag]) -> Wochenstrahl.Tag {
+        var t = Wochenstrahl.Tag(datum: Date().addingTimeInterval(Double(tage) * 86400))
+        t.eintraege = eintraege
+        return t
+    }
+
+    private func eintrag(_ name: String, _ bv: String = "BV A", event: Event,
+                         beginnt: Bool = false, endet: Bool = false,
+                         fertig: Bool = false) -> Wochenstrahl.Eintrag {
+        Wochenstrahl.Eintrag(baustelle: bv, auftrag: name, event: event,
+                             beginntHeute: beginnt, endetHeute: endet, fertig: fertig)
+    }
+
+    private func baustelle() -> Event {
+        Event(context: PersistenceController(inMemory: true).container.viewContext)
+    }
+
+    /// 🔴 Der Kern: derselbe Auftrag an zwei Tagen ist EIN Balken über zwei Spalten.
+    @Test func zweiTageEinBalken() {
+        let e = baustelle()
+        let tage = [
+            tag(0, []),
+            tag(1, [eintrag("311 Baugrube", event: e, beginnt: true)]),
+            tag(2, [eintrag("311 Baugrube", event: e, endet: true)]),
+            tag(3, []), tag(4, []),
+        ]
+        let r = Wochenstrahl.rasterAus(tage)
+        #expect(r.anzahl == 1, "ein Auftrag, nicht zwei")
+        let b = r.zeilen[0][0]
+        #expect(b.vonSpalte == 1 && b.bisSpalte == 2)
+        #expect(b.spalten == 2)
+    }
+
+    /// Was sich überschneidet, kommt in getrennte Zeilen — wie in jedem Kalender.
+    @Test func ueberschneidungKommtInEigeneZeile() {
+        let e = baustelle()
+        let tage = [
+            tag(0, [eintrag("A", event: e, beginnt: true)]),
+            tag(1, [eintrag("A", event: e, endet: true), eintrag("B", event: e, beginnt: true)]),
+            tag(2, [eintrag("B", event: e, endet: true)]),
+            tag(3, []), tag(4, []),
+        ]
+        let r = Wochenstrahl.rasterAus(tage)
+        #expect(r.anzahl == 2)
+        #expect(r.zeilen.count == 2, "A und B überlappen am Dienstag")
+    }
+
+    /// Was sich NICHT überschneidet, teilt sich eine Zeile — sonst wird das Raster hoch.
+    @Test func nacheinanderTeiltSichEineZeile() {
+        let e = baustelle()
+        let tage = [
+            tag(0, [eintrag("A", event: e, beginnt: true, endet: true)]),
+            tag(1, []),
+            tag(2, [eintrag("B", event: e, beginnt: true, endet: true)]),
+            tag(3, []), tag(4, []),
+        ]
+        let r = Wochenstrahl.rasterAus(tage)
+        #expect(r.zeilen.count == 1)
+        #expect(r.zeilen[0].count == 2)
+    }
+
+    /// Ein Balken, der schon vor Montag lief, muss das zeigen — sonst wirkt er zu kurz.
+    @Test func laeuftSchonSeitLetzterWoche() {
+        let e = baustelle()
+        let tage = [
+            tag(0, [eintrag("Aushub", event: e, beginnt: false)]),
+            tag(1, [eintrag("Aushub", event: e, endet: true)]),
+            tag(2, []), tag(3, []), tag(4, []),
+        ]
+        let b = Wochenstrahl.rasterAus(tage).zeilen[0][0]
+        #expect(b.davorSchon, "der Balken kommt von letzter Woche")
+        #expect(!b.danachNoch)
+    }
+
+    @Test func laeuftUeberFreitagHinaus() {
+        let e = baustelle()
+        let tage = [
+            tag(0, []), tag(1, []), tag(2, []),
+            tag(3, [eintrag("Rohbau", event: e, beginnt: true)]),
+            tag(4, [eintrag("Rohbau", event: e, endet: false)]),
+        ]
+        let b = Wochenstrahl.rasterAus(tage).zeilen[0][0]
+        #expect(b.danachNoch)
+        #expect(!b.davorSchon)
+    }
+
+    @Test func leereWocheGibtKeineBalken() {
+        let r = Wochenstrahl.rasterAus([tag(0, []), tag(1, []), tag(2, []), tag(3, []), tag(4, [])])
+        #expect(r.zeilen.isEmpty)
+        #expect(r.anzahl == 0)
+    }
+
+    /// Zwei Baustellen mit gleichnamigem Paket bleiben zwei Balken.
+    @Test func gleicherNameVerschiedeneBaustellen() {
+        let e1 = baustelle(), e2 = baustelle()
+        let tage = [
+            tag(0, [eintrag("Aushub", "BV A", event: e1, beginnt: true, endet: true),
+                    eintrag("Aushub", "BV B", event: e2, beginnt: true, endet: true)]),
+            tag(1, []), tag(2, []), tag(3, []), tag(4, []),
+        ]
+        #expect(Wochenstrahl.rasterAus(tage).anzahl == 2)
+    }
+}

@@ -19,6 +19,11 @@ struct WochenstrahlView: View {
     @Environment(\.managedObjectContext) private var ctx
     @State private var versatz = 0
     @State private var woche = Wochenstrahl.Ergebnis()
+    @Environment(\.horizontalSizeClass) private var breite
+    private var breit: Bool { breite != .compact }
+
+    private let zeilenHoehe: CGFloat = 44
+    private let abstand: CGFloat = 4
 
     var body: some View {
         List {
@@ -44,38 +49,20 @@ struct WochenstrahlView: View {
                 Section { luecken }
             }
 
-            ForEach(woche.tage) { tag in
+            // 🔴 Andreas: „ich bin iCalender und Google und Outlook gewohnt und die
+            // meisten user auch … ich finde mich auf den ersten Blick nicht zurecht."
+            // Ein Kalender ist ein RASTER: Tage nebeneinander, Aufträge als Balken
+            // darüber. Die Liste log obendrein — ein Auftrag über zwei Tage stand
+            // zweimal da und sah aus wie zwei Aufträge.
+            // Schmal (iPhone hochkant) bleibt die Liste: fünf Spalten auf 390 Punkten
+            // kann niemand lesen.
+            if breit {
                 Section {
-                    if tag.leer {
-                        Text("—").foregroundStyle(.tertiary)
-                    } else {
-                        ForEach(tag.termine) { t in
-                            NavigationLink { SpaeterLaden { MangelListeView(event: t.event) } } label: {
-                                HStack(spacing: 10) {
-                                    Text("🔴")
-                                    VStack(alignment: .leading, spacing: 1) {
-                                        Text(t.was).font(.body.weight(.semibold))
-                                        Text(t.baustelle).font(.caption).foregroundStyle(.orange)
-                                    }
-                                }
-                            }
-                        }
-                        ForEach(tag.eintraege) { e in
-                            NavigationLink { SpaeterLaden { EventDetailView(event: e.event) } } label: { zeile(e) }
-                        }
-                    }
-                } header: {
-                    HStack {
-                        Text(tag.kuerzel).fontWeight(.bold)
-                        Text(tag.datum, format: .dateTime.day().month())
-                        if tag.istHeute {
-                            Text("heute").font(.caption2.weight(.bold))
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Color.orange, in: Capsule())
-                                .foregroundStyle(.white)
-                        }
-                    }
+                    raster
                 }
+                .listRowInsets(EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6))
+            } else {
+                tagesListe
             }
 
             if woche.hatInhalt && !woche.luecken.istVollstaendig {
@@ -86,6 +73,177 @@ struct WochenstrahlView: View {
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { laden() }
         .onAppear { laden() }
+    }
+
+    // MARK: - Das Raster (Mo–Fr nebeneinander)
+
+    @ViewBuilder private var raster: some View {
+        GeometryReader { geo in
+            let spalte = max((geo.size.width - abstand * 4) / 5, 40)
+            VStack(alignment: .leading, spacing: 8) {
+                kopfzeile(spalte)
+                if woche.raster.zeilen.isEmpty {
+                    Text("Diese Woche steht nichts im Plan.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                        .padding(.top, 6)
+                } else {
+                    ForEach(Array(woche.raster.zeilen.enumerated()), id: \.offset) { _, zeile in
+                        balkenZeile(zeile, spalte: spalte)
+                    }
+                }
+                terminZeile(spalte)
+            }
+        }
+        .frame(height: hoehe)
+    }
+
+    private var hoehe: CGFloat {
+        let zeilen = max(woche.raster.zeilen.count, 1)
+        let termine = woche.tage.contains { !$0.termine.isEmpty } ? zeilenHoehe : 0
+        return 46 + CGFloat(zeilen) * (zeilenHoehe + abstand) + termine + 12
+    }
+
+    /// Die Kopfzeile: Mo … Fr mit Datum, heute hervorgehoben.
+    private func kopfzeile(_ spalte: CGFloat) -> some View {
+        HStack(spacing: abstand) {
+            ForEach(woche.tage) { tag in
+                VStack(spacing: 1) {
+                    Text(tag.kuerzel)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(tag.istHeute ? Color.orange : .secondary)
+                    Text(tag.datum, format: .dateTime.day().month(.abbreviated))
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                .frame(width: spalte)
+                .padding(.vertical, 4)
+                .background(tag.istHeute ? Color.orange.opacity(0.12) : .clear,
+                            in: RoundedRectangle(cornerRadius: 6))
+            }
+        }
+    }
+
+    /// Eine Zeile Balken. Jeder Balken liegt über so vielen Spalten, wie er dauert —
+    /// darum geht es: ein Auftrag über zwei Tage ist EIN Balken.
+    private func balkenZeile(_ zeile: [Wochenstrahl.Balken], spalte: CGFloat) -> some View {
+        ZStack(alignment: .leading) {
+            // Das Gitter dahinter, damit man die Tage auch dort sieht, wo nichts liegt.
+            HStack(spacing: abstand) {
+                ForEach(woche.tage) { tag in
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(tag.istHeute ? Color.orange.opacity(0.07) : Color.gray.opacity(0.07))
+                        .frame(width: spalte, height: zeilenHoehe)
+                }
+            }
+            ForEach(zeile) { b in
+                balken(b, spalte: spalte)
+                    .offset(x: (spalte + abstand) * CGFloat(b.vonSpalte))
+            }
+        }
+        .frame(height: zeilenHoehe, alignment: .leading)
+    }
+
+    private func balken(_ b: Wochenstrahl.Balken, spalte: CGFloat) -> some View {
+        let breite = spalte * CGFloat(b.spalten) + abstand * CGFloat(b.spalten - 1)
+        return NavigationLink {
+            SpaeterLaden {
+                if let job = b.job { AnyView(AuftragDetailView(job: job)) }
+                else { AnyView(EventDetailView(event: b.event)) }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                if b.davorSchon {
+                    Image(systemName: "chevron.compact.left").font(.caption2)
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(b.auftrag).font(.caption.weight(.semibold)).lineLimit(1)
+                    Text(b.baustelle).font(.caption2).lineLimit(1).opacity(0.75)
+                }
+                Spacer(minLength: 0)
+                if b.danachNoch {
+                    Image(systemName: "chevron.compact.right").font(.caption2)
+                }
+            }
+            .padding(.horizontal, 7)
+            .frame(width: breite, height: zeilenHoehe - 4, alignment: .leading)
+            .background(b.fertig ? Color.green.opacity(0.22) : Color.blue.opacity(0.22),
+                        in: RoundedRectangle(cornerRadius: 7))
+            .overlay(RoundedRectangle(cornerRadius: 7)
+                .stroke(b.fertig ? Color.green.opacity(0.5) : Color.blue.opacity(0.5), lineWidth: 1))
+            .foregroundStyle(.primary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Fristen liegen auf EINEM Tag — eigene Zeile darunter, damit sie nicht mit
+    /// den Arbeitsbalken verwechselt werden.
+    @ViewBuilder private func terminZeile(_ spalte: CGFloat) -> some View {
+        if woche.tage.contains(where: { !$0.termine.isEmpty }) {
+            HStack(spacing: abstand) {
+                ForEach(woche.tage) { tag in
+                    VStack(spacing: 2) {
+                        ForEach(tag.termine) { t in
+                            NavigationLink {
+                                SpaeterLaden { MangelListeView(event: t.event) }
+                            } label: {
+                                Text("🔴 \(t.was)")
+                                    .font(.caption2).lineLimit(1)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 5).padding(.vertical, 3)
+                                    .background(Color.red.opacity(0.14),
+                                                in: RoundedRectangle(cornerRadius: 5))
+                                    .foregroundStyle(.primary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .frame(width: spalte, alignment: .top)
+                }
+            }
+            .frame(height: zeilenHoehe, alignment: .top)
+        }
+    }
+
+    // MARK: - Die schmale Fassung (iPhone hochkant)
+
+    @ViewBuilder private var tagesListe: some View {
+        ForEach(woche.tage) { tag in
+            Section {
+                if tag.leer {
+                    Text("—").foregroundStyle(.tertiary)
+                } else {
+                    ForEach(tag.termine) { t in
+                        NavigationLink { SpaeterLaden { MangelListeView(event: t.event) } } label: {
+                            HStack(spacing: 10) {
+                                Text("🔴")
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(t.was).font(.body.weight(.semibold))
+                                    Text(t.baustelle).font(.caption).foregroundStyle(.orange)
+                                }
+                            }
+                        }
+                    }
+                    ForEach(tag.eintraege) { e in
+                        NavigationLink {
+                            SpaeterLaden {
+                                if let job = e.job { AnyView(AuftragDetailView(job: job)) }
+                                else { AnyView(EventDetailView(event: e.event)) }
+                            }
+                        } label: { zeile(e) }
+                    }
+                }
+            } header: {
+                HStack {
+                    Text(tag.kuerzel).fontWeight(.bold)
+                    Text(tag.datum, format: .dateTime.day().month())
+                    if tag.istHeute {
+                        Text("heute").font(.caption2.weight(.bold))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Color.orange, in: Capsule())
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Was fehlt

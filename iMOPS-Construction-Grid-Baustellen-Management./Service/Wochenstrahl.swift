@@ -37,9 +37,36 @@ enum Wochenstrahl {
         let beginntHeute: Bool
         let endetHeute: Bool
         let fertig: Bool
+        /// Damit ein Balken auf SEIN Ding führen kann, nicht auf die Baustelle.
+        var job: Auftrag? = nil
     }
 
     /// Ein fester Termin an diesem Tag — heute sind das Mängelfristen.
+    /// 🔴 Ein Auftrag über mehrere Tage — EIN Balken, nicht drei Zeilen.
+    ///
+    /// Andreas, 21.09.2026: „ich mag die Ansicht nicht. Ich bin iCalender und Google
+    /// und Outlook gewohnt und die meisten user auch … ich finde mich auf den ersten
+    /// Blick auch nicht zurecht."
+    /// Er hat recht, und die Liste log obendrein: „311 Baugrube / Erdbau" stand an
+    /// Dienstag UND Mittwoch und sah aus wie zwei Aufträge. Es war einer über zwei
+    /// Tage. Genau das kann eine Liste nicht zeigen — ein Raster schon.
+    struct Balken: Identifiable {
+        let id = UUID()
+        let baustelle: String
+        let auftrag: String
+        let event: Event
+        let job: Auftrag?
+        /// Spalten 0…4 = Mo…Fr, beide Enden einschliesslich.
+        let vonSpalte: Int
+        let bisSpalte: Int
+        let fertig: Bool
+        /// Fängt der Balken vor Montag an bzw. läuft er über Freitag hinaus?
+        let davorSchon: Bool
+        let danachNoch: Bool
+
+        var spalten: Int { bisSpalte - vonSpalte + 1 }
+    }
+
     struct Termin: Identifiable {
         let id = UUID()
         let baustelle: String
@@ -66,6 +93,13 @@ enum Wochenstrahl {
     }
 
     /// Was der Woche fehlt, damit sie überhaupt etwas zeigen kann.
+    /// Die Balken der Woche, in Zeilen gestapelt — jede Zeile ohne Überschneidung,
+    /// wie in jedem Kalender.
+    struct Raster {
+        var zeilen: [[Balken]] = []
+        var anzahl: Int { zeilen.reduce(0) { $0 + $1.count } }
+    }
+
     struct Luecken {
         var auftraegeOhneDauer = 0
         var baustellenOhneDauer: [String] = []
@@ -80,8 +114,60 @@ enum Wochenstrahl {
         var tage: [Tag] = []
         var luecken = Luecken()
         var montag = Date()
+        /// Dieselben Daten als Balken — für die Rasteransicht.
+        var raster = Raster()
 
         var hatInhalt: Bool { tage.contains { !$0.leer } }
+    }
+
+    // MARK: - Aus Tagen werden Balken
+
+    /// Fasst zusammen, was zusammengehört: derselbe Auftrag an aufeinanderfolgenden
+    /// Tagen ist EIN Balken. Dann werden die Balken in Zeilen gestapelt, sodass sich
+    /// in einer Zeile nichts überschneidet — genau wie in iCal, Google und Outlook.
+    static func rasterAus(_ tage: [Tag]) -> Raster {
+        // Schlüssel: Baustelle + Auftragsname. Gleichnamige Pakete derselben Baustelle
+        // laufen in der Praxis nie gleichzeitig; käme das vor, stünden sie in einer Zeile.
+        var spannen: [String: (von: Int, bis: Int, e: Eintrag)] = [:]
+        for (spalte, tag) in tage.enumerated() {
+            for eintrag in tag.eintraege {
+                let schluessel = eintrag.baustelle + "|" + eintrag.auftrag
+                if var da = spannen[schluessel] {
+                    da.bis = max(da.bis, spalte)
+                    spannen[schluessel] = da
+                } else {
+                    spannen[schluessel] = (spalte, spalte, eintrag)
+                }
+            }
+        }
+
+        let balken = spannen.values.map { sp in
+            Balken(baustelle: sp.e.baustelle, auftrag: sp.e.auftrag, event: sp.e.event,
+                   job: sp.e.job, vonSpalte: sp.von, bisSpalte: sp.bis,
+                   fertig: sp.e.fertig,
+                   // Ein Balken, der am Montag ohne Anfang dasteht, kommt von letzter
+                   // Woche — das muss man sehen, sonst wirkt er falsch kurz.
+                   davorSchon: sp.von == 0 && !sp.e.beginntHeute,
+                   danachNoch: sp.bis == max(tage.count - 1, 0) && !sp.e.endetHeute)
+        }
+        .sorted {
+            if $0.vonSpalte != $1.vonSpalte { return $0.vonSpalte < $1.vonSpalte }
+            if $0.spalten != $1.spalten { return $0.spalten > $1.spalten }
+            return $0.auftrag < $1.auftrag
+        }
+
+        // Stapeln: jeder Balken in die erste Zeile, in der er Platz hat.
+        var zeilen: [[Balken]] = []
+        for b in balken {
+            if let i = zeilen.firstIndex(where: { zeile in
+                zeile.allSatisfy { b.vonSpalte > $0.bisSpalte || b.bisSpalte < $0.vonSpalte }
+            }) {
+                zeilen[i].append(b)
+            } else {
+                zeilen.append([b])
+            }
+        }
+        return Raster(zeilen: zeilen)
     }
 
     // MARK: - Rechnen
@@ -152,7 +238,8 @@ enum Wochenstrahl {
                         event: event,
                         beginntHeute: idx == vonIndex,
                         endetHeute: idx == bisIndex,
-                        fertig: auftrag?.status == .completed))
+                        fertig: auftrag?.status == .completed,
+                        job: auftrag))
                 }
             }
         }
@@ -162,6 +249,7 @@ enum Wochenstrahl {
                 $0.baustelle == $1.baustelle ? $0.auftrag < $1.auftrag : $0.baustelle < $1.baustelle
             }
         }
+        e.raster = rasterAus(e.tage)
         return e
     }
 

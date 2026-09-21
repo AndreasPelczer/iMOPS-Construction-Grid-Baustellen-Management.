@@ -1679,6 +1679,18 @@
     "Diese Woche" erreichst du ueber "Wo war ich?" — alle Baustellen nebeneinander,
     Montag bis Freitag, auf echten Kalendertagen.
 
+    Am Mac und iPad als KALENDER-RASTER wie in iCal, Google oder Outlook:
+    die fuenf Tage als Spalten, jeder Auftrag als BALKEN ueber so viele Tage,
+    wie er dauert. Ein Auftrag von Dienstag bis Mittwoch ist EIN Balken —
+    nicht zweimal derselbe Name untereinander.
+    - Grau/blau: laeuft noch · gruen: erledigt
+    - Ein Pfeil ‹ am linken Rand: der Auftrag laeuft schon seit letzter Woche
+    - Ein Pfeil › am rechten Rand: er laeuft ueber Freitag hinaus
+    - Fristen (rot) stehen in einer eigenen Zeile unter den Balken, weil sie auf
+      EINEM Tag liegen und keine Arbeit sind
+    - Auf einen Balken tippen fuehrt zum Auftrag
+    Am iPhone hochkant bleibt die Tagesliste — fuenf Spalten waeren dort unlesbar.
+
     Mit den Pfeilen oben blaetterst du vor und zurueck.
 
     Damit etwas drinsteht, braucht es zweierlei:
