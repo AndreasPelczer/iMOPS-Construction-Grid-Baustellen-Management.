@@ -6,10 +6,29 @@ import SwiftUI
 // MARK: - EventFilter
 
 enum EventFilter: String, CaseIterable, Identifiable {
-    case upcoming = "Aktiv"
-    case past = "Abgeschlossen"
-    case all = "Alle"
+    /// 🔴 Bis 21.09.2026 hiessen die Reiter "Aktiv / Abgeschlossen / Alle" und rechneten
+    /// nur mit dem KALENDER: Endtermin vorbei = abgeschlossen, auch wenn kein Handschlag
+    /// getan war. Eine Baustelle, die noch geplant wird, war nicht von einer zu
+    /// unterscheiden, auf der gearbeitet wird.
+    ///
+    /// Jetzt fragen die Reiter die ARBEIT — mit derselben Rechnung und denselben
+    /// Wörtern wie der Tagesblick (`Tagesblick.Phase`). EINE Wahrheit, EINE Sprache.
+    case planung = "In Planung"
+    case laeuft  = "Läuft"
+    case fertig  = "Fertig"
+    case alle    = "Alle"
+
     var id: String { self.rawValue }
+
+    /// Die Phase, die dieser Reiter zeigt — nil heisst: alles durchlassen.
+    var phase: Tagesblick.Phase? {
+        switch self {
+        case .planung: return .planung
+        case .laeuft:  return .laeuft
+        case .fertig:  return .fertig
+        case .alle:    return nil
+        }
+    }
 }
 
 // MARK: - EventSortOrder
@@ -40,7 +59,7 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
     @Published var lastError: String? = nil
 
     private(set) var currentSortOrder: EventSortOrder = .datumNeuAlt
-    private var currentFilter: EventFilter = .upcoming
+    private var currentFilter: EventFilter = .alle
     private var currentQuery: String = ""
 
     private let viewContext: NSManagedObjectContext
@@ -87,17 +106,10 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
         currentQuery     = query
         currentSortOrder = sort
 
-        let now = Date()
         var predicates: [NSPredicate] = []
 
-        switch filter {
-        case .upcoming:
-            predicates.append(NSPredicate(format: "eventEndTime == nil OR eventEndTime >= %@", now as NSDate))
-        case .past:
-            predicates.append(NSPredicate(format: "eventEndTime < %@", now as NSDate))
-        case .all:
-            break
-        }
+        // Über die Phase wird NACH dem Holen gefiltert: sie steckt in den Aufträgen,
+        // nicht in einem Feld — dafür gibt es kein sauberes Core-Data-Prädikat.
 
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if !q.isEmpty {
@@ -113,7 +125,10 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
         do {
             try fetchedResultsController.performFetch()
             if let fetched = fetchedResultsController.fetchedObjects {
-                self.events = self.sortEvents(fetched, sort: sort)
+                let gefiltert = filter.phase.map { gesucht in
+                    fetched.filter { Tagesblick.Phase.von($0) == gesucht }
+                } ?? fetched
+                self.events = self.sortEvents(gefiltert, sort: sort)
             }
         } catch {
             lastError = "Suche fehlgeschlagen: \(error.localizedDescription)"

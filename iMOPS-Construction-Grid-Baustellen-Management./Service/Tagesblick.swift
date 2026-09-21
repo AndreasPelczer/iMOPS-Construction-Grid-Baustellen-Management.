@@ -97,6 +97,20 @@ enum Tagesblick {
             case .fertig:  return "fertig"
             }
         }
+
+        /// Die Phase einer Baustelle — aus der ARBEIT, nicht aus dem Kalender.
+        /// 🔴 Eine Baustelle, deren Endtermin verstrichen ist, ist nicht fertig.
+        /// Sie ist überfällig. Das ist ein Unterschied, den die Liste lange nicht kannte.
+        @MainActor
+        static func von(_ event: Event) -> Phase {
+            let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+            let fertig = jobs.filter { $0.status == .completed }.count
+            let laufend = jobs.filter { $0.status == .inProgress }.count
+
+            if !jobs.isEmpty && fertig == jobs.count { return .fertig }
+            if laufend > 0 || fertig > 0             { return .laeuft }
+            return .planung
+        }
     }
 
     /// Etwas, das anstünde. Kein Mangel, kein Alarm — ein Angebot.
@@ -138,13 +152,7 @@ enum Tagesblick {
     private static func lage(_ event: Event) -> Lage {
         let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
         let positionen = ((event.lvPositionen as? Set<LVPosition>) ?? [])
-        let fertig = jobs.filter { $0.status == .completed }.count
-        let laufend = jobs.filter { $0.status == .inProgress }.count
-
-        let phase: Phase
-        if !jobs.isEmpty && fertig == jobs.count { phase = .fertig }
-        else if laufend > 0 || fertig > 0        { phase = .laeuft }
-        else                                      { phase = .planung }
+        let phase = Phase.von(event)
 
         var l = Lage(baustelle: event.title ?? "Baustelle", event: event, phase: phase,
                      pakete: jobs.count, positionen: positionen.count)
@@ -189,6 +197,15 @@ enum Tagesblick {
 
         var istRuhig: Bool {
             blockaden.isEmpty && startklar.isEmpty && preisluecken.isEmpty && fristen.isEmpty
+        }
+
+        /// 🔴 Der Unterschied zwischen "es liegt was an" und "es brennt".
+        /// Fehlende Preise und startklare Aufträge sind ARBEIT — in der Planung sogar
+        /// der Normalzustand. Ein Warndreieck, das dabei angeht, steht dauernd auf rot
+        /// und wird nach drei Tagen nicht mehr gesehen.
+        /// Alarm gibt es nur, wenn jemand WIRKLICH steht oder eine Frist gerissen ist.
+        var brauchtAufmerksamkeit: Bool {
+            !blockaden.isEmpty || fristen.contains(where: \.ueberfaellig)
         }
     }
 

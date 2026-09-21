@@ -276,3 +276,99 @@ struct TagesblickTests {
         #expect(l.anstehend.isEmpty, "alles gesetzt — nichts steht an")
     }
 }
+
+// MARK: - Die Phase: EINE Wahrheit für Liste und Tagesblick
+//
+// Bis 21.09.2026 rechneten die Reiter der Baustellenliste mit dem KALENDER:
+// Endtermin vorbei = "Abgeschlossen", auch wenn kein Handschlag getan war.
+// Der Tagesblick rechnete daneben die echte Phase aus den Aufträgen.
+// Diese Tests halten die beiden zusammen.
+
+@MainActor
+struct PhaseDerBaustelleTests {
+
+    private func auftrag(_ ctx: NSManagedObjectContext, _ e: Event,
+                         _ was: String, _ status: JobStatus) {
+        let a = Auftrag(context: ctx)
+        a.processingDetails = was
+        a.status = status
+        a.storageNote = ""          // Pflichtfeld ohne Default
+        a.event = e
+    }
+
+    @Test func ohneAuftraegeWirdGeplant() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Leer"
+        #expect(Tagesblick.Phase.von(e) == .planung)
+    }
+
+    @Test func nurOffeneAuftraegeSindNochPlanung() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Geplant"
+        auftrag(ctx, e, "Aushub", .pending)
+        auftrag(ctx, e, "Bodenplatte", .pending)
+        #expect(Tagesblick.Phase.von(e) == .planung)
+    }
+
+    @Test func einLaufenderAuftragMachtDieBaustelleLaufend() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Angefangen"
+        auftrag(ctx, e, "Aushub", .inProgress)
+        auftrag(ctx, e, "Bodenplatte", .pending)
+        #expect(Tagesblick.Phase.von(e) == .laeuft)
+    }
+
+    /// Auch wenn gerade niemand arbeitet: was fertig ist, ist angefangen.
+    @Test func einFertigerAuftragZaehltAlsAngefangen() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Pause"
+        auftrag(ctx, e, "Aushub", .completed)
+        auftrag(ctx, e, "Bodenplatte", .pending)
+        #expect(Tagesblick.Phase.von(e) == .laeuft)
+    }
+
+    @Test func erstWennAllesErledigtIstIstDieBaustelleFertig() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Fertig"
+        auftrag(ctx, e, "Aushub", .completed)
+        auftrag(ctx, e, "Bodenplatte", .completed)
+        #expect(Tagesblick.Phase.von(e) == .fertig)
+    }
+
+    /// 🔴 Der eigentliche Befund: ein verstrichener Endtermin macht keine Baustelle fertig.
+    /// Die alte Liste hätte diese hier unter "Abgeschlossen" einsortiert.
+    @Test func verstrichenerEndterminMachtNichtFertig() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Überfällig"
+        e.eventEndTime = Date().addingTimeInterval(-60 * 60 * 24 * 30)   // vor einem Monat
+        auftrag(ctx, e, "Aushub", .pending)
+        #expect(Tagesblick.Phase.von(e) == .planung)
+    }
+
+    /// Umgekehrt: fertig ist fertig, auch wenn der Termin noch läuft.
+    @Test func fertigVorDemEndterminIstTrotzdemFertig() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Früh dran"
+        e.eventEndTime = Date().addingTimeInterval(60 * 60 * 24 * 30)    // in einem Monat
+        auftrag(ctx, e, "Aushub", .completed)
+        #expect(Tagesblick.Phase.von(e) == .fertig)
+    }
+
+    /// Jeder Reiter zeigt genau eine Phase — und "Alle" lässt alles durch.
+    @Test func jederReiterZeigtSeinePhase() {
+        #expect(EventFilter.planung.phase == .planung)
+        #expect(EventFilter.laeuft.phase  == .laeuft)
+        #expect(EventFilter.fertig.phase  == .fertig)
+        #expect(EventFilter.alle.phase    == nil)
+    }
+
+    /// Die Reiter heissen wie die Phasen im Tagesblick — sonst reden zwei Ansichten
+    /// über dasselbe in verschiedenen Wörtern.
+    @Test func reiterUndTagesblickBenutzenDieselbenWoerter() {
+        #expect(Tagesblick.Phase.planung.text == "wird geplant")
+        #expect(Tagesblick.Phase.laeuft.text  == "läuft")
+        #expect(Tagesblick.Phase.fertig.text  == "fertig")
+        #expect(EventFilter.laeuft.rawValue.lowercased() == Tagesblick.Phase.laeuft.text)
+        #expect(EventFilter.fertig.rawValue.lowercased() == Tagesblick.Phase.fertig.text)
+    }
+}

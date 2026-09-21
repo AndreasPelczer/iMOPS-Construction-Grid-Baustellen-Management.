@@ -1824,3 +1824,54 @@
 
     HINWEIS: Bis zum 21.09.2026 hiess dieser Knopf faelschlich "Komplette
     Materialliste unwiderruflich loeschen" — er loeschte aber den ganzen Auftrag.
+
+- id: "App_Baustellen_Filter_Phasen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Filter Baustellenliste"
+    - "In Planung"
+    - "Laeuft"
+    - "Fertig"
+    - "Reiter ueber der Baustellenliste"
+    - "Wo sind meine abgeschlossenen Baustellen"
+    - "Warum ist meine Baustelle nicht abgeschlossen"
+    - "Aktiv Abgeschlossen Alle"
+  antwort: |
+    Ueber der Baustellenliste stehen vier Reiter. Sie fragen die ARBEIT,
+    nicht den Kalender:
+    - In Planung: es gibt Auftraege, aber keiner hat angefangen
+    - Laeuft: jemand arbeitet, oder etwas ist schon fertig
+    - Fertig: alle Auftraege sind erledigt
+    - Alle: gesamte Uebersicht (Standard)
+    Dieselben Woerter benutzt "Wo war ich?" fuer die Lage je Baustelle —
+    es gibt nur eine Rechnung dafuer.
+    Wichtig: ein verstrichener Endtermin macht eine Baustelle NICHT fertig.
+    Er macht sie ueberfaellig. Frueher hiessen die Reiter "Aktiv/Abgeschlossen"
+    und rechneten nur mit dem Datum; eine Baustelle ohne einen Handschlag
+    stand unter "Abgeschlossen", sobald ihr Termin vorbei war.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Dont_Panic"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Don't Panic"
+    - "Dont Panic"
+    - "Panik"
+    - "Per Anhalter durch den Mops"
+    - "Ich verstehe nichts"
+    - "Ich bin ueberfordert"
+    - "Wo fange ich an"
+    - "Hilfe"
+  antwort: |
+    Keine Panik. Eine Baustelle, auf der alles schiefgehen kann — kein Problem,
+    du hast den Mops.
+    Wenn du nicht weiterweisst, in dieser Reihenfolge:
+    1. "Wo war ich?" oben in der Baustellenliste — sie sagt, was ueberhaupt los ist
+    2. Das Fragezeichen oben links in jeder Ansicht — es erklaert genau diesen Bildschirm
+    3. Hier im BauWissen ein Schlagwort eintippen: GAEB, Preise, Maengel, Woche ...
+    Du kannst nichts kaputtmachen, was sich nicht zurueckdrehen laesst.
+    Wo es doch endgueltig wird, fragt der Mops vorher nach und sagt dazu,
+    was verschwindet.
+  quelle_kurz: "iMOPS Bedienung"

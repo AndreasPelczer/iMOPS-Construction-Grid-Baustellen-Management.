@@ -7,7 +7,7 @@ struct ContentView: View {
 
     @EnvironmentObject var eventListVM: EventListViewModel
     @Environment(\.managedObjectContext) private var viewContext
-    @State private var selectedFilter: EventFilter = .upcoming
+    @State private var selectedFilter: EventFilter = .alle
     @State private var sortOrder: EventSortOrder = .datumNeuAlt
     @State private var searchText = ""
     @State private var showingAddEventSheet = false
@@ -147,6 +147,19 @@ struct BaustellenListeHelpView: View {
     var body: some View {
         NavigationStack {
             List {
+                // In grossen freundlichen Buchstaben. Douglas Adams hatte recht:
+                // das Nützlichste auf dem Umschlag eines Handbuchs ist die Beruhigung.
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("DON'T PANIC")
+                            .font(.system(size: 34, weight: .heavy))
+                            .foregroundStyle(Color.green)
+                        Text("Eine Baustelle, auf der alles schiefgehen kann — kein Problem, du hast den Mops.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
                 Section("Baustellen-Übersicht") {
                     Text("Hier siehst du alle deine Baustellen (Projekte). Jede Baustelle enthält Aufträge, Mängel, Pläne, Checklisten und Wetterdaten.")
                 }
@@ -155,9 +168,12 @@ struct BaustellenListeHelpView: View {
                     Label("Suche und Filterreiter arbeiten zusammen", systemImage: "slider.horizontal.3")
                 }
                 Section("Filter") {
-                    Label("Aktiv – laufende und geplante Baustellen (Standard)", systemImage: "play.circle.fill")
-                    Label("Abgeschlossen – beendete Projekte", systemImage: "checkmark.circle.fill")
-                    Label("Alle – gesamte Übersicht ohne Zeitfilter", systemImage: "list.bullet")
+                    Label("In Planung – es gibt Aufträge, aber keiner hat angefangen", systemImage: "pencil.and.ruler")
+                    Label("Läuft – jemand arbeitet, oder etwas ist schon fertig", systemImage: "play.circle.fill")
+                    Label("Fertig – alle Aufträge sind erledigt", systemImage: "checkmark.circle.fill")
+                    Label("Alle – gesamte Übersicht (Standard)", systemImage: "list.bullet")
+                    Text("Die Reiter fragen die Arbeit, nicht den Kalender: ein verstrichener Endtermin macht keine Baustelle fertig — er macht sie überfällig.")
+                        .font(.footnote).foregroundStyle(.secondary)
                 }
                 Section("Sortierung") {
                     Label("Tippe auf ↕ in der Toolbar um die Sortierung zu ändern", systemImage: "arrow.up.arrow.down")

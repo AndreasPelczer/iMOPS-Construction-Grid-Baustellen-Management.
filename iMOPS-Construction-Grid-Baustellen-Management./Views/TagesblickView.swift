@@ -214,14 +214,19 @@ struct TagesblickKarte: View {
         var ohnePreis = 0
         var zuletzt = ""
         var ruhig = true
+        var alarm = false
+        var lagen = ""        // "wird geplant" / "2 laufen" — der ruhige Normalfall
     }
     @State private var kurz = Kurz()
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: kurz.ruhig ? "checkmark.circle" : "exclamationmark.triangle.fill")
+            // Rot nur bei echtem Alarm. Was bloss ansteht, bekommt einen Pfeil —
+            // ein Zustand, der immer rot ist, ist Rauschen.
+            Image(systemName: kurz.alarm ? "exclamationmark.triangle.fill"
+                            : kurz.ruhig ? "checkmark.circle" : "arrow.right.circle")
                 .font(.title2)
-                .foregroundStyle(kurz.blockiert == 0 ? Color.secondary : .red)
+                .foregroundStyle(kurz.alarm ? Color.red : .secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Wo war ich?").font(.body.weight(.semibold))
                 Text(zusammenfassung).font(.subheadline).foregroundStyle(.secondary)
@@ -236,18 +241,35 @@ struct TagesblickKarte: View {
                     ueberfaellig: b.fristen.filter(\.ueberfaellig).count,
                     ohnePreis: b.preisluecken.reduce(0) { $0 + $1.betroffeneMenge },
                     zuletzt: b.zuletzt?.baustelle ?? "",
-                    ruhig: b.istRuhig)
+                    ruhig: b.istRuhig,
+                    alarm: b.brauchtAufmerksamkeit,
+                    lagen: lagenSatz(b))
     }
 
+    /// Wie viele Baustellen in welcher Phase — der Satz für den ruhigen Fall.
+    private func lagenSatz(_ b: Tagesblick.Ergebnis) -> String {
+        let geplant = b.lagen.filter { $0.phase == .planung }.count
+        let laufend = b.lagen.filter { $0.phase == .laeuft }.count
+        var teile: [String] = []
+        if laufend > 0 { teile.append(laufend == 1 ? "1 läuft" : "\(laufend) laufen") }
+        if geplant > 0 { teile.append(geplant == 1 ? "1 wird geplant" : "\(geplant) werden geplant") }
+        return teile.joined(separator: " · ")
+    }
+
+    /// Was WIRKLICH stört, steht zuerst. Fehlende Preise nur, wenn sonst nichts ist —
+    /// und dann hinter der Lage, nicht als Vorwurf.
     private var zusammenfassung: String {
         var teile: [String] = []
         if kurz.blockiert > 0 { teile.append("\(kurz.blockiert) blockiert") }
         if kurz.ueberfaellig > 0 { teile.append("\(kurz.ueberfaellig) überfällig") }
-        if kurz.ohnePreis > 0 { teile.append("\(kurz.ohnePreis) ohne Preis") }
-        if teile.isEmpty {
-            return kurz.zuletzt.isEmpty ? "nichts steht" : "zuletzt: \(kurz.zuletzt)"
+        if !teile.isEmpty { return teile.joined(separator: " · ") }
+
+        if !kurz.lagen.isEmpty {
+            return kurz.ohnePreis > 0 ? "\(kurz.lagen) · \(kurz.ohnePreis) noch ohne Preis"
+                                      : kurz.lagen
         }
-        return teile.joined(separator: " · ")
+        if kurz.ohnePreis > 0 { return "\(kurz.ohnePreis) noch ohne Preis" }
+        return kurz.zuletzt.isEmpty ? "noch keine Baustelle" : "zuletzt: \(kurz.zuletzt)"
     }
 }
 
