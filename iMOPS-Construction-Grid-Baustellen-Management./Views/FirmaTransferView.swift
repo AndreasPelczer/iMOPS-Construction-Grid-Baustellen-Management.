@@ -32,7 +32,7 @@ struct FirmaTransferView: View {
                 } header: {
                     Text("Senden")
                 } footer: {
-                    Text("Schreibt Materialien, Löhne, Geräte UND die Firmensettings (Zuschläge, "
+                    Text("Schreibt Materialien, Löhne, Geräte, den Leistungskatalog UND die Firmensettings (Zuschläge, "
                        + "Verrechnungssatz, Firmendaten) in eine Datei. Leg sie in den Box-/Tailscale-"
                        + "Ordner, den der Kollege sieht — dann importiert er sie.")
                 }
@@ -107,7 +107,8 @@ struct FirmaTransferView: View {
                 let data = try Data(contentsOf: url)
                 let b = try FirmaTransfer.importieren(data, in: ctx)
                 setzeMeldung("Importiert: \(b.materialien) Materialien, \(b.loehne) Löhne, "
-                           + "\(b.geraete) Geräte, \(b.settings) Firmenwerte.", fehler: false)
+                           + "\(b.geraete) Geräte, \(b.leistungen) Leistungen, "
+                           + "\(b.settings) Firmenwerte.", fehler: false)
             } catch {
                 setzeMeldung("Import fehlgeschlagen: \(error.localizedDescription)", fehler: true)
             }

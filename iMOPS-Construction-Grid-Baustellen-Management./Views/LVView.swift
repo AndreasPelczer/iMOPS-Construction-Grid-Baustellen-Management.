@@ -898,8 +898,17 @@ struct LVView: View {
 
                     Divider()
 
-                    Button { generatePDF() } label: {
-                        Label("LV als PDF", systemImage: "arrow.up.doc")
+                    // Zwei Fassungen mit Absicht: die kurze zum Ueberfliegen (der Chef
+                    // liest 109 Zeilen im Stehen), die lange fuer die Abgabe — bei VOB ist
+                    // der Langtext der geschuldete Leistungsinhalt, und in ihm steht bei
+                    // uns auch die Herkunft von Menge und Preis.
+                    Button { generatePDF(mitLangtext: false) } label: {
+                        Label("LV als PDF (kurz)", systemImage: "arrow.up.doc")
+                    }
+                    .disabled(positionen.isEmpty)
+
+                    Button { generatePDF(mitLangtext: true) } label: {
+                        Label("LV als PDF mit Langtexten", systemImage: "arrow.up.doc.fill")
                     }
                     .disabled(positionen.isEmpty)
 
@@ -1199,9 +1208,11 @@ struct LVView: View {
         try? viewContext.save()
     }
 
-    private func generatePDF() {
-        let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
-        let name = "LV-\(event.title ?? "Baustelle")"
+    private func generatePDF(mitLangtext: Bool = false) {
+        let data = LVPDFExporter.generate(event: event, positionen: Array(positionen),
+                                          mitLangtext: mitLangtext)
+        let zusatz = mitLangtext ? "-mit-Langtexten" : ""
+        let name = "LV-\(event.title ?? "Baustelle")\(zusatz)"
             .replacingOccurrences(of: " ", with: "-").appending(".pdf")
         writeAndShare(data: data, filename: name)
     }
