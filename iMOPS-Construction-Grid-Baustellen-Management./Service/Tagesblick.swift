@@ -56,6 +56,20 @@ enum Tagesblick {
         let job: Auftrag
     }
 
+    /// Ein Auftrag, für den noch keine Arbeitsschritte geschrieben sind.
+    ///
+    /// 🔴 Das ist die Einricht-Arbeit, die zwischen "Arbeitspakete anlegen" und
+    /// "draussen anfangen" liegt — und sie hatte bisher keinen Faden. Wer einen
+    /// Auftrag eingerichtet hatte, ging zurück und musste sich selbst merken,
+    /// welcher der nächste ist. Genau das soll der Mops wissen, nicht der Mensch.
+    struct OhneAnweisung: Identifiable {
+        let id = UUID()
+        let baustelle: String
+        let auftrag: String
+        let event: Event
+        let job: Auftrag
+    }
+
     /// Eine Position ohne Preis — über ALLE Baustellen, nicht je Baustelle.
     struct Preisluecke: Identifiable {
         let id = UUID()
@@ -189,6 +203,7 @@ enum Tagesblick {
     struct Ergebnis {
         var blockaden: [Blockade] = []
         var startklar: [Startklar] = []
+        var ohneAnweisung: [OhneAnweisung] = []
         var preisluecken: [Preisluecke] = []
         var fristen: [Fristsache] = []
         var lagen: [Lage] = []
@@ -259,6 +274,17 @@ enum Tagesblick {
             //    und sie ist keine Warnung, sondern ein Angebot.
             for auftrag in offen where auftrag.status != .inProgress && auftrag.istStartbar {
                 e.startklar.append(Startklar(
+                    baustelle: name,
+                    auftrag: Kausalkette.bezeichnung(auftrag),
+                    event: event,
+                    job: auftrag))
+            }
+
+            //    Und davor liegt noch eine Stufe: Aufträge, für die niemand die
+            //    Schritte geschrieben hat. Reihenfolge wie im Bauablauf, damit
+            //    "der nächste" auch wirklich der nächste ist.
+            for auftrag in offen where AuftragExtrasPayload.from(auftrag.extras).checklist.isEmpty {
+                e.ohneAnweisung.append(OhneAnweisung(
                     baustelle: name,
                     auftrag: Kausalkette.bezeichnung(auftrag),
                     event: event,

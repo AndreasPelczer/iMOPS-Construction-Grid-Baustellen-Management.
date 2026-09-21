@@ -372,3 +372,84 @@ struct PhaseDerBaustelleTests {
         #expect(EventFilter.fertig.rawValue.lowercased() == Tagesblick.Phase.fertig.text)
     }
 }
+
+// MARK: - Der Faden durch die Einricht-Arbeit
+//
+// "ich richte das ein, gehe zurueck und will den naechsten Punkt abarbeiten —
+//  und wo ist das naechste Puzzlestueck?"  (Andreas, 21.09.2026)
+//
+// Zwischen "Arbeitspakete anlegen" und "draussen anfangen" liegt eine Stufe, die
+// niemand gezaehlt hat: fuer jeden Auftrag die Schritte schreiben und abnehmen.
+// Der Tagesblick kannte diesen Zustand gar nicht — `checklist` kam dort nicht vor.
+
+@MainActor
+struct OhneAnweisungTests {
+
+    @discardableResult
+    private func auftrag(_ ctx: NSManagedObjectContext, _ e: Event, _ was: String,
+                         schritte: [String] = [], status: JobStatus = .pending) -> Auftrag {
+        let a = Auftrag(context: ctx)
+        a.processingDetails = was
+        a.status = status
+        a.storageNote = ""
+        a.event = e
+        if !schritte.isEmpty {
+            var p = AuftragExtrasPayload()
+            p.checklist = schritte.map { AuftragChecklistItem(title: $0) }
+            if let d = try? JSONEncoder().encode(p) { a.extras = String(data: d, encoding: .utf8) }
+        }
+        return a
+    }
+
+    @Test func auftraegeOhneSchritteWerdenGezaehlt() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Einrichten"
+        auftrag(ctx, e, "Aushub")
+        auftrag(ctx, e, "Bodenplatte")
+        auftrag(ctx, e, "Mauerwerk", schritte: ["Kimmschicht setzen"])
+
+        let b = Tagesblick.fuerHeute(in: ctx)
+        #expect(b.ohneAnweisung.count == 2)
+        #expect(b.ohneAnweisung.allSatisfy { $0.baustelle == "BV Einrichten" })
+    }
+
+    /// Wer Schritte bekommen hat, verschwindet aus der Liste — sonst faendet man
+    /// nie ein Ende und wuesste nie, wie viel noch vor einem liegt.
+    @Test func mitSchrittenVerschwindetErAusDerListe() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Fortschritt"
+        let a = auftrag(ctx, e, "Aushub")
+
+        #expect(Tagesblick.fuerHeute(in: ctx).ohneAnweisung.count == 1)
+
+        var p = AuftragExtrasPayload()
+        p.checklist = [AuftragChecklistItem(title: "Oberboden abschieben")]
+        a.extras = String(data: try JSONEncoder().encode(p), encoding: .utf8)
+
+        #expect(Tagesblick.fuerHeute(in: ctx).ohneAnweisung.isEmpty)
+    }
+
+    /// Erledigte Auftraege brauchen keine Anweisung mehr — sie stehen nicht in der Liste.
+    @Test func erledigteZaehlenNichtMit() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Teils fertig"
+        auftrag(ctx, e, "Aushub", status: .completed)
+        auftrag(ctx, e, "Bodenplatte")
+
+        let b = Tagesblick.fuerHeute(in: ctx)
+        #expect(b.ohneAnweisung.count == 1)
+        #expect(b.ohneAnweisung.first?.auftrag.contains("Bodenplatte") == true)
+    }
+
+    /// 🔴 Die Liste ist ARBEIT, kein Alarm: sie darf das Warndreieck nicht anwerfen.
+    @Test func fehlendeSchritteSindKeinAlarm() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Ruhig"
+        auftrag(ctx, e, "Aushub")
+        auftrag(ctx, e, "Bodenplatte")
+
+        let b = Tagesblick.fuerHeute(in: ctx)
+        #expect(!b.ohneAnweisung.isEmpty)
+        #expect(b.brauchtAufmerksamkeit == false)
+    }
+}

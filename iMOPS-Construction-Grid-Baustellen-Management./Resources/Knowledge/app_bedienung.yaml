@@ -1875,3 +1875,28 @@
     Wo es doch endgueltig wird, fragt der Mops vorher nach und sagt dazu,
     was verschwindet.
   quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Schritte_schreiben_Faden"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Schritte schreiben"
+    - "Wo ist der naechste Auftrag"
+    - "Naechstes Puzzlestueck"
+    - "Auftraege ohne Schritte"
+    - "Baustelle einrichten Reihenfolge"
+    - "Wie richte ich alle Auftraege ein"
+    - "Weiter zum naechsten"
+  antwort: |
+    Zwischen "Arbeitspakete anlegen" und "draussen anfangen" liegt eine Stufe:
+    fuer jeden Auftrag muessen einmal die Schritte geschrieben und abgenommen werden.
+    Der Mops fuehrt dich da durch, du musst dir nichts merken:
+    1. In "Wo war ich?" steht der Abschnitt "Schritte schreiben" mit der Anzahl
+    2. Einen antippen -> "Mops, wie geht das?" -> durchlesen -> abnehmen
+    3. Sobald die Schritte stehen, erscheint UNTER der Anweisung die Zeile
+       "Weiter: <naechster Auftrag>" samt "noch X ohne Schritte"
+    4. Antippen und weiter — du musst nicht zurueck in die Liste
+    Die Reihenfolge ist die des Bauablaufs: was startbar ist, kommt zuerst.
+    Erledigte Auftraege zaehlen nicht mit.
+    Das ist ARBEIT, kein Alarm — das Warndreieck geht davon nicht an.
+  quelle_kurz: "iMOPS Bedienung"

@@ -100,6 +100,35 @@ struct TagesblickView: View {
                 }
             }
 
+            // Vor dem Anfangen kommt das Einrichten. Diese Zeile ist der FADEN
+            // durch die Einricht-Arbeit: nicht "es fehlt was", sondern "hier weiter".
+            if !blick.ohneAnweisung.isEmpty {
+                Section {
+                    ForEach(blick.ohneAnweisung.prefix(6)) { o in
+                        NavigationLink { SpaeterLaden { AuftragDetailView(job: o.job) } } label: {
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "list.bullet.rectangle")
+                                    .foregroundStyle(.blue)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(o.auftrag).font(.body.weight(.semibold))
+                                    Text(o.baustelle).font(.caption).foregroundStyle(.orange)
+                                }
+                            }
+                        }
+                    }
+                    if blick.ohneAnweisung.count > 6 {
+                        Text("und \(blick.ohneAnweisung.count - 6) weitere")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                } header: {
+                    kopf("Schritte schreiben", zahl: blick.ohneAnweisung.count)
+                } footer: {
+                    Text("Für diese Aufträge gibt es noch keine Arbeitsschritte. "
+                         + "Einen antippen, \"Mops, wie geht das?\" drücken, durchlesen, "
+                         + "abnehmen — danach bringt dich der Auftrag selbst zum nächsten.")
+                }
+            }
+
             if !blick.startklar.isEmpty {
                 Section {
                     ForEach(blick.startklar) { s in

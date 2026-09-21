@@ -444,11 +444,63 @@ struct AuftragDetailView: View {
                 anweisungFehlt
             } else {
                 anweisungAbarbeiten
+                weiterZumNaechsten
             }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// 🔴 Der Faden durch die Einricht-Arbeit.
+    ///
+    /// Andreas beim Durchklicken: "ich richte das ein, gehe zurück und will den
+    /// nächsten Punkt abarbeiten — und wo ist das nächste Puzzlestück?"
+    /// Genau da war keins. Man musste zurück in die Liste und sich selbst merken,
+    /// welche Aufträge schon dran waren.
+    ///
+    /// Jetzt sagt der Auftrag, sobald seine Schritte stehen, wer der nächste ist —
+    /// in der Reihenfolge des Bauablaufs, auf derselben Baustelle. Der Mops merkt
+    /// sich die Stelle, nicht der Mensch.
+    private var naechsterOhneAnweisung: Auftrag? {
+        guard let event = job.event else { return nil }
+        let alle = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        let offen = alle
+            .filter { $0.objectID != job.objectID }
+            .filter { $0.status != .completed }
+            .filter { AuftragExtrasPayload.from($0.extras).checklist.isEmpty }
+        // Reihenfolge wie im Bauablauf: erst was startbar ist, dann nach Bezeichnung.
+        return offen.sorted {
+            if $0.istStartbar != $1.istStartbar { return $0.istStartbar }
+            return Kausalkette.bezeichnung($0) < Kausalkette.bezeichnung($1)
+        }.first
+    }
+
+    private var nochOhneAnweisung: Int {
+        guard let event = job.event else { return 0 }
+        return ((event.jobs?.allObjects as? [Auftrag]) ?? [])
+            .filter { $0.status != .completed }
+            .filter { AuftragExtrasPayload.from($0.extras).checklist.isEmpty }
+            .count
+    }
+
+    /// Die Zeile "weiter zum nächsten" — nur sichtbar, wenn es wirklich einen gibt.
+    @ViewBuilder
+    private var weiterZumNaechsten: some View {
+        if let naechster = naechsterOhneAnweisung {
+            VStack(alignment: .leading, spacing: 8) {
+                Divider()
+                Text("Noch \(nochOhneAnweisung) Aufträge auf dieser Baustelle ohne Schritte.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                NavigationLink {
+                    SpaeterLaden { AuftragDetailView(job: naechster) }
+                } label: {
+                    Label("Weiter: \(Kausalkette.bezeichnung(naechster))",
+                          systemImage: "arrow.right.circle.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
+        }
     }
 
     /// Es gibt noch keine Anweisung. Das ist Vorbereitung, nicht Baustellenarbeit —
