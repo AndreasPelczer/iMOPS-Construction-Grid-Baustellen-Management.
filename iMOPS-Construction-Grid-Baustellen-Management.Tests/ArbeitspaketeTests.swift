@@ -179,4 +179,35 @@ struct ArbeitspaketeTests {
         #expect(zweiteRunde.isEmpty, "nichts doppelt")
         #expect((e.jobs?.count ?? 0) == 2, "es bleiben zwei, nicht vier")
     }
+
+    /// Der Name kommt aus dem ERSTEN Positionstext, nicht aus der DIN-Bezeichnung.
+    /// „331 Baukonstruktionen" sagt nichts über die Arbeit — „Aussparungen und
+    /// Wanddurchbrueche im Mauerwerk" schon.
+    @Test func derNameKommtAusDerArbeit() throws {
+        let c = PersistenceController(inMemory: true)
+        let ctx = c.container.viewContext
+        let e = baustelle(ctx)
+        pos(ctx, e, "33.0010", "Aussparungen und Wanddurchbrueche im Mauerwerk, bis 0,25 m2", kg: "331")
+        pos(ctx, e, "33.0020", "Sturz setzen", kg: "331")
+        try ctx.save()
+
+        let v = try #require(Arbeitspakete.vorschlagen(fuer: e).first)
+        #expect(v.name == "Aussparungen und Wanddurchbrueche im Mauerwerk",
+                "bis zum ersten Komma, ohne die Massangaben im Schwanz")
+        #expect(!v.name.contains("Baukonstruktion"), "nicht die DIN-Bezeichnung")
+    }
+
+    /// Ohne Positionstext bleibt die Kostengruppe als Rückfall.
+    @Test func ohneTextGreiftDieKostengruppe() throws {
+        let c = PersistenceController(inMemory: true)
+        let ctx = c.container.viewContext
+        let e = baustelle(ctx)
+        let p = pos(ctx, e, "31.0010", "", kg: "310")
+        p.bezeichnung = nil
+        try ctx.save()
+
+        let v = try #require(Arbeitspakete.vorschlagen(fuer: e).first)
+        #expect(!v.name.isEmpty)
+        #expect(v.name != "Titel 31" || v.titelNr == "31")
+    }
 }

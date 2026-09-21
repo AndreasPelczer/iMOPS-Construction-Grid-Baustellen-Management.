@@ -163,19 +163,37 @@ enum Arbeitspakete {
         return String(nr.prefix(2))
     }
 
-    /// Ein sprechender Name für das Paket. Erste Wahl: die Kostengruppe im Klartext
-    /// (DIN 276) — die kennt der Mops schon. Sonst der Anfang der ersten Bezeichnung.
+    /// Ein sprechender Name für das Paket.
+    ///
+    /// Erste Wahl ist der **erste Positionstext** — den hat der Kalkulator geschrieben,
+    /// und ein Bauleiter erkennt daran die Arbeit. Die DIN-276-Bezeichnung kommt nur
+    /// zum Zug, wenn kein Text da ist.
+    ///
+    /// Andreas, 21.09., über einen Auftrag namens „331 Baukonstruktionen":
+    /// „Das sagt dir nichts über die Arbeit." Im selben Titel stand als erste Position
+    /// „Aussparungen und Wanddurchbrüche im Mauerwerk" — damit kann man etwas anfangen.
     static func name(fuer gruppe: [LVPosition], titelNr: String) -> String {
+        if let erste = gruppe.first?.bezeichnung?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !erste.isEmpty {
+            return kurz(erste)
+        }
         let kgs = gruppe.compactMap { $0.kostenGruppeNummer }.filter { !$0.isEmpty }
-        // häufigste Kostengruppe der Gruppe
         if let haeufigste = Dictionary(grouping: kgs, by: { $0 })
             .max(by: { $0.value.count < $1.value.count })?.key {
             let text = DIN276KostenGruppe.bezeichnung(fuer: haeufigste)
             if !text.isEmpty, text != haeufigste { return text }
         }
-        if let erste = gruppe.first?.bezeichnung, !erste.isEmpty {
-            return String(erste.prefix(34))
-        }
         return "Titel \(titelNr)"
+    }
+
+    /// Positionstexte sind lang und tragen ihre Angaben im Schwanz („…, verdichtet
+    /// DPr >= 97 %"). Für einen Auftragsnamen reicht der Anfang bis zum ersten Komma.
+    private static func kurz(_ text: String) -> String {
+        let bisKomma = text.split(separator: ",", maxSplits: 1).first.map(String.init) ?? text
+        let sauber = bisKomma.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 60 statt 44: „Aussparungen und Wanddurchbrueche im Mauerwerk" hat 45 Zeichen
+        // und wurde von der ersten, zu knappen Grenze mitten im Wort abgeschnitten.
+        if sauber.count > 4 && sauber.count <= 60 { return sauber }
+        return String(text.prefix(58)).trimmingCharacters(in: .whitespaces) + "…"
     }
 }
