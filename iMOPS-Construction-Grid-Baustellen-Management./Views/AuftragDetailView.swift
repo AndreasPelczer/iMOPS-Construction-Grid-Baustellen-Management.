@@ -24,6 +24,7 @@ struct AuftragDetailView: View {
     /// „Wer ein Nein übergeht, unterschreibt." — der Dialog erscheint, wenn jemand
     /// fertig meldet, obwohl Voraussetzungen offen sind. Er sperrt NICHT: er verlangt
     /// einen Satz. Wer gesperrt wird, arbeitet am Mops vorbei.
+    @State private var vorgaengerZiel: Auftrag?
     @State private var zeigeUebernahme = false
     @State private var begruendung = ""
 
@@ -46,6 +47,7 @@ struct AuftragDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 headerCard
+                wasIstDranBand
                 productionListCard
                 modeCard
                 checklistCard
@@ -87,6 +89,7 @@ struct AuftragDetailView: View {
             Text(kettenFehler ?? "")
         }
         .sheet(isPresented: $zeigeUebernahme) { uebernahmeDialog }
+        .navigationDestination(item: $vorgaengerZiel) { AuftragDetailView(job: $0) }
     }
 
     // MARK: - „Ich übernehme das"
@@ -143,6 +146,81 @@ struct AuftragDetailView: View {
     }
 
     // MARK: - UI Cards
+
+    // MARK: - Was ist JETZT dran?
+
+    /// Andreas, 21.09., nachdem das Antippen endlich am richtigen Auftrag landete:
+    /// „Wie hilft mir das jetzt bei der Problemlösung? Was muss ich machen, kann ich
+    /// das hier überhaupt machen, was der Mops von mir will? Ich sehe es nicht auf
+    /// den ersten Blick."
+    ///
+    /// Er hatte recht: der Bildschirm zeigte einen ZUSTAND („wartet auf 326"), aber
+    /// keinen nächsten Schritt. Und bei einem blockierten Auftrag ist die Antwort oft:
+    /// hier kannst du gar nichts tun, die Lösung liegt beim Vorgänger. Das muss dastehen
+    /// — samt Weg dorthin.
+    @ViewBuilder private var wasIstDranBand: some View {
+        let offen = job.offeneVoraussetzungen
+        if job.istFertig {
+            band("Erledigt", "checkmark.seal.fill", .green,
+                 "Dieser Auftrag ist abgeschlossen.")
+        } else if let erste = offen.first {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Hier ist gerade nichts zu tun", systemImage: "hand.raised.fill")
+                    .font(.headline).foregroundStyle(.orange)
+                Text(offen.count == 1
+                     ? "Dieser Auftrag wartet auf: \(erste.anzeigename)."
+                     : "Dieser Auftrag wartet auf \(offen.count) Dinge, zuerst: \(erste.anzeigename).")
+                    .font(.subheadline)
+                Text("Die Lösung liegt nicht hier, sondern dort. Entweder ist der "
+                     + "Vorgänger fertig und noch nicht gemeldet — oder er läuft wirklich noch.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    if let quelle = erste.quelle {
+                        Button {
+                            vorgaengerZiel = quelle
+                        } label: {
+                            Label("Zum Vorgänger", systemImage: "arrow.turn.up.left")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    Button {
+                        zeigeUebernahme = true
+                    } label: {
+                        Label("Trotzdem anfangen", systemImage: "signature")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.orange)
+                }
+                .font(.subheadline)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(.orange.opacity(0.55), lineWidth: 1))
+        } else if let naechster = nextOpenStepTitle {
+            band("Als Nächstes", "arrow.right.circle.fill", .blue, naechster)
+        } else if extras.checklist.isEmpty {
+            band("Startklar — aber ohne Arbeitsschritte", "sparkles", .orange,
+                 "Nichts hält diesen Auftrag auf. Es sind nur noch keine Schritte "
+                 + "hinterlegt: unten eine Vorlage wählen oder Schritte eintragen.")
+        } else {
+            band("Alle Schritte abgehakt", "checkmark.circle", .green,
+                 "Unten bestätigen, dann ist der Auftrag fertig.")
+        }
+    }
+
+    private func band(_ titel: String, _ symbol: String, _ farbe: Color,
+                      _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Label(titel, systemImage: symbol).font(.headline).foregroundStyle(farbe)
+            Text(text).font(.subheadline).foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
 
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 10) {
