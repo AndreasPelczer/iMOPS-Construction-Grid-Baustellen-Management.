@@ -599,12 +599,14 @@ struct AuftragDetailView: View {
     /// Es gibt noch keine Anweisung. Das ist Vorbereitung, nicht Baustellenarbeit —
     /// also wird es auch so benannt, statt ein leeres Eingabefeld hinzustellen.
     private var anweisungFehlt: some View {
+        // 🔴 Hier standen vier gute Ratschläge: "Wer sie einmal schreibt, spart sie
+        // allen danach", "Schreib die Schritte einmal — dann stehen sie da" und noch
+        // zwei. Andreas: "ein neunmalkluger Ratschlag ... gefällt mir irgendwie gar
+        // nicht." Zurecht — wer am Montagmorgen hier steht, will keinen Zuspruch,
+        // er will einen Knopf. Übrig bleiben: die Sache, die Knöpfe, das Feld.
         VStack(alignment: .leading, spacing: 12) {
-            Label("Für diese Arbeit gibt es noch keine Anweisung",
-                  systemImage: "list.bullet.rectangle")
+            Label("Noch keine Arbeitsschritte", systemImage: "list.bullet.rectangle")
                 .font(.headline)
-            Text("Wer sie einmal schreibt, spart sie allen danach.")
-                .font(.subheadline).foregroundStyle(.secondary)
 
             Button { zeigeAnweisungsVorschlag = true } label: {
                 Label("Mops, wie geht das?", systemImage: "questionmark.bubble")
@@ -612,9 +614,6 @@ struct AuftragDetailView: View {
             }
             .buttonStyle(.borderedProminent)
 
-            // 🔴 Das war ein grüner Satz, der nach Knopf aussah und keiner war.
-            // Wer liest "gibt es schon", tippt drauf — und nichts passiert.
-            // Jetzt ist es ein Knopf, und er sagt vorher, WAS er einsetzt.
             if let ausKatalog = AnweisungsKatalog.shared.schritte(fuer: whatToDoText) {
                 Button {
                     var neue = extras
@@ -622,16 +621,12 @@ struct AuftragDetailView: View {
                     extras = neue
                     saveExtras(neue)
                 } label: {
-                    Label("Abgenommene Anweisung übernehmen — \(ausKatalog.count) Schritte",
+                    Label("Abgenommene Anweisung nehmen — \(ausKatalog.count) Schritte",
                           systemImage: "checkmark.seal.fill")
                         .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.green)
-
-                Text("Diese Schritte hat jemand für dieselbe Arbeit schon einmal geprüft "
-                     + "und abgenommen. Du kannst sie danach ändern.")
-                    .font(.footnote).foregroundStyle(.secondary)
             }
 
             if let passend = AuftragTemplate.passend(zu: whatToDoText) {
@@ -640,18 +635,10 @@ struct AuftragDetailView: View {
                           systemImage: "sparkles")
                 }
                 .buttonStyle(.borderedProminent)
-            } else {
-                Text("Zu dieser Arbeit passt keine der \(AuftragTemplate.allCases.count) Vorlagen. "
-                     + "Schreib die Schritte einmal \u{2014} dann stehen sie da.")
-                    .font(.footnote).foregroundStyle(.secondary)
             }
 
-            // 🔴 Andreas: "Vorlage wählen finde ich super, aber die Auswahl ist
-            // Restbestand von 1,5 Jahren App bauen." Stimmt — die 12 Vorlagen sind
-            // in der Anfangszeit entstanden, ohne Quelle und ohne Prüfer.
-            // Sie bleiben als Gerüst, aber sie geben sich nicht als geprüft aus.
             Menu {
-                Section("Gerüst aus der Anfangszeit — ungeprüft") {
+                Section("Ungeprüft") {
                     ForEach(AuftragTemplate.allCases) { tpl in
                         Button("\(tpl.rawValue) \u{2014} \(tpl.steps.count) Schritte") {
                             applyTemplate(tpl, mode: .replace)
@@ -662,12 +649,6 @@ struct AuftragDetailView: View {
                 Label("Vorlage wählen", systemImage: "square.grid.2x2")
             }
             .buttonStyle(.bordered)
-
-            Text("Die 12 Vorlagen sind aus der Anfangszeit der App und von niemandem "
-                 + "abgenommen — sie kommen als Gerüst herein, jeder Schritt gelb. "
-                 + "Was DU abnimmst, merkt sich der Mops und bietet es beim nächsten Mal "
-                 + "als geprüft an. So wächst der echte Bestand.")
-                .font(.caption).foregroundStyle(.secondary)
 
             HStack(spacing: 10) {
                 TextField("Ersten Schritt schreiben…", text: $newStepText)

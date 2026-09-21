@@ -71,7 +71,7 @@ struct TagesblickView: View {
                 } footer: {
                     if !l.anstehend.isEmpty {
                         Text(l.phase == .planung
-                             ? "Kein Alarm — hier wird noch geplant. Das stünde an, wenn du Lust hast."
+                             ? "Kein Alarm — hier wird noch geplant."
                              : "Das stünde noch an.")
                     }
                 }
