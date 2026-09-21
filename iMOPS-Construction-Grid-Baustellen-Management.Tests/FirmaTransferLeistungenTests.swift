@@ -20,20 +20,19 @@ import CoreData
 @MainActor
 struct FirmaTransferLeistungenTests {
 
-    /// Firmensettings landen in `UserDefaults.standard` — die teilen sich alle Tests im
-    /// Prozess, und sie laufen PARALLEL. Wer hier Werte stehen lässt, kippt fremde Tests
-    /// (am 21.09.2026 den IBAN-Test des Rechnungsdrucks, sporadisch). Also: vorher merken,
-    /// hinterher zurücksetzen.
-    private func mitGesichertenFirmenwerten(_ block: () throws -> Void) rethrows {
-        let d = UserDefaults.standard
-        let vorher = d.dictionaryRepresentation().filter { $0.key.hasPrefix("firma_") }
-        defer {
-            for k in d.dictionaryRepresentation().keys where k.hasPrefix("firma_") {
-                d.removeObject(forKey: k)
-            }
-            for (k, v) in vorher { d.set(v, forKey: k) }
-        }
-        try block()
+    /// Firmensettings landen beim Import in `UserDefaults.standard`. Die teilen sich ALLE
+    /// Tests im Prozess, und sie laufen PARALLEL — zwei Tests des Rechnungsdrucks sind
+    /// daran schon gekippt (21.09.2026). Sichern-und-Zuruecksetzen half nicht: in dem
+    /// Fenster, in dem die Werte gesetzt sind, liest der fremde Test.
+    ///
+    /// Also gar nicht erst anfassen: hier geht es um LEISTUNGEN, nicht um Settings.
+    /// Das Paket wird vor dem Import von texte/zahlen/flags befreit.
+    private func ohneFirmensettings(_ daten: Data) throws -> Data {
+        var obj = try JSONSerialization.jsonObject(with: daten) as! [String: Any]
+        obj["texte"] = [String: String]()
+        obj["zahlen"] = [String: Double]()
+        obj["flags"] = [String: Bool]()
+        return try JSONSerialization.data(withJSONObject: obj)
     }
 
     @Test func derLeistungskatalogFaehrtMit() throws {
@@ -54,8 +53,7 @@ struct FirmaTransferLeistungenTests {
 
         let ziel = PersistenceController(inMemory: true)
         let zctx = ziel.container.viewContext
-        var bilanz: FirmaTransfer.Bilanz!
-        try mitGesichertenFirmenwerten { bilanz = try FirmaTransfer.importieren(daten, in: zctx) }
+        let bilanz = try FirmaTransfer.importieren(ohneFirmensettings(daten), in: zctx)
 
         #expect(bilanz.leistungen == 1)
         let angekommen = try #require(
@@ -67,17 +65,19 @@ struct FirmaTransferLeistungenTests {
     }
 
     /// Eine Datei von VOR dieser Änderung kennt den Schlüssel `leistungen` nicht.
+    /// Der eine Settings-Wert darin heißt bewusst `firma_nur_fuer_diesen_test` — ein
+    /// echter Schlüssel (firma_bank, firma_iban …) würde parallel laufende Tests des
+    /// Rechnungsdrucks kippen.
     /// Sie muss trotzdem importierbar bleiben — sonst kann nach einem Update niemand
     /// mehr eine ältere Firma-Datei einlesen.
     @Test func alteDateiOhneLeistungenBleibtLesbar() throws {
         let alt = """
         {"version":1,"exportiert":"2026-06-01T10:00:00Z",
-         "texte":{"firma_name":"Testfirma"},"zahlen":{},"flags":{},
+         "texte":{"firma_nur_fuer_diesen_test":"x"},"zahlen":{},"flags":{},
          "materialien":[],"loehne":[],"geraete":[]}
         """
         let ctx = PersistenceController(inMemory: true).container.viewContext
-        var bilanz: FirmaTransfer.Bilanz!
-        try mitGesichertenFirmenwerten { bilanz = try FirmaTransfer.importieren(Data(alt.utf8), in: ctx) }
+        let bilanz = try FirmaTransfer.importieren(Data(alt.utf8), in: ctx)
         #expect(bilanz.leistungen == 0)
         #expect(bilanz.settings == 1)
     }
@@ -94,10 +94,9 @@ struct FirmaTransferLeistungenTests {
 
         let ziel = PersistenceController(inMemory: true)
         let zctx = ziel.container.viewContext
-        try mitGesichertenFirmenwerten {
-            _ = try FirmaTransfer.importieren(daten, in: zctx)
-            _ = try FirmaTransfer.importieren(daten, in: zctx)
-        }
+        let ohne = try ohneFirmensettings(daten)
+        _ = try FirmaTransfer.importieren(ohne, in: zctx)
+        _ = try FirmaTransfer.importieren(ohne, in: zctx)
 
         let req: NSFetchRequest<Leistungsbaustein> = Leistungsbaustein.fetchRequest()
         #expect(try zctx.count(for: req) == 1)

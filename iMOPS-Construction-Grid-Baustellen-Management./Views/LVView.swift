@@ -206,9 +206,16 @@ struct LVView: View {
             // geschriebenen Lohn-Kalkulation VERDRAENGT — die Kostenuebersicht zeigte die
             // richtige Summe, der Balken unten im LV eine viel kleinere. 20.09.2026 an einer
             // echten Baustelle aufgefallen: 15.255 EUR im LV gegen 256.742 EUR in der Uebersicht.
-            let ep = LVKalkulator.effektiverEP(for: pos, store: store)
-            let preis = ep > 0 ? ep : (pos.value(forKey: "einkaufspreis") as? Double ?? 0)
-            return sum + (pos.menge * preis)
+            // KEIN Rueckfall auf den Einkaufspreis. Das Feld heisst "EK je Einheit" und ist
+            // genau das: der Einkauf. Der VK kommt aus Angebot, Element oder Kalkulation.
+            // Faellt man hier auf den EK zurueck, steht im Summenbalken der SELBSTKOSTEN-
+            // preis, waehrend Angebots-PDF, GAEB-Export und Canvas-Rechnung dieselbe
+            // Position mit 0 fuehren — zwei Wahrheiten, wie am 20.09.2026 schon einmal
+            // (15.255 gegen 256.742 EUR). Eine Position ohne VK ist nicht bepreist, und
+            // das soll man sehen; dafuer gibt es die Ampel und den Ankunfts-Bericht.
+            // Geprueft: keine andere Summenstelle liest den EK (LVKalkulator, GAEBExporter,
+            // LVPDFExporter, CanvasRechnungBox = 0 Zugriffe).
+            return sum + (pos.menge * LVKalkulator.effektiverEP(for: pos, store: store))
         }
     }
 
