@@ -2,6 +2,51 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 21.09.2026 (spät) — 29 Commits, alles lokal, NICHTS GEPUSHT
+
+**Wo Andreas stehengeblieben ist:** er klickte sich durch die Einricht-Arbeit
+(Übersicht → „Schritte schreiben" → ein Auftrag → Schritte holen/prüfen/abnehmen →
+weiter zum nächsten) und fand dabei in zwei Bildschirmen sieben Sachen. Alle behoben,
+578 Tests grün. **Er muss in Xcode Stop und Run drücken** — die laufende App ist älter.
+
+Die sieben, in der Reihenfolge der Gefahr:
+1. 🔴 Der Anweisungs-Katalog hätte falsche Schritte verteilt: drei Pakete hiessen alle
+   „Außenanlagen und Freiflächen", der Schlüssel zieht Ziffern raus → ein Eintrag für
+   drei Arbeiten. Jetzt `AnweisungsKatalog.istNurKostengruppe` (kein Schlüssel für
+   DIN-276-Namen).
+2. „Es gibt schon eine abgenommene Anweisung" war ein grüner Satz, kein Knopf.
+3. Das Band sagte „nichts zu tun", während unten „keine Anweisung" stand →
+   trennt jetzt Baustelle und Schreibtisch.
+4. Der Auftrag zeigte seine LV-Positionen nicht → Karte „Das gehört dazu"
+   (`Arbeitspakete.positionen/umfang`, über die Titelnummer GERECHNET, weil
+   `Auftrag.lvPosition` im Modell 1:1 ist).
+5. Die 12 Vorlagen sind Restbestand → im Menü als „Ungeprüft" gekennzeichnet.
+6. Vier belehrende Sätze raus (siehe 7).
+7. **`docs/WESEN-DES-MOPS.md`** — Andreas' Ton-Doktrin, verlinkt aus der Pflichtspur.
+   Ernst wo es ernst ist · nie belehrend · keine Warnschilder, Fehler dürfen gar nicht
+   erst passieren können · Plan ≠ Arbeit. **Vor jedem UI-Text lesen.**
+
+Davor am selben Tag: Tagesblick + Wochenstrahl, Arbeitspakete-Vorschlag, Anweisungen
+mit Herkunft und Ampel, Übergehungs-Riegel, Baustellenliste nach Phasen statt Kalender.
+
+### 🔴 Was als Nächstes dran ist
+- **Auftrag ↔ LV-Positionen echt verbinden** — `Auftrag.lvPosition` ist toOne, ein Paket
+  hat viele. Braucht neue Modellversion + Migration; Andreas hat Daten drin, also
+  bewusst und mit Backup. Davor hängt der Bestellvorschlag (`materialBedarf` wird nie gefüllt).
+- **Pläne/Zeichnungen am Auftrag** — am `Event` hängen nur gebaeude/jobs/lvPositionen/
+  bautagesberichte/maengel. Keine Dokumente. Andreas fragte danach.
+- Gleichnamige Arbeitspakete: `Arbeitspakete.name()` fällt zu oft auf die DIN-Bezeichnung
+  zurück → drei Pakete heissen gleich.
+- 931 verwaiste Aufträge (Event.jobs ist Nullify) — braucht Andreas' Entscheidung.
+- Firmenzuschlag: zwei Wahrheiten (`Lohnkalkulation` vs. `GewinnSchieberView`).
+
+### Mockup-Repo (`~/XcodeProjects/muckupmops`, 4 Commits lokal)
+„Per Anhalter durch den Mops" (DON'T PANIC, 59 Klickanleitungen aus app_bedienung.yaml),
+„Wo ist was" (422 Bildschirme/Knöpfe mit Weg), Klickplan 21.09., Rolle Chef,
+LV-Eingabe erklärt. 🔴 In `1cb639a`–`6fda993` stehen noch echte Goldschmitt-Preise in
+der History — vor dem Push entscheiden, ob sie herausgeschrieben werden.
+Erzeuger liegen in `~/graphs/mops-werkzeuge/`.
+
 ## Delta 21.09.2026 (Abend) — 22 Commits, alles lokal, NICHTS GEPUSHT
 
 **Branch `feature/gelaende-dxf-aushub`. 554/554 Tests grün (seriell!).**
