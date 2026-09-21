@@ -2,6 +2,70 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 21.09.2026 (Nachmittag) — drei Dinge gebaut, ein Modell geschrieben
+
+**Branch `feature/gelaende-dxf-aushub`, weiter lokal. NICHT gepusht.**
+Letzte Commits: `d1750ae`, `67ad8b1`, `9796bd3`. **530/530 Tests grün.**
+
+### Gebaut und committet
+
+1. **`Service/Tagesblick.swift` + `Views/TagesblickView.swift`** (`d1750ae`) — die Klammer
+   über ALLE Baustellen. Erste Zeile der Baustellenliste („Wo war ich?"): wer steht ·
+   was ist überfällig · wo fehlt ein Preis · wo du zuletzt warst. Preise über
+   `LVKalkulator.effektiverEP` (keine zweite Wahrheit). Bewusst kein Toolbar-Knopf
+   (`.searchable` kapert am iPad die Navileiste).
+2. **`Service/Wochenstrahl.swift` + `Views/WochenstrahlView.swift`** (`67ad8b1`) — die Woche
+   Mo–Fr über alle Baustellen auf ECHTEN Kalendertagen. Kein dritter Gantt: nutzt
+   `Bauablauf.terminplan` und `BrigadePlanung.arbeitstageZwischen`. Zeigt ehrlich, was
+   fehlt, statt einen leeren Kalender zu malen.
+3. **`Service/Uebergehung.swift` + Riegel in `AuftragDetailView`** (`9796bd3`) —
+   **„Wer ein Nein übergeht, unterschreibt."** `markJobCompleted()` fragt jetzt
+   `istStartbar`. Ist etwas offen: kein Sperren, sondern ein Dialog mit Pflicht-Satz.
+   Die Übernahme hängt am Auftrag, überlebt das Lösen der Kante, ist sichtbar.
+
+### 🔴 Was dabei gefunden wurde (alles gemessen, nicht vermutet)
+
+- **`Auftrag.istStartbar` hatte 26 Zusicherungen in den Tests und NULL Aufrufer.**
+  Der Riegel war gebaut, getestet, nie angeschlossen. Der einzige Weg an einer
+  Voraussetzung vorbei war, sie zu **löschen** — spurlos.
+- **Werkzeug dagegen:** `~/graphs/mops-werkzeuge/ruft-keiner.py` findet
+  „gebaut + getestet + ruft keiner". Befund: `~/Desktop/iMOPS-RUFT-KEINER.txt`,
+  **16 getestet-aber-nie-gerufen, 77 ohne Test.** Noch offen u. a.:
+  `Firmenprofil.setzeAktiv`, `BewehrungsGewichte.mattenGewicht/.stabstahlGewicht`,
+  `Erdmassen.gegenFlaeche/.massenausgleich`, `BauWetterRegeln.validateArbeitsbedingungen`.
+- **`Lohnkalkulation` wird nirgends konstruiert**, und `GewinnSchieberView` rechnet den
+  Firmenzuschlag **daneben nach, mit einem anderen Modell** → zwei Wahrheiten.
+- **`AuftragExtrasPayload.from()` schluckt Dekodier-Fehler und liefert einen LEEREN
+  Payload.** Fehlt ein Pflichtfeld, ist nicht dieses Feld leer, sondern ALLE — still.
+  **An diesen Payload nie ein Pflichtfeld anhängen.** Test hält das fest.
+- Das Core-Data-Modell hat **zwei Versionen**; aktiv ist `test25B 2.xcdatamodel`
+  (`.xccurrentversion`). Wer die falsche liest, sucht in die falsche Richtung.
+- `Auftrag` hat **zwei Pflichtfelder ohne Default**: `statusRawValue`, `storageNote`.
+  Tests, die sie vergessen, scheitern erst im `save()`.
+
+### Ohne Code: das Modell dahinter (Andreas' Entscheidung)
+
+`~/Desktop/iMOPS-Kontrolle-ohne-Ueberwachung.html` (11 Paragraphen) — Arbeitszeit ohne
+Leistungsmessung, Kulanzfenster 8:00/8:10, feste Sendezeit, Totmann-Alarm, die drei
+Verbote. Abgeglichen mit „Ein Mops kam in die Küche" (Kap. 4, 8, 9, 10) und
+„Thermodynamik der Arbeit". Memory: `mops-zeit-und-fuersorge-modell`.
+
+`~/Desktop/iMOPS-Nachunternehmer-fuer-Raphi.html` — Nachunternehmer im Mops, die Linie
+Leistungssoll vs. Weisung. Memory: `nachunternehmer-im-mops`.
+
+## ▶ NÄCHSTER SCHRITT (vereinbart, in dieser Reihenfolge)
+
+1. **Der Mops füllt den Bautagesbericht vor.** Er ist gut gebaut (`gesperrtAm`,
+   `korrigiertVonID`!), aber **alles wird von Hand getippt**. Blockaden aus dem
+   Tagesblick → `behinderungen` (= Nachtragsgrundlage). Übernahmen → Vorkommnis.
+   Maschinen, Wetter (`BauWetterRegeln` gehört hierher). Polier liest und korrigiert.
+2. **Dann** die Umkehrbarkeits-YAML in `Resources/Knowledge/` — welche Regel darf
+   übergangen werden, welche nie (verdeckte Arbeiten), plus der Folgetext je Regel.
+   Braucht fünf Nachweispunkte von Raphi.
+3. Danach: Nachunternehmer-Zugang, Link statt Login.
+
+**Erst der Empfänger, dann der Absender** — sonst bauen wir wieder etwas, das niemand anruft.
+
 ## Delta 21.09.2026 (00:10) — BESTÄTIGT AN ECHTEN DATEN: die Rundreise schließt
 
 Andreas hat die vier Schritte gemacht (neu gebaut 00:04, LV geleert, der fertigen X84 der laufenden Baustelle
