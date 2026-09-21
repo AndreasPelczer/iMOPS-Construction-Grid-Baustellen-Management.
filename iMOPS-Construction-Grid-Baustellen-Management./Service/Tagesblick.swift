@@ -224,6 +224,37 @@ enum Tagesblick {
         var zuletzt: Zuletzt?
         var baustellenAktiv = 0
 
+        /// Die Lage in einem Satz — der Rahmen, der über allem steht.
+        ///
+        /// 🔴 Andreas: „im Kopf der neuen Anzeige muss noch was dazu, mir fehlt da noch
+        /// was, eventuell weil nur eine Baustelle drin ist." Genau deshalb: der
+        /// Bildschirm fing mit einer einzelnen Karte an und sagte nie, wovon das eine
+        /// von wie vielen ist. Bei einer Baustelle merkt man es kaum, bei fünf ist es
+        /// das Erste, was man wissen will.
+        var lageSatz: String {
+            guard !lagen.isEmpty else { return "Noch keine Baustelle" }
+            let laufend = lagen.filter { $0.phase == .laeuft }.count
+            let geplant = lagen.filter { $0.phase == .planung }.count
+            let fertig  = lagen.filter { $0.phase == .fertig }.count
+
+            var teile = ["\(lagen.count) \(lagen.count == 1 ? "Baustelle" : "Baustellen")"]
+            if laufend > 0 { teile.append(laufend == 1 ? "1 läuft" : "\(laufend) laufen") }
+            if geplant > 0 { teile.append(geplant == 1 ? "1 wird geplant" : "\(geplant) werden geplant") }
+            if fertig  > 0 { teile.append(fertig == 1 ? "1 fertig" : "\(fertig) fertig") }
+            return teile.joined(separator: " · ")
+        }
+
+        /// Was insgesamt ansteht — die drei Zahlen, die den Tag beschreiben.
+        var arbeitSatz: String {
+            var teile: [String] = []
+            if !blockaden.isEmpty { teile.append("\(blockaden.count) steht still") }
+            if !ohneAnweisung.isEmpty { teile.append("\(ohneAnweisung.count) ohne Schritte") }
+            if !startklar.isEmpty { teile.append("\(startklar.count) kann anfangen") }
+            let ueberfaellig = fristen.filter(\.ueberfaellig).count
+            if ueberfaellig > 0 { teile.append("\(ueberfaellig) überfällig") }
+            return teile.joined(separator: " · ")
+        }
+
         var istRuhig: Bool {
             blockaden.isEmpty && startklar.isEmpty && preisluecken.isEmpty && fristen.isEmpty
         }
@@ -338,11 +369,20 @@ enum Tagesblick {
             }
 
             // 4) Wiedereinstieg: die zuletzt angefasste Baustelle.
+            //    Nur als Rückfall — die echte Antwort steht unten in ZuletztBesucht.
             if let wann = letzteBeruehrung(event) {
                 if e.zuletzt == nil || wann > e.zuletzt!.wann {
                     e.zuletzt = Zuletzt(baustelle: name, wann: wann, event: event)
                 }
             }
+        }
+
+        // 🔴 „Wo war ich?" ist keine Eigenschaft der Baustelle, sondern eine des
+        //    Menschen davor. Gemessen am 21.09.2026: `startTime` leer, und von 34
+        //    Aufträgen hatte keiner eine `lastStartTime` — wer plant, startet nichts.
+        //    Der gemerkte Besuch weiss es wirklich und schlägt deshalb die Schätzung.
+        if let besuch = ZuletztBesucht.lesen(in: ctx) {
+            e.zuletzt = Zuletzt(baustelle: besuch.name, wann: besuch.wann, event: besuch.event)
         }
 
         // Wer am längsten steht, steht oben — das ist die teuerste Blockade.

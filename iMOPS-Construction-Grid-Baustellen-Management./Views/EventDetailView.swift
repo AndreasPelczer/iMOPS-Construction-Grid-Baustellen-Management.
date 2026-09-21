@@ -553,6 +553,8 @@ struct EventDetailView: View {
             extras = loadExtras()
             cadFiles = loadCADFiles()
             pinnedMaterials = fetchPinnedMaterials()
+            // Damit „Wo war ich?" die Frage beantworten kann.
+            ZuletztBesucht.merken(event)
         }
         .sheet(isPresented: $showHelp) { EventDetailHelpView().presentationSizing(.page) }
         .sheet(isPresented: $showingEditSheet, onDismiss: { refreshID = UUID() }) {

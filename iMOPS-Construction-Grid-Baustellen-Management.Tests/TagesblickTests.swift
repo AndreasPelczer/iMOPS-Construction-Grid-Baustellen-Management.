@@ -625,3 +625,90 @@ struct PlanUndArbeitTests {
         #expect(!Tagesblick.Phase.istUeberfaellig(e))
     }
 }
+
+// MARK: - Der Kopf: die Lage in einem Satz
+//
+// "und im kopf der neuen anzeige muss noch was dazu, ?? mir fehlt da noch was,
+//  eventuell weil nur eine baustelle drin ist" (Andreas, 21.09.2026)
+//
+// Der Bildschirm fing mit einer einzelnen Karte an und sagte nie, wovon das eine
+// von wie vielen ist. Und er hiess "Wo war ich?", ohne die Frage beantworten zu
+// können: gemessen in der echten Datenbank war `Event.startTime` leer und von 34
+// Aufträgen hatte KEINER eine `lastStartTime` — wer plant, startet nichts.
+
+@MainActor
+struct TagesblickKopfTests {
+
+    private func auftrag(_ ctx: NSManagedObjectContext, _ e: Event, _ status: JobStatus) {
+        let a = Auftrag(context: ctx)
+        a.processingDetails = "Aushub"; a.status = status; a.storageNote = ""; a.event = e
+        var p = AuftragExtrasPayload()
+        p.checklist = [AuftragChecklistItem(title: "Schritt")]   // sonst zählt er als "ohne Schritte"
+        if let d = try? JSONEncoder().encode(p) { a.extras = String(data: d, encoding: .utf8) }
+    }
+
+    @Test func ohneBaustelleSagtErDas() {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        #expect(Tagesblick.fuerHeute(in: ctx).lageSatz == "Noch keine Baustelle")
+    }
+
+    @Test func eineBaustelleInPlanung() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Eins"
+        auftrag(ctx, e, .pending)
+        #expect(Tagesblick.fuerHeute(in: ctx).lageSatz == "1 Baustelle · 1 wird geplant")
+    }
+
+    @Test func mehrereBaustellenWerdenAufgeteilt() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        for (name, status) in [("BV A", JobStatus.inProgress), ("BV B", .pending), ("BV C", .pending)] {
+            let e = Event(context: ctx); e.title = name
+            auftrag(ctx, e, status)
+        }
+        let satz = Tagesblick.fuerHeute(in: ctx).lageSatz
+        #expect(satz.contains("3 Baustellen"))
+        #expect(satz.contains("1 läuft"))
+        #expect(satz.contains("2 werden geplant"))
+    }
+
+    /// Der Arbeits-Satz nennt nur, was es wirklich gibt — keine Nullen.
+    @Test func arbeitSatzNenntNurWasDaIst() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Ruhig"
+        auftrag(ctx, e, .pending)
+        let blick = Tagesblick.fuerHeute(in: ctx)
+        #expect(!blick.arbeitSatz.contains("0 "))
+        #expect(!blick.arbeitSatz.contains("steht still"))
+    }
+
+    /// 🔴 Der gemerkte Besuch schlägt die Schätzung aus den Zeitstempeln.
+    @Test func derGemerkteBesuchGewinnt() throws {
+        let c = PersistenceController(inMemory: true)
+        let ctx = c.container.viewContext
+        defer { ZuletztBesucht.vergessen() }
+
+        let e = Event(context: ctx); e.title = "BV Besucht"
+        auftrag(ctx, e, .pending)
+        try ctx.save()                          // braucht eine feste Kennung
+
+        #expect(Tagesblick.fuerHeute(in: ctx).zuletzt == nil, "vorher weiss er es nicht")
+        ZuletztBesucht.merken(e)
+        #expect(Tagesblick.fuerHeute(in: ctx).zuletzt?.baustelle == "BV Besucht")
+    }
+
+    /// Eine gelöschte Baustelle darf nicht als Karteileiche stehen bleiben.
+    @Test func geloeschteBaustelleVerschwindetAusDemWiedereinstieg() throws {
+        let c = PersistenceController(inMemory: true)
+        let ctx = c.container.viewContext
+        defer { ZuletztBesucht.vergessen() }
+
+        let e = Event(context: ctx); e.title = "BV Weg"
+        try ctx.save()
+        ZuletztBesucht.merken(e)
+        #expect(ZuletztBesucht.lesen(in: ctx)?.name == "BV Weg")
+
+        ctx.delete(e)
+        try ctx.save()
+        #expect(ZuletztBesucht.lesen(in: ctx) == nil)
+    }
+}

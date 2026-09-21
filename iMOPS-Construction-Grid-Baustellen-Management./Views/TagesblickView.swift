@@ -23,6 +23,20 @@ struct TagesblickView: View {
 
     var body: some View {
         List {
+            // Der Rahmen: welcher Tag, wie viele Baustellen, was ansteht.
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(Date(), format: .dateTime.weekday(.wide).day().month(.wide))
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Text(blick.lageSatz).font(.title3.weight(.semibold))
+                    if !blick.arbeitSatz.isEmpty {
+                        Text(blick.arbeitSatz).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+            .listRowBackground(Color.clear)
+
             if let z = blick.zuletzt {
                 Section {
                     NavigationLink { SpaeterLaden { EventDetailView(event: z.event) } } label: {
