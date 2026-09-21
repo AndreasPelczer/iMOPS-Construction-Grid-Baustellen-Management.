@@ -155,6 +155,9 @@ enum Tagesblick {
         /// und liess ihn das eine suchen. Eine Zeile über ein einzelnes Ding muss
         /// auf dieses Ding führen.
         var job: Auftrag? = nil
+        /// Wiedererkennbarer Schlüssel für das Sonderfall-Buch („dauer-fehlt").
+        /// Leer = zu dieser Zeile kann man nichts erklären.
+        var thema: String = ""
     }
 
     struct Lage: Identifiable {
@@ -194,7 +197,8 @@ enum Tagesblick {
                      pakete: jobs.count, positionen: positionen.count)
 
         if event.eventStartTime == nil {
-            l.anstehend.append(Anstehend(text: "Einen Baubeginn festlegen — ohne den bleibt der Kalender leer.", insLV: false))
+            l.anstehend.append(Anstehend(text: "Einen Baubeginn festlegen — ohne den bleibt der Kalender leer.",
+                                         insLV: false, thema: "baubeginn-fehlt"))
         }
         if jobs.isEmpty && !positionen.isEmpty {
             l.anstehend.append(Anstehend(text: "Arbeitspakete vorschlagen lassen — der Mops macht aus \(positionen.count) Positionen ein gutes Dutzend Pakete.", insLV: true))
@@ -206,7 +210,8 @@ enum Tagesblick {
                 ? "„\(Kausalkette.bezeichnung(ohneDauer[0]))" + "\u{201C} hat keine Dauer — ohne die steht nichts im Kalender."
                 : "\(ohneDauer.count) Pakete haben keine Dauer — ohne die steht nichts im Kalender."
             l.anstehend.append(Anstehend(text: text, insLV: false,
-                                         job: ohneDauer.count == 1 ? ohneDauer[0] : nil))
+                                         job: ohneDauer.count == 1 ? ohneDauer[0] : nil,
+                                         thema: "dauer-fehlt"))
         }
         let ohneMann = jobs.filter { ($0.employeeName ?? "").isEmpty }
         if !jobs.isEmpty && ohneMann.count == jobs.count {
@@ -217,7 +222,8 @@ enum Tagesblick {
                 text: jobs.count == 1 ? "Niemand ist zugeteilt."
                                       : "Niemand ist zugeteilt — bei keinem der \(jobs.count) Pakete.",
                 insLV: false,
-                job: jobs.count == 1 ? erstes : nil))
+                job: jobs.count == 1 ? erstes : nil,
+                thema: "niemand-zugeteilt"))
         }
         let zaehlbar = positionen.sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }.zaehlbarePositionen()
         let ohnePreis = zaehlbar.filter { LVKalkulator.effektiverEP(for: $0) <= 0 }.count
@@ -225,7 +231,16 @@ enum Tagesblick {
             l.anstehend.append(Anstehend(
                 text: ohnePreis == 1 ? "Eine Position hat noch keinen Preis."
                                      : "\(ohnePreis) Positionen haben noch keinen Preis.",
-                insLV: true))
+                insLV: true, thema: "preis-fehlt"))
+        }
+        // 🔴 Was erklärt wurde, wird nicht mehr gemeldet. Mit Grund, nicht stumm —
+        // die Erklärung steht im Sonderfall-Buch, mit Namen und Datum.
+        l.anstehend = l.anstehend.filter { a in
+            guard !a.thema.isEmpty else { return true }
+            return SonderfallBuch.shared.erklaerung(
+                thema: a.thema,
+                baustelle: l.baustelle,
+                betrifft: a.job.map { Kausalkette.bezeichnung($0) } ?? l.baustelle) == nil
         }
         return l
     }

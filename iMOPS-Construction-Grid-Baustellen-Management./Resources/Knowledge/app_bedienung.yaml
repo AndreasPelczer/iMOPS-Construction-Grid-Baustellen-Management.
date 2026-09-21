@@ -1949,3 +1949,31 @@
     Fuer viele Pakete auf einmal: Baustelle oeffnen, Karte "Terminplan" —
     dort stehen alle Auftraege untereinander mit je einem Stepper.
   quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Sonderfall_erklaeren"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Das ist hier anders"
+    - "Sonderfall"
+    - "Ausnahme eintragen"
+    - "Mops liegt falsch"
+    - "Meldung stummschalten"
+    - "Der Mops meckert zu unrecht"
+    - "Warum meldet der Mops das nicht mehr"
+  antwort: |
+    In "Wo war ich?" jede Zeile nach links wischen -> "Ist hier anders".
+    Dann eintragen, was hier stattdessen gilt (z.B. "Bauzaun stellt der Bauherr"),
+    Namen dazu, und ob es NUR HIER oder IMMER gilt.
+    Was dann passiert:
+    - Der Mops meldet diese eine Sache nicht mehr. Nicht stumm: die Erklaerung
+      steht im Sonderfall-Buch, mit Namen und Datum. Wer spaeter fragt "warum
+      steht da nichts von einer Dauer", findet den Satz.
+    - Er ZAEHLT mit. Dieselbe Erklaerung zum dritten Mal ist keine Ausnahme mehr —
+      dann fehlt eine Regel. Solche Themen landen auf der Liste
+      "Das sollte der Mops koennen".
+    🔴 "Nur hier" gilt wirklich nur auf dieser Baustelle bei diesem Ding —
+    sonst wuerden echte Luecken auf anderen Baustellen verschwinden.
+    Der Mops baut aus den Sonderfaellen KEINE Regel von selbst. Er sammelt nur
+    den Beleg, dass eine fehlt; was daraus wird, entscheidet ein Mensch.
+  quelle_kurz: "iMOPS Bedienung"

@@ -17,9 +17,17 @@
 import SwiftUI
 import CoreData
 
+/// Träger fürs Erklär-Blatt — `sheet(item:)` braucht etwas Identifizierbares.
+private struct ErklaerAuftrag: Identifiable {
+    let thema: String, satz: String, baustelle: String, betrifft: String
+    var id: String { thema + betrifft }
+}
+
 struct TagesblickView: View {
     @Environment(\.managedObjectContext) private var ctx
     @State private var blick = Tagesblick.Ergebnis()
+    /// Welche Meldung gerade erklärt wird — Andreas' „jaaa, das musst du so sehen".
+    @State private var erklaeren: (thema: String, satz: String, baustelle: String, betrifft: String)?
 
     var body: some View {
         List {
@@ -90,6 +98,17 @@ struct TagesblickView: View {
                                 Image(systemName: "circle.dashed")
                                     .foregroundStyle(.secondary)
                                 Text(a.text).font(.subheadline)
+                            }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            if !a.thema.isEmpty {
+                                Button {
+                                    erklaeren = (a.thema, a.text, l.baustelle,
+                                                 a.job.map { Kausalkette.bezeichnung($0) } ?? l.baustelle)
+                                } label: {
+                                    Label("Ist hier anders", systemImage: "hand.raised")
+                                }
+                                .tint(.indigo)
                             }
                         }
                     }
@@ -212,6 +231,16 @@ struct TagesblickView: View {
         .navigationTitle("Wo war ich?")
         .refreshable { laden() }
         .onAppear { laden() }
+        .sheet(item: Binding(
+            get: { erklaeren.map { ErklaerAuftrag(thema: $0.thema, satz: $0.satz,
+                                                  baustelle: $0.baustelle, betrifft: $0.betrifft) } },
+            set: { if $0 == nil { erklaeren = nil } }
+        )) { auftrag in
+            SonderfallBlattView(thema: auftrag.thema,
+                                wasDerMopsSagte: auftrag.satz,
+                                baustelle: auftrag.baustelle,
+                                betrifft: auftrag.betrifft) { _ in laden() }
+        }
         // 🔴 Andreas: „wird der Punkt nicht nochmal kontrolliert wenn ich die Seite
         // verlasse, obs gemacht wurde?" Doch — aber nur, wenn onAppear beim
         // Zurücknavigieren wirklich feuert, und darauf ist kein Verlass.
