@@ -69,4 +69,40 @@ struct WartezeitKatalogTests {
                                                         zu: "341 Mauerwerk OG"))
         #expect(w.tage == 3, "die Decke härtet, nicht das Mauerwerk darüber")
     }
+
+    // MARK: - 🔴 Was der Katalog NICHT weiss
+
+    /// "woher weiß der mops das genau der zement auf der baustelle 3 und nicht
+    ///  2 tage braucht?" (Andreas, 21.09.2026) — gar nicht. Und das muss dastehen.
+    @Test func derMopsGibtZuWasErNichtWeiss() throws {
+        let z = try #require(WartezeitKatalog.pruefe(eingetragen: 2, nach: "Beton härten Decke"))
+        #expect(z.wasFehlt.contains("Zementart"))
+        #expect(z.wasFehlt.contains("Temperatur"))
+        #expect(z.wasFehlt.lowercased().contains("besser weisst")
+                || z.wasFehlt.lowercased().contains("besser weißt"),
+                "der Mops muss zugeben, dass der Mensch recht haben kann")
+    }
+
+    /// Er stellt eine FRAGE, er behauptet nicht. Kein „zu kurz", kein „falsch".
+    @Test func erWidersprichtNicht() throws {
+        let z = try #require(WartezeitKatalog.pruefe(eingetragen: 2, nach: "Beton härten"))
+        let text = z.satz.lowercased()
+        #expect(text.contains("im katalog stehen"), "er nennt SEINE Quelle")
+        #expect(!text.contains("zu kurz"))
+        #expect(!text.contains("falsch"))
+        #expect(!text.contains("musst"))
+    }
+
+    /// Genau 0 eingetragen ist der häufigste Fall — und der wird gemeldet.
+    @Test func garNichtEingetragenWirdAuchGemeldet() throws {
+        let z = try #require(WartezeitKatalog.pruefe(eingetragen: 0, nach: "Estrich trocknen"))
+        #expect(z.fehlendeTage == 28)
+        #expect(z.satz.contains("Noch keine Liegezeit"))
+    }
+
+    /// Wer den Richtwert erreicht oder überschreitet, hört nichts mehr.
+    @Test func werGenugEinplantHoertNichts() {
+        #expect(WartezeitKatalog.pruefe(eingetragen: 3, nach: "Beton härten") == nil)
+        #expect(WartezeitKatalog.pruefe(eingetragen: 5, nach: "Beton härten") == nil)
+    }
 }

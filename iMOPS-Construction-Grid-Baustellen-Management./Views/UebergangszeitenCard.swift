@@ -46,6 +46,35 @@ struct UebergangszeitenCard: View {
                                 .font(.caption.monospacedDigit())
                                 .foregroundStyle(k.v.wartezeitTage > 0 ? .orange : .secondary)
                         }
+
+                        // 🔴 „wenn irgendwann auffallen würde, der Mops wusste das,
+                        // hat aber nichts gesagt." Genau hier tippt jemand die Zahl
+                        // ein — also sagt er es hier, mit beiden Werten und den Wegen.
+                        // Er sperrt nicht: wer dabei bleibt, unterschreibt.
+                        if let zuKurz = WartezeitKatalog.pruefe(eingetragen: k.v.wartezeitTage,
+                                                                nach: k.von) {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Label(zuKurz.satz, systemImage: "hourglass")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.orange)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(zuKurz.katalog.hinweis)
+                                    .font(.caption2).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                // Was der Mops NICHT weiss, steht dabei.
+                                Text(zuKurz.wasFehlt)
+                                    .font(.caption2).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Button("\(zahl(zuKurz.katalog.tage)) Tage nehmen") {
+                                    k.v.wartezeitTage = zuKurz.katalog.tage
+                                    try? ctx.save()
+                                    tick += 1
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+                            .padding(.top, 2)
+                        }
                     }
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)

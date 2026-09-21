@@ -52,6 +52,7 @@ struct AuftragDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 headerCard
                 wasIstDranBand
+                liegezeitBand
                 gehoertDazuCard
                 zeitCard
                 productionListCard
@@ -137,8 +138,19 @@ struct AuftragDetailView: View {
                         Label(v.anzeigename, systemImage: "clock")
                             .foregroundStyle(.orange)
                     }
+                    // 🔴 Eine zu kurze Liegezeit gehört in dieselbe Unterschrift.
+                    // Sie ist keine offene Voraussetzung — die Kante IST erfüllt —
+                    // aber sie ist etwas, das der Mops wusste. Wer hier unterschreibt,
+                    // soll es gelesen haben.
+                    ForEach(Array(job.zuKurzeLiegezeiten.enumerated()), id: \.offset) { _, z in
+                        Label(z.satz, systemImage: "hourglass.badge.plus")
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 } header: {
-                    Text("Worauf dieser Auftrag noch wartet")
+                    Text(job.zuKurzeLiegezeiten.isEmpty
+                         ? "Worauf dieser Auftrag noch wartet"
+                         : "Worauf dieser Auftrag noch wartet — und was der Mops weiss")
                 }
 
                 Section {
@@ -360,6 +372,40 @@ struct AuftragDetailView: View {
         let f = NumberFormatter()
         f.numberStyle = .currency; f.currencyCode = "EUR"; f.maximumFractionDigits = 0
         return f.string(from: NSNumber(value: w)) ?? String(format: "%.0f €", w)
+    }
+
+    /// 🔴 Der Satz, um den es geht: „wenn irgendwann auffallen würde, der Mops
+    /// wusste das, hat aber nichts gesagt."
+    /// Also steht es DORT, wo jemand weitermacht — nicht nur in der Karte, in der
+    /// die Zahl eingetippt wurde.
+    @ViewBuilder private var liegezeitBand: some View {
+        let zuKurz = job.zuKurzeLiegezeiten
+        if let erste = zuKurz.first {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Kürzer als der Richtwert", systemImage: "hourglass")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.orange)
+                Text(erste.satz).font(.subheadline)
+                Text(erste.katalog.hinweis).font(.footnote).foregroundStyle(.secondary)
+                // 🔴 Der Mops widerspricht nicht — er weiss weniger als der Mann davor.
+                Text(erste.wasFehlt).font(.footnote).foregroundStyle(.secondary)
+                Text("Wenn deine Zahl stimmt: sag einmal warum (der Knopf ist hier anders), "
+                     + "dann weiss der Mops es beim nächsten Mal. Wenn nicht: die "
+                     + "\(zahlKurz(erste.katalog.tage)) Tage nehmen — oder dabeibleiben "
+                     + "und beim Fertigmelden unterschreiben.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                if zuKurz.count > 1 {
+                    Text("Und \(zuKurz.count - 1) weitere.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(.orange.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
+        }
     }
 
     @ViewBuilder private var wasIstDranBand: some View {

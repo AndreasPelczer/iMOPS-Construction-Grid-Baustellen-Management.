@@ -113,3 +113,36 @@ Wo beides auseinanderläuft, steht es **nebeneinander**: die Phase sagt „läuf
 daneben das Merkmal „über den Termin". Keins überschreibt das andere, und das
 Merkmal ist eine Tatsache, kein Vorwurf — es geht auch nicht weg, wenn man es
 ignoriert, und es mahnt nicht, wenn man es ansieht.
+
+---
+
+## Nachtrag zwei: sagen, was man weiß — und was nicht
+
+Andreas, 21.09. spät: *„wenn irgendwann auffallen würde, der Mops wusste das, hat aber
+nichts gesagt …"*
+
+**Regel 7: Der Mops schweigt nicht über das, was er weiß.**
+Ein System, das einen Wert kennt und für sich behält, ist schlimmer als eines, das ihn
+nicht kennt: es hat den Anschein von Prüfung, ohne zu prüfen. Wer später in die Akte
+schaut, findet den Katalogwert — und die Frage, warum niemand etwas gesagt hat.
+
+Eine Minute später seine Gegenfrage, und sie ist die andere Hälfte:
+*„woher weiß der Mops das genau, der Zement auf der Baustelle 3 und nicht 2 Tage
+braucht?"*
+
+**Regel 8: Er behauptet auch nicht, mehr zu wissen, als er weiß.**
+Die Ausschalfrist hängt an Zementart, Temperatur, Bauteil, Festigkeitsklasse und
+Nachbehandlung. Nichts davon steht im Mops. Wer 2 Tage einträgt, hat womöglich recht.
+
+Die beiden Regeln zusammen ergeben **nicht** „der Mops warnt", sondern:
+
+> **Bei mir stehen 3 Tage. Woher kommt deine Zahl?**
+> *Der Mops kennt weder Zementart noch Temperatur — davon hängt die Zahl aber ab.
+> Wenn du es besser weißt, hast du recht.*
+
+Er nennt seinen Wert **und seine Quelle**, sagt dazu, **was er nicht weiß**, und
+**fragt**. Die Antwort merkt er sich, und beim nächsten Mal weiß er es wirklich.
+Kein „zu kurz", kein „falsch", kein „du musst".
+
+Das ist derselbe Satz wie bei den Arbeitsschritten: **eine Ziffer ist eine Behauptung** —
+auch wenn sie aus dem eigenen Katalog kommt.

@@ -10,6 +10,25 @@
 # (`AblaufKante.wartezeitTage`) — aber alle 598 Kanten in der Datenbank standen auf 0.
 # Es hat sie nur nie jemand eingetragen. Dieser Katalog schlägt sie vor.
 #
+# 🔴 WAS DIESER KATALOG NICHT WEISS — bitte vor dem Lesen beachten.
+#
+# Andreas' Gegenfrage, eine Minute nachdem das hier gebaut war:
+#   „woher weiß der Mops das genau, der Zement auf der Baustelle 3 und nicht
+#    2 Tage braucht?"
+#
+# Gar nicht. Die echte Frist hängt ab von:
+#   · Zementart      — CEM I 42,5 R härtet doppelt so schnell wie CEM III
+#   · Temperatur     — bei 5 °C etwa doppelt so lang, bei Frost gar nicht
+#   · Bauteil        — tragend oder nicht, Stützweite, Statik
+#   · Festigkeit     — C20/25 gegen C30/37
+#   · Nachbehandlung — abgedeckt, feucht gehalten, beheizt
+# Nichts davon steht im Mops. Wer 2 Tage einträgt, hat womöglich recht, weil er
+# Schnellzement bestellt hat.
+#
+# Deshalb: der Mops sagt „bei mir stehen 3 Tage — woher kommt deine Zahl?"
+# Er widerspricht nicht. Die Antwort merkt er sich (Sonderfall-Buch), und beim
+# nächsten Mal weiß er es wirklich.
+#
 # Die Werte sind ÜBLICHE PRAXISWERTE, keine Normvorgabe. Sie hängen von Zement,
 # Temperatur, Bauteil und Belastung ab — deshalb trägt jeder Eintrag seinen
 # `hinweis`, und der Mops schlägt sie nur VOR. Wer sie übernimmt, entscheidet.
