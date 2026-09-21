@@ -1900,3 +1900,29 @@
     Erledigte Auftraege zaehlen nicht mit.
     Das ist ARBEIT, kein Alarm — das Warndreieck geht davon nicht an.
   quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Schritte_auswaehlen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Schritte auswaehlen"
+    - "Schritte abwaehlen"
+    - "Brauche ich nicht auf dieser Baustelle"
+    - "Bauzaun weg"
+    - "kommt im LV nicht vor"
+    - "Warum ist ein Schritt durchgestrichen"
+    - "Vorschlag passt nicht"
+  antwort: |
+    Jeder vorgeschlagene Schritt hat links einen Haken. Antippen nimmt ihn fuer
+    DIESE Baustelle weg — er bleibt durchgestrichen stehen, geht aber nicht in den
+    Auftrag. Nochmal antippen holt ihn zurueck. Oben steht dann "12 von 17 gewaehlt".
+    Der Grund: Vorschlaege sind fuer die grosse Baustelle geschrieben. Fuer einen
+    einzelnen Pfosten braucht niemand Bauzaun und Baustellentoilette.
+    Der Mops schaut selbst nach: nennt ein Schritt eine Sache, die eine eigene
+    LV-Position waere (Bauzaun, Geruest, Toilette, Baustrom, Container, Kran,
+    Absperrung ...) und kommt sie im LV dieser Baustelle NICHT vor, dann steht
+    daneben "X kommt im LV nicht vor" und der Schritt ist schon abgewaehlt.
+    Das ist eine Feststellung, kein Urteil — vielleicht laeuft die Sache ueber eine
+    Pauschale oder der Bauherr stellt sie. Ein Griff, und sie ist wieder drin.
+    Ohne LV sagt der Mops dazu nichts.
+  quelle_kurz: "iMOPS Bedienung"

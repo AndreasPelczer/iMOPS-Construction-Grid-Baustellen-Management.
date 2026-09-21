@@ -32,10 +32,18 @@ struct AnweisungVorschlagView: View {
     @State private var wer = ""
     @State private var neuerText = ""
 
-    private var offeneAbnahmen: Int { schritte.filter { $0.herkunft.brauchtAbnahme && !$0.istAbgenommen }.count }
-    private var mitWert: Int { schritte.filter { $0.traegtWert && !$0.istAbgenommen }.count }
+    /// Abgewählte Schritte — sie bleiben sichtbar, gehen aber nicht in den Auftrag.
+    /// „Ich brauche keinen Bauzaun für einen Pfosten, den ich setze."
+    @State private var abgewaehlt: Set<String> = []
+    /// Schritt-ID → Sache, die im LV dieser Baustelle nicht vorkommt.
+    @State private var fehltImLV: [String: String] = [:]
+
+    private var gewaehlte: [AnweisungsSchritt] { schritte.filter { !abgewaehlt.contains($0.id) } }
+
+    private var offeneAbnahmen: Int { gewaehlte.filter { $0.herkunft.brauchtAbnahme && !$0.istAbgenommen }.count }
+    private var mitWert: Int { gewaehlte.filter { $0.traegtWert && !$0.istAbgenommen }.count }
     private var kannUebernehmen: Bool {
-        !schritte.isEmpty && !wer.trimmingCharacters(in: .whitespaces).isEmpty
+        !gewaehlte.isEmpty && !wer.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     var body: some View {
@@ -51,7 +59,7 @@ struct AnweisungVorschlagView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Übernehmen") {
-                        uebernehmen(schritte)
+                        uebernehmen(gewaehlte)
                         dismiss()
                     }
                     .disabled(!kannUebernehmen)
@@ -85,6 +93,7 @@ struct AnweisungVorschlagView: View {
 
             Button {
                 schritte = AnweisungsAssistent.ausRezept(job)
+                passungPruefen()
                 if schritte.isEmpty { fehler = "Zu dieser Position ist kein Rezept hinterlegt." }
             } label: {
                 Label("Gerüst aus dem Rezept", systemImage: "shippingbox")
@@ -125,7 +134,8 @@ struct AnweisungVorschlagView: View {
             }
         } header: {
             HStack {
-                Text("\(schritte.count) Schritte")
+                Text(abgewaehlt.isEmpty ? "\(schritte.count) Schritte"
+                     : "\(gewaehlte.count) von \(schritte.count) gewählt")
                 Spacer()
                 if let modell { Text(modell).font(.caption2).foregroundStyle(.secondary) }
             }
@@ -138,7 +148,9 @@ struct AnweisungVorschlagView: View {
             TextField("Dein Name", text: $wer).id("abnehmer")
             Button {
                 let jetzt = Date()
-                for i in schritte.indices where !schritte[i].istAbgenommen && !schritte[i].traegtWert {
+                for i in schritte.indices
+                where !schritte[i].istAbgenommen && !schritte[i].traegtWert
+                   && !abgewaehlt.contains(schritte[i].id) {
                     schritte[i].abgenommenVon = wer
                     schritte[i].abgenommenAm = jetzt
                 }
@@ -165,9 +177,22 @@ struct AnweisungVorschlagView: View {
     private func zeile(_ s: Binding<AnweisungsSchritt>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 10) {
+                // Der Griff, mit dem man einen Schritt für DIESE Baustelle wegnimmt.
+                Button {
+                    let id = s.wrappedValue.id
+                    if abgewaehlt.contains(id) { abgewaehlt.remove(id) } else { abgewaehlt.insert(id) }
+                } label: {
+                    Image(systemName: abgewaehlt.contains(s.wrappedValue.id)
+                          ? "circle" : "checkmark.circle.fill")
+                        .foregroundStyle(abgewaehlt.contains(s.wrappedValue.id) ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
+                }
+                .buttonStyle(.plain)
+
                 Text(s.wrappedValue.ampel)
                 TextField("Schritt", text: s.text, axis: .vertical)
                     .lineLimit(1...4)
+                    .strikethrough(abgewaehlt.contains(s.wrappedValue.id))
+                    .foregroundStyle(abgewaehlt.contains(s.wrappedValue.id) ? .secondary : .primary)
                     .onChange(of: s.wrappedValue.text) { _, neu in
                         // Wer den Text anfasst, übernimmt ihn.
                         s.wrappedValue.herkunft = .selbst
@@ -177,6 +202,11 @@ struct AnweisungVorschlagView: View {
             HStack(spacing: 8) {
                 Text(s.wrappedValue.herkunft.kurz)
                     .font(.caption2).foregroundStyle(.secondary)
+                // Eine Tatsache, kein Urteil — der Schritt ist nur vorab abgewählt.
+                if let sache = fehltImLV[s.wrappedValue.id] {
+                    Text("· \(sache) kommt im LV nicht vor")
+                        .font(.caption2).foregroundStyle(.orange)
+                }
                 if let von = s.wrappedValue.abgenommenVon {
                     Text("· abgenommen von \(von)")
                         .font(.caption2).foregroundStyle(.green)
@@ -199,11 +229,19 @@ struct AnweisungVorschlagView: View {
 
     // MARK: - Holen
 
+    /// Nach jedem Befüllen: was nennt eine Sache, die es auf dieser Baustelle nicht gibt?
+    /// Die wird gleich abgewählt — ein Griff, und sie ist wieder drin.
+    private func passungPruefen() {
+        fehltImLV = SchrittPassung.fehlende(in: schritte, auftrag: job)
+        for (id, _) in fehltImLV { abgewaehlt.insert(id) }
+    }
+
     private func ausDemKatalog() {
         guard schritte.isEmpty else { return }
         if let bekannt = AnweisungsKatalog.shared.schritte(fuer: Kausalkette.bezeichnung(job)) {
             schritte = bekannt
             modell = "aus dem Katalog — schon einmal abgenommen"
+            passungPruefen()
         }
     }
 
@@ -218,6 +256,7 @@ struct AnweisungVorschlagView: View {
             } else {
                 schritte = s
                 modell = s.first?.modell
+                passungPruefen()
             }
         } catch {
             fehler = "Der Mops ist nicht erreichbar: \(error.localizedDescription) "
