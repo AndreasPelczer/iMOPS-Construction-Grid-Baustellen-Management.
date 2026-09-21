@@ -11,6 +11,60 @@ struct AuftragChecklistItem: Codable, Identifiable, Equatable {
     // Der Beleg ist so gut wie die Anmeldung (geteilter Login verwischt ihn).
     var uebernommenVon: String? = nil
     var uebernommenAm: Date? = nil
+
+    // MARK: - Herkunft (21.09.2026)
+    //
+    // Andreas über die 91 vorhandenen Vorlagen-Schritte: „Haben wir die erfunden oder
+    // ist das die Beschreibung der Packungsbeilage?" — es waren erfundene. Ab jetzt
+    // trägt jeder Schritt, WOHER er kommt und WER ihn inhaltlich abgenommen hat.
+    //
+    // 🔴 Alle Felder optional: `AuftragExtrasPayload.from()` schluckt Dekodier-Fehler
+    // und liefert dann einen LEEREN Payload — ein Pflichtfeld hier würde jeden alten
+    // Auftrag stillschweigend ausräumen (Test `einFehlendesPflichtfeldMachtDenGanzenBlobLeer`).
+
+    /// `SchrittHerkunft.rawValue` — prof / vorlage / rezept / katalog / selbst.
+    var herkunft: String? = nil
+    /// Wer den Schritt inhaltlich abgenommen hat (nicht: wer ihn ausgeführt hat).
+    var abgenommenVon: String? = nil
+    var abgenommenAm: Date? = nil
+    /// Welches Modell geantwortet hat, falls vom Server.
+    var modell: String? = nil
+    /// Steht eine Zahl drin? Dann reicht „klingt plausibel" nicht als Prüfung.
+    var traegtWert: Bool? = nil
+}
+
+// MARK: - Brücke zu AnweisungsSchritt
+
+extension AuftragChecklistItem {
+
+    init(_ s: AnweisungsSchritt) {
+        self.init(id: s.id, title: s.text, isDone: false)
+        herkunft = s.herkunft.rawValue
+        abgenommenVon = s.abgenommenVon
+        abgenommenAm = s.abgenommenAm
+        modell = s.modell
+        traegtWert = s.traegtWert
+    }
+
+    var alsAnweisungsSchritt: AnweisungsSchritt {
+        AnweisungsSchritt(id: id,
+                          text: title,
+                          herkunft: SchrittHerkunft(rawValue: herkunft ?? "") ?? .selbst,
+                          abgenommenVon: abgenommenVon,
+                          abgenommenAm: abgenommenAm,
+                          modell: modell,
+                          traegtWert: traegtWert ?? false)
+    }
+
+    /// 🟢 abgenommen oder selbst geschrieben · 🟡 Vorschlag · 🔴 Vorschlag mit Zahl.
+    /// Ein alter Schritt ohne Herkunft gilt als selbst geschrieben — er stand schon da,
+    /// bevor es die Herkunft gab, und war damit jemandes Entscheidung.
+    var ampel: String { alsAnweisungsSchritt.ampel }
+
+    var brauchtAbnahme: Bool {
+        let h = SchrittHerkunft(rawValue: herkunft ?? "") ?? .selbst
+        return h.brauchtAbnahme && abgenommenVon == nil
+    }
 }
 
 // MARK: - Auftragspositionen (Material / Arbeitspakete)

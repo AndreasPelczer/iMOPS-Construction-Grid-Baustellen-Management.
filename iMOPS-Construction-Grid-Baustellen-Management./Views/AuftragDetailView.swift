@@ -24,6 +24,7 @@ struct AuftragDetailView: View {
     /// „Wer ein Nein übergeht, unterschreibt." — der Dialog erscheint, wenn jemand
     /// fertig meldet, obwohl Voraussetzungen offen sind. Er sperrt NICHT: er verlangt
     /// einen Satz. Wer gesperrt wird, arbeitet am Mops vorbei.
+    @State private var zeigeAnweisungsVorschlag = false
     @State private var vorgaengerZiel: Auftrag?
     @State private var zeigeUebernahme = false
     @State private var begruendung = ""
@@ -89,6 +90,15 @@ struct AuftragDetailView: View {
             Text(kettenFehler ?? "")
         }
         .sheet(isPresented: $zeigeUebernahme) { uebernahmeDialog }
+        .sheet(isPresented: $zeigeAnweisungsVorschlag) {
+            AnweisungVorschlagView(job: job) { schritte in
+                extras.checklist = schritte.map(AuftragChecklistItem.init)
+                saveExtras(extras)
+                // 🔴 Nur Abgenommenes wandert in den Katalog — ein ungeprüfter
+                //    Vorschlag soll sich nicht über alle Baustellen vermehren.
+                AnweisungsKatalog.shared.merken(schritte, fuer: Kausalkette.bezeichnung(job))
+            }
+        }
         .navigationDestination(item: $vorgaengerZiel) { AuftragDetailView(job: $0) }
     }
 
@@ -450,6 +460,18 @@ struct AuftragDetailView: View {
                 .font(.headline)
             Text("Wer sie einmal schreibt, spart sie allen danach.")
                 .font(.subheadline).foregroundStyle(.secondary)
+
+            Button { zeigeAnweisungsVorschlag = true } label: {
+                Label("Mops, wie geht das?", systemImage: "questionmark.bubble")
+                    .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+
+            if AnweisungsKatalog.shared.schritte(fuer: whatToDoText) != nil {
+                Label("Für diese Arbeit gibt es schon eine abgenommene Anweisung.",
+                      systemImage: "checkmark.seal")
+                    .font(.footnote).foregroundStyle(.green)
+            }
 
             if let passend = AuftragTemplate.passend(zu: whatToDoText) {
                 Button { applyTemplate(passend, mode: .replace) } label: {
@@ -877,7 +899,16 @@ struct AuftragDetailView: View {
     private enum TemplateInsertMode { case replace, append }
 
     private func applyTemplate(_ template: AuftragTemplate, mode: TemplateInsertMode) {
-        let newItems = template.steps.map { AuftragChecklistItem(title: $0) }
+        // 🔴 Vorlagen-Schritte tragen ab jetzt ihre Herkunft: .vorlage = UNGEPRÜFT.
+        //    Die 91 Schritte in AuftragTemplate.swift haben keine Quellenangabe und
+        //    keinen Prüfer (21.09. gemessen). Bis jemand seinen Namen drunter setzt,
+        //    sind sie ein Vorschlag, keine Anleitung.
+        let newItems = template.steps.map { text -> AuftragChecklistItem in
+            AuftragChecklistItem(AnweisungsSchritt(
+                text: text,
+                herkunft: .vorlage,
+                traegtWert: Werterkennung.traegtWert(text)))
+        }
         if mode == .replace {
             extras.checklist = newItems
         } else {
