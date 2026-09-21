@@ -30,7 +30,46 @@ echten DB gemessen: `startTime` leer, `lastStartTime` bei allen 34 Aufträgen le
 verschwinden live (`NSManagedObjectContextObjectsDidChange`), Einzahl/Mehrzahl,
 **`docs/WESEN-DES-MOPS.md`** (Ton-Doktrin, aus der Pflichtspur verlinkt).
 
-### ☀️ MORGEN FRÜH ZUERST (von Andreas so gelegt, Nacht 21./22.09.)
+## 🌙 Nachtschicht 21./22.09. — die drei Stücke sind GEBAUT
+
+Andreas ist gegen 00:30 schlafen gegangen und hat die Nachtschicht freigegeben
+(„eine Stunde ist nichts für dich und ich kann beruhigt schlafen"). Alles lokal,
+**nichts gepusht**, 659 Tests grün. Vier Commits: `0dcad83` · `dd89772` · `865be3b`
+plus dieser hier.
+
+### 1. Der Fundus als zweite Quelle (`LiegezeitSucher`)
+Trägt zusammen, was über eine Liegezeit bekannt ist, sortiert nach Nähe zu DIESER
+Baustelle: **Datenblatt → Statik → Fundus → Katalog**. Kein Internet (von ihm
+gestrichen). 🔴 Der wichtigste Teil ist nicht das Finden, sondern das Sagen: nennen
+zwei Quellen verschiedene Zahlen, steht „2 Quellen, und sie sind sich nicht einig.
+Du entscheidest." im Blatt — der Mops nimmt nicht heimlich die erste.
+Der Fundus nur auf Knopfdruck (CPU-only, bis 180 s), liefert einen **Kandidaten**
+mit Herkunft `erfahrung`, keinen Beleg. Was nicht als „TAGE: 3" kommt, wird verworfen.
+🔴 Offen: `/extract-doc` kennt keinen Doctype „Datenblatt", also kommt aus den
+Dokumenten noch nichts an. Das ist das andere Repo (`mops-api`).
+
+### 2. Papiere je Material (`MaterialPapierBuch`, `gefahrstoffe.yaml`)
+SDB und technisches Merkblatt je Material, baustellenübergreifend (derselbe Zement
+ist überall derselbe). Ein SDB älter als drei Jahre gilt als zu prüfen; ein
+Merkblatt altert nicht. Karte „Papiere" an der Baustelle, Punkt unter „Das stünde an".
+🔴 **Nur für Gefahrstoffe** — neun Gruppen mit Begründung. Der Test
+`schotterUndSteineSindKeine` fand sofort einen Fehler: „Pflasterstein Beton" und
+„Betonstahl" enthalten „beton". Ausgehärtetes ätzt nicht → Ausnahme-Stämme.
+Erkennung läuft über den Namen, ist also geraten — im Blatt gibt es den Schalter
+„Gefahrstoff", und der schlägt den Katalog.
+
+### 3. Namen, die nichts sagen (`Arbeitspakete.bessererName`)
+Gemessen: **elf Pakete heissen „Baukonstruktionen", acht „Außenanlagen und
+Freiflächen"**. Dahinter stehen gute Positionstexte. Umbenennen mit Vorschau,
+einzeln abwählbar. 🔴 Die Titelnummer bleibt vorn — an ihr hängt „Das gehört dazu".
+Wer selbst umbenannt hat, wird nicht angefasst.
+
+### Was Andreas morgen sehen will
+Stop und Run, dann: Baustelle öffnen → die zwei neuen Karten **„Namen verbessern"**
+und **„Papiere"**. In „Wo war ich?" stehen die neuen Punkte. Und beim Verketten
+zweier Aufträge → „Woher die Zahl kommt" → **„Den Fundus fragen"**.
+
+### ☀️ URSPRÜNGLICH FÜR MORGEN FRÜH (jetzt erledigt — steht zum Nachlesen)
 
 **Sein Grundsatz:** jede Wartezeit braucht eine **belegte** Zahl. Rangfolge:
 Lieferschein/Datenblatt dieser Baustelle → Statik → Fundus → Katalog.
