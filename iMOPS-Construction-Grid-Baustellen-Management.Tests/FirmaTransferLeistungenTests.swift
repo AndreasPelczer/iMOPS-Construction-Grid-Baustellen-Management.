@@ -20,6 +20,22 @@ import CoreData
 @MainActor
 struct FirmaTransferLeistungenTests {
 
+    /// Firmensettings landen in `UserDefaults.standard` — die teilen sich alle Tests im
+    /// Prozess, und sie laufen PARALLEL. Wer hier Werte stehen lässt, kippt fremde Tests
+    /// (am 21.09.2026 den IBAN-Test des Rechnungsdrucks, sporadisch). Also: vorher merken,
+    /// hinterher zurücksetzen.
+    private func mitGesichertenFirmenwerten(_ block: () throws -> Void) rethrows {
+        let d = UserDefaults.standard
+        let vorher = d.dictionaryRepresentation().filter { $0.key.hasPrefix("firma_") }
+        defer {
+            for k in d.dictionaryRepresentation().keys where k.hasPrefix("firma_") {
+                d.removeObject(forKey: k)
+            }
+            for (k, v) in vorher { d.set(v, forKey: k) }
+        }
+        try block()
+    }
+
     @Test func derLeistungskatalogFaehrtMit() throws {
         let quelle = PersistenceController(inMemory: true)
         let qctx = quelle.container.viewContext
@@ -38,7 +54,8 @@ struct FirmaTransferLeistungenTests {
 
         let ziel = PersistenceController(inMemory: true)
         let zctx = ziel.container.viewContext
-        let bilanz = try FirmaTransfer.importieren(daten, in: zctx)
+        var bilanz: FirmaTransfer.Bilanz!
+        try mitGesichertenFirmenwerten { bilanz = try FirmaTransfer.importieren(daten, in: zctx) }
 
         #expect(bilanz.leistungen == 1)
         let angekommen = try #require(
@@ -59,7 +76,8 @@ struct FirmaTransferLeistungenTests {
          "materialien":[],"loehne":[],"geraete":[]}
         """
         let ctx = PersistenceController(inMemory: true).container.viewContext
-        let bilanz = try FirmaTransfer.importieren(Data(alt.utf8), in: ctx)
+        var bilanz: FirmaTransfer.Bilanz!
+        try mitGesichertenFirmenwerten { bilanz = try FirmaTransfer.importieren(Data(alt.utf8), in: ctx) }
         #expect(bilanz.leistungen == 0)
         #expect(bilanz.settings == 1)
     }
@@ -76,8 +94,10 @@ struct FirmaTransferLeistungenTests {
 
         let ziel = PersistenceController(inMemory: true)
         let zctx = ziel.container.viewContext
-        _ = try FirmaTransfer.importieren(daten, in: zctx)
-        _ = try FirmaTransfer.importieren(daten, in: zctx)
+        try mitGesichertenFirmenwerten {
+            _ = try FirmaTransfer.importieren(daten, in: zctx)
+            _ = try FirmaTransfer.importieren(daten, in: zctx)
+        }
 
         let req: NSFetchRequest<Leistungsbaustein> = Leistungsbaustein.fetchRequest()
         #expect(try zctx.count(for: req) == 1)
