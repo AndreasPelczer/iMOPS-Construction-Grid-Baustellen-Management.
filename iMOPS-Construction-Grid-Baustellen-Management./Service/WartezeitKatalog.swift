@@ -109,7 +109,7 @@ enum WartezeitKatalog {
     /// 3 Tage — woher kommt deine Zahl?" Die Antwort merkt er sich
     /// (`SonderfallBuch`), und beim nächsten Mal weiss er es wirklich.
     /// Siehe die Ampel-Regel vom selben Tag: **eine Ziffer ist eine Behauptung.**
-    struct ZuKurz {
+    struct ZuKurz: Equatable {
         let eingetragen: Double
         let katalog: Wartezeit
         var fehlendeTage: Double { katalog.tage - eingetragen }
