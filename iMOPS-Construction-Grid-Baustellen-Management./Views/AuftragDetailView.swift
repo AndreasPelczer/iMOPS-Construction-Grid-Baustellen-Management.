@@ -21,6 +21,13 @@ struct AuftragDetailView: View {
     @State private var zeigeVoraussetzungWahl = false
     @State private var kettenFehler: String?
 
+    /// „Wer ein Nein übergeht, unterschreibt." — der Dialog erscheint, wenn jemand
+    /// fertig meldet, obwohl Voraussetzungen offen sind. Er sperrt NICHT: er verlangt
+    /// einen Satz. Wer gesperrt wird, arbeitet am Mops vorbei.
+    @State private var zeigeUebernahme = false
+    @State private var begruendung = ""
+
+
     private var doneCount: Int { extras.checklist.filter { $0.isDone }.count }
     private var totalCount: Int { extras.checklist.count }
     private var progress: Double { totalCount == 0 ? 0 : Double(doneCount) / Double(totalCount) }
@@ -42,6 +49,7 @@ struct AuftragDetailView: View {
                 productionListCard
                 modeCard
                 checklistCard
+                uebernahmenCard
                 voraussetzungenCard
                 LVDeleteButtonView(currentLV: job)
                     .padding(.horizontal, 4)
@@ -77,6 +85,60 @@ struct AuftragDetailView: View {
             Button("Verstanden", role: .cancel) { kettenFehler = nil }
         } message: {
             Text(kettenFehler ?? "")
+        }
+        .sheet(isPresented: $zeigeUebernahme) { uebernahmeDialog }
+    }
+
+    // MARK: - „Ich übernehme das"
+
+    /// Kein Sperrdialog. Er nennt, was offen ist, sagt die Folge ehrlich, gibt zu, dass
+    /// der Mops nicht davorsteht — und verlangt einen Satz.
+    private var uebernahmeDialog: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    ForEach(job.offeneVoraussetzungen, id: \.objectID) { v in
+                        Label(v.anzeigename, systemImage: "clock")
+                            .foregroundStyle(.orange)
+                    }
+                } header: {
+                    Text("Worauf dieser Auftrag noch wartet")
+                }
+
+                Section {
+                    Text("Du stehst davor. Ich nicht.")
+                        .font(.headline)
+                    Text("Wenn du recht hast, ist nichts passiert. Wenn nicht, steht in "
+                         + "zehn Jahren niemand mehr dafür gerade — außer dem, der es "
+                         + "freigegeben hat. Deshalb bleibt dein Satz an diesem Auftrag.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Text("Ich bin nur der Mops. Ab hier entscheidest du.")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.orange)
+                }
+
+                Section {
+                    TextField("z. B. „CM-Messung 1,8 % gemessen, belegreif\"",
+                              text: $begruendung, axis: .vertical)
+                        .lineLimit(2...5)
+                        .id("uebernahme-begruendung")
+                } header: {
+                    Text("Warum ist es trotzdem in Ordnung?")
+                } footer: {
+                    Text("Pflichtfeld. Das ist kein Geständnis — das ist dein Nachweis.")
+                }
+            }
+            .navigationTitle("Voraussetzung offen")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Ich warte") { begruendung = ""; zeigeUebernahme = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Ich übernehme das") { uebernehmenUndFertig() }
+                        .disabled(begruendung.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
         }
     }
 
@@ -357,6 +419,39 @@ struct AuftragDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
+    // MARK: - Übernommene Verantwortung
+
+    /// Was hier steht, hat jemand bewusst übergangen — mit seinem Satz.
+    /// Sichtbar, weil ein Nachweis, den nur der Chef sieht, kein Nachweis ist,
+    /// sondern eine Akte. Wer es geschrieben hat, muss es auch lesen können.
+    @ViewBuilder private var uebernahmenCard: some View {
+        let liste = extras.uebergehungen ?? []
+        if !liste.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Verantwortung übernommen", systemImage: "signature")
+                    .font(.headline)
+                ForEach(liste) { u in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(u.woraufGewartet)
+                            .font(.subheadline.weight(.semibold))
+                        Text("„\(u.begruendung)\"")
+                            .font(.subheadline)
+                        Text("\(u.von) · \(u.am, format: .dateTime.day().month().year().hour().minute())")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 2)
+                }
+                Text("Bleibt an diesem Auftrag. Nicht löschbar — das ist der Sinn.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(.orange.opacity(0.5), lineWidth: 1))
+        }
+    }
+
     // MARK: - Voraussetzungen (Grap8-Kanten)
 
     /// „Worauf wartet dieser Auftrag?" — die Aufträge, die vorher fertig sein müssen.
@@ -564,9 +659,41 @@ struct AuftragDetailView: View {
     }
 
     private func markJobCompleted() {
-        // Der "Ich bestätige …"-Knopf ist eine Sammel-Übergabe: der angemeldete Nutzer
-        // übernimmt hiermit alle Schritte auf einmal — mit Beleg (wer/wann), auch die,
-        // die vorher noch keinen hatten.
+        // 🔴 DER RIEGEL. `istStartbar` war gebaut, 26× getestet und wurde hier nie
+        // gefragt — der Auftrag ließ sich fertig melden, während oben auf demselben
+        // Bildschirm „läuft noch" stand. Jetzt wird gefragt. Nicht gesperrt: wer
+        // gesperrt wird, arbeitet am Mops vorbei, und dann weiß niemand mehr etwas.
+        guard job.istStartbar else {
+            zeigeUebernahme = true
+            return
+        }
+        schliesseAb()
+    }
+
+    /// Die Übernahme: Satz festhalten, dann abschließen.
+    private func uebernehmenUndFertig() {
+        let satz = begruendung.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !satz.isEmpty else { return }
+        let offene = job.offeneVoraussetzungen
+        let jetzt = Date()
+        var liste = extras.uebergehungen ?? []
+        for v in offene {
+            liste.append(Uebergehung(
+                woraufGewartet: v.anzeigename,
+                begruendung: satz,
+                von: session.role.title,
+                am: jetzt,
+                offeneVoraussetzungenGesamt: offene.count))
+        }
+        extras.uebergehungen = liste
+        begruendung = ""
+        zeigeUebernahme = false
+        schliesseAb()
+    }
+
+    private func schliesseAb() {
+        // Sammel-Übergabe: der angemeldete Nutzer übernimmt alle Schritte auf einmal —
+        // mit Beleg (wer/wann), auch die, die vorher noch keinen hatten.
         let jetzt = Date()
         for i in extras.checklist.indices {
             extras.checklist[i].isDone = true

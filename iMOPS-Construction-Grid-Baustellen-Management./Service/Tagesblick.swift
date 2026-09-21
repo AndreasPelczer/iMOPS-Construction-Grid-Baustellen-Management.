@@ -106,7 +106,7 @@ enum Tagesblick {
                     e.blockaden.append(Blockade(
                         baustelle: name,
                         auftrag: Kausalkette.bezeichnung(auftrag),
-                        fehlt: benennung(v),
+                        fehlt: v.anzeigename,
                         seit: auftrag.lastStartTime,
                         event: event))
                 }
@@ -157,15 +157,6 @@ enum Tagesblick {
         e.preisluecken.sort { $0.betroffeneMenge > $1.betroffeneMenge }
         e.fristen.sort { $0.frist < $1.frist }
         return e
-    }
-
-    /// Wie heißt das, was fehlt? Eine Kante trägt oft keinen eigenen Namen —
-    /// dann ist der Vorgänger die Antwort („wartet auf Bewehrung OG").
-    private static func benennung(_ v: Voraussetzung) -> String {
-        let eigener = v.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if !eigener.isEmpty { return eigener }
-        if let quelle = v.quelle { return Kausalkette.bezeichnung(quelle) }
-        return "Voraussetzung"
     }
 
     /// Wann wurde an dieser Baustelle zuletzt etwas getan?

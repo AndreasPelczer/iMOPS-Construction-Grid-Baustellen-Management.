@@ -51,6 +51,10 @@ struct AuftragExtrasPayload: Codable {
     // Positionen (Material / Arbeitspakete)
     var lineItems: [AuftragLineItem] = []
 
+    // Bewusst übergangene Voraussetzungen — „wer ein Nein übergeht, unterschreibt".
+    // Optional, damit alte Blobs weiter dekodieren (Codable-Falle).
+    var uebergehungen: [Uebergehung]? = nil
+
     // Baustellen-spezifisch
     var gewerk: String = ""          // z.B. "Elektro", "Sanitaer"
     var planReferenz: String = ""    // Verweis auf CAD-Datei / Plannummer
