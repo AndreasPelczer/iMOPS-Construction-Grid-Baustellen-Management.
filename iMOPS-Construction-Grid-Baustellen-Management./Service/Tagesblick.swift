@@ -225,6 +225,23 @@ enum Tagesblick {
                 job: jobs.count == 1 ? erstes : nil,
                 thema: "niemand-zugeteilt"))
         }
+        // 🔴 „Eine Baustelle ist nicht fertig geplant, wenn nicht für jedes Teil ein
+        // Sicherheitsdatenblatt vorhanden ist, wenn es eingesetzt werden soll."
+        // Nur für GEFAHRSTOFFE — sonst stünden achtzig Prozent dauerhaft hier.
+        let materialien = Set(positionen.flatMap { $0.materialArray }
+            .compactMap { $0.materialName }
+            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty })
+        let ohnePapiere = materialien.compactMap { MaterialPapierBuch.shared.luecke(fuer: $0) }
+        let ohneSDB = ohnePapiere.filter { $0.sdbFehlt || $0.sdbVeraltet }
+        if !ohneSDB.isEmpty {
+            l.anstehend.append(Anstehend(
+                text: ohneSDB.count == 1
+                    ? "„\(ohneSDB[0].material)\u{201C}: \(ohneSDB[0].satz)."
+                    : "\(ohneSDB.count) Gefahrstoffe ohne gültiges Sicherheitsdatenblatt.",
+                insLV: false,
+                thema: "sdb-fehlt"))
+        }
+
         let zaehlbar = positionen.sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }.zaehlbarePositionen()
         let ohnePreis = zaehlbar.filter { LVKalkulator.effektiverEP(for: $0) <= 0 }.count
         if ohnePreis > 0 {

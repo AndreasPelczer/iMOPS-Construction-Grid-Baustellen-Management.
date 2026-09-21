@@ -1992,3 +1992,33 @@
     Der Mops baut aus den Sonderfaellen KEINE Regel von selbst. Er sammelt nur
     den Beleg, dass eine fehlt; was daraus wird, entscheidet ein Mensch.
   quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Papiere_Material"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Sicherheitsdatenblatt"
+    - "SDB"
+    - "Papiere"
+    - "Gefahrstoff"
+    - "technisches Merkblatt"
+    - "Datenblatt hinterlegen"
+    - "Welche Materialien haben kein Datenblatt"
+  antwort: |
+    Baustelle oeffnen -> Karte "Papiere". Dort stehen alle Materialien der
+    Baustelle mit dem, was hinterlegt ist.
+    ZWEI verschiedene Papiere, sie tun Verschiedenes:
+    - Sicherheitsdatenblatt (SDB): Gefahren, Schutzausruestung, Erste Hilfe.
+      Pflicht nach GefStoffV. Gilt als zu pruefen, wenn es aelter als drei
+      Jahre ist — Hersteller aendern Rezepturen.
+    - Technisches Merkblatt: Verarbeitung, Mischung, Trocknungszeit. Kein
+      Pflichtpapier, aber DORT steht die Liegezeit fuer den Terminplan.
+    🔴 Das SDB wird nur fuer GEFAHRSTOFFE verlangt (Zement, Bitumen, Harze,
+    Loesemittel, Mineralwolle, Druckgase). Schotter, Pflastersteine und
+    Betonstahl brauchen keins — sonst stuenden achtzig Prozent dauerhaft auf rot.
+    Der Mops erkennt Gefahrstoffe am NAMEN, das ist geraten. Im Blatt gibt es
+    den Schalter "Gefahrstoff" — wer es besser weiss, stellt ihn um, und das
+    gilt dann.
+    In "Wo war ich?" steht die Luecke als Punkt unter dem, was anstuende —
+    kein Alarm.
+  quelle_kurz: "iMOPS Bedienung"

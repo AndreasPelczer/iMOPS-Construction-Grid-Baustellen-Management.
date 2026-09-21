@@ -432,6 +432,7 @@ struct EventDetailView: View {
                     ablaufplanCard
                     TerminplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     UebergangszeitenCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
+                    papiereCard
                     DienstplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     NavigationLink {
                         ZeitstrahlView(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
@@ -838,6 +839,49 @@ struct EventDetailView: View {
         .sheet(isPresented: $showingMaterialliste) {
             MateriallisteView(event: event)
                 .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - Papiere je Material
+    //
+    // „Eine Baustelle ist nicht fertig geplant, wenn nicht für jedes Teil ein
+    //  Sicherheitsdatenblatt vorhanden ist." (Andreas, Nacht 21./22.09.2026)
+    //
+    // 🔴 Die Karte zeigt sich nur, wenn es Material gibt — und meldet nur, wo
+    // wirklich ein Gefahrstoff ohne Papier ist. Schotter bleibt still.
+    @ViewBuilder private var papiereCard: some View {
+        let materialien = Set(((event.lvPositionen as? Set<LVPosition>) ?? [])
+            .flatMap { $0.materialArray }
+            .compactMap { $0.materialName?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty })
+
+        if !materialien.isEmpty {
+            let offen = materialien.compactMap { MaterialPapierBuch.shared.luecke(fuer: $0) }
+                .filter { $0.sdbFehlt || $0.sdbVeraltet }.count
+
+            NavigationLink {
+                MaterialPapiereView(event: event)
+                    .environment(\.managedObjectContext, viewContext)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: offen == 0 ? "checkmark.seal" : "doc.badge.ellipsis")
+                        .font(.title2)
+                        .foregroundStyle(offen == 0 ? Color.green : .orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Papiere").font(.headline).foregroundStyle(.primary)
+                        Text(offen == 0
+                             ? "\(materialien.count) Materialien · alle Gefahrstoffe belegt"
+                             : "\(offen) von \(materialien.count) Materialien ohne gültiges Sicherheitsdatenblatt")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
         }
     }
 
