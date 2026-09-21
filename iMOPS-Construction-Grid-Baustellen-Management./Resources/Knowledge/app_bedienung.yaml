@@ -1634,3 +1634,193 @@
 
     Merkhilfe: importieren = dazulegen, nicht austauschen.
   quelle_kurz: "iMOPS GAEBImportView, GAEBAnkunftsPruefung.bestandVorImport"
+
+# ---------------------------------------------------------------------------
+# Nachgezogen am 21.09.2026 — acht Bildschirme geaendert, Hilfe war nicht dabei.
+# Genau die Drift-Falle, vor der oben gewarnt wird.
+# ---------------------------------------------------------------------------
+
+- id: "App_Tagesblick"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Wo war ich"
+    - "Tagesblick"
+    - "Uebersicht ueber alle Baustellen"
+    - "Was ist heute dran"
+    - "Wo bin ich gerade"
+  antwort: |
+    "Wo war ich?" ist die erste Zeile in der Baustellenliste — die Klammer ueber
+    ALLE Baustellen, bevor man sich fuer eine entscheidet.
+
+    Sie zeigt:
+    - Wo du zuletzt gearbeitet hast (zum Weitermachen antippen)
+    - Je Baustelle die Lage: "wird geplant" / "laeuft" / "fertig", und was anstuende
+    - "Kann jetzt anfangen": Auftraege, deren Vorgaenger alle fertig sind
+    - "Steht wirklich still": nur Auftraege, die LAUFEN und denen etwas fehlt
+    - Ueberfaellige Fristen
+
+    Jede Zeile fuehrt auf ihr Ding: eine Blockade auf den blockierten Auftrag,
+    eine Frist auf die Maengelliste, fehlende Preise ins LV.
+
+    Was nur auf einen Vorgaenger wartet, steht bewusst NICHT als Alarm da —
+    das ist Plan, keine Not.
+
+- id: "App_Wochenstrahl"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Diese Woche"
+    - "Wochenstrahl"
+    - "Alle Baustellen nebeneinander"
+    - "Wochenplan"
+    - "Wer ist diese Woche wo"
+  antwort: |
+    "Diese Woche" erreichst du ueber "Wo war ich?" — alle Baustellen nebeneinander,
+    Montag bis Freitag, auf echten Kalendertagen.
+
+    Mit den Pfeilen oben blaetterst du vor und zurueck.
+
+    Damit etwas drinsteht, braucht es zweierlei:
+    1. Die Baustelle braucht einen Starttermin (sonst gibt es keinen Tag 1)
+    2. Die Auftraege brauchen eine Dauer (Baustelle -> Terminplan, je Auftrag eine Zahl)
+
+    Fehlt eines davon, sagt der Bildschirm das ausdruecklich — statt einen leeren
+    Kalender zu zeigen. Samstag und Sonntag werden uebersprungen.
+
+- id: "App_Arbeitspakete_vorschlagen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Arbeitspakete vorschlagen"
+    - "Aus dem LV Auftraege machen"
+    - "Wie werden aus LV-Positionen Auftraege"
+    - "Arbeitspakete anlegen"
+  antwort: |
+    Im LV, direkt unter "Mops fass": "Arbeitspakete vorschlagen".
+
+    Der Mops gruppiert die LV-Positionen nach ihren Titeln (die Ziffern vor dem
+    Punkt in der Positionsnummer) — aus 109 Positionen werden so etwa 17 Pakete.
+    Ein LV ist die Abrechnung, ein Arbeitspaket ist die Arbeit.
+
+    In der Liste kannst du:
+    - Pakete abwaehlen
+    - die Dauer aendern (oben die Kolonnengroesse einstellen — mehr Leute, kuerzer)
+    - die Verkettung abschalten (fuer Gewerke, die parallel laufen)
+
+    Erst "anlegen" erzeugt die Auftraege. Ein zweiter Druck legt nichts doppelt an:
+    schon vorhandene Titel stehen gruen mit "gibt es schon" und sind abgehakt.
+
+    ACHTUNG: Die Reihenfolge kommt aus den Titelnummern (DIN 276) und ist ein
+    ENTWURF, kein Bauablauf. Geruest gehoert vor das Dach, Grundleitungen vor die
+    Bodenplatte. Umhaengen danach im Auftrag unter "Wartet auf".
+
+- id: "App_Auftrag_Band"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Was ist jetzt dran"
+    - "Hier ist gerade nichts zu tun"
+    - "Zum Vorgaenger"
+    - "Warum kann ich hier nichts machen"
+  antwort: |
+    Oben im Auftrag steht ein Band, das sagt, was JETZT dran ist:
+
+    - "Hier ist gerade nichts zu tun" — der Auftrag wartet auf einen Vorgaenger.
+      Die Loesung liegt dort, nicht hier. Mit "Zum Vorgaenger" springst du hin;
+      meldest du den fertig, ist die Blockade weg.
+    - "Als Naechstes: ..." — der erste offene Arbeitsschritt
+    - "Startklar, aber ohne Arbeitsschritte" — nichts haelt auf, es fehlt nur die
+      Anweisung
+    - "Alle Schritte abgehakt" — unten bestaetigen
+
+- id: "App_Nein_uebergehen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Trotzdem anfangen"
+    - "Voraussetzung uebergehen"
+    - "Ich uebernehme das"
+    - "Auftrag fertig melden obwohl etwas offen ist"
+  antwort: |
+    Meldest du einen Auftrag fertig, obwohl Voraussetzungen offen sind, sperrt der
+    Mops NICHT. Er fragt.
+
+    Es kommt ein Dialog, der nennt was offen ist, die Folge sagt und zugibt, dass
+    der Mops nicht davorsteht ("Du stehst davor. Ich nicht."). Dann verlangt er
+    EINEN SATZ: warum ist es trotzdem in Ordnung.
+
+    Der Satz ist Pflicht. Er bleibt am Auftrag stehen, mit Name und Zeitpunkt, und
+    ueberlebt auch das spaetere Loesen der Voraussetzung. Das ist kein Gestaendnis,
+    sondern dein Nachweis — in zehn Jahren ist es das Einzige, was ein Gutachter liest.
+
+- id: "App_Anweisung_Mops_fragen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Mops wie geht das"
+    - "Arbeitsschritte vorschlagen lassen"
+    - "Anweisung schreiben"
+    - "Woher kommen die Arbeitsschritte"
+    - "Vorlage waehlen"
+  antwort: |
+    Hat ein Auftrag noch keine Arbeitsschritte, steht dort "Fuer diese Arbeit gibt
+    es noch keine Anweisung" und als erster Knopf: "Mops, wie geht das?".
+
+    Der Mops schaut zuerst in seinen Anweisungs-Katalog. Ist die Arbeit schon
+    einmal beschrieben worden, kommt sie sofort — mit dem Namen dessen, der sie
+    abgenommen hat. Sonst fragt er seinen Server.
+
+    In der Liste: Text aendern, wischen zum Loeschen, schieben zum Umsortieren,
+    unten ergaenzen. Wer einen Text anfasst, uebernimmt ihn.
+
+    DIE AMPEL:
+      gruen  = abgenommen oder selbst geschrieben
+      gelb   = Vorschlag, reiner Handgriff — wer ihn liest, kann ihn abnehmen
+      rot    = Vorschlag MIT EINER ZAHL — da muss jemand ran, der den Wert
+               beurteilen kann. Eine Zahl sieht immer plausibel aus.
+
+    Zum Abnehmen den eigenen Namen eintragen. Beim Uebernehmen merkt sich der Mops
+    die Anweisung fuer die naechste Baustelle — aber NUR das Abgenommene.
+
+    Antwortet der Server nicht, kommt ein ehrlicher Fehler und zwei Auswege: selbst
+    schreiben, oder "Geruest aus dem Rezept" (Material, Geraet, Aufmass — ohne KI).
+
+- id: "App_Arbeitsschritte_abarbeiten"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Arbeitsschritte abhaken"
+    - "Schritt erledigt"
+    - "Wie arbeite ich die Liste ab"
+    - "Jetzt-Schritt"
+  antwort: |
+    Sind Schritte hinterlegt, zeigt der Auftrag EINEN Punkt gross unter "JETZT" —
+    mit einem gruenen "Erledigt"-Knopf und darunter klein, was danach kommt.
+
+    Alles andere ist eingeklappt:
+    - "Alle Schritte ansehen" — die ganze Liste
+    - "Anweisung aendern" — Schritt anhaengen, Vorlage nehmen, leeren
+
+    Oben rechts steht der Stand ("3 von 8"). Sind alle abgehakt, wird aus dem
+    Knopf "Alle Schritte erledigt — Auftrag abschliessen".
+
+- id: "App_Auftrag_loeschen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Auftrag loeschen"
+    - "Diesen Auftrag loeschen"
+    - "Wie loesche ich einen Auftrag"
+  antwort: |
+    Unten im Auftrag, klein und rot umrandet: "Diesen Auftrag loeschen".
+
+    Vorher zeigt der Mops, WAS dabei verschwindet — Arbeitsschritte,
+    Materialpositionen, wie viele Auftraege dadurch frei werden. Traegt der Auftrag
+    eine uebernommene Verantwortung, steht das ausdruecklich dabei: der Satz, mit
+    dem jemand dafuer geradesteht, ist danach weg.
+
+    Danach ein vierstelliger Code. Das laesst sich nicht rueckgaengig machen.
+
+    HINWEIS: Bis zum 21.09.2026 hiess dieser Knopf faelschlich "Komplette
+    Materialliste unwiderruflich loeschen" — er loeschte aber den ganzen Auftrag.
