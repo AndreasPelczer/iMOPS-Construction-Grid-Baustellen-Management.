@@ -17,6 +17,10 @@ struct ContentView: View {
 
     var body: some View {
         List {
+            // Die Klammer über ALLE Baustellen — steht vor der Auswahl einer einzelnen.
+            Section {
+                NavigationLink { TagesblickView() } label: { TagesblickKarte() }
+            }
             Section {
                 EventFilterPicker(selectedFilter: $selectedFilter)
             }
