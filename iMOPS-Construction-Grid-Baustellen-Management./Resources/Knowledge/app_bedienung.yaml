@@ -1926,3 +1926,26 @@
     Pauschale oder der Bauherr stellt sie. Ein Griff, und sie ist wieder drin.
     Ohne LV sagt der Mops dazu nichts.
   quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Dauer_am_Auftrag"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Dauer eintragen"
+    - "Wie lange dauert ein Auftrag"
+    - "Wo trage ich die Dauer ein"
+    - "Paket hat keine Dauer"
+    - "Mitarbeiter zuteilen"
+    - "Wer macht es"
+    - "Niemand ist zugeteilt"
+  antwort: |
+    Im Auftrag selbst, Karte "Wie lange, und wer" — gleich unter "Das gehoert dazu":
+    1. Mit dem Stepper in Halbtages-Schritten, oder ueber die Knoepfe
+       0,5 T / 1 T / 2 T / 1 Woche
+    2. Darunter "Wer macht es": auf den Namen tippen und aus den aktiven
+       Mitarbeitern waehlen. "Zuteilung aufheben" nimmt ihn wieder weg.
+    Beides wird sofort gespeichert; die Meldung in "Wo war ich?" verschwindet
+    dann von allein.
+    Fuer viele Pakete auf einmal: Baustelle oeffnen, Karte "Terminplan" —
+    dort stehen alle Auftraege untereinander mit je einem Stepper.
+  quelle_kurz: "iMOPS Bedienung"

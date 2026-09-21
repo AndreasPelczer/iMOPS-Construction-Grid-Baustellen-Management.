@@ -50,6 +50,7 @@ struct AuftragDetailView: View {
                 headerCard
                 wasIstDranBand
                 gehoertDazuCard
+                zeitCard
                 productionListCard
                 modeCard
                 checklistCard
@@ -169,6 +170,98 @@ struct AuftragDetailView: View {
     /// keinen nächsten Schritt. Und bei einem blockierten Auftrag ist die Antwort oft:
     /// hier kannst du gar nichts tun, die Lösung liegt beim Vorgänger. Das muss dastehen
     /// — samt Weg dorthin.
+    /// 🔴 Die Dauer liess sich nur auf der BAUSTELLEN-Seite setzen (`TerminplanCard`) —
+    /// im Auftrag selbst kam `dauerTage` gar nicht vor.
+    ///
+    /// Andreas, nachdem die Meldung ihn endlich auf den richtigen Auftrag geführt hatte:
+    /// „das sehe ich dann, wo soll ich hier was eintragen, eine Dauer? wie?"
+    /// Eine Meldung, die auf ein Ding führt, an dem man die Sache nicht erledigen kann,
+    /// ist nur ein längerer Umweg.
+    private var zeitCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Wie lange, und wer", systemImage: "clock")
+                    .font(.headline)
+                Spacer()
+                Text(job.dauerTage > 0
+                     ? "\(job.dauerTage.formatted(.number.precision(.fractionLength(0...1)))) Tage"
+                     : "noch nicht gesetzt")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(job.dauerTage > 0 ? .primary : .secondary)
+            }
+
+            HStack(spacing: 10) {
+                Stepper(value: Binding(
+                    get: { job.dauerTage },
+                    set: { neu in
+                        job.dauerTage = max(0, neu)
+                        try? ctx.save()
+                    }
+                ), in: 0...365, step: 0.5) {
+                    EmptyView()
+                }
+                .labelsHidden()
+
+                // Die üblichen Griffe — ein halber Tag, ein Tag, eine Woche.
+                ForEach([0.5, 1.0, 2.0, 5.0], id: \.self) { tage in
+                    Button {
+                        job.dauerTage = tage
+                        try? ctx.save()
+                    } label: {
+                        Text(tage == 5 ? "1 Woche"
+                             : "\(tage.formatted(.number.precision(.fractionLength(0...1)))) T")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+                Spacer()
+            }
+
+            Divider()
+
+            // Dieselbe Geschichte wie bei der Dauer: „Niemand ist zugeteilt" stand in
+            // der Übersicht, und im Auftrag liess sich niemand zuteilen.
+            HStack {
+                Text("Wer macht es")
+                    .font(.subheadline).foregroundStyle(.secondary)
+                Spacer()
+                Menu {
+                    ForEach(mitarbeiter, id: \.objectID) { m in
+                        Button(m.name ?? "—") {
+                            job.employeeName = m.name
+                            try? ctx.save()
+                        }
+                    }
+                    if job.employeeName?.isEmpty == false {
+                        Divider()
+                        Button("Zuteilung aufheben", role: .destructive) {
+                            job.employeeName = nil
+                            try? ctx.save()
+                        }
+                    }
+                } label: {
+                    Text(job.employeeName?.isEmpty == false ? job.employeeName! : "niemand")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(job.employeeName?.isEmpty == false ? .primary : .secondary)
+                }
+                .disabled(mitarbeiter.isEmpty)
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// Die aktiven Leute — dieselbe Quelle wie die Mitarbeiter-Ansicht.
+    private var mitarbeiter: [Employee] {
+        let req: NSFetchRequest<Employee> = Employee.fetchRequest()
+        req.predicate = NSPredicate(format: "isActive == YES")
+        req.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+        return (try? ctx.fetch(req)) ?? []
+    }
+
     /// 🔴 "Was gehört denn alles zu dem Auftrag, gibt's da Pläne, Zeichnungen?"
     ///
     /// Ein Arbeitspaket fasst LV-Positionen zusammen — aber der Auftrag zeigte sie

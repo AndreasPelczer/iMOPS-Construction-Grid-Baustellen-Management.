@@ -787,3 +787,67 @@ struct AnstehendZielTests {
         #expect(zeile?.text == "Eine Position hat noch keinen Preis.")
     }
 }
+
+// MARK: - Am Ziel muss man die Sache auch erledigen können
+//
+// "das sehe ich dann, wo soll ich hier was eintragen, eine Dauer? wie?"
+// (Andreas, 21.09.2026, nachdem die Meldung ihn endlich auf den richtigen
+//  Auftrag geführt hatte)
+//
+// Gemessen: `dauerTage` liess sich nur in der TerminplanCard auf der BAUSTELLEN-Seite
+// setzen — im AuftragDetailView kam das Feld null mal vor. Eine Meldung, die auf ein
+// Ding führt, an dem man nichts tun kann, ist nur ein längerer Umweg.
+
+@MainActor
+struct DauerAmAuftragTests {
+
+    @discardableResult
+    private func auftrag(_ ctx: NSManagedObjectContext, _ e: Event, _ was: String,
+                         dauer: Double = 0, wer: String? = nil) -> Auftrag {
+        let a = Auftrag(context: ctx)
+        a.processingDetails = was; a.status = .pending; a.storageNote = ""
+        a.dauerTage = dauer; a.employeeName = wer; a.event = e
+        return a
+    }
+
+    /// Die Dauer lässt sich am Auftrag selbst setzen und bleibt dort.
+    @Test func dauerAmAuftragSetzenUndLesen() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Dauer"
+        let a = auftrag(ctx, e, "312 Baugrube / Erdbau")
+        #expect(a.dauerTage == 0)
+
+        a.dauerTage = 1.5
+        try ctx.save()
+        #expect(a.dauerTage == 1.5)
+        #expect(Tagesblick.fuerHeute(in: ctx).lagen.first?.anstehend
+                    .contains { $0.text.contains("Dauer") } == false)
+    }
+
+    /// Zuteilung: eine Baustelle mit EINEM Paket führt direkt dorthin.
+    @Test func einzelnesPaketOhneMannFuehrtHin() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Einer"
+        auftrag(ctx, e, "312 Baugrube", dauer: 1)
+
+        let zeile = Tagesblick.fuerHeute(in: ctx).lagen.first?.anstehend
+            .first { $0.text.contains("zugeteilt") }
+        #expect(zeile?.job != nil)
+    }
+
+    /// Sobald einer zugeteilt ist, verschwindet die Meldung — sie meint ALLE.
+    @Test func einZugeteilterBeendetDieMeldung() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Teilweise"
+        let a = auftrag(ctx, e, "312 Baugrube", dauer: 1)
+        auftrag(ctx, e, "321 Erdbau", dauer: 1)
+
+        func meldung() -> Bool {
+            Tagesblick.fuerHeute(in: ctx).lagen.first?.anstehend
+                .contains { $0.text.contains("zugeteilt") } ?? false
+        }
+        #expect(meldung())
+        a.employeeName = "Kamil"
+        #expect(!meldung())
+    }
+}

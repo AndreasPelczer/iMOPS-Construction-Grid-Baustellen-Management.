@@ -208,9 +208,16 @@ enum Tagesblick {
             l.anstehend.append(Anstehend(text: text, insLV: false,
                                          job: ohneDauer.count == 1 ? ohneDauer[0] : nil))
         }
-        let ohneMann = jobs.filter { ($0.employeeName ?? "").isEmpty }.count
-        if !jobs.isEmpty && ohneMann == jobs.count {
-            l.anstehend.append(Anstehend(text: "Niemand ist zugeteilt.", insLV: false))
+        let ohneMann = jobs.filter { ($0.employeeName ?? "").isEmpty }
+        if !jobs.isEmpty && ohneMann.count == jobs.count {
+            // Beim allerersten Paket führt die Zeile direkt dorthin — sonst zur Baustelle,
+            // wo die Terminplan-Karte alle auf einmal zeigt.
+            let erstes = jobs.sorted { Kausalkette.bezeichnung($0) < Kausalkette.bezeichnung($1) }.first
+            l.anstehend.append(Anstehend(
+                text: jobs.count == 1 ? "Niemand ist zugeteilt."
+                                      : "Niemand ist zugeteilt — bei keinem der \(jobs.count) Pakete.",
+                insLV: false,
+                job: jobs.count == 1 ? erstes : nil))
         }
         let zaehlbar = positionen.sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }.zaehlbarePositionen()
         let ohnePreis = zaehlbar.filter { LVKalkulator.effektiverEP(for: $0) <= 0 }.count
