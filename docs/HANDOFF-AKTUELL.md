@@ -2,6 +2,81 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 21.09.2026 (Abend) — 22 Commits, alles lokal, NICHTS GEPUSHT
+
+**Branch `feature/gelaende-dxf-aushub`. 554/554 Tests grün (seriell!).**
+
+🔴 **Tests IMMER seriell laufen lassen:** `-parallel-testing-enabled NO`.
+Parallel kippt sporadisch `AngebotSchlaegtKalkulationTests` über den geteilten
+`AngebotsStore`. Und: eigener `-derivedDataPath`, sonst streiten sich zwei Builds.
+
+### Der rote Faden des Tages
+
+**Alles da, nur nicht verkabelt.** Achtmal dasselbe Muster: gedacht ✅ gebaut ✅
+getestet ✅ **nie angerufen** ❌. Werkzeug dagegen:
+`~/graphs/mops-werkzeuge/ruft-keiner.py`.
+
+### Gebaut (in dieser Reihenfolge)
+
+| Commit | Was |
+|---|---|
+| `d1750ae` | **Tagesblick** — „Wo war ich?", erste Zeile der Baustellenliste |
+| `67ad8b1` | **Wochenstrahl** — Mo–Fr über alle Baustellen, echte Kalendertage |
+| `9796bd3` | **Der Riegel** — „wer ein Nein übergeht, unterschreibt" |
+| `7c4ded0` | **Arbeitspakete vorschlagen** — aus 109 Positionen werden 17 |
+| `3b11806` | Absturz-Fix: `SpaeterLaden` (NavigationLink baut sein Ziel sofort mit auf) |
+| `7297910` | Jede Zeile führt auf IHR Ding, nicht in den Ordner |
+| `32fb3c3` | Das Band: was ist JETZT dran, und „Zum Vorgänger" |
+| `b5a747f` | Löschknopf hieß falsch · Paketnamen aus dem Positionstext |
+| `eb42ffb` | **Eine Kette ist kein Alarm** — aus 33 roten Meldungen wird eine Gelegenheit |
+| `6bbd947` | **Die Lage** je Baustelle: „wird geplant" / „läuft", mit „das stünde an" |
+| `e27ef63` | Anweisung wird **abgearbeitet**, nicht zusammengebaut (EIN Punkt groß) |
+| `1140f5b` | **„Mops, wie geht das?"** — Schritte vom eigenen Prof, abgenommen vom Menschen |
+| `62b8986` | Bedienungshilfe nachgezogen (war heute vergessen — eigene Nachlässigkeit) |
+
+### 🔴 Die vier Regeln, die Andreas gefunden hat (nicht ich)
+
+1. **Meldungen müssen klickbar sein.**
+2. **Der Klick führt zum DING, nicht in die Schublade.**
+3. **Das Ding sagt, was dran ist** — ein Zustand ohne nächsten Schritt ist eine
+   Meldung, keine Hilfe.
+4. **Gemeldet wird nur, was wirklich etwas ist.** *Ein Zustand, der immer rot ist,
+   ist keine Bewertung mehr, sondern Rauschen.*
+
+Prüfstein für jeden neuen Bildschirm: **Muss man sich merken, WARUM man geklickt hat,
+war der Klick falsch.**
+
+### 🔴 Offene Befunde (gemessen, nicht behoben)
+
+- **931 Aufträge ohne Baustelle** — beim Löschen einer Baustelle bleiben die Aufträge
+  als Waisen zurück (Nullify statt Cascade).
+- **Zwei Wahrheiten beim Firmenzuschlag** — `Lohnkalkulation` wird nirgends
+  konstruiert, `GewinnSchieberView` rechnet ihn daneben nach, mit anderem Modell.
+- **15 weitere „ruft keiner"-Punkte** — `~/Desktop/iMOPS-RUFT-KEINER.txt`.
+- **Die Wächter** (BourdainGuard, Rio-Jitter, Privacy-Schild) sind vollständig
+  geschrieben und hängen an Demo-Daten: Zähler wird nie erhöht, Schicht misst die
+  App-Laufzeit, Whisper geht per `print()` ins Nichts.
+- **`AuftragExtrasPayload.from()` liefert bei einem Dekodier-Fehler einen LEEREN
+  Payload.** Nie ein Pflichtfeld anhängen.
+- **Die „Mops fass"-Ampel gehört an den Anfang**, nicht die Fehlerliste (Andreas'
+  Erstnutzer-Versuch: „die roten Meldungen erschrecken").
+- **Die 91 Vorlagen-Schritte sind erfunden** — jetzt als `.vorlage` = ungeprüft
+  markiert. Raphi muss Pflaster und Tragschicht einmal durchlesen.
+
+## ▶ NÄCHSTER SCHRITT
+
+1. **Der Mops füllt den Bautagesbericht vor.** Er ist gut gebaut (`gesperrtAm`,
+   `korrigiertVonID`!), aber alles wird von Hand getippt. Blockaden → `behinderungen`
+   (= Nachtragsgrundlage). Reines Verkabeln, zahlt sofort.
+2. Umkehrbarkeits-YAML in `Resources/Knowledge/` — braucht 5 Nachweispunkte von Raphi.
+3. Die Firma als Ding (gibt es NICHT: 18 Entities, nur `Employee`).
+4. Fremdfirmen-Zugang, Link statt Login.
+5. Die Wächter an echte Daten.
+
+**Erst der Empfänger, dann der Absender.**
+
+Übersicht (angepinnt): https://claude.ai/artifact/P7ybAevpUML9699mwDSNcZ
+
 ## Delta 21.09.2026 (Nachmittag) — drei Dinge gebaut, ein Modell geschrieben
 
 **Branch `feature/gelaende-dxf-aushub`, weiter lokal. NICHT gepusht.**
