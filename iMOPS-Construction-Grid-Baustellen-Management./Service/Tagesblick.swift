@@ -37,6 +37,13 @@ enum Tagesblick {
         let fehlt: String              // die unerfüllte Voraussetzung
         let seit: Date?
         let event: Event
+
+        /// 🔴 Der Auftrag selbst, nicht nur sein Name. Ohne ihn landet man beim
+        /// Antippen auf der Baustellenseite und darf suchen, was der Mops längst
+        /// weiß. Andreas am 21.09.: „Ich muss suchen, was der Mops schon weiß?
+        /// Und selbst wenn — wo? Hab schon wieder vergessen, was auf der Meldung
+        /// stand." Jede Zeile führt auf IHR Ding, nicht auf den Ordner drumherum.
+        let job: Auftrag
     }
 
     /// Eine Position ohne Preis — über ALLE Baustellen, nicht je Baustelle.
@@ -108,7 +115,8 @@ enum Tagesblick {
                         auftrag: Kausalkette.bezeichnung(auftrag),
                         fehlt: v.anzeigename,
                         seit: auftrag.lastStartTime,
-                        event: event))
+                        event: event,
+                        job: auftrag))
                 }
             }
 

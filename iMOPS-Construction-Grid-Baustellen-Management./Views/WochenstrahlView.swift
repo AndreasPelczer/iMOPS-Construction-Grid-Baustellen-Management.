@@ -50,7 +50,7 @@ struct WochenstrahlView: View {
                         Text("—").foregroundStyle(.tertiary)
                     } else {
                         ForEach(tag.termine) { t in
-                            NavigationLink { EventDetailView(event: t.event) } label: {
+                            NavigationLink { SpaeterLaden { MangelListeView(event: t.event) } } label: {
                                 HStack(spacing: 10) {
                                     Text("🔴")
                                     VStack(alignment: .leading, spacing: 1) {
@@ -61,7 +61,7 @@ struct WochenstrahlView: View {
                             }
                         }
                         ForEach(tag.eintraege) { e in
-                            NavigationLink { EventDetailView(event: e.event) } label: { zeile(e) }
+                            NavigationLink { SpaeterLaden { EventDetailView(event: e.event) } } label: { zeile(e) }
                         }
                     }
                 } header: {

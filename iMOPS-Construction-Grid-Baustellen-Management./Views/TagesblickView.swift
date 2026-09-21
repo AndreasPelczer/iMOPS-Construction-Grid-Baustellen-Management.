@@ -25,7 +25,7 @@ struct TagesblickView: View {
         List {
             if let z = blick.zuletzt {
                 Section {
-                    NavigationLink { EventDetailView(event: z.event) } label: {
+                    NavigationLink { SpaeterLaden { EventDetailView(event: z.event) } } label: {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("WO DU WARST")
                                 .font(.caption2.weight(.bold))
@@ -64,7 +64,7 @@ struct TagesblickView: View {
             if !blick.blockaden.isEmpty {
                 Section {
                     ForEach(blick.blockaden) { b in
-                        NavigationLink { EventDetailView(event: b.event) } label: { zeile(b) }
+                        NavigationLink { SpaeterLaden { AuftragDetailView(job: b.job) } } label: { zeile(b) }
                     }
                 } header: {
                     kopf("Blockiert gerade jemanden", zahl: blick.blockaden.count)
@@ -76,7 +76,7 @@ struct TagesblickView: View {
             if !blick.fristen.isEmpty {
                 Section {
                     ForEach(blick.fristen) { f in
-                        NavigationLink { EventDetailView(event: f.event) } label: {
+                        NavigationLink { SpaeterLaden { MangelListeView(event: f.event) } } label: {
                             HStack(alignment: .top, spacing: 12) {
                                 Text(f.ueberfaellig ? "🔴" : "🟠")
                                 VStack(alignment: .leading, spacing: 2) {
@@ -96,7 +96,7 @@ struct TagesblickView: View {
             if !blick.preisluecken.isEmpty {
                 Section {
                     ForEach(blick.preisluecken) { p in
-                        NavigationLink { EventDetailView(event: p.event) } label: {
+                        NavigationLink { SpaeterLaden { LVView(event: p.event) } } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(p.baustelle).font(.body.weight(.semibold))

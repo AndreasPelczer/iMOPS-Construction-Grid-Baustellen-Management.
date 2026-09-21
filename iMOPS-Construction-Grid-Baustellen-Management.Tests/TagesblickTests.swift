@@ -68,6 +68,9 @@ struct TagesblickTests {
         #expect(t.blockaden.count == 1)
         #expect(t.blockaden.first?.fehlt == "Abstandhalter geliefert")
         #expect(t.blockaden.first?.baustelle == "BV Nord")
+        // 🔴 Die Blockade muss den AUFTRAG tragen, nicht nur seinen Namen — sonst
+        // landet man beim Antippen auf der Baustellenseite und darf suchen.
+        #expect(t.blockaden.first?.job === a)
         #expect(!t.istRuhig)
     }
 
