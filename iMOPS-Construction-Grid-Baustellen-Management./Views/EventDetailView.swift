@@ -178,6 +178,7 @@ struct EventDetailView: View {
     @State private var showingVerlegeplan = false
     @State private var showingErdmassen = false
     @State private var showingMaterialliste = false
+    @State private var zeigeUmbenennen = false
     @State private var showingGAEBImport = false
     @State private var showingWarmup = false
     @State private var warmupRefresh = UUID()
@@ -432,6 +433,7 @@ struct EventDetailView: View {
                     ablaufplanCard
                     TerminplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     UebergangszeitenCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
+                    namenCard
                     papiereCard
                     DienstplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     NavigationLink {
@@ -839,6 +841,40 @@ struct EventDetailView: View {
         .sheet(isPresented: $showingMaterialliste) {
             MateriallisteView(event: event)
                 .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - Namen, die nichts sagen
+    //
+    // 🔴 Gemessen: elf Pakete hiessen „Baukonstruktionen", acht „Außenanlagen und
+    // Freiflächen" — nur die Nummer unterschied sie. Die Positionstexte dahinter
+    // wären gut („Mauerwerk Außenwand Ytong PPW 2-0,35, d = 24 cm").
+    @ViewBuilder private var namenCard: some View {
+        let offen = Arbeitspakete.umbenennbare(in: event).count
+        if offen > 0 {
+            Button { zeigeUmbenennen = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "text.badge.checkmark")
+                        .font(.title2).foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Namen verbessern").font(.headline).foregroundStyle(.primary)
+                        Text(offen == 1
+                             ? "Ein Arbeitspaket heisst nur nach seiner Kostengruppe."
+                             : "\(offen) Arbeitspakete heissen nur nach ihrer Kostengruppe.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $zeigeUmbenennen) {
+                PaketeUmbenennenView(event: event)
+                    .environment(\.managedObjectContext, viewContext)
+            }
         }
     }
 

@@ -2022,3 +2022,27 @@
     In "Wo war ich?" steht die Luecke als Punkt unter dem, was anstuende —
     kein Alarm.
   quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Namen_verbessern"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Namen verbessern"
+    - "Arbeitspakete heissen gleich"
+    - "Baukonstruktionen"
+    - "Paket umbenennen"
+    - "Warum heissen alle gleich"
+  antwort: |
+    Baustelle oeffnen -> Karte "Namen verbessern". Sie erscheint nur, wenn es
+    wirklich etwas zu verbessern gibt.
+    Warum: aeltere Arbeitspakete wurden nach ihrer DIN-276-Kostengruppe benannt.
+    Dann heissen elf Stueck "Baukonstruktionen" und nur die Nummer vorn
+    unterscheidet sie — das sagt nichts ueber die Arbeit.
+    Der bessere Name ist der erste Positionstext des Titels, den hat der
+    Kalkulator geschrieben: aus "342 Baukonstruktionen" wird
+    "342 Mauerwerk Innenwand Ytong PP 4-0,55, d = 11,5 cm".
+    Mit Vorschau, jeder einzeln abwaehlbar.
+    🔴 Die Nummer bleibt vorn stehen — an ihr haengt die Zuordnung zu den
+    LV-Positionen ("Das gehoert dazu"). Wer selbst umbenannt hat, wird nicht
+    ueberfahren: nur Namen, die bloss eine Kostengruppe nennen, werden angefasst.
+  quelle_kurz: "iMOPS Bedienung"

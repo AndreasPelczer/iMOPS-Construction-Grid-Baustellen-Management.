@@ -251,3 +251,47 @@ enum Arbeitspakete {
         return u
     }
 }
+
+// MARK: - Bessere Namen für schon angelegte Pakete
+
+extension Arbeitspakete {
+
+    /// 🔴 Elf Arbeitspakete hiessen „Baukonstruktionen", acht „Außenanlagen und
+    /// Freiflächen" — gemessen in Andreas' Datenbank am 21.09.2026.
+    ///
+    /// Die Namen stammen aus einer älteren Fassung von `name(fuer:titelNr:)`, die auf
+    /// die DIN-276-Bezeichnung zurückfiel. Inzwischen nimmt sie den ersten
+    /// Positionstext — aber die bereits angelegten Aufträge tragen noch die alten.
+    ///
+    /// Und die wären deutlich besser: hinter „331 Baukonstruktionen" steht
+    /// „Mauerwerk Außenwand Ytong PPW 2-0,35, d = 24 cm", hinter „399 Außenanlagen"
+    /// eine „Fertiggarage 6000/3500/2750". Damit kann ein Polier etwas anfangen.
+    ///
+    /// 🔴 Die Titelnummer bleibt VORN stehen: an ihr hängt die Zuordnung zu den
+    /// LV-Positionen (`titelNummerAusName`). Nimmt man sie weg, ist die Verbindung weg.
+    @MainActor
+    static func bessererName(fuer auftrag: Auftrag) -> String? {
+        guard let titelNr = titelNummerAusName(auftrag) else { return nil }
+        let jetzt = (auftrag.processingDetails ?? "")
+            .dropFirst(titelNr.count).trimmingCharacters(in: .whitespaces)
+
+        // Nur ersetzen, was bloss eine Kostengruppe nennt — wer selbst umbenannt
+        // hat, wird nicht überfahren.
+        guard AnweisungsKatalog.istNurKostengruppe(jetzt) else { return nil }
+
+        let positionen = positionen(fuer: auftrag)
+        guard !positionen.isEmpty else { return nil }
+
+        let neu = name(fuer: positionen, titelNr: titelNr)
+        guard !AnweisungsKatalog.istNurKostengruppe(neu), neu != jetzt else { return nil }
+        return "\(titelNr) \(neu)"
+    }
+
+    /// Alle Pakete einer Baustelle, die einen besseren Namen bekommen könnten.
+    @MainActor
+    static func umbenennbare(in event: Event) -> [(job: Auftrag, neu: String)] {
+        ((event.jobs?.allObjects as? [Auftrag]) ?? [])
+            .compactMap { j in bessererName(fuer: j).map { (j, $0) } }
+            .sorted { Kausalkette.bezeichnung($0.job) < Kausalkette.bezeichnung($1.job) }
+    }
+}

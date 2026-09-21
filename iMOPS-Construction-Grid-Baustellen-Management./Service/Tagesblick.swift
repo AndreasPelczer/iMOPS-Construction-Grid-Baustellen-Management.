@@ -213,6 +213,18 @@ enum Tagesblick {
                                          job: ohneDauer.count == 1 ? ohneDauer[0] : nil,
                                          thema: "dauer-fehlt"))
         }
+        // Namen, die bloss die Kostengruppe nennen — „342 Baukonstruktionen" sagt
+        // nichts über die Arbeit. Kein Alarm, aber es steht an.
+        let schlechtBenannt = Arbeitspakete.umbenennbare(in: event).count
+        if schlechtBenannt > 0 {
+            l.anstehend.append(Anstehend(
+                text: schlechtBenannt == 1
+                    ? "Ein Arbeitspaket heisst nur nach seiner Kostengruppe."
+                    : "\(schlechtBenannt) Arbeitspakete heissen nur nach ihrer Kostengruppe.",
+                insLV: false,
+                thema: "namen-kostengruppe"))
+        }
+
         let ohneMann = jobs.filter { ($0.employeeName ?? "").isEmpty }
         if !jobs.isEmpty && ohneMann.count == jobs.count {
             // Beim allerersten Paket führt die Zeile direkt dorthin — sonst zur Baustelle,

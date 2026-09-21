@@ -851,3 +851,78 @@ struct DauerAmAuftragTests {
         #expect(!meldung())
     }
 }
+
+// MARK: - Namen, die nichts über die Arbeit sagen
+//
+// Gemessen in Andreas' Datenbank (21.09.2026): elf Arbeitspakete hiessen
+// "Baukonstruktionen", acht "Außenanlagen und Freiflächen" — nur die Titelnummer
+// unterschied sie. Dahinter standen Positionstexte wie "Mauerwerk Außenwand Ytong
+// PPW 2-0,35, d = 24 cm" und "Fertiggarage 6000/3500/2750".
+//
+// Die Namen stammen aus einer älteren Fassung von `name(fuer:titelNr:)`.
+
+@MainActor
+struct PaketNamenTests {
+
+    private func paket(_ ctx: NSManagedObjectContext, _ e: Event, _ name: String) -> Auftrag {
+        let a = Auftrag(context: ctx)
+        a.processingDetails = name; a.status = .pending; a.storageNote = ""; a.event = e
+        return a
+    }
+
+    @discardableResult
+    private func pos(_ ctx: NSManagedObjectContext, _ e: Event, _ nr: String,
+                     _ bez: String) -> LVPosition {
+        let p = LVPosition(context: ctx)
+        p.posNr = nr; p.bezeichnung = bez; p.menge = 10; p.einheit = "m2"; p.event = e
+        return p
+    }
+
+    @Test func einKostengruppenNameWirdVerbessert() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Namen"
+        pos(ctx, e, "342.0010", "Mauerwerk Innenwand Ytong PP 4-0,55, d = 11,5 cm, EG")
+        pos(ctx, e, "342.0020", "Mauerwerk Innenwand Ytong PP 4-0,55, d = 11,5 cm, OG")
+        let a = paket(ctx, e, "342 Baukonstruktionen")
+
+        let neu = try #require(Arbeitspakete.bessererName(fuer: a))
+        #expect(neu.hasPrefix("342 "), "die Nummer MUSS vorn bleiben — daran hängt das LV")
+        #expect(neu.contains("Mauerwerk Innenwand"))
+    }
+
+    /// 🔴 Wer selbst umbenannt hat, wird nicht überfahren.
+    @Test func einEigenerNameBleibt() {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Eigen"
+        pos(ctx, e, "342.0010", "Mauerwerk Innenwand Ytong")
+        let a = paket(ctx, e, "342 Innenwände OG — Kolonne Kamil")
+        #expect(Arbeitspakete.bessererName(fuer: a) == nil)
+    }
+
+    /// Ohne Positionen gibt es nichts Besseres — dann lieber den alten Namen.
+    @Test func ohnePositionenKeinVorschlag() {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Leer"
+        #expect(Arbeitspakete.bessererName(fuer: paket(ctx, e, "342 Baukonstruktionen")) == nil)
+    }
+
+    /// Ist der Positionstext auch nur eine Kostengruppe, bleibt alles wie es ist.
+    @Test func wennAuchDerPositionstextNichtsSagt() {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Doppelt nichts"
+        pos(ctx, e, "342.0010", "Baukonstruktionen")
+        #expect(Arbeitspakete.bessererName(fuer: paket(ctx, e, "342 Baukonstruktionen")) == nil)
+    }
+
+    @Test func dieBaustelleZaehltIhreSchlechtenNamen() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Viele"
+        pos(ctx, e, "331.0010", "Mauerwerk Außenwand Ytong PPW 2-0,35, d = 24 cm")
+        pos(ctx, e, "334.0010", "Fenster inkl. Rollladen, 3-fach-Verglasung")
+        paket(ctx, e, "331 Baukonstruktionen")
+        paket(ctx, e, "334 Baukonstruktionen")
+        paket(ctx, e, "399 Fertiggarage stellen")     // schon gut benannt
+
+        #expect(Arbeitspakete.umbenennbare(in: e).count == 2)
+    }
+}
