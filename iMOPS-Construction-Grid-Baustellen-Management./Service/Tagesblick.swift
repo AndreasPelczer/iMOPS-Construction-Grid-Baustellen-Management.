@@ -147,6 +147,14 @@ enum Tagesblick {
         let text: String
         /// Wohin es führt: das LV oder die Baustelle selbst.
         let insLV: Bool
+        /// 🔴 Wenn GENAU EIN Auftrag gemeint ist, führt die Zeile dorthin.
+        ///
+        /// Andreas: „dann klicke ich ihn an, komme auf die Baustelle bei der ich
+        /// schon vor zwei Stunden die Dauer eingetragen habe." Er hatte 33 von 34
+        /// gesetzt — die Meldung stimmte, aber sie lieferte ihn auf der Baustelle ab
+        /// und liess ihn das eine suchen. Eine Zeile über ein einzelnes Ding muss
+        /// auf dieses Ding führen.
+        var job: Auftrag? = nil
     }
 
     struct Lage: Identifiable {
@@ -191,9 +199,14 @@ enum Tagesblick {
         if jobs.isEmpty && !positionen.isEmpty {
             l.anstehend.append(Anstehend(text: "Arbeitspakete vorschlagen lassen — der Mops macht aus \(positionen.count) Positionen ein gutes Dutzend Pakete.", insLV: true))
         }
-        let ohneDauer = jobs.filter { $0.dauerTage <= 0 }.count
-        if ohneDauer > 0 {
-            l.anstehend.append(Anstehend(text: "\(ohneDauer) Pakete haben keine Dauer — ohne die steht nichts im Kalender.", insLV: false))
+        let ohneDauer = jobs.filter { $0.dauerTage <= 0 }
+        if !ohneDauer.isEmpty {
+            // Ein einzelnes Paket wird beim Namen genannt und direkt angesteuert.
+            let text = ohneDauer.count == 1
+                ? "„\(Kausalkette.bezeichnung(ohneDauer[0]))" + "\u{201C} hat keine Dauer — ohne die steht nichts im Kalender."
+                : "\(ohneDauer.count) Pakete haben keine Dauer — ohne die steht nichts im Kalender."
+            l.anstehend.append(Anstehend(text: text, insLV: false,
+                                         job: ohneDauer.count == 1 ? ohneDauer[0] : nil))
         }
         let ohneMann = jobs.filter { ($0.employeeName ?? "").isEmpty }.count
         if !jobs.isEmpty && ohneMann == jobs.count {
@@ -202,7 +215,10 @@ enum Tagesblick {
         let zaehlbar = positionen.sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }.zaehlbarePositionen()
         let ohnePreis = zaehlbar.filter { LVKalkulator.effektiverEP(for: $0) <= 0 }.count
         if ohnePreis > 0 {
-            l.anstehend.append(Anstehend(text: "\(ohnePreis) Positionen haben noch keinen Preis.", insLV: true))
+            l.anstehend.append(Anstehend(
+                text: ohnePreis == 1 ? "Eine Position hat noch keinen Preis."
+                                     : "\(ohnePreis) Positionen haben noch keinen Preis.",
+                insLV: true))
         }
         return l
     }

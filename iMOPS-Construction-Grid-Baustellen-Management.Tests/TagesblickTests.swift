@@ -712,3 +712,78 @@ struct TagesblickKopfTests {
         #expect(ZuletztBesucht.lesen(in: ctx) == nil)
     }
 }
+
+// MARK: - Eine Meldung über EIN Ding führt auf DIESES Ding
+//
+// "hier steht oben ein Paket hat keine Dauer .. dann klicke ich ihn an, komme auf
+//  die Baustelle bei der ich schon vor zwei Stunden die Dauer eingetragen habe.
+//  wird der Punkt nicht nochmal kontrolliert wenn ich die Seite verlasse?"
+//  (Andreas, 21.09.2026)
+//
+// In der echten Datenbank nachgemessen: 33 von 34 Aufträgen hatten eine Dauer, einer
+// nicht. Die Meldung stimmte — sie lieferte ihn nur auf der Baustelle ab und liess
+// ihn das eine suchen.
+
+@MainActor
+struct AnstehendZielTests {
+
+    @discardableResult
+    private func auftrag(_ ctx: NSManagedObjectContext, _ e: Event, _ was: String,
+                         dauer: Double) -> Auftrag {
+        let a = Auftrag(context: ctx)
+        a.processingDetails = was; a.status = .pending; a.storageNote = ""
+        a.dauerTage = dauer; a.event = e
+        return a
+    }
+
+    private func zeileDauer(_ ctx: NSManagedObjectContext) -> Tagesblick.Anstehend? {
+        Tagesblick.fuerHeute(in: ctx).lagen.first?.anstehend
+            .first { $0.text.contains("Dauer") }
+    }
+
+    @Test func einEinzelnesPaketWirdBeimNamenGenanntUndAngesteuert() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Fast fertig geplant"
+        auftrag(ctx, e, "321 Baugrube / Erdbau", dauer: 0)
+        for i in 1...5 { auftrag(ctx, e, "Paket \(i)", dauer: 1) }
+
+        let zeile = try #require(zeileDauer(ctx))
+        #expect(zeile.text.contains("321 Baugrube"), "Das eine Paket wird benannt")
+        #expect(zeile.text.contains("hat keine Dauer"), "Einzahl statt: 1 Pakete haben")
+        #expect(zeile.job != nil, "und die Zeile führt dorthin")
+    }
+
+    @Test func mehrerePaketeFuehrenAufDieBaustelle() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Frisch"
+        for i in 1...4 { auftrag(ctx, e, "Paket \(i)", dauer: 0) }
+
+        let zeile = try #require(zeileDauer(ctx))
+        #expect(zeile.text.hasPrefix("4 Pakete haben"))
+        #expect(zeile.job == nil, "bei vieren gibt es kein einzelnes Ziel")
+    }
+
+    /// Erledigt heisst weg. Die Meldung darf nicht stehen bleiben.
+    @Test func mitDauerVerschwindetDieMeldung() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Nachgetragen"
+        let a = auftrag(ctx, e, "321 Baugrube / Erdbau", dauer: 0)
+        #expect(zeileDauer(ctx) != nil)
+
+        a.dauerTage = 1.5
+        #expect(zeileDauer(ctx) == nil, "nachgetragen = weg, ohne Neustart")
+    }
+
+    /// Eine einzelne Position ohne Preis heisst „eine", nicht „1 Positionen".
+    @Test func auchBeiPreisenStimmtDieZahlform() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Ein Preis"
+        let p = LVPosition(context: ctx)
+        p.posNr = "1.0010"; p.bezeichnung = "Pfosten"; p.menge = 1; p.einheit = "St"; p.event = e
+        auftrag(ctx, e, "Paket", dauer: 1)
+
+        let zeile = Tagesblick.fuerHeute(in: ctx).lagen.first?.anstehend
+            .first { $0.text.contains("Preis") }
+        #expect(zeile?.text == "Eine Position hat noch keinen Preis.")
+    }
+}

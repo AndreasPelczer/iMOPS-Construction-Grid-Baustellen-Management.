@@ -80,7 +80,9 @@ struct TagesblickView: View {
                     ForEach(l.anstehend) { a in
                         NavigationLink {
                             SpaeterLaden {
-                                if a.insLV { AnyView(LVView(event: l.event)) }
+                                // Ein einzelnes Ding führt auf das Ding.
+                                if let job = a.job { AnyView(AuftragDetailView(job: job)) }
+                                else if a.insLV { AnyView(LVView(event: l.event)) }
                                 else { AnyView(EventDetailView(event: l.event)) }
                             }
                         } label: {
@@ -210,6 +212,15 @@ struct TagesblickView: View {
         .navigationTitle("Wo war ich?")
         .refreshable { laden() }
         .onAppear { laden() }
+        // 🔴 Andreas: „wird der Punkt nicht nochmal kontrolliert wenn ich die Seite
+        // verlasse, obs gemacht wurde?" Doch — aber nur, wenn onAppear beim
+        // Zurücknavigieren wirklich feuert, und darauf ist kein Verlass.
+        // Also horcht der Bildschirm direkt auf die Datenbank: was sich ändert,
+        // ändert die Liste. Keine Meldung, die schon erledigt ist.
+        .onReceive(NotificationCenter.default.publisher(
+            for: .NSManagedObjectContextObjectsDidChange, object: ctx)) { _ in
+            laden()
+        }
     }
 
     private func farbe(_ p: Tagesblick.Phase) -> Color {
