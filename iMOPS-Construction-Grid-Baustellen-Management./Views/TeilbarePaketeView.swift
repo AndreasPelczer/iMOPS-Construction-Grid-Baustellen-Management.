@@ -19,6 +19,7 @@ struct TeilbarePaketeView: View {
 
     @State private var stand = UUID()
     @State private var teilen: Auftrag?
+    @State private var geteilt: Int?
 
     private var pakete: [(job: Auftrag, vorschlaege: [Arbeitspakete.Teilung])] {
         _ = stand
@@ -39,6 +40,23 @@ struct TeilbarePaketeView: View {
             } footer: {
                 Text("Der Mops teilt nichts von selbst. Jeder Vorschlag ist geraten — "
                      + "du entscheidest, und nichts muss geteilt werden.")
+            }
+
+            if pakete.count > 1 {
+                Section {
+                    Button {
+                        let n = Arbeitspakete.teileAlle(in: event, in: ctx)
+                        geteilt = n
+                        stand = UUID()
+                    } label: {
+                        Label("Alle \(pakete.count) teilen — je nach stärkstem Vorschlag",
+                              systemImage: "square.split.2x1")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                } footer: {
+                    Text("Nimmt je Paket den obersten Vorschlag. Wer anders trennen will, "
+                         + "macht es einzeln — das geht darunter.")
+                }
             }
 
             ForEach(pakete, id: \.job.objectID) { eintrag in
@@ -75,5 +93,14 @@ struct TeilbarePaketeView: View {
             PaketTeilenView(job: job).environment(\.managedObjectContext, ctx)
         }
         .onChange(of: teilen) { _, neu in if neu == nil { stand = UUID() } }
+        .alert("Geteilt", isPresented: Binding(
+            get: { geteilt != nil }, set: { if !$0 { geteilt = nil } }
+        )) {
+            Button("Gut") { geteilt = nil }
+        } message: {
+            Text("\(geteilt ?? 0) Arbeitspakete wurden geteilt. Die neuen heissen wie "
+                 + "das alte mit einem „a\u{201C} hinter der Nummer und haben noch keine "
+                 + "Dauer — die setzt du im Auftrag.")
+        }
     }
 }

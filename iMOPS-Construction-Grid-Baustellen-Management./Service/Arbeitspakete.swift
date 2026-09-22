@@ -319,6 +319,49 @@ enum Arbeitspakete {
         .sorted { $0.abtrennen.count > $1.abtrennen.count }
     }
 
+    /// 🔴 Alle Vorschläge einer Baustelle auf einmal umsetzen.
+    ///
+    /// Andreas: „ich muss jetzt aber jeden einzeln anklicken zum übertragen."
+    /// Bei sechs teilbaren Paketen sind das sechs Runden mit demselben Handgriff.
+    ///
+    /// Genommen wird je Paket nur der STÄRKSTE Vorschlag — wer zweimal trennen will,
+    /// macht das von Hand. Ein Paket dreimal automatisch zu zerlegen wäre geraten
+    /// hoch drei.
+    @MainActor
+    @discardableResult
+    static func teileAlle(in event: Event, in ctx: NSManagedObjectContext) -> Int {
+        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        var n = 0
+
+        for job in jobs {
+            guard let v = teilungsVorschlaege(fuer: job).first,
+                  let titelNr = titelNummerAusName(job) else { continue }
+
+            let alle = positionen(fuer: job)
+            let ab = Set(v.abtrennen.compactMap { $0.posNr })
+            let bleibt = alle.compactMap { $0.posNr }.filter { !ab.contains($0) }
+            guard !ab.isEmpty, !bleibt.isEmpty else { continue }
+
+            let neu = Auftrag(context: ctx)
+            neu.processingDetails = "\(titelNr)a \(v.name)"
+            neu.status = .pending
+            neu.storageNote = ""
+            neu.storageLocation = ""
+            neu.event = event
+            neu.dauerTage = 0
+
+            do {
+                try ctx.save()                       // erst speichern: feste Kennung
+                PaketZuordnung.shared.setzen(Array(ab), fuer: neu)
+                PaketZuordnung.shared.setzen(bleibt, fuer: job)
+                n += 1
+            } catch {
+                ctx.rollback()
+            }
+        }
+        return n
+    }
+
     /// Der stärkste Vorschlag — für Stellen, die nur einen zeigen können.
     @MainActor
     static func teilungsVorschlag(fuer auftrag: Auftrag) -> Teilung? {

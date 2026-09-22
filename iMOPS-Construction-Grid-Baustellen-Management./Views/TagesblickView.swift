@@ -173,6 +173,16 @@ struct TagesblickView: View {
                         Text("und \(blick.ohneAnweisung.count - 6) weitere")
                             .font(.caption).foregroundStyle(.secondary)
                     }
+                    // 🔴 Ein Durchgang statt 31. Andreas: „ich muss jetzt aber jeden
+                    // einzeln anklicken zum übertragen."
+                    if let ersteBaustelle = blick.ohneAnweisung.first?.event {
+                        NavigationLink {
+                            SpaeterLaden { SchritteSammelnView(event: ersteBaustelle) }
+                        } label: {
+                            Label("Für alle auf einmal holen", systemImage: "square.stack.3d.down.right")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                    }
                 } header: {
                     kopf("Schritte schreiben", zahl: blick.ohneAnweisung.count)
                 } footer: {

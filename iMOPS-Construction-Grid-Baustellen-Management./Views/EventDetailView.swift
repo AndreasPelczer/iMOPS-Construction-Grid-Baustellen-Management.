@@ -434,6 +434,7 @@ struct EventDetailView: View {
                     TerminplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     UebergangszeitenCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     importeCard
+                    schritteSammelnCard
                     teilbarCard
                     namenCard
                     papiereCard
@@ -870,6 +871,37 @@ struct EventDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Schritte für alle auf einmal
+    @ViewBuilder private var schritteSammelnCard: some View {
+        let ohne = ((event.jobs?.allObjects as? [Auftrag]) ?? [])
+            .filter { $0.status != .completed }
+            .filter { AuftragExtrasPayload.from($0.extras).checklist.isEmpty }
+            .count
+
+        if ohne > 0 {
+            NavigationLink {
+                SpaeterLaden { SchritteSammelnView(event: event) }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "square.stack.3d.down.right")
+                        .font(.title2).foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Arbeitsschritte holen").font(.headline).foregroundStyle(.primary)
+                        Text("\(ohne) Pakete ohne Schritte — Katalog und Vorlagen sofort, "
+                             + "den Rest fragt der Mops")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     // MARK: - Pakete mit zwei Arbeiten drin

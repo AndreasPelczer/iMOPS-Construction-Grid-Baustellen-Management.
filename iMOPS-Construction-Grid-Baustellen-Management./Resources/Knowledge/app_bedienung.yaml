@@ -2101,3 +2101,46 @@
     Antippen zeigt, was da liegt (die haeufigsten Namen, wie viele noch
     Arbeitsschritte haben) und bietet "Alle loeschen" an. Unwiderruflich.
   quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Schritte_fuer_alle"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Schritte fuer alle"
+    - "Arbeitsschritte holen"
+    - "Alle Auftraege auf einmal"
+    - "Muss ich jeden einzeln anklicken"
+    - "Sammelaktion Schritte"
+  antwort: |
+    Baustelle -> Karte "Arbeitsschritte holen". Oder in "Wo war ich?" unter
+    "Schritte schreiben" der Knopf "Fuer alle auf einmal holen".
+    Der Mops geht in dieser Reihenfolge vor, und die hat einen Grund:
+    1. KATALOG — schon von einem Menschen abgenommen. Sofort, gruen,
+       und als einziges VORAUSGEWAEHLT.
+    2. VORLAGE — eine der zwoelf aus der Anfangszeit. Sofort, aber ungeprueft,
+       also NICHT vorausgewaehlt.
+    3. REZEPT — Material und Geraet der Position als Geruest. Sofort, duerftig.
+    4. Der Prof — nur fuer den Rest. Knopf "beim Mops nachfragen", laeuft einen
+       nach dem anderen durch, sichtbar und jederzeit mit "Stopp" abbrechbar.
+       🔴 Eine Anfrage darf bis zu drei Minuten dauern: bei dreissig Auftraegen
+       waeren das anderthalb Stunden. Deshalb erst alles, was nichts kostet.
+    Uebernommen wird nur, was angehakt ist. ABGENOMMEN ist damit nichts —
+    das machst du im Auftrag, und erst dann merkt der Mops es sich.
+
+- id: "App_Alle_Pakete_teilen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Alle Pakete teilen"
+    - "Zwei Arbeiten in einem"
+    - "Teilungsvorschlaege sehen"
+  antwort: |
+    Baustelle -> Karte "Zwei Arbeiten in einem Paket". Sie erscheint nur, wenn
+    der Mops wirklich etwas vermutet.
+    Dort stehen alle Vorschlaege untereinander, mit Begruendung und den
+    betroffenen Positionen. Zwei Wege:
+    - "Alle teilen" nimmt je Paket den OBERSTEN Vorschlag.
+    - "Dieses Paket teilen" macht es einzeln, mit Auswahl und eigenem Namen.
+    Die neuen Pakete heissen wie das alte mit einem "a" hinter der Nummer
+    (411 -> 411a) und haben noch keine Dauer.
+  quelle_kurz: "iMOPS Bedienung"
