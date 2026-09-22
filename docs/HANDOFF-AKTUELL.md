@@ -30,6 +30,27 @@ echten DB gemessen: `startTime` leer, `lastStartTime` bei allen 34 Aufträgen le
 verschwinden live (`NSManagedObjectContextObjectsDidChange`), Einzahl/Mehrzahl,
 **`docs/WESEN-DES-MOPS.md`** (Ton-Doktrin, aus der Pflichtspur verlinkt).
 
+## 🧭 Der Mopsmotor — HACCP und ISO 9001 als Rahmen
+
+Andreas, 22.09.: *„Ist doch alles HACCP. Und das kann der Mops, das ist seine DNA und
+DIN ISO 9001. Das ist der Mopsmotor."* Er erinnert sich richtig — es steht schon im
+Code: `KernelArbeitsschritt.abgenommen` = „HACCP-versiegelt", dazu `pinsMedical` und
+`pinsSOP`. Aus 36 Jahren Küche.
+
+Die sieben HACCP-Grundsätze sitzen schon fast alle im Mops: Kontrollpunkte (Abnahme,
+Nachweispunkte), Überwachung (Abhaken + Foto), Korrekturmassnahmen (`Uebergehung` mit
+Unterschrift), **Verifizierung** (`SonderfallBuch` zählt: 3× erklärt = eine Regel
+fehlt) und Dokumentation (`gesperrtAm`, `korrigiertVonID`). Was fehlt, ist vor allem
+Grundsatz 1: die Gefahrenanalyse — also Kataloge, die sagen, was schiefgehen kann.
+
+🔴 **Und daraus der Unterschied, der den Ton bestimmt:** ein von mir geratener Katalog
+(`trennlinien.yaml`) ist ein Vorschlag. Eine Norm ist es nicht. „Ohne Sicherheitsventil
+darf der Speicher nicht in Betrieb gehen (DIN 4753)" steht, bis es erledigt oder
+unterschrieben ist. Die Form dafür gibt es: `din_normen.yaml` (25 Einträge) mit der
+Lizenzregel im Kopf — Sachverhalte ja, Norm-Wortlaut nein (Beuth).
+
+Details: Memory `mopsmotor-haccp-9001.md`.
+
 ## 💡 Der Boiler-Fall — und was er über die Grenze des Mops sagt
 
 Andreas, 22.09.: Bei einem Bekannten wurde ein Boiler eingebaut, der Installateur
