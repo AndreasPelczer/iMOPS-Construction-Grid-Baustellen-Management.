@@ -44,7 +44,7 @@ struct ImporteView: View {
                         Image(systemName: "questionmark.folder")
                             .font(.title2).foregroundStyle(.tint)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Datei aussuchen — der Mops sagt, was es ist")
+                            Text("Datei aussuchen oder herziehen — der Mops sagt, was es ist")
                                 .font(.body.weight(.semibold))
                             Text("GAEB · DXF · IFC · PDF · Excel · JSON · SketchUp")
                                 .font(.caption).foregroundStyle(.secondary)
@@ -102,6 +102,12 @@ struct ImporteView: View {
         }
         .navigationTitle("Importe")
         .navigationBarTitleDisplayMode(.inline)
+        // 🔴 `universalFileDropTarget` war gebaut, getestet und NIRGENDS eingehängt —
+        // gemessen am 22.09.2026. Hier ist die Stelle, an der es hingehört: wer eine
+        // Datei hat und nicht weiss wohin, zieht sie hierher.
+        .universalFileDropTarget { url in
+            erkannt = ErkannteDatei(url: url, typ: DroppedFileType.detect(from: url))
+        }
         .fileImporter(isPresented: $zeigeDateiWahl,
                       allowedContentTypes: [.item], allowsMultipleSelection: false) { ergebnis in
             guard case .success(let urls) = ergebnis, let url = urls.first else { return }
