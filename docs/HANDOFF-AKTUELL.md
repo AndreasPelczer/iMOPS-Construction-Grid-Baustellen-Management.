@@ -30,6 +30,31 @@ echten DB gemessen: `startTime` leer, `lastStartTime` bei allen 34 Aufträgen le
 verschwinden live (`NSManagedObjectContextObjectsDidChange`), Einzahl/Mehrzahl,
 **`docs/WESEN-DES-MOPS.md`** (Ton-Doktrin, aus der Pflichtspur verlinkt).
 
+## 💡 Der Boiler-Fall — und was er über die Grenze des Mops sagt
+
+Andreas, 22.09.: Bei einem Bekannten wurde ein Boiler eingebaut, der Installateur
+vergass **Überdruckventil und Fuss**. 6.000 € Schaden, zwei Gutachter plus einer von
+der Boilerfirma. *„Die brauchen den Mops. 50 Euro Software, schrittweise abhaken —
+nichts wäre passiert. **Wenn der Planer ihn eingetragen hat.**"*
+
+🔴 **Der Nachsatz ist der Kern.** Der Mops erinnert nur an das, was jemand
+hineingeschrieben hat. Gemessen: in `Resources/Knowledge/` steht **null** über Boiler,
+Warmwasserspeicher, Sicherheitsventile, DIN 4753. Ein Werkzeug gegen Vergessen, das
+selbst nur weiss was man ihm sagt, hilft gegen Schlamperei — nicht gegen Unwissen.
+
+**Vorschlag: ein Pflichtteile-Katalog** (wie `wartezeiten.yaml`, `gefahrstoffe.yaml`):
+je Leistung die Bauteile, die nicht fehlen dürfen, mit Norm und Begründung. Dann
+meldet der Mops beim Schritte-Holen: „Für diese Arbeit sind 4 Pflichtteile hinterlegt,
+zwei kommen in deinen Schritten nicht vor" — dieselbe Mechanik wie
+`SchrittPassung.ohneSchritt`, nur gegen einen Katalog statt gegen das LV.
+Raphi müsste ihn gegenlesen; ein erfundener Pflichtteil ist schlimmer als keiner.
+
+**Und die Kehrseite:** Der Mops darf nie den Eindruck erwecken, er habe GEPRÜFT.
+Er erinnert, zählt und zeigt Lücken — die Verantwortung bleibt bei dem, der
+unterschreibt. (`docs/WESEN-DES-MOPS.md`, Regeln 7 und 8.)
+
+Details in der Memory: `boiler-fall-pflichtteile.md`.
+
 ## 💡 Idee vom 22.09. (Gespräch, noch nichts gebaut): Whatsmops
 
 **Der Baustellen-Chat IST der Bautagesbericht.** Andreas' Idee für die Leute ohne
