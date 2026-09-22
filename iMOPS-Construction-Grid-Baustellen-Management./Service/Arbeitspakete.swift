@@ -252,42 +252,6 @@ enum Arbeitspakete {
             .sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }
     }
 
-    // MARK: - Teilen
-
-    /// Ein Vorschlag, wo die Trennlinie liegen könnte.
-    struct Teilung {
-        let abtrennen: [LVPosition]
-        let name: String
-        let begruendung: String
-    }
-
-    /// 🔴 Erdarbeiten und Innenausbau in einem Paket sind zwei Kolonnen und oft ein
-    /// halbes Jahr Abstand. Das ist die häufigste Trennlinie — und sie ist GERATEN.
-    /// Der Mops schlägt sie vor, geteilt wird von Hand.
-    @MainActor
-    static func teilungsVorschlag(fuer auftrag: Auftrag) -> Teilung? {
-        let alle = positionen(fuer: auftrag)
-        guard alle.count >= 3 else { return nil }
-
-        // 🔴 Umlaut-blind vergleichen: „Kontrollschächte" trägt den Stamm „schacht",
-        // aber nur, wenn ä und a dasselbe sind. Derselbe Fehler wie zweimal vorher
-        // heute — `SchrittPassung.flach` macht es an einer Stelle richtig.
-        let draussen = ["hausanschluss", "grundleitung", "graben", "erdarbeit", "aushub",
-                        "verfull", "schacht", "kanal", "bettung", "verdicht",
-                        "frostfrei", "sohle", "boschung", "drainage", "rohrgraben"]
-        let getrennt = alle.filter { p in
-            let t = SchrittPassung.flach(p.bezeichnung ?? "")
-            return draussen.contains { t.contains($0) }
-        }
-        guard !getrennt.isEmpty, getrennt.count < alle.count else { return nil }
-
-        return Teilung(
-            abtrennen: getrennt,
-            name: "Erdarbeiten und Anschlüsse",
-            begruendung: "\(getrennt.count) von \(alle.count) Positionen liegen im Erdreich "
-                       + "— andere Kolonne, anderer Zeitpunkt im Bauablauf.")
-    }
-
     /// Was das Paket zusammenzählt: Positionen, Summe, und wie viele noch ohne Preis sind.
     struct Umfang {
         var positionen: Int = 0
@@ -308,6 +272,57 @@ enum Arbeitspakete {
             if !einheit.isEmpty { u.einheiten[einheit, default: 0] += p.menge }
         }
         return u
+    }
+
+    // MARK: - Teilen
+
+    /// Ein Vorschlag, wo die Trennlinie liegen könnte.
+    struct Teilung {
+        let abtrennen: [LVPosition]
+        let name: String
+        let begruendung: String
+    }
+
+    /// 🔴 Der erste Wurf kannte genau EINE Trennlinie — die, die Andreas' Fall
+    /// brauchte. Sein Einwand: „Wenn du etwas baust, dann ist das doch allgemeingültig
+    /// oder nur für diesen Fall und diese Baustelle? Das sollte nie passieren."
+    /// Jetzt stehen sie in `trennlinien.yaml` und lassen sich erweitern, ohne den
+    /// Code anzufassen — Raphi kann welche dazugeben.
+    ///
+    /// Es kann mehrere geben: ein Titel mit Gerüst UND Außenputz trennt zweimal.
+    /// Der Mops schlägt alle vor, geteilt wird von Hand und einzeln.
+    @MainActor
+    static func teilungsVorschlaege(fuer auftrag: Auftrag) -> [Teilung] {
+        let alle = positionen(fuer: auftrag)
+        guard alle.count >= 3 else { return [] }
+
+        return TrennlinienKatalog.alle.compactMap { linie in
+            let getrennt = alle.filter { p in
+                let t = SchrittPassung.flach(p.bezeichnung ?? "")
+                return linie.stamm.contains { t.contains($0) }
+            }
+            // Eine Trennung, die alles oder nichts nimmt, ist keine.
+            guard !getrennt.isEmpty, getrennt.count < alle.count else { return nil }
+
+            // 🔴 Und: trägt der Auftrag die Trennlinie SCHON im Namen, ist nichts zu
+            // trennen. Getestet an BV Setiadji — „311 Baugrube / Erdbau" bekam den
+            // Vorschlag, die Erdarbeiten abzutrennen. Das ganze Paket IST Erdbau.
+            let imNamen = SchrittPassung.flach(auftrag.processingDetails ?? "")
+            guard !linie.stamm.contains(where: { imNamen.contains($0) }) else { return nil }
+
+            return Teilung(
+                abtrennen: getrennt,
+                name: linie.name,
+                begruendung: "\(getrennt.count) von \(alle.count) Positionen "
+                           + linie.begruendung)
+        }
+        .sorted { $0.abtrennen.count > $1.abtrennen.count }
+    }
+
+    /// Der stärkste Vorschlag — für Stellen, die nur einen zeigen können.
+    @MainActor
+    static func teilungsVorschlag(fuer auftrag: Auftrag) -> Teilung? {
+        teilungsVorschlaege(fuer: auftrag).first
     }
 }
 
