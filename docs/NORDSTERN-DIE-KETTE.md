@@ -65,7 +65,7 @@ Was danach kommt, ist Wiederholung. Das zweite Gewerk ist nur noch ein Katalog.
 | | Was | Aufwand |
 |---|---|---|
 | **A** | **Whatsmops** — die WebApp für alle ohne Apple-Gerät. 🔴 Kein React (388 KB), die Rollen-Mockups sind 8–11 KB. Zugang über Link + PIN. | groß, Neuland |
-| **B** | **Backend** — Aufträge, Schritte, Fotos speichern; Zugänge; Rückweg in die iOS-App. `mops-api` hat heute 13 Routen, alle „Wissen/Auswerten", **keine Datenhaltung, kein Auth**. | groß, neu |
+| **B** | ~~**Backend** — groß, neu~~ → **kleiner als gedacht.** *Korrigiert am 22.09.:* Der Server liefert schon Web-Seiten aus (`/admin-ui/…`, echte Route mit Schloss davor), hat ein funktionierendes Türschloss (PBKDF2, fail-closed) und hängt über Cloudflare im Netz. **Die Ablage ist am 22.09. gebaut** (`api/services/ablage.py`, SQLite, 39 Tests) — Aufträge, Schritte und Fotos haben jetzt einen Ort. Offen bleiben: **Zugänge pro Person** (PIN statt einem Admin-Passwort) und der **Rückweg in die iOS-App**. | mittel |
 | **C** | **Offline + Sync** — auf der Baustelle ist kein Netz. Und der Mann MUSS sehen, dass es noch nicht oben ist. | mittel, heikel |
 | **D** | **Bautagesbericht vorfüllen** — die 18 Felder stehen, alles wird getippt. | klein |
 | **E** | **Material an den Auftrag** — heute hängt die Buchung an der Baustelle als Text. Ohne das kein Soll/Ist. | klein |
@@ -73,6 +73,13 @@ Was danach kommt, ist Wiederholung. Das zweite Gewerk ist nur noch ein Katalog.
 **Schätzung für einen ersten vollständigen Durchlauf: zwei bis vier Wochen**, bei
 einem Tempo wie am 21./22.09. Offline-Sync und Zugänge sind die Sorte Arbeit, die
 immer länger dauert.
+
+*22.09., nachmittags:* Der Bruch zwischen 6 und 7 ist angebohrt. Es gibt jetzt eine
+**Ablage**, in der bleibt, was jemand bezeugt hat — und die erste Tür daran ist nicht
+die Baustelle, sondern **Raphi in SketchUp**: der Mops liest sein Bauteil, sagt was er
+verstanden hat, und stellt eine einzige wegklickbare Frage. Dieselbe Ablage trägt
+später das Abhaken von draussen; `schritt_erledigt`, `schritt_abgenommen` und
+`problem_gemeldet` sind dort schon vorgesehen. Zwei Türen, ein Ort.
 
 ---
 
