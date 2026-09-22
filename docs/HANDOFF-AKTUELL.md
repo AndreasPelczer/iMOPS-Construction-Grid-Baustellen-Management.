@@ -2,6 +2,346 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+## Delta 21.09.2026 (Abschluss) — 35 Commits, Branch GEPUSHT
+
+`feature/gelaende-dxf-aushub` steht auf GitHub (`6e39040`) und liegt auch auf
+**Raphis Mac** (`~/Documents/…`, ausgecheckt, Xcode offen). **578→605 Tests grün.**
+
+### Der Abend: Andreas klickte sich durch, sieben weitere Befunde
+
+1. 🔴 **Der Katalog hätte falsche Anweisungen verteilt** — drei Arbeitspakete hiessen
+   alle „Außenanlagen und Freiflächen" (Titel 572/544/399), der Schlüssel zieht Ziffern
+   raus → EIN Eintrag für drei Arbeiten. Gefixt: `AnweisungsKatalog.istNurKostengruppe`.
+2. Der grüne Satz „gibt es schon eine abgenommene Anweisung" war kein Knopf → ist einer.
+3. Das Band sagte „nichts zu tun", während unten „keine Anweisung" stand → trennt jetzt
+   Baustelle und Schreibtisch.
+4. **„Das gehört dazu"** im Auftrag: Positionen, Mengen je Einheit, Summe.
+   🔴 Über die Titelnummer GERECHNET — `Auftrag.lvPosition` ist im Modell 1:1.
+5. **„Wie lange, und wer"** im Auftrag — `dauerTage` kam dort vorher null mal vor.
+6. **`SchrittPassung`** — Schritte einzeln abwählbar, und der Mops prüft gegen das LV
+   („Bauzaun kommt im LV nicht vor"), wählt selbst ab. Katalog per Test ≤ 15 Einträge.
+7. **`SonderfallBuch`** — Andreas' „jaaa, des musst du so sehen"-Knopf. Erklären lässt
+   den Mops verstummen (mit Satz, Name, Datum) UND er **zählt**: ab dem 3. Mal steht
+   das Thema auf „Das sollte der Mops können".
+
+Dazu: Kopf über der Übersicht (`lageSatz`/`arbeitSatz`), `ZuletztBesucht` (in der
+echten DB gemessen: `startTime` leer, `lastStartTime` bei allen 34 Aufträgen leer —
+„Wo war ich?" konnte seine Frage nie beantworten), Meldungen führen auf EIN Ding und
+verschwinden live (`NSManagedObjectContextObjectsDidChange`), Einzahl/Mehrzahl,
+**`docs/WESEN-DES-MOPS.md`** (Ton-Doktrin, aus der Pflichtspur verlinkt).
+
+## 📋 Vormittag 22.09. — Trennlinien, Löschen, Importe, Sammelaktionen
+
+**23 Commits, 694 Tests grün, NICHTS GEPUSHT.** Andreas' Limit war gegen Mittag
+fast erreicht; er ist bis 20 Uhr weg.
+
+### Was gebaut wurde
+
+1. **Beide Richtungen der Schritt-Passung.** Bisher nur „Schritt nennt etwas, das
+   im LV fehlt" (Bauzaun). Neu `SchrittPassung.ohneSchritt`: steht im LV etwas,
+   wofür KEIN Schritt existiert? An seinem Fall geprüft: bei „411 Abwasser-,
+   Wasser-, Gasanlagen" waren 5 von 8 Positionen unabgedeckt (Hausanschluss in
+   2,60 m Tiefe, Grundleitungen, Schächte) — die Schritte kamen aus der Vorlage
+   „Sanitär & Heizung", reine Innenmontage.
+
+2. 🔴 **Die Ursache dahinter, und sie war meine.** Im Kopfkommentar von
+   `Arbeitspakete.swift` stand „die DIN 276 folgt grob dem Bauablauf". Tut sie
+   nicht — sie ist eine KOSTENgliederung. KG 410 heisst „alles mit Wasser": vom
+   Graben bis zum Waschbecken. Der Satz ist korrigiert, mit dem Fall als Beleg.
+
+3. **Pakete sind teilbar** (`PaketTeilenView`, `PaketZuordnung` als JSON, weil
+   `Auftrag.lvPosition` 1:1 ist). Sieben **Trennlinien** in `trennlinien.yaml`,
+   erweiterbar ohne Code. 🔴 An BV Setiadji durchgerechnet: von zwölf Vorschlägen
+   waren FÜNF Unsinn (Selbstbezug „311 Erdbau → Erdarbeiten", „Außenwand" als
+   Außenanlage, „Mutterboden abtragen" als Abbruch). Alle vier Ursachen behoben,
+   jede mit eigenem Test. Danach sechs Vorschläge, alle fachlich richtig.
+
+4. **Baustelle löschen nimmt die Arbeitspakete mit.** 🔴 Vorher ging das GAR NICHT
+   richtig: `Event.jobs` steht auf Nullify. Aus 931 Waisen wurden 965, als Andreas
+   um 7:35 Setiadji löschte. Jetzt: `BaustelleLoeschen`, Folgen vorher genannt
+   (inklusive „13 Arbeitsschritte sind noch nicht abgenommen — die sind danach
+   weg"), und eine Tür zum Aufräumen des Altbestands.
+
+5. **Importe an einem Ort** (`ImporteView`) — die bestehenden Wege bleiben, wo sie
+   sind. 🔴 Beim Messen: `DroppedFileType` kannte KEIN DXF, DWG, IFC, JSON und
+   kein GAEB 90 — ausgerechnet Raphis Formate. Und `FileDropOverlayModifier` ist
+   gebaut und **immer noch nirgends eingehängt**.
+
+6. **Sammelaktionen** — Andreas: „ich muss jetzt aber jeden einzeln anklicken".
+   `SchritteSammeln` holt für alle Aufträge auf einmal, in der Reihenfolge
+   Katalog → Vorlage → Rezept → Prof (letzterer nur für den Rest, weil eine
+   Anfrage 180 s dauern darf). Nur der Katalog ist vorausgewählt, und in den
+   Katalog wandert dabei nichts. Dazu `Arbeitspakete.teileAlle`.
+
+### 🔴 Was als Nächstes dran ist
+- **Den Datei-Drop einhängen** — `FileDropOverlayModifier` existiert, ruft keiner.
+- **Auftrag ↔ LV echt verbinden** (toOne→toMany, Migration, seine Entscheidung).
+- **Waisen aufräumen** — die Tür ist da, drücken muss er.
+- Für Raphi: `trennlinien.yaml`, `gefahrstoffe.yaml` und `wartezeiten.yaml`
+  gegenlesen — alle drei sind von mir geraten und tragen das auch so im Kopf.
+- Import-Doctype „Datenblatt" im Backend (`mops-api`), damit Liegezeiten aus
+  Dokumenten kommen.
+
+## 🌙 Nachtschicht 21./22.09. — die drei Stücke sind GEBAUT
+
+Andreas ist gegen 00:30 schlafen gegangen und hat die Nachtschicht freigegeben
+(„eine Stunde ist nichts für dich und ich kann beruhigt schlafen"). Alles lokal,
+**nichts gepusht**, 659 Tests grün. Vier Commits: `0dcad83` · `dd89772` · `865be3b`
+plus dieser hier.
+
+### 1. Der Fundus als zweite Quelle (`LiegezeitSucher`)
+Trägt zusammen, was über eine Liegezeit bekannt ist, sortiert nach Nähe zu DIESER
+Baustelle: **Datenblatt → Statik → Fundus → Katalog**. Kein Internet (von ihm
+gestrichen). 🔴 Der wichtigste Teil ist nicht das Finden, sondern das Sagen: nennen
+zwei Quellen verschiedene Zahlen, steht „2 Quellen, und sie sind sich nicht einig.
+Du entscheidest." im Blatt — der Mops nimmt nicht heimlich die erste.
+Der Fundus nur auf Knopfdruck (CPU-only, bis 180 s), liefert einen **Kandidaten**
+mit Herkunft `erfahrung`, keinen Beleg. Was nicht als „TAGE: 3" kommt, wird verworfen.
+🔴 Offen: `/extract-doc` kennt keinen Doctype „Datenblatt", also kommt aus den
+Dokumenten noch nichts an. Das ist das andere Repo (`mops-api`).
+
+### 2. Papiere je Material (`MaterialPapierBuch`, `gefahrstoffe.yaml`)
+SDB und technisches Merkblatt je Material, baustellenübergreifend (derselbe Zement
+ist überall derselbe). Ein SDB älter als drei Jahre gilt als zu prüfen; ein
+Merkblatt altert nicht. Karte „Papiere" an der Baustelle, Punkt unter „Das stünde an".
+🔴 **Nur für Gefahrstoffe** — neun Gruppen mit Begründung. Der Test
+`schotterUndSteineSindKeine` fand sofort einen Fehler: „Pflasterstein Beton" und
+„Betonstahl" enthalten „beton". Ausgehärtetes ätzt nicht → Ausnahme-Stämme.
+Erkennung läuft über den Namen, ist also geraten — im Blatt gibt es den Schalter
+„Gefahrstoff", und der schlägt den Katalog.
+
+### 3. Namen, die nichts sagen (`Arbeitspakete.bessererName`)
+Gemessen: **elf Pakete heissen „Baukonstruktionen", acht „Außenanlagen und
+Freiflächen"**. Dahinter stehen gute Positionstexte. Umbenennen mit Vorschau,
+einzeln abwählbar. 🔴 Die Titelnummer bleibt vorn — an ihr hängt „Das gehört dazu".
+Wer selbst umbenannt hat, wird nicht angefasst.
+
+### Was Andreas morgen sehen will
+Stop und Run, dann: Baustelle öffnen → die zwei neuen Karten **„Namen verbessern"**
+und **„Papiere"**. In „Wo war ich?" stehen die neuen Punkte. Und beim Verketten
+zweier Aufträge → „Woher die Zahl kommt" → **„Den Fundus fragen"**.
+
+### ☀️ URSPRÜNGLICH FÜR MORGEN FRÜH (jetzt erledigt — steht zum Nachlesen)
+
+**Sein Grundsatz:** jede Wartezeit braucht eine **belegte** Zahl. Rangfolge:
+Lieferschein/Datenblatt dieser Baustelle → Statik → Fundus → Katalog.
+🔴 **Internet ist raus** — er hat es ausdrücklich gestrichen: eine Netz-Zahl belegt
+nichts, weil niemand prüfen kann, ob es dasselbe Produkt ist. Bestätigt sie ein
+Mensch, ist ER der Beleg. Widersprechen sich Quellen, entscheidet der Mensch — aber
+der Mops muss den Widerspruch SAGEN.
+
+Und: *„Eine Baustelle ist nicht fertig geplant, wenn nicht für jedes Teil ein
+Sicherheitsdatenblatt vorhanden ist."*
+
+1. **Fundus fragen** (kleinstes Stück, zwei echte Quellen statt einer).
+   `MopsClient.ask` gibt es; die Antwort wird **Kandidat mit Herkunft „Fundus"**,
+   nie Wahrheit. Gemessen: von vier Quellen liefert heute nur der Katalog — die
+   Rohre sind alle da, es fragt nur niemand.
+2. **Papiere je Material.** 🔴 Zwei Dokumente, nicht verwechseln:
+   **Sicherheitsdatenblatt** = Gefahren/Schutz, Pflicht nach GefStoffV/REACH ·
+   **technisches Merkblatt** = Verarbeitung, DORT steht die Wartezeit.
+   🔴 Nur für **Gefahrstoffe** verlangen (Zement ja, Schotter nein) — sonst stehen
+   80 % auf rot, und ein Zustand, der immer rot ist, ist Rauschen.
+   `KalkMaterial` hat weder Dokumentfeld noch Gefahrstoff-Merkmal → eigener
+   JSON-Speicher wie `LiegezeitBuch`, mit Ablaufdatum (ein SDB muss aktuell sein).
+3. Als Punkt unter „Das stünde an", kein Alarm.
+
+### 🔴 Was danach dran ist
+- **Auftrag ↔ LV echt verbinden** — toOne→toMany, neue Modellversion + Migration.
+  Andreas hat Daten drin: bewusst, mit Backup. Davor hängt der Bestellvorschlag.
+- **931 Waisen** (von 965 Aufträgen!) — `Event.jobs` ist Nullify, alles andere Cascade.
+  323 verschiedene, bis 23× dasselbe; 186 Kanten hängen dran. Braucht seine Entscheidung
+  (aufräumen + auf Cascade stellen, beides unwiderruflich).
+- **Pläne/Zeichnungen am Auftrag** — am `Event` hängen keine Dokumente. Er fragte danach.
+- Gleichnamige Arbeitspakete: `Arbeitspakete.name()` fällt zu oft auf DIN-276 zurück.
+- Firmenzuschlag: zwei Wahrheiten (`Lohnkalkulation` vs. `GewinnSchieberView`).
+- Für Raphi offen: 5 Nachweispunkte für EIN Gewerk · Pflaster/Tragschicht-Schritte
+  prüfen · echte Bauablauf-Reihenfolge der 34 Pakete · zwei Beispiele „lief anders".
+
+## Delta 21.09.2026 (spät) — 29 Commits, alles lokal
+
+**Wo Andreas stehengeblieben ist:** er klickte sich durch die Einricht-Arbeit
+(Übersicht → „Schritte schreiben" → ein Auftrag → Schritte holen/prüfen/abnehmen →
+weiter zum nächsten) und fand dabei in zwei Bildschirmen sieben Sachen. Alle behoben,
+578 Tests grün. **Er muss in Xcode Stop und Run drücken** — die laufende App ist älter.
+
+Die sieben, in der Reihenfolge der Gefahr:
+1. 🔴 Der Anweisungs-Katalog hätte falsche Schritte verteilt: drei Pakete hiessen alle
+   „Außenanlagen und Freiflächen", der Schlüssel zieht Ziffern raus → ein Eintrag für
+   drei Arbeiten. Jetzt `AnweisungsKatalog.istNurKostengruppe` (kein Schlüssel für
+   DIN-276-Namen).
+2. „Es gibt schon eine abgenommene Anweisung" war ein grüner Satz, kein Knopf.
+3. Das Band sagte „nichts zu tun", während unten „keine Anweisung" stand →
+   trennt jetzt Baustelle und Schreibtisch.
+4. Der Auftrag zeigte seine LV-Positionen nicht → Karte „Das gehört dazu"
+   (`Arbeitspakete.positionen/umfang`, über die Titelnummer GERECHNET, weil
+   `Auftrag.lvPosition` im Modell 1:1 ist).
+5. Die 12 Vorlagen sind Restbestand → im Menü als „Ungeprüft" gekennzeichnet.
+6. Vier belehrende Sätze raus (siehe 7).
+7. **`docs/WESEN-DES-MOPS.md`** — Andreas' Ton-Doktrin, verlinkt aus der Pflichtspur.
+   Ernst wo es ernst ist · nie belehrend · keine Warnschilder, Fehler dürfen gar nicht
+   erst passieren können · Plan ≠ Arbeit. **Vor jedem UI-Text lesen.**
+
+Davor am selben Tag: Tagesblick + Wochenstrahl, Arbeitspakete-Vorschlag, Anweisungen
+mit Herkunft und Ampel, Übergehungs-Riegel, Baustellenliste nach Phasen statt Kalender.
+
+### 🔴 Was als Nächstes dran ist
+- **Auftrag ↔ LV-Positionen echt verbinden** — `Auftrag.lvPosition` ist toOne, ein Paket
+  hat viele. Braucht neue Modellversion + Migration; Andreas hat Daten drin, also
+  bewusst und mit Backup. Davor hängt der Bestellvorschlag (`materialBedarf` wird nie gefüllt).
+- **Pläne/Zeichnungen am Auftrag** — am `Event` hängen nur gebaeude/jobs/lvPositionen/
+  bautagesberichte/maengel. Keine Dokumente. Andreas fragte danach.
+- Gleichnamige Arbeitspakete: `Arbeitspakete.name()` fällt zu oft auf die DIN-Bezeichnung
+  zurück → drei Pakete heissen gleich.
+- 931 verwaiste Aufträge (Event.jobs ist Nullify) — braucht Andreas' Entscheidung.
+- Firmenzuschlag: zwei Wahrheiten (`Lohnkalkulation` vs. `GewinnSchieberView`).
+
+### Mockup-Repo (`~/XcodeProjects/muckupmops`, 4 Commits lokal)
+„Per Anhalter durch den Mops" (DON'T PANIC, 59 Klickanleitungen aus app_bedienung.yaml),
+„Wo ist was" (422 Bildschirme/Knöpfe mit Weg), Klickplan 21.09., Rolle Chef,
+LV-Eingabe erklärt. 🔴 In `1cb639a`–`6fda993` stehen noch echte Goldschmitt-Preise in
+der History — vor dem Push entscheiden, ob sie herausgeschrieben werden.
+Erzeuger liegen in `~/graphs/mops-werkzeuge/`.
+
+## Delta 21.09.2026 (Abend) — 22 Commits, alles lokal, NICHTS GEPUSHT
+
+**Branch `feature/gelaende-dxf-aushub`. 554/554 Tests grün (seriell!).**
+
+🔴 **Tests IMMER seriell laufen lassen:** `-parallel-testing-enabled NO`.
+Parallel kippt sporadisch `AngebotSchlaegtKalkulationTests` über den geteilten
+`AngebotsStore`. Und: eigener `-derivedDataPath`, sonst streiten sich zwei Builds.
+
+### Der rote Faden des Tages
+
+**Alles da, nur nicht verkabelt.** Achtmal dasselbe Muster: gedacht ✅ gebaut ✅
+getestet ✅ **nie angerufen** ❌. Werkzeug dagegen:
+`~/graphs/mops-werkzeuge/ruft-keiner.py`.
+
+### Gebaut (in dieser Reihenfolge)
+
+| Commit | Was |
+|---|---|
+| `d1750ae` | **Tagesblick** — „Wo war ich?", erste Zeile der Baustellenliste |
+| `67ad8b1` | **Wochenstrahl** — Mo–Fr über alle Baustellen, echte Kalendertage |
+| `9796bd3` | **Der Riegel** — „wer ein Nein übergeht, unterschreibt" |
+| `7c4ded0` | **Arbeitspakete vorschlagen** — aus 109 Positionen werden 17 |
+| `3b11806` | Absturz-Fix: `SpaeterLaden` (NavigationLink baut sein Ziel sofort mit auf) |
+| `7297910` | Jede Zeile führt auf IHR Ding, nicht in den Ordner |
+| `32fb3c3` | Das Band: was ist JETZT dran, und „Zum Vorgänger" |
+| `b5a747f` | Löschknopf hieß falsch · Paketnamen aus dem Positionstext |
+| `eb42ffb` | **Eine Kette ist kein Alarm** — aus 33 roten Meldungen wird eine Gelegenheit |
+| `6bbd947` | **Die Lage** je Baustelle: „wird geplant" / „läuft", mit „das stünde an" |
+| `e27ef63` | Anweisung wird **abgearbeitet**, nicht zusammengebaut (EIN Punkt groß) |
+| `1140f5b` | **„Mops, wie geht das?"** — Schritte vom eigenen Prof, abgenommen vom Menschen |
+| `62b8986` | Bedienungshilfe nachgezogen (war heute vergessen — eigene Nachlässigkeit) |
+
+### 🔴 Die vier Regeln, die Andreas gefunden hat (nicht ich)
+
+1. **Meldungen müssen klickbar sein.**
+2. **Der Klick führt zum DING, nicht in die Schublade.**
+3. **Das Ding sagt, was dran ist** — ein Zustand ohne nächsten Schritt ist eine
+   Meldung, keine Hilfe.
+4. **Gemeldet wird nur, was wirklich etwas ist.** *Ein Zustand, der immer rot ist,
+   ist keine Bewertung mehr, sondern Rauschen.*
+
+Prüfstein für jeden neuen Bildschirm: **Muss man sich merken, WARUM man geklickt hat,
+war der Klick falsch.**
+
+### 🔴 Offene Befunde (gemessen, nicht behoben)
+
+- **931 Aufträge ohne Baustelle** — beim Löschen einer Baustelle bleiben die Aufträge
+  als Waisen zurück (Nullify statt Cascade).
+- **Zwei Wahrheiten beim Firmenzuschlag** — `Lohnkalkulation` wird nirgends
+  konstruiert, `GewinnSchieberView` rechnet ihn daneben nach, mit anderem Modell.
+- **15 weitere „ruft keiner"-Punkte** — `~/Desktop/iMOPS-RUFT-KEINER.txt`.
+- **Die Wächter** (BourdainGuard, Rio-Jitter, Privacy-Schild) sind vollständig
+  geschrieben und hängen an Demo-Daten: Zähler wird nie erhöht, Schicht misst die
+  App-Laufzeit, Whisper geht per `print()` ins Nichts.
+- **`AuftragExtrasPayload.from()` liefert bei einem Dekodier-Fehler einen LEEREN
+  Payload.** Nie ein Pflichtfeld anhängen.
+- **Die „Mops fass"-Ampel gehört an den Anfang**, nicht die Fehlerliste (Andreas'
+  Erstnutzer-Versuch: „die roten Meldungen erschrecken").
+- **Die 91 Vorlagen-Schritte sind erfunden** — jetzt als `.vorlage` = ungeprüft
+  markiert. Raphi muss Pflaster und Tragschicht einmal durchlesen.
+
+## ▶ NÄCHSTER SCHRITT
+
+1. **Der Mops füllt den Bautagesbericht vor.** Er ist gut gebaut (`gesperrtAm`,
+   `korrigiertVonID`!), aber alles wird von Hand getippt. Blockaden → `behinderungen`
+   (= Nachtragsgrundlage). Reines Verkabeln, zahlt sofort.
+2. Umkehrbarkeits-YAML in `Resources/Knowledge/` — braucht 5 Nachweispunkte von Raphi.
+3. Die Firma als Ding (gibt es NICHT: 18 Entities, nur `Employee`).
+4. Fremdfirmen-Zugang, Link statt Login.
+5. Die Wächter an echte Daten.
+
+**Erst der Empfänger, dann der Absender.**
+
+Übersicht (angepinnt): https://claude.ai/artifact/P7ybAevpUML9699mwDSNcZ
+
+## Delta 21.09.2026 (Nachmittag) — drei Dinge gebaut, ein Modell geschrieben
+
+**Branch `feature/gelaende-dxf-aushub`, weiter lokal. NICHT gepusht.**
+Letzte Commits: `d1750ae`, `67ad8b1`, `9796bd3`. **530/530 Tests grün.**
+
+### Gebaut und committet
+
+1. **`Service/Tagesblick.swift` + `Views/TagesblickView.swift`** (`d1750ae`) — die Klammer
+   über ALLE Baustellen. Erste Zeile der Baustellenliste („Wo war ich?"): wer steht ·
+   was ist überfällig · wo fehlt ein Preis · wo du zuletzt warst. Preise über
+   `LVKalkulator.effektiverEP` (keine zweite Wahrheit). Bewusst kein Toolbar-Knopf
+   (`.searchable` kapert am iPad die Navileiste).
+2. **`Service/Wochenstrahl.swift` + `Views/WochenstrahlView.swift`** (`67ad8b1`) — die Woche
+   Mo–Fr über alle Baustellen auf ECHTEN Kalendertagen. Kein dritter Gantt: nutzt
+   `Bauablauf.terminplan` und `BrigadePlanung.arbeitstageZwischen`. Zeigt ehrlich, was
+   fehlt, statt einen leeren Kalender zu malen.
+3. **`Service/Uebergehung.swift` + Riegel in `AuftragDetailView`** (`9796bd3`) —
+   **„Wer ein Nein übergeht, unterschreibt."** `markJobCompleted()` fragt jetzt
+   `istStartbar`. Ist etwas offen: kein Sperren, sondern ein Dialog mit Pflicht-Satz.
+   Die Übernahme hängt am Auftrag, überlebt das Lösen der Kante, ist sichtbar.
+
+### 🔴 Was dabei gefunden wurde (alles gemessen, nicht vermutet)
+
+- **`Auftrag.istStartbar` hatte 26 Zusicherungen in den Tests und NULL Aufrufer.**
+  Der Riegel war gebaut, getestet, nie angeschlossen. Der einzige Weg an einer
+  Voraussetzung vorbei war, sie zu **löschen** — spurlos.
+- **Werkzeug dagegen:** `~/graphs/mops-werkzeuge/ruft-keiner.py` findet
+  „gebaut + getestet + ruft keiner". Befund: `~/Desktop/iMOPS-RUFT-KEINER.txt`,
+  **16 getestet-aber-nie-gerufen, 77 ohne Test.** Noch offen u. a.:
+  `Firmenprofil.setzeAktiv`, `BewehrungsGewichte.mattenGewicht/.stabstahlGewicht`,
+  `Erdmassen.gegenFlaeche/.massenausgleich`, `BauWetterRegeln.validateArbeitsbedingungen`.
+- **`Lohnkalkulation` wird nirgends konstruiert**, und `GewinnSchieberView` rechnet den
+  Firmenzuschlag **daneben nach, mit einem anderen Modell** → zwei Wahrheiten.
+- **`AuftragExtrasPayload.from()` schluckt Dekodier-Fehler und liefert einen LEEREN
+  Payload.** Fehlt ein Pflichtfeld, ist nicht dieses Feld leer, sondern ALLE — still.
+  **An diesen Payload nie ein Pflichtfeld anhängen.** Test hält das fest.
+- Das Core-Data-Modell hat **zwei Versionen**; aktiv ist `test25B 2.xcdatamodel`
+  (`.xccurrentversion`). Wer die falsche liest, sucht in die falsche Richtung.
+- `Auftrag` hat **zwei Pflichtfelder ohne Default**: `statusRawValue`, `storageNote`.
+  Tests, die sie vergessen, scheitern erst im `save()`.
+
+### Ohne Code: das Modell dahinter (Andreas' Entscheidung)
+
+`~/Desktop/iMOPS-Kontrolle-ohne-Ueberwachung.html` (11 Paragraphen) — Arbeitszeit ohne
+Leistungsmessung, Kulanzfenster 8:00/8:10, feste Sendezeit, Totmann-Alarm, die drei
+Verbote. Abgeglichen mit „Ein Mops kam in die Küche" (Kap. 4, 8, 9, 10) und
+„Thermodynamik der Arbeit". Memory: `mops-zeit-und-fuersorge-modell`.
+
+`~/Desktop/iMOPS-Nachunternehmer-fuer-Raphi.html` — Nachunternehmer im Mops, die Linie
+Leistungssoll vs. Weisung. Memory: `nachunternehmer-im-mops`.
+
+## ▶ NÄCHSTER SCHRITT (vereinbart, in dieser Reihenfolge)
+
+1. **Der Mops füllt den Bautagesbericht vor.** Er ist gut gebaut (`gesperrtAm`,
+   `korrigiertVonID`!), aber **alles wird von Hand getippt**. Blockaden aus dem
+   Tagesblick → `behinderungen` (= Nachtragsgrundlage). Übernahmen → Vorkommnis.
+   Maschinen, Wetter (`BauWetterRegeln` gehört hierher). Polier liest und korrigiert.
+2. **Dann** die Umkehrbarkeits-YAML in `Resources/Knowledge/` — welche Regel darf
+   übergangen werden, welche nie (verdeckte Arbeiten), plus der Folgetext je Regel.
+   Braucht fünf Nachweispunkte von Raphi.
+3. Danach: Nachunternehmer-Zugang, Link statt Login.
+
+**Erst der Empfänger, dann der Absender** — sonst bauen wir wieder etwas, das niemand anruft.
+
 ## Delta 21.09.2026 (00:10) — BESTÄTIGT AN ECHTEN DATEN: die Rundreise schließt
 
 Andreas hat die vier Schritte gemacht (neu gebaut 00:04, LV geleert, der fertigen X84 der laufenden Baustelle

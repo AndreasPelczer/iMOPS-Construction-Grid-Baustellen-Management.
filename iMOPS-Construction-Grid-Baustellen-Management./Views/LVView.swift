@@ -98,6 +98,7 @@ struct LVView: View {
     // „Mops fass": das ganze LV automatisch bepreisen → Ampel-Review
     @State private var fassErgebnisse: [AutoKalkulationsService.Ergebnis] = []
     @State private var showFassReview = false
+    @State private var zeigeArbeitspakete = false
     @State private var brueckeInfo: String?   // Rückmeldung „auf den Canvas holen"
     @State private var showingCanvas = false  // öffnet den Grap8-Canvas („Canvas ansehen")
 
@@ -206,9 +207,16 @@ struct LVView: View {
             // geschriebenen Lohn-Kalkulation VERDRAENGT — die Kostenuebersicht zeigte die
             // richtige Summe, der Balken unten im LV eine viel kleinere. 20.09.2026 an einer
             // echten Baustelle aufgefallen: 15.255 EUR im LV gegen 256.742 EUR in der Uebersicht.
-            let ep = LVKalkulator.effektiverEP(for: pos, store: store)
-            let preis = ep > 0 ? ep : (pos.value(forKey: "einkaufspreis") as? Double ?? 0)
-            return sum + (pos.menge * preis)
+            // KEIN Rueckfall auf den Einkaufspreis. Das Feld heisst "EK je Einheit" und ist
+            // genau das: der Einkauf. Der VK kommt aus Angebot, Element oder Kalkulation.
+            // Faellt man hier auf den EK zurueck, steht im Summenbalken der SELBSTKOSTEN-
+            // preis, waehrend Angebots-PDF, GAEB-Export und Canvas-Rechnung dieselbe
+            // Position mit 0 fuehren — zwei Wahrheiten, wie am 20.09.2026 schon einmal
+            // (15.255 gegen 256.742 EUR). Eine Position ohne VK ist nicht bepreist, und
+            // das soll man sehen; dafuer gibt es die Ampel und den Ankunfts-Bericht.
+            // Geprueft: keine andere Summenstelle liest den EK (LVKalkulator, GAEBExporter,
+            // LVPDFExporter, CanvasRechnungBox = 0 Zugriffe).
+            return sum + (pos.menge * LVKalkulator.effektiverEP(for: pos, store: store))
         }
     }
 
@@ -649,6 +657,33 @@ struct LVView: View {
                     }
                     .tint(.primary)
 
+                    // Vom Angebot zur Arbeit: die Titel des LV als Arbeitspakete.
+                    // Meldet sich von selbst, sobald Positionen da sind - der Moment
+                    // direkt nach Mops fass, in dem man sich fragt: und jetzt?
+                    // NICHT jede Position ein Auftrag (das ist der Canvas-Knopf
+                    // darunter und ergibt bei 109 Positionen 109 Knoten). Ein LV ist
+                    // die Abrechnung, ein Arbeitspaket ist die Arbeit.
+                    if !positionen.isEmpty {
+                        Button { zeigeArbeitspakete = true } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "shippingbox.and.arrow.backward")
+                                    .font(.title3).foregroundStyle(.orange)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text((event.jobs?.count ?? 0) > 0
+                                         ? "Weitere Arbeitspakete vorschlagen"
+                                         : "Arbeitspakete vorschlagen")
+                                        .font(.subheadline.weight(.medium))
+                                    Text("aus den Titeln des LV - mit Dauer, zum Durchsehen")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption).foregroundStyle(.tertiary)
+                            }
+                        }
+                        .tint(.primary)
+                    }
+
                     // Brücke LV → Grap8-Canvas: erst anlegen, danach ansehen (derselbe Knopf)
                     if (event.jobs?.count ?? 0) > 0 {
                         Button {
@@ -898,8 +933,17 @@ struct LVView: View {
 
                     Divider()
 
-                    Button { generatePDF() } label: {
-                        Label("LV als PDF", systemImage: "arrow.up.doc")
+                    // Zwei Fassungen mit Absicht: die kurze zum Ueberfliegen (der Chef
+                    // liest 109 Zeilen im Stehen), die lange fuer die Abgabe — bei VOB ist
+                    // der Langtext der geschuldete Leistungsinhalt, und in ihm steht bei
+                    // uns auch die Herkunft von Menge und Preis.
+                    Button { generatePDF(mitLangtext: false) } label: {
+                        Label("LV als PDF (kurz)", systemImage: "arrow.up.doc")
+                    }
+                    .disabled(positionen.isEmpty)
+
+                    Button { generatePDF(mitLangtext: true) } label: {
+                        Label("LV als PDF mit Langtexten", systemImage: "arrow.up.doc.fill")
                     }
                     .disabled(positionen.isEmpty)
 
@@ -953,8 +997,11 @@ struct LVView: View {
                 }
             }
         }
+        // Neu anlegen laeuft ueber die schlanke Maske: zwei Angaben (was, wie viel),
+        // alles andere kommt mit dem Textbaustein. BEARBEITEN bleibt bei AddLVPositionView
+        // — dort haengen Alternativposition, Artikelnummer, Lieferant und der EK.
         .fullScreenCover(isPresented: $showingAdd) {
-            AddLVPositionView(event: event)
+            PositionSchnellView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
         .fullScreenCover(item: $editPosition) { pos in
@@ -992,6 +1039,9 @@ struct LVView: View {
         .fullScreenCover(isPresented: $showFassReview) {
             MopsFassReviewView(ergebnisse: fassErgebnisse, event: event)
         }
+        .sheet(isPresented: $zeigeArbeitspakete) {
+            ArbeitspaketeVorschlagView(event: event)
+        }
         .alert("Canvas", isPresented: Binding(get: { brueckeInfo != nil },
                                               set: { if !$0 { brueckeInfo = nil } })) {
             Button("OK") { brueckeInfo = nil }
@@ -1027,8 +1077,11 @@ struct LVView: View {
             GAEBImportView(event: event, initialURL: droppedGAEBURL)
                 .environment(\.managedObjectContext, viewContext)
         }
+        // Frueher ein eigenes Formular mit neun Feldern und einer Suche, die Titel statt
+        // Positionen fand. Dieselbe Aufgabe, also dieselbe Maske — die Suche darin IST
+        // der Katalog.
         .fullScreenCover(isPresented: $showBausteine) {
-            LVBausteinAuswahlView(event: event)
+            PositionSchnellView(event: event)
                 .environment(\.managedObjectContext, viewContext)
         }
         .onChange(of: importedFileHandler.pendingGAEBURL) { _, newURL in
@@ -1199,9 +1252,11 @@ struct LVView: View {
         try? viewContext.save()
     }
 
-    private func generatePDF() {
-        let data = LVPDFExporter.generate(event: event, positionen: Array(positionen))
-        let name = "LV-\(event.title ?? "Baustelle")"
+    private func generatePDF(mitLangtext: Bool = false) {
+        let data = LVPDFExporter.generate(event: event, positionen: Array(positionen),
+                                          mitLangtext: mitLangtext)
+        let zusatz = mitLangtext ? "-mit-Langtexten" : ""
+        let name = "LV-\(event.title ?? "Baustelle")\(zusatz)"
             .replacingOccurrences(of: " ", with: "-").appending(".pdf")
         writeAndShare(data: data, filename: name)
     }

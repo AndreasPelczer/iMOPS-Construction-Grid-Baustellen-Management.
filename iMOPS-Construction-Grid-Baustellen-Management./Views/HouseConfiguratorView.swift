@@ -304,12 +304,22 @@ struct HouseConfiguratorView: View {
         }
     }
 
+    /// Was die eigenen Baustellen ueber die Kosten sagen. Einmal geladen, nicht je Zeile —
+    /// sonst liest die Ansicht bei jedem Neuzeichnen die ganze Datenbank.
+    private var erfahrung: KennwertAusProjekten.Ergebnis {
+        KennwertAusProjekten.lerne(in: viewContext)
+    }
+
     private func kostenTab(_ result: HouseProjectResult) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             cardView(title: "Baukosten", icon: "building.2") {
                 VStack(spacing: 6) {
+                    let erf = erfahrung
                     ForEach(result.baukosten.positionen, id: \.0) { name, betrag in
-                        kostenRow(name, betrag: betrag, anteil: betrag / result.baukosten.gesamtBaukosten)
+                        kostenRow(name, betrag: betrag,
+                                  anteil: betrag / result.baukosten.gesamtBaukosten,
+                                  herkunft: KennwertAusProjekten.herkunft(fuer: name, erfahrung: erf),
+                                  wohnflaeche: project.wohnflaeche)
                     }
                     Divider()
                     HStack {
@@ -421,7 +431,9 @@ struct HouseConfiguratorView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private func kostenRow(_ name: String, betrag: Double, anteil: Double) -> some View {
+    private func kostenRow(_ name: String, betrag: Double, anteil: Double,
+                           herkunft: KennwertAusProjekten.Herkunft? = nil,
+                           wohnflaeche: Double = 0) -> some View {
         VStack(spacing: 4) {
             HStack {
                 Text(name)
@@ -429,6 +441,34 @@ struct HouseConfiguratorView: View {
                 Spacer()
                 Text(formatCurrency(betrag))
                     .font(.subheadline.monospacedDigit())
+            }
+            // WOHER kommt diese Zahl? Eine geschaetzte Zeile darf nicht aussehen wie
+            // eine gerechnete. Gruen = aus eigenen Projekten, grau = Prozentverteilung.
+            if let h = herkunft {
+                HStack(spacing: 5) {
+                    Image(systemName: h.istEcht ? "checkmark.seal.fill" : "questionmark.circle")
+                        .font(.caption2)
+                        .foregroundStyle(h.istEcht ? .green : .secondary)
+                    Text(h.kurz)
+                        .font(.caption2)
+                        .foregroundStyle(h.istEcht ? .green : .secondary)
+                    if case .ausProjekten(let e) = h {
+                        Text("· \(Int(e.euroProQm)) €/m²")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.green)
+                        if wohnflaeche > 0 {
+                            let real = e.euroProQm * wohnflaeche
+                            let ab = real - betrag
+                            if abs(ab) > 1 {
+                                Text(ab > 0 ? "→ real \(formatCurrency(real))"
+                                            : "→ real \(formatCurrency(real))")
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+                    Spacer()
+                }
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {

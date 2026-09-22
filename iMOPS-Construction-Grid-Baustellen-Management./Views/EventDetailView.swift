@@ -178,6 +178,7 @@ struct EventDetailView: View {
     @State private var showingVerlegeplan = false
     @State private var showingErdmassen = false
     @State private var showingMaterialliste = false
+    @State private var zeigeUmbenennen = false
     @State private var showingGAEBImport = false
     @State private var showingWarmup = false
     @State private var warmupRefresh = UUID()
@@ -432,6 +433,11 @@ struct EventDetailView: View {
                     ablaufplanCard
                     TerminplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     UebergangszeitenCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
+                    importeCard
+                    schritteSammelnCard
+                    teilbarCard
+                    namenCard
+                    papiereCard
                     DienstplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     NavigationLink {
                         ZeitstrahlView(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
@@ -553,6 +559,8 @@ struct EventDetailView: View {
             extras = loadExtras()
             cadFiles = loadCADFiles()
             pinnedMaterials = fetchPinnedMaterials()
+            // Damit „Wo war ich?" die Frage beantworten kann.
+            ZuletztBesucht.merken(event)
         }
         .sheet(isPresented: $showHelp) { EventDetailHelpView().presentationSizing(.page) }
         .sheet(isPresented: $showingEditSheet, onDismiss: { refreshID = UUID() }) {
@@ -836,6 +844,174 @@ struct EventDetailView: View {
         .sheet(isPresented: $showingMaterialliste) {
             MateriallisteView(event: event)
                 .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - Importe (die zweite Tür)
+    //
+    // Die Importe bleiben, wo sie hingehören — GAEB im LV, Pläne in den Unterlagen.
+    // Das hier ist nur der Ort für „ich habe eine Datei, wo gehört die hin?".
+    private var importeCard: some View {
+        NavigationLink {
+            SpaeterLaden { ImporteView(event: event) }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.down.on.square")
+                    .font(.title2).foregroundStyle(.tint)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Importe").font(.headline).foregroundStyle(.primary)
+                    Text("GAEB · Zeichnungen · Unterlagen · Preise — alles an einem Ort")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Schritte für alle auf einmal
+    @ViewBuilder private var schritteSammelnCard: some View {
+        let ohne = ((event.jobs?.allObjects as? [Auftrag]) ?? [])
+            .filter { $0.status != .completed }
+            .filter { AuftragExtrasPayload.from($0.extras).checklist.isEmpty }
+            .count
+
+        if ohne > 0 {
+            NavigationLink {
+                SpaeterLaden { SchritteSammelnView(event: event) }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "square.stack.3d.down.right")
+                        .font(.title2).foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Arbeitsschritte holen").font(.headline).foregroundStyle(.primary)
+                        Text("\(ohne) Pakete ohne Schritte — Katalog und Vorlagen sofort, "
+                             + "den Rest fragt der Mops")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Pakete mit zwei Arbeiten drin
+    //
+    // 🔴 Ohne diese Karte findet man die Teilungsvorschläge nie — sie stecken sonst
+    // nur im einzelnen Auftrag. Andreas: „sieht für mich nicht viel anders aus."
+    @ViewBuilder private var teilbarCard: some View {
+        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        let teilbar = jobs.filter { !Arbeitspakete.teilungsVorschlaege(fuer: $0).isEmpty }
+
+        if !teilbar.isEmpty {
+            NavigationLink {
+                SpaeterLaden { TeilbarePaketeView(event: event) }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "square.split.2x1")
+                        .font(.title2).foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Zwei Arbeiten in einem Paket")
+                            .font(.headline).foregroundStyle(.primary)
+                        Text(teilbar.count == 1
+                             ? "1 Arbeitspaket — der Mops schlägt eine Trennung vor"
+                             : "\(teilbar.count) Arbeitspakete — der Mops schlägt Trennungen vor")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Namen, die nichts sagen
+    //
+    // 🔴 Gemessen: elf Pakete hiessen „Baukonstruktionen", acht „Außenanlagen und
+    // Freiflächen" — nur die Nummer unterschied sie. Die Positionstexte dahinter
+    // wären gut („Mauerwerk Außenwand Ytong PPW 2-0,35, d = 24 cm").
+    @ViewBuilder private var namenCard: some View {
+        let offen = Arbeitspakete.umbenennbare(in: event).count
+        if offen > 0 {
+            Button { zeigeUmbenennen = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "text.badge.checkmark")
+                        .font(.title2).foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Namen verbessern").font(.headline).foregroundStyle(.primary)
+                        Text(offen == 1
+                             ? "Ein Arbeitspaket heisst nur nach seiner Kostengruppe."
+                             : "\(offen) Arbeitspakete heissen nur nach ihrer Kostengruppe.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $zeigeUmbenennen) {
+                PaketeUmbenennenView(event: event)
+                    .environment(\.managedObjectContext, viewContext)
+            }
+        }
+    }
+
+    // MARK: - Papiere je Material
+    //
+    // „Eine Baustelle ist nicht fertig geplant, wenn nicht für jedes Teil ein
+    //  Sicherheitsdatenblatt vorhanden ist." (Andreas, Nacht 21./22.09.2026)
+    //
+    // 🔴 Die Karte zeigt sich nur, wenn es Material gibt — und meldet nur, wo
+    // wirklich ein Gefahrstoff ohne Papier ist. Schotter bleibt still.
+    @ViewBuilder private var papiereCard: some View {
+        let materialien = Set(((event.lvPositionen as? Set<LVPosition>) ?? [])
+            .flatMap { $0.materialArray }
+            .compactMap { $0.materialName?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty })
+
+        if !materialien.isEmpty {
+            let offen = materialien.compactMap { MaterialPapierBuch.shared.luecke(fuer: $0) }
+                .filter { $0.sdbFehlt || $0.sdbVeraltet }.count
+
+            NavigationLink {
+                MaterialPapiereView(event: event)
+                    .environment(\.managedObjectContext, viewContext)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: offen == 0 ? "checkmark.seal" : "doc.badge.ellipsis")
+                        .font(.title2)
+                        .foregroundStyle(offen == 0 ? Color.green : .orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Papiere").font(.headline).foregroundStyle(.primary)
+                        Text(offen == 0
+                             ? "\(materialien.count) Materialien · alle Gefahrstoffe belegt"
+                             : "\(offen) von \(materialien.count) Materialien ohne gültiges Sicherheitsdatenblatt")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -1248,7 +1424,7 @@ struct EventDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 if let setup = event.setupTime   { timeRow(icon: "timer",                          title: "Setup", date: setup, color: .orange) }
                 if let start = event.eventStartTime { timeRow(icon: "calendar.day.timeline.leading", title: "Start", date: start, color: Color(uiColor: .tintColor)) }
-                if let end   = event.eventEndTime   { timeRow(icon: "clock.badge.checkmark",          title: "Ende",  date: end,   color: .green) }
+                if let end   = event.eventEndTime   { timeRow(icon: "clock.badge.checkmark",          title: "geplant fertig",  date: end,   color: .secondary) }
                 EventTimelineBar(event: event)
             }
             let beteiligte: [(String, String)] = [

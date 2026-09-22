@@ -1,0 +1,87 @@
+# Gefahrstoffe auf der Baustelle — wofür ein Sicherheitsdatenblatt vorliegen muss
+#
+# Andreas, Nacht 21./22.09.2026: „Ich bin dafür, dass eine Baustelle nicht fertig
+# geplant ist, wenn nicht für jedes Teil ein Sicherheitsdatenblatt vorhanden ist,
+# wenn es eingesetzt werden soll."
+#
+# 🔴 ABER NICHT FÜR JEDES TEIL. Schotter, Pflastersteine und Bewehrungsstahl sind
+# keine Gefahrstoffe — verlangt man für sie ein SDB, stehen achtzig Prozent der
+# Zeilen dauerhaft auf rot, und nach Andreas' eigener Regel ist ein Zustand, der
+# immer rot ist, Rauschen. Also nur für das, was wirklich eines braucht.
+#
+# 🔴 UND: ZWEI VERSCHIEDENE DOKUMENTE, nicht verwechseln.
+#   · Sicherheitsdatenblatt (SDB) — Gefahren, Schutzausrüstung, Erste Hilfe.
+#     Pflicht nach GefStoffV/REACH. Grundlage der Betriebsanweisung und der
+#     Unterweisung. Muss aktuell sein.
+#   · Technisches Merkblatt — Verarbeitung, Mischung, Trocknungszeiten.
+#     Keine Pflicht, aber DORT steht die Liegezeit (siehe wartezeiten.yaml).
+# Wir brauchen beide, für verschiedene Dinge.
+#
+# Die Zuordnung hier läuft über WORTSTÄMME im Materialnamen und ist damit eine
+# Vermutung, kein Befund: „Zementmörtel" wird erkannt, ein Handelsname wie
+# „Ardurapid 45" nicht. Deshalb ist jeder Eintrag am Material überschreibbar —
+# wer es besser weiss, hat recht (docs/WESEN-DES-MOPS.md, Regel 8).
+#
+# Raphi muss da einmal drüberschauen.
+
+- id: "zement"
+  stamm: ["zement", "cem ", "cem-", "portlandzement"]
+  bezeichnung: "Zement und zementhaltige Gemische"
+  warum: "Stark alkalisch, reizt Haut und Augen; Chromatgehalt kann Allergien auslösen."
+  quelle_kurz: "GefStoffV — von Raphi zu bestätigen"
+
+- id: "beton_moertel"
+  stamm: ["beton", "mörtel", "moertel", "estrich", "putz", "kleber", "spachtel"]
+  # 🔴 Nur FRISCHES, nicht abgebundenes Material ätzt. Ein Pflasterstein aus Beton
+  #    und Betonstahl sind harmlos — der Wortstamm „beton" allein trifft sie aber.
+  #    Gefunden von `schotterUndSteineSindKeine`, nicht von mir.
+  ausnahme: ["betonstahl", "bewehrungsstahl", "betonstein", "betonpflaster",
+             "pflasterstein", "betonfertigteil", "fertigteil", "betonwerkstein",
+             "betonrohr", "betonplatte", "randstein", "bordstein", "betondecke",
+             "betonsäge", "betonsaege", "betonmischer"]
+  bezeichnung: "Frischbeton, Mörtel, Estrich, Putz, Kleber"
+  warum: "Enthält Zement — dieselbe Wirkung, oft zusätzlich Zusatzmittel. Ausgehärtete Fertigteile sind harmlos."
+  quelle_kurz: "GefStoffV — von Raphi zu bestätigen"
+
+- id: "kalk"
+  stamm: ["kalk", "branntkalk", "weißkalk", "weisskalk"]
+  bezeichnung: "Kalk"
+  warum: "Ätzend, vor allem als Branntkalk."
+  quelle_kurz: "GefStoffV — von Raphi zu bestätigen"
+
+- id: "bitumen"
+  stamm: ["bitumen", "asphalt", "teer", "voranstrich", "dickbeschichtung"]
+  bezeichnung: "Bitumen und Bitumenprodukte"
+  warum: "Heiss verarbeitet Dämpfe; lösemittelhaltige Voranstriche sind entzündbar."
+  quelle_kurz: "GefStoffV — von Raphi zu bestätigen"
+
+- id: "epoxid"
+  stamm: ["epoxid", "epoxy", "2k-", "zweikomponenten", "harz", "polyurethan", "pu-schaum"]
+  bezeichnung: "Reaktionsharze, 2-Komponenten-Systeme"
+  warum: "Sensibilisierend — häufige Ursache von Berufsdermatosen. Unterweisung nötig."
+  quelle_kurz: "GefStoffV — von Raphi zu bestätigen"
+
+- id: "loesemittel"
+  stamm: ["lösemittel", "loesemittel", "verdünn", "verduenn", "reiniger", "aceton",
+          "benzin", "grundierung"]
+  bezeichnung: "Lösemittel, Reiniger, Verdünner"
+  warum: "Entzündbar, Dämpfe gesundheitsschädlich."
+  quelle_kurz: "GefStoffV — von Raphi zu bestätigen"
+
+- id: "farbe_lack"
+  stamm: ["lack", "farbe", "lasur", "imprägnier", "impraegnier", "holzschutz"]
+  bezeichnung: "Lacke, Farben, Holzschutzmittel"
+  warum: "Je nach Produkt entzündbar oder gesundheitsschädlich — SDB entscheidet."
+  quelle_kurz: "GefStoffV — von Raphi zu bestätigen"
+
+- id: "daemmstoff_faser"
+  stamm: ["mineralwolle", "glaswolle", "steinwolle", "kmf"]
+  bezeichnung: "Künstliche Mineralfasern"
+  warum: "Faserstaub reizt Haut und Atemwege; Schutzausrüstung erforderlich."
+  quelle_kurz: "GefStoffV — von Raphi zu bestätigen"
+
+- id: "gas"
+  stamm: ["propan", "flüssiggas", "fluessiggas", "acetylen", "sauerstoff"]
+  bezeichnung: "Druckgase"
+  warum: "Entzündbar bzw. brandfördernd, Druckbehälter."
+  quelle_kurz: "GefStoffV — von Raphi zu bestätigen"

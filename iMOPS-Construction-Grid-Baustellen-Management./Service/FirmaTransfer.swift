@@ -25,6 +25,22 @@ enum FirmaTransfer {
         var materialien: [MaterialDTO] = []
         var loehne: [LohnDTO] = []
         var geraete: [GeraetDTO] = []
+        /// OPTIONAL mit Absicht: eine .mopsfirma aus der Zeit vor diesem Feld muss weiter
+        /// lesbar bleiben. Ein nicht-optionales Feld mit Default-Wert reicht dafuer NICHT —
+        /// Swifts synthetisiertes Decodable wirft dann keyNotFound. (Dieselbe Falle wie
+        /// beim EventExtrasPayload.)
+        var leistungen: [LeistungDTO]? = []
+    }
+
+    /// Der Firmen-Leistungskatalog: fertige Positionen mit dem eigenen EH-Preis. Das ist
+    /// der Topf, aus dem die Vorschlaege beim Tippen kommen (`LeistungskatalogService`) —
+    /// ohne ihn bekommt der Empfaenger zwar die Materialpreise, aber keine Positionstexte.
+    struct LeistungDTO: Codable {
+        var id: UUID; var leistung: String?; var einheit: String?
+        var maurerStunden: Double; var helferStunden: Double
+        var kostenGruppeNummer: String?; var quelle: String?
+        var rezeptJSON: String?; var einheitspreisVK: Double
+        var erstelltAm: Date?
     }
 
     struct MaterialDTO: Codable {
@@ -81,6 +97,15 @@ enum FirmaTransfer {
                                            notiz: g.notiz, leistung: g.leistung))
         }
 
+        for l in (try? ctx.fetch(Leistungsbaustein.fetchRequest())) ?? [] {
+            paket.leistungen?.append(LeistungDTO(
+                id: l.id ?? UUID(), leistung: l.leistung, einheit: l.einheit,
+                maurerStunden: l.maurerStunden, helferStunden: l.helferStunden,
+                kostenGruppeNummer: l.kostenGruppeNummer, quelle: l.quelle,
+                rezeptJSON: l.rezeptJSON, einheitspreisVK: l.einheitspreisVK,
+                erstelltAm: l.erstelltAm))
+        }
+
         let enc = JSONEncoder()
         enc.outputFormatting = [.prettyPrinted, .sortedKeys]
         enc.dateEncodingStrategy = .iso8601
@@ -89,7 +114,8 @@ enum FirmaTransfer {
 
     // MARK: - Import (Upsert über die id)
 
-    struct Bilanz { let materialien: Int; let loehne: Int; let geraete: Int; let settings: Int }
+    struct Bilanz { let materialien: Int; let loehne: Int; let geraete: Int
+                    let leistungen: Int; let settings: Int }
 
     @discardableResult
     static func importieren(_ data: Data, in ctx: NSManagedObjectContext) throws -> Bilanz {
@@ -121,9 +147,18 @@ enum FirmaTransfer {
             g.id = d.id; g.name = d.name; g.anschaffungsKosten = d.anschaffungsKosten
             g.nutzungsdauerStunden = d.nutzungsdauerStunden; g.notiz = d.notiz; g.leistung = d.leistung
         }
+        for d in paket.leistungen ?? [] {
+            let l = findeOderNeu(Leistungsbaustein.self, id: d.id, in: ctx)
+            l.id = d.id; l.leistung = d.leistung; l.einheit = d.einheit
+            l.maurerStunden = d.maurerStunden; l.helferStunden = d.helferStunden
+            l.kostenGruppeNummer = d.kostenGruppeNummer; l.quelle = d.quelle
+            l.rezeptJSON = d.rezeptJSON; l.einheitspreisVK = d.einheitspreisVK
+            l.erstelltAm = d.erstelltAm ?? Date()
+        }
         try ctx.save()
         return Bilanz(materialien: paket.materialien.count, loehne: paket.loehne.count,
-                      geraete: paket.geraete.count, settings: settingsAnzahl)
+                      geraete: paket.geraete.count, leistungen: (paket.leistungen ?? []).count,
+                      settings: settingsAnzahl)
     }
 
     /// Vorhandenes Objekt mit dieser id finden, sonst ein neues anlegen (Upsert).

@@ -20,6 +20,19 @@ struct AuftragDetailView: View {
     // Voraussetzungen — welcher Auftrag muss vorher fertig sein?
     @State private var zeigeVoraussetzungWahl = false
     @State private var kettenFehler: String?
+    /// Eine lange Liegezeit wird nie still gesetzt — 28 Tage Estrich verschieben
+    /// einen Termin um einen Monat.
+    @State private var wartezeitVorschlag: (w: Wartezeit, kante: Voraussetzung)?
+
+    /// „Wer ein Nein übergeht, unterschreibt." — der Dialog erscheint, wenn jemand
+    /// fertig meldet, obwohl Voraussetzungen offen sind. Er sperrt NICHT: er verlangt
+    /// einen Satz. Wer gesperrt wird, arbeitet am Mops vorbei.
+    @State private var zeigeAnweisungsVorschlag = false
+    @State private var vorgaengerZiel: Auftrag?
+    @State private var zeigeUebernahme = false
+    @State private var zeigeTeilen = false
+    @State private var begruendung = ""
+
 
     private var doneCount: Int { extras.checklist.filter { $0.isDone }.count }
     private var totalCount: Int { extras.checklist.count }
@@ -39,9 +52,15 @@ struct AuftragDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 headerCard
+                wasIstDranBand
+                liegezeitBand
+                gehoertDazuCard
+                ohneSchrittBand
+                zeitCard
                 productionListCard
                 modeCard
                 checklistCard
+                uebernahmenCard
                 voraussetzungenCard
                 LVDeleteButtonView(currentLV: job)
                     .padding(.horizontal, 4)
@@ -78,9 +97,448 @@ struct AuftragDetailView: View {
         } message: {
             Text(kettenFehler ?? "")
         }
+        .sheet(isPresented: $zeigeUebernahme) { uebernahmeDialog }
+        .sheet(isPresented: $zeigeTeilen) {
+            PaketTeilenView(job: job).environment(\.managedObjectContext, ctx)
+        }
+        .alert("Liegezeit dazwischen?", isPresented: Binding(
+            get: { wartezeitVorschlag != nil },
+            set: { if !$0 { wartezeitVorschlag = nil } }
+        )) {
+            Button("\(zahlKurz(wartezeitVorschlag?.w.tage ?? 0)) Tage einrechnen") {
+                if let v = wartezeitVorschlag {
+                    v.kante.wartezeitTage = v.w.tage
+                    try? ctx.save()
+                }
+                wartezeitVorschlag = nil
+            }
+            Button("Ohne Liegezeit", role: .cancel) { wartezeitVorschlag = nil }
+        } message: {
+            if let v = wartezeitVorschlag {
+                Text("\(v.w.bezeichnung): \(zahlKurz(v.w.tage)) Tage, in denen niemand "
+                     + "arbeitet — aber alles Folgende schiebt sich.\n\n\(v.w.hinweis)")
+            }
+        }
+        .sheet(isPresented: $zeigeAnweisungsVorschlag) {
+            AnweisungVorschlagView(job: job) { schritte in
+                extras.checklist = schritte.map(AuftragChecklistItem.init)
+                saveExtras(extras)
+                // 🔴 Nur Abgenommenes wandert in den Katalog — ein ungeprüfter
+                //    Vorschlag soll sich nicht über alle Baustellen vermehren.
+                AnweisungsKatalog.shared.merken(schritte, fuer: Kausalkette.bezeichnung(job))
+            }
+        }
+        .navigationDestination(item: $vorgaengerZiel) { AuftragDetailView(job: $0) }
+    }
+
+    // MARK: - „Ich übernehme das"
+
+    /// Kein Sperrdialog. Er nennt, was offen ist, sagt die Folge ehrlich, gibt zu, dass
+    /// der Mops nicht davorsteht — und verlangt einen Satz.
+    private var uebernahmeDialog: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    ForEach(job.offeneVoraussetzungen, id: \.objectID) { v in
+                        Label(v.anzeigename, systemImage: "clock")
+                            .foregroundStyle(.orange)
+                    }
+                    // 🔴 Eine zu kurze Liegezeit gehört in dieselbe Unterschrift.
+                    // Sie ist keine offene Voraussetzung — die Kante IST erfüllt —
+                    // aber sie ist etwas, das der Mops wusste. Wer hier unterschreibt,
+                    // soll es gelesen haben.
+                    ForEach(Array(job.zuKurzeLiegezeiten.enumerated()), id: \.offset) { _, z in
+                        Label(z.satz, systemImage: "hourglass.badge.plus")
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } header: {
+                    Text(job.zuKurzeLiegezeiten.isEmpty
+                         ? "Worauf dieser Auftrag noch wartet"
+                         : "Worauf dieser Auftrag noch wartet — und was der Mops weiss")
+                }
+
+                Section {
+                    Text("Du stehst davor. Ich nicht.")
+                        .font(.headline)
+                    Text("Wenn du recht hast, ist nichts passiert. Wenn nicht, steht in "
+                         + "zehn Jahren niemand mehr dafür gerade — außer dem, der es "
+                         + "freigegeben hat. Deshalb bleibt dein Satz an diesem Auftrag.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Text("Ich bin nur der Mops. Ab hier entscheidest du.")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.orange)
+                }
+
+                Section {
+                    TextField("z. B. „CM-Messung 1,8 % gemessen, belegreif\"",
+                              text: $begruendung, axis: .vertical)
+                        .lineLimit(2...5)
+                        .id("uebernahme-begruendung")
+                } header: {
+                    Text("Warum ist es trotzdem in Ordnung?")
+                } footer: {
+                    Text("Pflichtfeld. Das ist kein Geständnis — das ist dein Nachweis.")
+                }
+            }
+            .navigationTitle("Voraussetzung offen")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Ich warte") { begruendung = ""; zeigeUebernahme = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Ich übernehme das") { uebernehmenUndFertig() }
+                        .disabled(begruendung.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
     }
 
     // MARK: - UI Cards
+
+    // MARK: - Was ist JETZT dran?
+
+    /// Andreas, 21.09., nachdem das Antippen endlich am richtigen Auftrag landete:
+    /// „Wie hilft mir das jetzt bei der Problemlösung? Was muss ich machen, kann ich
+    /// das hier überhaupt machen, was der Mops von mir will? Ich sehe es nicht auf
+    /// den ersten Blick."
+    ///
+    /// Er hatte recht: der Bildschirm zeigte einen ZUSTAND („wartet auf 326"), aber
+    /// keinen nächsten Schritt. Und bei einem blockierten Auftrag ist die Antwort oft:
+    /// hier kannst du gar nichts tun, die Lösung liegt beim Vorgänger. Das muss dastehen
+    /// — samt Weg dorthin.
+    /// 🔴 Die Dauer liess sich nur auf der BAUSTELLEN-Seite setzen (`TerminplanCard`) —
+    /// im Auftrag selbst kam `dauerTage` gar nicht vor.
+    ///
+    /// Andreas, nachdem die Meldung ihn endlich auf den richtigen Auftrag geführt hatte:
+    /// „das sehe ich dann, wo soll ich hier was eintragen, eine Dauer? wie?"
+    /// Eine Meldung, die auf ein Ding führt, an dem man die Sache nicht erledigen kann,
+    /// ist nur ein längerer Umweg.
+    private var zeitCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Wie lange, und wer", systemImage: "clock")
+                    .font(.headline)
+                Spacer()
+                Text(job.dauerTage > 0
+                     ? "\(job.dauerTage.formatted(.number.precision(.fractionLength(0...1)))) Tage"
+                     : "noch nicht gesetzt")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(job.dauerTage > 0 ? .primary : .secondary)
+            }
+
+            HStack(spacing: 10) {
+                Stepper(value: Binding(
+                    get: { job.dauerTage },
+                    set: { neu in
+                        job.dauerTage = max(0, neu)
+                        try? ctx.save()
+                    }
+                ), in: 0...365, step: 0.5) {
+                    EmptyView()
+                }
+                .labelsHidden()
+
+                // Die üblichen Griffe — ein halber Tag, ein Tag, eine Woche.
+                ForEach([0.5, 1.0, 2.0, 5.0], id: \.self) { tage in
+                    Button {
+                        job.dauerTage = tage
+                        try? ctx.save()
+                    } label: {
+                        Text(tage == 5 ? "1 Woche"
+                             : "\(tage.formatted(.number.precision(.fractionLength(0...1)))) T")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+                Spacer()
+            }
+
+            Divider()
+
+            // Dieselbe Geschichte wie bei der Dauer: „Niemand ist zugeteilt" stand in
+            // der Übersicht, und im Auftrag liess sich niemand zuteilen.
+            HStack {
+                Text("Wer macht es")
+                    .font(.subheadline).foregroundStyle(.secondary)
+                Spacer()
+                Menu {
+                    ForEach(mitarbeiter, id: \.objectID) { m in
+                        Button(m.name ?? "—") {
+                            job.employeeName = m.name
+                            try? ctx.save()
+                        }
+                    }
+                    if job.employeeName?.isEmpty == false {
+                        Divider()
+                        Button("Zuteilung aufheben", role: .destructive) {
+                            job.employeeName = nil
+                            try? ctx.save()
+                        }
+                    }
+                } label: {
+                    Text(job.employeeName?.isEmpty == false ? job.employeeName! : "niemand")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(job.employeeName?.isEmpty == false ? .primary : .secondary)
+                }
+                .disabled(mitarbeiter.isEmpty)
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// Die aktiven Leute — dieselbe Quelle wie die Mitarbeiter-Ansicht.
+    private var mitarbeiter: [Employee] {
+        let req: NSFetchRequest<Employee> = Employee.fetchRequest()
+        req.predicate = NSPredicate(format: "isActive == YES")
+        req.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+        return (try? ctx.fetch(req)) ?? []
+    }
+
+    /// 🔴 "Was gehört denn alles zu dem Auftrag, gibt's da Pläne, Zeichnungen?"
+    ///
+    /// Ein Arbeitspaket fasst LV-Positionen zusammen — aber der Auftrag zeigte sie
+    /// nicht. Man stand vor "572 Außenanlagen und Freiflächen" und hatte keine Menge,
+    /// keine Summe, keine Positionsliste. Ohne die kann niemand entscheiden,
+    /// was hier zu tun ist.
+    @ViewBuilder private var gehoertDazuCard: some View {
+        let umfang = Arbeitspakete.umfang(fuer: job)
+        if umfang.positionen > 0 {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Label("Das gehört dazu", systemImage: "list.number")
+                        .font(.headline)
+                    Spacer()
+                    Text("\(umfang.positionen) Positionen")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+
+                // Die Mengen je Einheit — das ist die Zahl, nach der man greift.
+                if !umfang.einheiten.isEmpty {
+                    Text(umfang.einheiten.sorted { $0.value > $1.value }
+                            .map { "\(mengeKurz($0.value)) \($0.key)" }
+                            .joined(separator: " · "))
+                        .font(.title3.weight(.semibold))
+                }
+
+                if umfang.summe > 0 {
+                    Text("Angebotssumme: \(waehrung(umfang.summe))"
+                         + (umfang.ohnePreis > 0 ? " — \(umfang.ohnePreis) noch ohne Preis" : ""))
+                        .font(.subheadline).foregroundStyle(.secondary)
+                } else if umfang.ohnePreis > 0 {
+                    Text("\(umfang.ohnePreis) Positionen haben noch keinen Preis.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+
+                Divider()
+
+                ForEach(Arbeitspakete.positionen(fuer: job).prefix(8), id: \.objectID) { p in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(p.posNr ?? "—")
+                            .font(.caption.monospaced()).foregroundStyle(.secondary)
+                            .frame(width: 62, alignment: .leading)
+                        Text(p.bezeichnung ?? "ohne Text")
+                            .font(.subheadline).lineLimit(2)
+                        Spacer(minLength: 6)
+                        Text("\(mengeKurz(p.menge)) \(p.einheit ?? "")")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if umfang.positionen > 8 {
+                    Text("und \(umfang.positionen - 8) weitere")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+
+                if umfang.istGerechnet {
+                    Text("Zugeordnet über die Titelnummer im Auftragsnamen. "
+                         + "Eine feste Verbindung im Datenmodell gibt es noch nicht — "
+                         + "benennt jemand den Auftrag um, ist die Zuordnung weg.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private func mengeKurz(_ w: Double) -> String {
+        w == w.rounded() ? String(format: "%.0f", w) : String(format: "%.2f", w)
+    }
+
+    private func waehrung(_ w: Double) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .currency; f.currencyCode = "EUR"; f.maximumFractionDigits = 0
+        return f.string(from: NSNumber(value: w)) ?? String(format: "%.0f €", w)
+    }
+
+    /// 🔴 Der Satz, um den es geht: „wenn irgendwann auffallen würde, der Mops
+    /// wusste das, hat aber nichts gesagt."
+    /// Also steht es DORT, wo jemand weitermacht — nicht nur in der Karte, in der
+    /// die Zahl eingetippt wurde.
+    /// 🔴 „Passt oben und unten zusammen?" — Andreas, 22.09.2026.
+    /// Bei „411 Abwasser-, Wasser-, Gasanlagen" passte es nicht: oben ein
+    /// Hausanschluss in 2,60 m Tiefe, unten acht Schritte reiner Innenmontage.
+    @ViewBuilder private var ohneSchrittBand: some View {
+        let fehlend = SchrittPassung.ohneSchritt(auftrag: job,
+                                                 schritte: extras.checklist.map(\.title))
+        if !fehlend.isEmpty && !extras.checklist.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(fehlend.count == 1
+                      ? "Für eine Position gibt es keinen Arbeitsschritt"
+                      : "Für \(fehlend.count) Positionen gibt es keinen Arbeitsschritt",
+                      systemImage: "list.bullet.rectangle.portrait")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.orange)
+
+                ForEach(fehlend.prefix(6)) { f in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(f.posNr)
+                            .font(.caption.monospaced()).foregroundStyle(.secondary)
+                            .frame(width: 62, alignment: .leading)
+                        Text(f.bezeichnung).font(.subheadline).lineLimit(2)
+                        Spacer(minLength: 6)
+                        Text(f.menge).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if fehlend.count > 6 {
+                    Text("und \(fehlend.count - 6) weitere")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+
+                Text("Das ist verkauft, aber niemand hat aufgeschrieben, wie es gemacht "
+                     + "wird. Entweder fehlen Schritte — oder das Paket enthält zwei "
+                     + "verschiedene Arbeiten und gehört geteilt.")
+                    .font(.footnote).foregroundStyle(.secondary)
+
+                Button { zeigeTeilen = true } label: {
+                    Label("Paket teilen", systemImage: "square.split.2x1")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(.orange.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
+        }
+    }
+
+    @ViewBuilder private var liegezeitBand: some View {
+        let zuKurz = job.zuKurzeLiegezeiten
+        if let erste = zuKurz.first {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Kürzer als der Richtwert", systemImage: "hourglass")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.orange)
+                Text(erste.satz).font(.subheadline)
+                Text(erste.katalog.hinweis).font(.footnote).foregroundStyle(.secondary)
+                // 🔴 Der Mops widerspricht nicht — er weiss weniger als der Mann davor.
+                Text(erste.wasFehlt).font(.footnote).foregroundStyle(.secondary)
+                Text("Wenn deine Zahl stimmt: sag einmal warum (der Knopf ist hier anders), "
+                     + "dann weiss der Mops es beim nächsten Mal. Wenn nicht: die "
+                     + "\(zahlKurz(erste.katalog.tage)) Tage nehmen — oder dabeibleiben "
+                     + "und beim Fertigmelden unterschreiben.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                if zuKurz.count > 1 {
+                    Text("Und \(zuKurz.count - 1) weitere.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(.orange.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
+        }
+    }
+
+    @ViewBuilder private var wasIstDranBand: some View {
+        let offen = job.offeneVoraussetzungen
+        if job.istFertig {
+            band("Erledigt", "checkmark.seal.fill", .green,
+                 "Dieser Auftrag ist abgeschlossen.")
+        } else if let erste = offen.first {
+            // 🔴 "Nichts zu tun" gilt nur für die BAUSTELLE. Am Schreibtisch ist sehr
+            // wohl etwas zu tun, solange die Schritte fehlen — und dann darf hier nicht
+            // stehen, es sei nichts zu tun, während zwei Karten tiefer das Gegenteil steht.
+            let schreibtischArbeit = extras.checklist.isEmpty
+            VStack(alignment: .leading, spacing: 10) {
+                Label(schreibtischArbeit
+                      ? "Draussen noch nicht — hier am Schreibtisch schon"
+                      : "Hier ist gerade nichts zu tun",
+                      systemImage: schreibtischArbeit ? "pencil.and.list.clipboard" : "hand.raised.fill")
+                    .font(.headline).foregroundStyle(.orange)
+                Text(offen.count == 1
+                     ? "Angefangen wird erst, wenn fertig ist: \(erste.anzeigename)."
+                     : "Angefangen wird erst nach \(offen.count) Dingen, zuerst: \(erste.anzeigename).")
+                    .font(.subheadline)
+                if schreibtischArbeit {
+                    Text("Die Arbeitsschritte kannst du trotzdem jetzt schon schreiben — "
+                         + "sie stehen weiter unten und warten auf niemanden.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                } else {
+                    Text("Die Lösung liegt nicht hier, sondern dort. Entweder ist der "
+                         + "Vorgänger fertig und noch nicht gemeldet — oder er läuft wirklich noch.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                HStack(spacing: 10) {
+                    if let quelle = erste.quelle {
+                        Button {
+                            vorgaengerZiel = quelle
+                        } label: {
+                            Label("Zum Vorgänger", systemImage: "arrow.turn.up.left")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    Button {
+                        zeigeUebernahme = true
+                    } label: {
+                        Label("Trotzdem anfangen", systemImage: "signature")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.orange)
+                }
+                .font(.subheadline)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(.orange.opacity(0.55), lineWidth: 1))
+        } else if let naechster = nextOpenStepTitle {
+            band("Als Nächstes", "arrow.right.circle.fill", .blue, naechster)
+        } else if extras.checklist.isEmpty {
+            band("Startklar — aber ohne Arbeitsschritte", "sparkles", .orange,
+                 "Nichts hält diesen Auftrag auf. Es sind nur noch keine Schritte "
+                 + "hinterlegt: unten eine Vorlage wählen oder Schritte eintragen.")
+        } else {
+            band("Alle Schritte abgehakt", "checkmark.circle", .green,
+                 "Unten bestätigen, dann ist der Auftrag fertig.")
+        }
+    }
+
+    private func band(_ titel: String, _ symbol: String, _ farbe: Color,
+                      _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Label(titel, systemImage: symbol).font(.headline).foregroundStyle(farbe)
+            Text(text).font(.subheadline).foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
 
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -272,89 +730,278 @@ struct AuftragDetailView: View {
     // (Die Übergabe lebt jetzt an EINER Stelle: der Baustelle — SchichtUebergabeCard.
     //  Der einzelne Auftrag ist zum Tun da: JETZT → Schritte → Material.)
 
+    // MARK: - Arbeitsschritte: schreiben ODER abarbeiten
+
+    /// Andreas, 21.09.: „Was ich jetzt erwartet hätte: eine Liste, die beschreibt, was
+    /// zu erreichen ist. Kontrollieren ob sie stimmt, und den nächsten Punkt angehen.
+    /// Nicht erst eine Vorlage suchen und irgendwas einstellen müssen — das ist doch
+    /// für Paolo, den Lehrling und den Polen."
+    ///
+    /// Er hat recht. Die Karte war ein AUTORENWERKZEUG („Neuer Schritt…", Zauberstab,
+    /// Vorlagenmenü) und wurde jedem gezeigt. Das sind aber zwei Tätigkeiten:
+    ///
+    ///   Anweisung SCHREIBEN   → Büro/Raphi, vorher, am Schreibtisch
+    ///   Anweisung ABARBEITEN  → Paolo, Lehrling, Kamil, auf der Baustelle
+    ///
+    /// 🔴 Und das braucht keinen Rollenschalter — der ZUSTAND sagt es:
+    /// keine Schritte da → jemand muss sie schreiben. Schritte da → abarbeiten.
+    /// Dasselbe Muster wie die Baustellen-Phase im Tagesblick.
     private var checklistCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Arbeitsschritte").font(.headline)
-                Spacer()
-                Menu {
-                    ForEach(AuftragTemplate.allCases) { tpl in
-                        Button("Vorlage: \(tpl.rawValue)") {
-                            applyTemplate(tpl, mode: .append)
-                        }
-                    }
-                    Divider()
-                    Button(role: .destructive) {
-                        extras.checklist.removeAll()
-                        job.setzeFertig(false)
-                        saveExtras(extras)
-                    } label: {
-                        Label("Leeren", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "wand.and.stars")
-                }
-            }
-
-            if extras.trainingMode {
-                HStack(spacing: 10) {
-                    TextField("Neuer Schritt...", text: $newStepText)
-                        .textFieldStyle(.roundedBorder)
-                    Button { addStep(newStepText) } label: {
-                        Image(systemName: "plus.circle.fill").font(.title3)
-                    }
-                    .disabled(newStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-
-                if extras.checklist.isEmpty {
-                    Text("Noch keine Schritte. Nutze eine Vorlage oder fuege Schritte hinzu.")
-                        .foregroundStyle(.secondary).font(.subheadline)
-                } else {
-                    VStack(spacing: 8) {
-                        ForEach(extras.checklist) { item in
-                            trainingStepRow(item)
-                        }
-                    }
-                }
+            if extras.checklist.isEmpty {
+                anweisungFehlt
             } else {
-                HStack(spacing: 10) {
-                    Button { markJobCompleted() } label: {
-                        Label(job.istFertig
-                                ? "Auftrag ist fertig"
-                                : "Ich bestätige, dass jeder einzelne Schritt erledigt ist",
-                              systemImage: job.istFertig ? "checkmark.seal.fill" : "checkmark.circle.fill")
-                            .font(.headline)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button(role: .destructive) { resetCompletion() } label: {
-                        Label("Reset", systemImage: "arrow.counterclockwise")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(!job.istFertig)
-                }
-
-                if extras.checklist.isEmpty {
-                    Text("Keine Arbeitsschritte hinterlegt.")
-                        .font(.subheadline).foregroundStyle(.secondary).padding(.top, 4)
-                } else {
-                    DisclosureGroup("Schritte anzeigen (\(extras.checklist.count))") {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(extras.checklist) { item in
-                                proStepRow(item)
-                            }
-                        }
-                        .padding(.top, 6)
-                    }
-                    .padding(.top, 6)
-                }
+                anweisungAbarbeiten
+                weiterZumNaechsten
             }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// 🔴 Der Faden durch die Einricht-Arbeit.
+    ///
+    /// Andreas beim Durchklicken: "ich richte das ein, gehe zurück und will den
+    /// nächsten Punkt abarbeiten — und wo ist das nächste Puzzlestück?"
+    /// Genau da war keins. Man musste zurück in die Liste und sich selbst merken,
+    /// welche Aufträge schon dran waren.
+    ///
+    /// Jetzt sagt der Auftrag, sobald seine Schritte stehen, wer der nächste ist —
+    /// in der Reihenfolge des Bauablaufs, auf derselben Baustelle. Der Mops merkt
+    /// sich die Stelle, nicht der Mensch.
+    private var naechsterOhneAnweisung: Auftrag? {
+        guard let event = job.event else { return nil }
+        let alle = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        let offen = alle
+            .filter { $0.objectID != job.objectID }
+            .filter { $0.status != .completed }
+            .filter { AuftragExtrasPayload.from($0.extras).checklist.isEmpty }
+        // Reihenfolge wie im Bauablauf: erst was startbar ist, dann nach Bezeichnung.
+        return offen.sorted {
+            if $0.istStartbar != $1.istStartbar { return $0.istStartbar }
+            return Kausalkette.bezeichnung($0) < Kausalkette.bezeichnung($1)
+        }.first
+    }
+
+    private var nochOhneAnweisung: Int {
+        guard let event = job.event else { return 0 }
+        return ((event.jobs?.allObjects as? [Auftrag]) ?? [])
+            .filter { $0.status != .completed }
+            .filter { AuftragExtrasPayload.from($0.extras).checklist.isEmpty }
+            .count
+    }
+
+    /// Die Zeile "weiter zum nächsten" — nur sichtbar, wenn es wirklich einen gibt.
+    @ViewBuilder
+    private var weiterZumNaechsten: some View {
+        if let naechster = naechsterOhneAnweisung {
+            VStack(alignment: .leading, spacing: 8) {
+                Divider()
+                Text("Noch \(nochOhneAnweisung) Aufträge auf dieser Baustelle ohne Schritte.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                NavigationLink {
+                    SpaeterLaden { AuftragDetailView(job: naechster) }
+                } label: {
+                    Label("Weiter: \(Kausalkette.bezeichnung(naechster))",
+                          systemImage: "arrow.right.circle.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
+        }
+    }
+
+    /// Es gibt noch keine Anweisung. Das ist Vorbereitung, nicht Baustellenarbeit —
+    /// also wird es auch so benannt, statt ein leeres Eingabefeld hinzustellen.
+    private var anweisungFehlt: some View {
+        // 🔴 Hier standen vier gute Ratschläge: "Wer sie einmal schreibt, spart sie
+        // allen danach", "Schreib die Schritte einmal — dann stehen sie da" und noch
+        // zwei. Andreas: "ein neunmalkluger Ratschlag ... gefällt mir irgendwie gar
+        // nicht." Zurecht — wer am Montagmorgen hier steht, will keinen Zuspruch,
+        // er will einen Knopf. Übrig bleiben: die Sache, die Knöpfe, das Feld.
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Noch keine Arbeitsschritte", systemImage: "list.bullet.rectangle")
+                .font(.headline)
+
+            Button { zeigeAnweisungsVorschlag = true } label: {
+                Label("Mops, wie geht das?", systemImage: "questionmark.bubble")
+                    .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+
+            if let ausKatalog = AnweisungsKatalog.shared.schritte(fuer: whatToDoText) {
+                Button {
+                    var neue = extras
+                    neue.checklist = ausKatalog.map { AuftragChecklistItem($0) }
+                    extras = neue
+                    saveExtras(neue)
+                } label: {
+                    Label("Abgenommene Anweisung nehmen — \(ausKatalog.count) Schritte",
+                          systemImage: "checkmark.seal.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+            }
+
+            if let passend = AuftragTemplate.passend(zu: whatToDoText) {
+                Button { applyTemplate(passend, mode: .replace) } label: {
+                    Label("Vorlage \u{201E}\(passend.rawValue)\u{201C} nehmen \u{2014} \(passend.steps.count) Schritte",
+                          systemImage: "sparkles")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+
+            Menu {
+                Section("Ungeprüft") {
+                    ForEach(AuftragTemplate.allCases) { tpl in
+                        Button("\(tpl.rawValue) \u{2014} \(tpl.steps.count) Schritte") {
+                            applyTemplate(tpl, mode: .replace)
+                        }
+                    }
+                }
+            } label: {
+                Label("Vorlage wählen", systemImage: "square.grid.2x2")
+            }
+            .buttonStyle(.bordered)
+
+            HStack(spacing: 10) {
+                TextField("Ersten Schritt schreiben…", text: $newStepText)
+                    .textFieldStyle(.roundedBorder)
+                    .id("neuer-schritt")
+                Button { addStep(newStepText) } label: {
+                    Image(systemName: "plus.circle.fill").font(.title3)
+                }
+                .disabled(newStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+    }
+
+    /// EIN Punkt groß, der Rest klein darunter. Aus Andreas' abgenommenem
+    /// Hilfsarbeiter-Muster: eine Aufgabe, nicht zehn — er weiß wohin es geht, muss
+    /// aber nicht wählen.
+    private var anweisungAbarbeiten: some View {
+        let offen = extras.checklist.filter { !$0.isDone }
+        let fertig = extras.checklist.count - offen.count
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Arbeitsschritte").font(.headline)
+                Spacer()
+                Text("\(fertig) von \(extras.checklist.count)")
+                    .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
+            }
+
+            if let naechster = offen.first {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("JETZT").font(.caption.weight(.bold)).foregroundStyle(.orange)
+                    Text(naechster.title)
+                        .font(.title3.weight(.semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button { toggleStep(naechster.id) } label: {
+                        Label("Erledigt", systemImage: "checkmark.circle.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
+                    if offen.count > 1 {
+                        Text("Danach: \(offen[1].title)")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.tertiarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                Button { markJobCompleted() } label: {
+                    Label(job.istFertig ? "Auftrag ist fertig"
+                                        : "Alle Schritte erledigt \u{2014} Auftrag abschließen",
+                          systemImage: job.istFertig ? "checkmark.seal.fill" : "checkmark.circle.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(job.istFertig)
+            }
+
+            DisclosureGroup("Alle Schritte ansehen (\(extras.checklist.count))") {
+                VStack(spacing: 8) {
+                    ForEach(extras.checklist) { item in trainingStepRow(item) }
+                }
+                .padding(.top, 6)
+            }
+            .font(.subheadline)
+
+            DisclosureGroup("Anweisung ändern") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        TextField("Schritt anhängen…", text: $newStepText)
+                            .textFieldStyle(.roundedBorder)
+                            .id("schritt-anhaengen")
+                        Button { addStep(newStepText) } label: {
+                            Image(systemName: "plus.circle.fill").font(.title3)
+                        }
+                        .disabled(newStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    Menu {
+                        ForEach(AuftragTemplate.allCases) { tpl in
+                            Button("Vorlage anhängen: \(tpl.rawValue)") {
+                                applyTemplate(tpl, mode: .append)
+                            }
+                        }
+                        Divider()
+                        Button(role: .destructive) {
+                            extras.checklist.removeAll()
+                            job.setzeFertig(false)
+                            saveExtras(extras)
+                        } label: { Label("Alle Schritte leeren", systemImage: "trash") }
+                    } label: {
+                        Label("Vorlage oder leeren", systemImage: "wand.and.stars")
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(.top, 6)
+            }
+            .font(.subheadline)
+            .tint(.secondary)
+        }
+    }
+
+
+    // MARK: - Übernommene Verantwortung
+
+    /// Was hier steht, hat jemand bewusst übergangen — mit seinem Satz.
+    /// Sichtbar, weil ein Nachweis, den nur der Chef sieht, kein Nachweis ist,
+    /// sondern eine Akte. Wer es geschrieben hat, muss es auch lesen können.
+    @ViewBuilder private var uebernahmenCard: some View {
+        let liste = extras.uebergehungen ?? []
+        if !liste.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Verantwortung übernommen", systemImage: "signature")
+                    .font(.headline)
+                ForEach(liste) { u in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(u.woraufGewartet)
+                            .font(.subheadline.weight(.semibold))
+                        Text("„\(u.begruendung)\"")
+                            .font(.subheadline)
+                        Text("\(u.von) · \(u.am, format: .dateTime.day().month().year().hour().minute())")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 2)
+                }
+                Text("Bleibt an diesem Auftrag. Nicht löschbar — das ist der Sinn.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(.orange.opacity(0.5), lineWidth: 1))
+        }
     }
 
     // MARK: - Voraussetzungen (Grap8-Kanten)
@@ -436,9 +1083,27 @@ struct AuftragDetailView: View {
             .sorted { Kausalkette.bezeichnung($0) < Kausalkette.bezeichnung($1) }
     }
 
+    private func zahlKurz(_ w: Double) -> String {
+        w == w.rounded() ? String(format: "%.0f", w) : String(format: "%.1f", w)
+    }
+
     private func verknuepfeMit(_ vorgaenger: Auftrag) {
         do {
-            try Kausalkette.verknuepfe(job, brauchtVorher: vorgaenger, in: ctx)
+            let kante = try Kausalkette.verknuepfe(job, brauchtVorher: vorgaenger, in: ctx)
+
+            // 🔴 Hier entsteht die Wartezeit — und hier wurde sie bisher vergessen.
+            // Gemessen: alle 598 Kanten in der Datenbank standen auf 0, obwohl
+            // `Bauablauf` sie seit jeher mitrechnet. Beton härtet trotzdem.
+            // Der Mops schlägt vor, der Mensch bestätigt; bei langen Zeiten (Estrich
+            // 28 Tage) wird ausdrücklich gefragt, statt still zu setzen.
+            if let w = WartezeitKatalog.vorschlag(von: Kausalkette.bezeichnung(vorgaenger),
+                                                  zu: Kausalkette.bezeichnung(job)) {
+                if w.brauchtRueckfrage {
+                    wartezeitVorschlag = (w, kante)
+                } else {
+                    kante.wartezeitTage = w.tage
+                }
+            }
             try ctx.save()
         } catch let fehler as KausalketteFehler {
             // Der Text aus `KausalketteFehler` erklärt den Kreis mit beiden Namen —
@@ -564,9 +1229,41 @@ struct AuftragDetailView: View {
     }
 
     private func markJobCompleted() {
-        // Der "Ich bestätige …"-Knopf ist eine Sammel-Übergabe: der angemeldete Nutzer
-        // übernimmt hiermit alle Schritte auf einmal — mit Beleg (wer/wann), auch die,
-        // die vorher noch keinen hatten.
+        // 🔴 DER RIEGEL. `istStartbar` war gebaut, 26× getestet und wurde hier nie
+        // gefragt — der Auftrag ließ sich fertig melden, während oben auf demselben
+        // Bildschirm „läuft noch" stand. Jetzt wird gefragt. Nicht gesperrt: wer
+        // gesperrt wird, arbeitet am Mops vorbei, und dann weiß niemand mehr etwas.
+        guard job.istStartbar else {
+            zeigeUebernahme = true
+            return
+        }
+        schliesseAb()
+    }
+
+    /// Die Übernahme: Satz festhalten, dann abschließen.
+    private func uebernehmenUndFertig() {
+        let satz = begruendung.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !satz.isEmpty else { return }
+        let offene = job.offeneVoraussetzungen
+        let jetzt = Date()
+        var liste = extras.uebergehungen ?? []
+        for v in offene {
+            liste.append(Uebergehung(
+                woraufGewartet: v.anzeigename,
+                begruendung: satz,
+                von: session.role.title,
+                am: jetzt,
+                offeneVoraussetzungenGesamt: offene.count))
+        }
+        extras.uebergehungen = liste
+        begruendung = ""
+        zeigeUebernahme = false
+        schliesseAb()
+    }
+
+    private func schliesseAb() {
+        // Sammel-Übergabe: der angemeldete Nutzer übernimmt alle Schritte auf einmal —
+        // mit Beleg (wer/wann), auch die, die vorher noch keinen hatten.
         let jetzt = Date()
         for i in extras.checklist.indices {
             extras.checklist[i].isDone = true
@@ -589,7 +1286,16 @@ struct AuftragDetailView: View {
     private enum TemplateInsertMode { case replace, append }
 
     private func applyTemplate(_ template: AuftragTemplate, mode: TemplateInsertMode) {
-        let newItems = template.steps.map { AuftragChecklistItem(title: $0) }
+        // 🔴 Vorlagen-Schritte tragen ab jetzt ihre Herkunft: .vorlage = UNGEPRÜFT.
+        //    Die 91 Schritte in AuftragTemplate.swift haben keine Quellenangabe und
+        //    keinen Prüfer (21.09. gemessen). Bis jemand seinen Namen drunter setzt,
+        //    sind sie ein Vorschlag, keine Anleitung.
+        let newItems = template.steps.map { text -> AuftragChecklistItem in
+            AuftragChecklistItem(AnweisungsSchritt(
+                text: text,
+                herkunft: .vorlage,
+                traegtWert: Werterkennung.traegtWert(text)))
+        }
         if mode == .replace {
             extras.checklist = newItems
         } else {

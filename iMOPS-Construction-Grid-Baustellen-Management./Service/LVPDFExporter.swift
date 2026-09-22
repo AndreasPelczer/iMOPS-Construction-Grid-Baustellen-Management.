@@ -3,8 +3,13 @@ import Combine
 
 struct LVPDFExporter {
 
-    static func generate(event: Event, positionen: [LVPosition]) -> Data {
-        Generator(event: event, positionen: positionen.zaehlbarePositionen()).generate()
+    /// `mitLangtext`: bei VOB-Angeboten gehoert der Langtext dazu (er ist der
+    /// rechtlich geschuldete Leistungsinhalt). Zum Ueberfliegen beim Chef ist die
+    /// Kurzfassung besser lesbar. Deshalb beides — Vorgabe ist die Kurzfassung.
+    static func generate(event: Event, positionen: [LVPosition],
+                         mitLangtext: Bool = false) -> Data {
+        Generator(event: event, positionen: positionen.zaehlbarePositionen(),
+                  mitLangtext: mitLangtext).generate()
     }
 
     // MARK: - Generator
@@ -12,6 +17,7 @@ struct LVPDFExporter {
     private class Generator {
         let event: Event
         let positionen: [LVPosition]
+        let mitLangtext: Bool
 
         let pageW: CGFloat = 595
         let pageH: CGFloat = 842
@@ -27,6 +33,15 @@ struct LVPDFExporter {
         let orange = UIColor(red: 0.91, green: 0.40, blue: 0.04, alpha: 1)
         var y: CGFloat = 40
         var ctx: UIGraphicsPDFRendererContext!
+
+        /// Wie hoch wird dieser Text in dieser Spaltenbreite?
+        func hoeheFuer(_ text: String, breite: CGFloat, font: UIFont) -> CGFloat {
+            guard !text.isEmpty else { return 12 }
+            return ceil((text as NSString).boundingRect(
+                with: CGSize(width: breite, height: 600),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                attributes: [.font: font], context: nil).height)
+        }
 
         /// Laufende Netto-Summe ueber alle Positionen (gefuellt in drawTitel).
         var gesamtNetto: Double = 0
@@ -44,9 +59,10 @@ struct LVPDFExporter {
             eurFmt.string(from: NSNumber(value: v)) ?? String(format: "%.2f €", v)
         }
 
-        init(event: Event, positionen: [LVPosition]) {
+        init(event: Event, positionen: [LVPosition], mitLangtext: Bool = false) {
             self.event = event
             self.positionen = positionen
+            self.mitLangtext = mitLangtext
         }
 
         func generate() -> Data {
@@ -158,18 +174,36 @@ struct LVPDFExporter {
             // Data rows
             var titelSumme: Double = 0
             for (idx, pos) in items.enumerated() {
-                pageBreakIfNeeded(18)
-                if idx % 2 == 1 {
-                    fill(CGRect(x: mH, y: y, width: cW, height: 18), color: UIColor(white: 0.96, alpha: 1))
-                }
                 let ep = LVKalkulator.effektiverEP(for: pos)
                 let gp = ep * pos.menge
                 gesamtNetto += gp
                 titelSumme += gp
+                // Die Bezeichnung wurde bisher in eine feste 18-pt-Zeile gezwaengt und
+                // dabei ABGESCHNITTEN ("Mauerwerk Innenwand tragend Ytong…"). Jetzt
+                // umbricht sie und die Zeile waechst mit.
+                let bezFont = UIFont.systemFont(ofSize: 9)
+                let bez = pos.bezeichnung ?? ""
+                let bezBreite = colW[2] - 6
+                let bezHoehe = hoeheFuer(bez, breite: bezBreite, font: bezFont)
+
+                var langHoehe: CGFloat = 0
+                let lang = (pos.langtext ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                let langFont = UIFont.systemFont(ofSize: 7.5)
+                let langBreite = cW - colW[0] - colW[1] - 12
+                if mitLangtext && !lang.isEmpty && lang != bez {
+                    langHoehe = hoeheFuer(lang, breite: langBreite, font: langFont) + 3
+                }
+                let zeilenHoehe = max(bezHoehe + 6, 18) + langHoehe
+
+                pageBreakIfNeeded(zeilenHoehe)
+                if idx % 2 == 1 {
+                    fill(CGRect(x: mH, y: y, width: cW, height: zeilenHoehe),
+                         color: UIColor(white: 0.96, alpha: 1))
+                }
                 let vals: [(String, NSTextAlignment)] = [
                     (pos.posNr ?? "", .left),
                     (pos.artikelNummer ?? "", .left),
-                    (pos.bezeichnung ?? "", .left),
+                    ("", .left),                       // Bezeichnung separat, s.u.
                     (pos.menge > 0 ? String(format: "%.2f", pos.menge) : "", .right),
                     (pos.einheit ?? "", .left),
                     (ep > 0 ? eur(ep) : "", .right),
@@ -177,15 +211,31 @@ struct LVPDFExporter {
                 ]
                 xOff = mH
                 for (i, (val, align)) in vals.enumerated() {
-                    txtInRect(val, rect: CGRect(x: xOff+3, y: y+3, width: colW[i]-6, height: 15),
-                              font: .systemFont(ofSize: 9), align: align)
+                    if i == 2 {
+                        (bez as NSString).draw(
+                            with: CGRect(x: xOff+3, y: y+3, width: bezBreite, height: bezHoehe),
+                            options: .usesLineFragmentOrigin,
+                            attributes: [.font: bezFont], context: nil)
+                    } else {
+                        txtInRect(val, rect: CGRect(x: xOff+3, y: y+3, width: colW[i]-6, height: 15),
+                                  font: .systemFont(ofSize: 9), align: align)
+                    }
                     xOff += colW[i]
+                }
+                if langHoehe > 0 {
+                    (lang as NSString).draw(
+                        with: CGRect(x: mH + colW[0] + colW[1] + 3, y: y + bezHoehe + 6,
+                                     width: langBreite, height: langHoehe),
+                        options: .usesLineFragmentOrigin,
+                        attributes: [.font: langFont,
+                                     .foregroundColor: UIColor(white: 0.42, alpha: 1)], context: nil)
                 }
                 UIColor(white: 0.88, alpha: 1).setStroke()
                 let p = UIBezierPath()
-                p.move(to: CGPoint(x: mH, y: y+18)); p.addLine(to: CGPoint(x: mH+cW, y: y+18))
+                p.move(to: CGPoint(x: mH, y: y + zeilenHoehe))
+                p.addLine(to: CGPoint(x: mH+cW, y: y + zeilenHoehe))
                 p.lineWidth = 0.25; p.stroke()
-                y += 18
+                y += zeilenHoehe
             }
 
             // Titelsumme

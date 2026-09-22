@@ -15,6 +15,7 @@ struct UebergangszeitenCard: View {
     let jobs: [Auftrag]
     @Environment(\.managedObjectContext) private var ctx
     @State private var tick = 0
+    @State private var belegBearbeiten: Kante?
 
     private struct Kante: Identifiable {
         let id: NSManagedObjectID
@@ -46,6 +47,11 @@ struct UebergangszeitenCard: View {
                                 .font(.caption.monospacedDigit())
                                 .foregroundStyle(k.v.wartezeitTage > 0 ? .orange : .secondary)
                         }
+
+                        // 🔴 Ein BELEG schlägt den Katalog. Steht auf dem Sack 2 Tage,
+                        // sagt der Mops nicht „bei mir stehen 3" — dann gelten 2.
+                        // Gemeldet wird nur, wenn jemand UNTER einen Beleg geht.
+                        lageZeile(k)
                     }
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -56,6 +62,87 @@ struct UebergangszeitenCard: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .sheet(item: $belegBearbeiten) { k in
+            LiegezeitBelegView(
+                kanteID: k.v.id?.uuidString ?? k.v.objectID.uriRepresentation().absoluteString,
+                von: k.von, zu: k.zu, aktuelleTage: k.v.wartezeitTage,
+                event: k.v.auftrag?.event
+            ) { beleg in
+                // Der Beleg setzt die Zahl auch an der Kante — eine Wahrheit.
+                k.v.wartezeitTage = beleg.tage
+                try? ctx.save()
+                tick += 1
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func lageZeile(_ k: Kante) -> some View {
+        let kid = k.v.id?.uuidString ?? k.v.objectID.uriRepresentation().absoluteString
+        switch LiegezeitBuch.shared.lage(kanteID: kid,
+                                          eingetragen: k.v.wartezeitTage,
+                                          nachVorgaenger: k.von) {
+
+        case .belegtUndEingehalten(let b):
+            // Kein Hinweis, nur die Herkunft. Wer nachgesehen hat, soll das sehen.
+            Label("\(zahl(b.tage)) Tage \(b.herkunft.kurz)"
+                  + (b.quelle.isEmpty ? "" : " · \(b.quelle)"),
+                  systemImage: "checkmark.seal")
+                .font(.caption2).foregroundStyle(.green)
+                .fixedSize(horizontal: false, vertical: true)
+
+        case .unterschritten(let b):
+            // 🔴 Der Fall, um den es Andreas geht: dokumentiert, mit Namen.
+            VStack(alignment: .leading, spacing: 3) {
+                Label("\(zahl(b.tage)) statt \(zahl(b.stattBelegTage ?? 0)) Tage — so entschieden",
+                      systemImage: "signature")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                if !b.begruendung.isEmpty {
+                    Text(b.begruendung).font(.caption2)
+                }
+                Text("\(b.von), \(b.am.formatted(.dateTime.day().month().year()))")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+
+        case .unterschrittenOhneGrund(let b, let jetzt):
+            // Der Beleg sagt mehr, jemand hat gekürzt — und nichts dazu geschrieben.
+            VStack(alignment: .leading, spacing: 4) {
+                Label("\(zahl(jetzt)) Tage, belegt sind \(zahl(b.tage))",
+                      systemImage: "exclamationmark.triangle")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                Text((b.quelle.isEmpty ? b.herkunft.kurz : b.quelle)
+                     + " — wer kürzer plant, sollte dazuschreiben warum.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Grund eintragen") { belegBearbeiten = k }
+                    .buttonStyle(.bordered).controlSize(.small)
+            }
+
+        case .nurRichtwert(let z):
+            VStack(alignment: .leading, spacing: 4) {
+                Label(z.satz, systemImage: "hourglass")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(z.katalog.hinweis).font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(z.wasFehlt).font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    Button("\(zahl(z.katalog.tage)) Tage nehmen") {
+                        k.v.wartezeitTage = z.katalog.tage
+                        try? ctx.save(); tick += 1
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    Button("Woher die Zahl kommt") { belegBearbeiten = k }
+                        .buttonStyle(.bordered).controlSize(.small)
+                }
+            }
+
+        case .still:
+            Button("Woher die Zahl kommt") { belegBearbeiten = k }
+                .font(.caption2).buttonStyle(.borderless)
+        }
     }
 
     private func bindung(_ v: Voraussetzung) -> Binding<Double> {

@@ -167,6 +167,20 @@ extension Voraussetzung {
 
     /// Kante im Schritt→Schritt-Graph (statt manuelles Geschoss-Häkchen)?
     var istKante: Bool { quelle != nil }
+
+    /// Wie heißt das, worauf gewartet wird? Eine Kante trägt oft keinen eigenen Namen —
+    /// dann ist der Vorgänger die Antwort („wartet auf Bewehrung OG").
+    ///
+    /// Wohnt hier und nicht in der Ansicht, damit Tagesblick, Auftragsansicht und
+    /// Übernahme-Nachweis dasselbe sagen. (Am 21.09.2026 hatte ich das im `Tagesblick`
+    /// nachgebaut, statt es hierher zu legen — dieselbe Sorte Doppelung, die den ganzen
+    /// Tag über aufgefallen ist.)
+    var anzeigename: String {
+        let eigener = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !eigener.isEmpty { return eigener }
+        if let quelle { return Kausalkette.bezeichnung(quelle) }
+        return "Voraussetzung"
+    }
 }
 
 // MARK: - Auftrag: startbar?

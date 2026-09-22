@@ -1,0 +1,71 @@
+# Trennlinien — woran man erkennt, dass in einem Titel zwei Arbeiten stecken
+#
+# Andreas, 22.09.2026: „Wenn du etwas baust, dann ist das doch allgemeingültig oder
+# nur für diesen Fall und diese Baustelle? Das sollte nie passieren."
+#
+# Er hatte recht. Der erste Wurf kannte genau EINE Trennlinie — die, die sein Fall
+# brauchte (Erdreich gegen Bauwerk). Ein Werkzeug, das nur den einen Fall kann, ist
+# kein Werkzeug. Jetzt steht die Sammlung hier und lässt sich erweitern, ohne den
+# Code anzufassen.
+#
+# 🔴 WAS EINE TRENNLINIE IST: zwei Arbeiten, die im selben Kostentitel stehen, aber
+#    von verschiedenen Leuten zu verschiedenen Zeiten gemacht werden. Der Grund ist
+#    immer derselbe: die DIN 276 sortiert nach Geld, nicht nach Ablauf.
+#
+# 🔴 WAS SIE NICHT IST: eine Bewertung. Der Mops schlägt vor, der Mensch teilt.
+#    Jede Linie hier ist GERATEN und trägt deshalb ihre Begründung mit.
+#
+# Raphi muss da einmal drüberschauen — besonders, welche Trennlinien auf dem Bau
+# wirklich vorkommen und welche ich mir ausgedacht habe.
+
+- id: "erdreich"
+  name: "Erdarbeiten und Anschlüsse"
+  begruendung: "liegen im Erdreich — andere Kolonne, anderer Zeitpunkt im Bauablauf"
+  stamm: ["hausanschluss", "grundleitung", "graben", "erdarbeit", "aushub",
+          "verfull", "schacht", "kanal", "bettung", "verdicht", "frostfrei",
+          "sohle", "boschung", "drainage", "rohrgraben", "baugrube",
+          "mutterboden", "oberboden"]
+
+- id: "geruest"
+  name: "Gerüstarbeiten"
+  begruendung: "macht der Gerüstbauer, nicht die eigene Kolonne — und es steht vor und nach der Arbeit"
+  # 🔴 "schnurgerust" gehoert NICHT hierher: das ist Vermessung (Baufeld abstecken),
+  #    kein Baugeruest. Es steht unten bei den Pruefungen. An BV Setiadji aufgefallen.
+  stamm: ["arbeitsgerust", "fassadengerust", "schutzgerust", "fanggerust",
+          "geruststellung", "geruestbau"]
+
+- id: "aussen"
+  name: "Arbeiten aussen"
+  begruendung: "aussen hängt am Wetter und am Gerüst, innen nicht — das sind zwei Zeitfenster"
+  # 🔴 "aussenwand" ist RAUS: Aussen- und Innenwand mauert dieselbe Kolonne am
+  #    selben Tag. Getestet an BV Setiadji — die Linie hätte 331 Mauerwerk
+  #    auseinandergerissen, was Unsinn ist. Aussenputz bleibt, der hängt am Gerüst.
+  stamm: ["aussenputz", "fassade", "aussenanlage", "freiflache",
+          "pflaster", "bepflanzung", "rasen", "wegebau"]
+
+- id: "abbruch"
+  name: "Abbruch und Rückbau"
+  begruendung: "kommt VOR allem anderen und braucht oft eine Genehmigung"
+  # 🔴 "abtragen" ist RAUS: es traf "Mutterboden 0,20 m abtragen" — das ist
+  #    Oberboden abschieben und gehört zu den Erdarbeiten, nicht zum Abbruch.
+  stamm: ["abbruch", "ruckbau", "demontage", "entkernung", "abfrasen",
+          "bestandsgebaude"]
+
+- id: "technik_vorbereitung"
+  name: "Vorbereitung im Rohbau"
+  begruendung: "Schlitze, Durchbrüche und Leerrohre entstehen im Rohbau, die Endmontage Monate später"
+  stamm: ["schlitz", "durchbruch", "kernbohrung", "leerrohr", "aussparung",
+          "vorwandinstallation", "rohinstallation"]
+
+- id: "fertigteil"
+  name: "Fertigteile"
+  begruendung: "haben eine Lieferzeit und einen Krantermin — das plant man getrennt von der Montage"
+  stamm: ["fertiggarage", "fertigteil", "filigran", "elementdecke", "betonfertigteil",
+          "fertigtreppe", "hohlkorper"]
+
+- id: "pruefung"
+  name: "Prüfen und Vermessen"
+  begruendung: "macht oft ein Dritter (Vermesser, Prüfstatiker, Sachverständiger) mit eigenem Termin"
+  stamm: ["dichtheitsprufung", "druckprufung", "abnahmeprufung", "vermessung",
+          "einmessung", "prufstatik", "sachverstandig", "blower",
+          "schnurgerust", "abstecken"]

@@ -118,7 +118,7 @@ struct EditEventView: View {
                 Section(header: Text("Zeitplan")) {
                     DatePicker("Baustelleneinrichtung", selection: $setupTime)
                     DatePicker("Baubeginn", selection: $eventStartTime)
-                    DatePicker("Fertigstellung", selection: $eventEndTime)
+                    DatePicker("Geplante Fertigstellung", selection: $eventEndTime)
                 }
             }
             .navigationTitle("Baustelle bearbeiten")

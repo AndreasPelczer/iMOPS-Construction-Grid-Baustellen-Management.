@@ -1634,3 +1634,513 @@
 
     Merkhilfe: importieren = dazulegen, nicht austauschen.
   quelle_kurz: "iMOPS GAEBImportView, GAEBAnkunftsPruefung.bestandVorImport"
+
+# ---------------------------------------------------------------------------
+# Nachgezogen am 21.09.2026 — acht Bildschirme geaendert, Hilfe war nicht dabei.
+# Genau die Drift-Falle, vor der oben gewarnt wird.
+# ---------------------------------------------------------------------------
+
+- id: "App_Tagesblick"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Wo war ich"
+    - "Tagesblick"
+    - "Uebersicht ueber alle Baustellen"
+    - "Was ist heute dran"
+    - "Wo bin ich gerade"
+  antwort: |
+    "Wo war ich?" ist die erste Zeile in der Baustellenliste — die Klammer ueber
+    ALLE Baustellen, bevor man sich fuer eine entscheidet.
+
+    Sie zeigt:
+    - Wo du zuletzt gearbeitet hast (zum Weitermachen antippen)
+    - Je Baustelle die Lage: "wird geplant" / "laeuft" / "fertig", und was anstuende
+    - "Kann jetzt anfangen": Auftraege, deren Vorgaenger alle fertig sind
+    - "Steht wirklich still": nur Auftraege, die LAUFEN und denen etwas fehlt
+    - Ueberfaellige Fristen
+
+    Jede Zeile fuehrt auf ihr Ding: eine Blockade auf den blockierten Auftrag,
+    eine Frist auf die Maengelliste, fehlende Preise ins LV.
+
+    Was nur auf einen Vorgaenger wartet, steht bewusst NICHT als Alarm da —
+    das ist Plan, keine Not.
+
+- id: "App_Wochenstrahl"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Diese Woche"
+    - "Wochenstrahl"
+    - "Alle Baustellen nebeneinander"
+    - "Wochenplan"
+    - "Wer ist diese Woche wo"
+  antwort: |
+    "Diese Woche" erreichst du ueber "Wo war ich?" — alle Baustellen nebeneinander,
+    Montag bis Freitag, auf echten Kalendertagen.
+
+    Am Mac und iPad als KALENDER-RASTER wie in iCal, Google oder Outlook:
+    die fuenf Tage als Spalten, jeder Auftrag als BALKEN ueber so viele Tage,
+    wie er dauert. Ein Auftrag von Dienstag bis Mittwoch ist EIN Balken —
+    nicht zweimal derselbe Name untereinander.
+    - Grau/blau: laeuft noch · gruen: erledigt
+    - Ein Pfeil ‹ am linken Rand: der Auftrag laeuft schon seit letzter Woche
+    - Ein Pfeil › am rechten Rand: er laeuft ueber Freitag hinaus
+    - Fristen (rot) stehen in einer eigenen Zeile unter den Balken, weil sie auf
+      EINEM Tag liegen und keine Arbeit sind
+    - Auf einen Balken tippen fuehrt zum Auftrag
+    Am iPhone hochkant bleibt die Tagesliste — fuenf Spalten waeren dort unlesbar.
+
+    Mit den Pfeilen oben blaetterst du vor und zurueck.
+
+    Damit etwas drinsteht, braucht es zweierlei:
+    1. Die Baustelle braucht einen Starttermin (sonst gibt es keinen Tag 1)
+    2. Die Auftraege brauchen eine Dauer (Baustelle -> Terminplan, je Auftrag eine Zahl)
+
+    Fehlt eines davon, sagt der Bildschirm das ausdruecklich — statt einen leeren
+    Kalender zu zeigen. Samstag und Sonntag werden uebersprungen.
+
+- id: "App_Arbeitspakete_vorschlagen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Arbeitspakete vorschlagen"
+    - "Aus dem LV Auftraege machen"
+    - "Wie werden aus LV-Positionen Auftraege"
+    - "Arbeitspakete anlegen"
+  antwort: |
+    Im LV, direkt unter "Mops fass": "Arbeitspakete vorschlagen".
+
+    Der Mops gruppiert die LV-Positionen nach ihren Titeln (die Ziffern vor dem
+    Punkt in der Positionsnummer) — aus 109 Positionen werden so etwa 17 Pakete.
+    Ein LV ist die Abrechnung, ein Arbeitspaket ist die Arbeit.
+
+    In der Liste kannst du:
+    - Pakete abwaehlen
+    - die Dauer aendern (oben die Kolonnengroesse einstellen — mehr Leute, kuerzer)
+    - die Verkettung abschalten (fuer Gewerke, die parallel laufen)
+
+    Erst "anlegen" erzeugt die Auftraege. Ein zweiter Druck legt nichts doppelt an:
+    schon vorhandene Titel stehen gruen mit "gibt es schon" und sind abgehakt.
+
+    ACHTUNG: Die Reihenfolge kommt aus den Titelnummern (DIN 276) und ist ein
+    ENTWURF, kein Bauablauf. Geruest gehoert vor das Dach, Grundleitungen vor die
+    Bodenplatte. Umhaengen danach im Auftrag unter "Wartet auf".
+
+- id: "App_Auftrag_Band"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Was ist jetzt dran"
+    - "Hier ist gerade nichts zu tun"
+    - "Zum Vorgaenger"
+    - "Warum kann ich hier nichts machen"
+  antwort: |
+    Oben im Auftrag steht ein Band, das sagt, was JETZT dran ist:
+
+    - "Hier ist gerade nichts zu tun" — der Auftrag wartet auf einen Vorgaenger.
+      Die Loesung liegt dort, nicht hier. Mit "Zum Vorgaenger" springst du hin;
+      meldest du den fertig, ist die Blockade weg.
+    - "Als Naechstes: ..." — der erste offene Arbeitsschritt
+    - "Startklar, aber ohne Arbeitsschritte" — nichts haelt auf, es fehlt nur die
+      Anweisung
+    - "Alle Schritte abgehakt" — unten bestaetigen
+
+- id: "App_Nein_uebergehen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Trotzdem anfangen"
+    - "Voraussetzung uebergehen"
+    - "Ich uebernehme das"
+    - "Auftrag fertig melden obwohl etwas offen ist"
+  antwort: |
+    Meldest du einen Auftrag fertig, obwohl Voraussetzungen offen sind, sperrt der
+    Mops NICHT. Er fragt.
+
+    Es kommt ein Dialog, der nennt was offen ist, die Folge sagt und zugibt, dass
+    der Mops nicht davorsteht ("Du stehst davor. Ich nicht."). Dann verlangt er
+    EINEN SATZ: warum ist es trotzdem in Ordnung.
+
+    Der Satz ist Pflicht. Er bleibt am Auftrag stehen, mit Name und Zeitpunkt, und
+    ueberlebt auch das spaetere Loesen der Voraussetzung. Das ist kein Gestaendnis,
+    sondern dein Nachweis — in zehn Jahren ist es das Einzige, was ein Gutachter liest.
+
+- id: "App_Anweisung_Mops_fragen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Mops wie geht das"
+    - "Arbeitsschritte vorschlagen lassen"
+    - "Anweisung schreiben"
+    - "Woher kommen die Arbeitsschritte"
+    - "Vorlage waehlen"
+  antwort: |
+    Hat ein Auftrag noch keine Arbeitsschritte, steht dort "Fuer diese Arbeit gibt
+    es noch keine Anweisung" und als erster Knopf: "Mops, wie geht das?".
+
+    Der Mops schaut zuerst in seinen Anweisungs-Katalog. Ist die Arbeit schon
+    einmal beschrieben worden, kommt sie sofort — mit dem Namen dessen, der sie
+    abgenommen hat. Sonst fragt er seinen Server.
+
+    In der Liste: Text aendern, wischen zum Loeschen, schieben zum Umsortieren,
+    unten ergaenzen. Wer einen Text anfasst, uebernimmt ihn.
+
+    DIE AMPEL:
+      gruen  = abgenommen oder selbst geschrieben
+      gelb   = Vorschlag, reiner Handgriff — wer ihn liest, kann ihn abnehmen
+      rot    = Vorschlag MIT EINER ZAHL — da muss jemand ran, der den Wert
+               beurteilen kann. Eine Zahl sieht immer plausibel aus.
+
+    Zum Abnehmen den eigenen Namen eintragen. Beim Uebernehmen merkt sich der Mops
+    die Anweisung fuer die naechste Baustelle — aber NUR das Abgenommene.
+
+    Antwortet der Server nicht, kommt ein ehrlicher Fehler und zwei Auswege: selbst
+    schreiben, oder "Geruest aus dem Rezept" (Material, Geraet, Aufmass — ohne KI).
+
+- id: "App_Arbeitsschritte_abarbeiten"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Arbeitsschritte abhaken"
+    - "Schritt erledigt"
+    - "Wie arbeite ich die Liste ab"
+    - "Jetzt-Schritt"
+  antwort: |
+    Sind Schritte hinterlegt, zeigt der Auftrag EINEN Punkt gross unter "JETZT" —
+    mit einem gruenen "Erledigt"-Knopf und darunter klein, was danach kommt.
+
+    Alles andere ist eingeklappt:
+    - "Alle Schritte ansehen" — die ganze Liste
+    - "Anweisung aendern" — Schritt anhaengen, Vorlage nehmen, leeren
+
+    Oben rechts steht der Stand ("3 von 8"). Sind alle abgehakt, wird aus dem
+    Knopf "Alle Schritte erledigt — Auftrag abschliessen".
+
+- id: "App_Auftrag_loeschen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Auftrag loeschen"
+    - "Diesen Auftrag loeschen"
+    - "Wie loesche ich einen Auftrag"
+  antwort: |
+    Unten im Auftrag, klein und rot umrandet: "Diesen Auftrag loeschen".
+
+    Vorher zeigt der Mops, WAS dabei verschwindet — Arbeitsschritte,
+    Materialpositionen, wie viele Auftraege dadurch frei werden. Traegt der Auftrag
+    eine uebernommene Verantwortung, steht das ausdruecklich dabei: der Satz, mit
+    dem jemand dafuer geradesteht, ist danach weg.
+
+    Danach ein vierstelliger Code. Das laesst sich nicht rueckgaengig machen.
+
+    HINWEIS: Bis zum 21.09.2026 hiess dieser Knopf faelschlich "Komplette
+    Materialliste unwiderruflich loeschen" — er loeschte aber den ganzen Auftrag.
+
+- id: "App_Baustellen_Filter_Phasen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Filter Baustellenliste"
+    - "In Planung"
+    - "Laeuft"
+    - "Fertig"
+    - "Reiter ueber der Baustellenliste"
+    - "Wo sind meine abgeschlossenen Baustellen"
+    - "Warum ist meine Baustelle nicht abgeschlossen"
+    - "Aktiv Abgeschlossen Alle"
+  antwort: |
+    Ueber der Baustellenliste stehen vier Reiter. Sie fragen die ARBEIT,
+    nicht den Kalender:
+    - In Planung: es gibt Auftraege, aber keiner hat angefangen
+    - Laeuft: jemand arbeitet, oder etwas ist schon fertig
+    - Fertig: alle Auftraege sind erledigt
+    - Alle: gesamte Uebersicht (Standard)
+    Dieselben Woerter benutzt "Wo war ich?" fuer die Lage je Baustelle —
+    es gibt nur eine Rechnung dafuer.
+    Wichtig: ein verstrichener Endtermin macht eine Baustelle NICHT fertig.
+    Er macht sie ueberfaellig. Frueher hiessen die Reiter "Aktiv/Abgeschlossen"
+    und rechneten nur mit dem Datum; eine Baustelle ohne einen Handschlag
+    stand unter "Abgeschlossen", sobald ihr Termin vorbei war.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Dont_Panic"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Don't Panic"
+    - "Dont Panic"
+    - "Panik"
+    - "Per Anhalter durch den Mops"
+    - "Ich verstehe nichts"
+    - "Ich bin ueberfordert"
+    - "Wo fange ich an"
+    - "Hilfe"
+  antwort: |
+    Keine Panik. Eine Baustelle, auf der alles schiefgehen kann — kein Problem,
+    du hast den Mops.
+    Wenn du nicht weiterweisst, in dieser Reihenfolge:
+    1. "Wo war ich?" oben in der Baustellenliste — sie sagt, was ueberhaupt los ist
+    2. Das Fragezeichen oben links in jeder Ansicht — es erklaert genau diesen Bildschirm
+    3. Hier im BauWissen ein Schlagwort eintippen: GAEB, Preise, Maengel, Woche ...
+    Du kannst nichts kaputtmachen, was sich nicht zurueckdrehen laesst.
+    Wo es doch endgueltig wird, fragt der Mops vorher nach und sagt dazu,
+    was verschwindet.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Schritte_schreiben_Faden"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Schritte schreiben"
+    - "Wo ist der naechste Auftrag"
+    - "Naechstes Puzzlestueck"
+    - "Auftraege ohne Schritte"
+    - "Baustelle einrichten Reihenfolge"
+    - "Wie richte ich alle Auftraege ein"
+    - "Weiter zum naechsten"
+  antwort: |
+    Zwischen "Arbeitspakete anlegen" und "draussen anfangen" liegt eine Stufe:
+    fuer jeden Auftrag muessen einmal die Schritte geschrieben und abgenommen werden.
+    Der Mops fuehrt dich da durch, du musst dir nichts merken:
+    1. In "Wo war ich?" steht der Abschnitt "Schritte schreiben" mit der Anzahl
+    2. Einen antippen -> "Mops, wie geht das?" -> durchlesen -> abnehmen
+    3. Sobald die Schritte stehen, erscheint UNTER der Anweisung die Zeile
+       "Weiter: <naechster Auftrag>" samt "noch X ohne Schritte"
+    4. Antippen und weiter — du musst nicht zurueck in die Liste
+    Die Reihenfolge ist die des Bauablaufs: was startbar ist, kommt zuerst.
+    Erledigte Auftraege zaehlen nicht mit.
+    Das ist ARBEIT, kein Alarm — das Warndreieck geht davon nicht an.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Schritte_auswaehlen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Schritte auswaehlen"
+    - "Schritte abwaehlen"
+    - "Brauche ich nicht auf dieser Baustelle"
+    - "Bauzaun weg"
+    - "kommt im LV nicht vor"
+    - "Warum ist ein Schritt durchgestrichen"
+    - "Vorschlag passt nicht"
+  antwort: |
+    Jeder vorgeschlagene Schritt hat links einen Haken. Antippen nimmt ihn fuer
+    DIESE Baustelle weg — er bleibt durchgestrichen stehen, geht aber nicht in den
+    Auftrag. Nochmal antippen holt ihn zurueck. Oben steht dann "12 von 17 gewaehlt".
+    Der Grund: Vorschlaege sind fuer die grosse Baustelle geschrieben. Fuer einen
+    einzelnen Pfosten braucht niemand Bauzaun und Baustellentoilette.
+    Der Mops schaut selbst nach: nennt ein Schritt eine Sache, die eine eigene
+    LV-Position waere (Bauzaun, Geruest, Toilette, Baustrom, Container, Kran,
+    Absperrung ...) und kommt sie im LV dieser Baustelle NICHT vor, dann steht
+    daneben "X kommt im LV nicht vor" und der Schritt ist schon abgewaehlt.
+    Das ist eine Feststellung, kein Urteil — vielleicht laeuft die Sache ueber eine
+    Pauschale oder der Bauherr stellt sie. Ein Griff, und sie ist wieder drin.
+    Ohne LV sagt der Mops dazu nichts.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Dauer_am_Auftrag"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Dauer eintragen"
+    - "Wie lange dauert ein Auftrag"
+    - "Wo trage ich die Dauer ein"
+    - "Paket hat keine Dauer"
+    - "Mitarbeiter zuteilen"
+    - "Wer macht es"
+    - "Niemand ist zugeteilt"
+  antwort: |
+    Im Auftrag selbst, Karte "Wie lange, und wer" — gleich unter "Das gehoert dazu":
+    1. Mit dem Stepper in Halbtages-Schritten, oder ueber die Knoepfe
+       0,5 T / 1 T / 2 T / 1 Woche
+    2. Darunter "Wer macht es": auf den Namen tippen und aus den aktiven
+       Mitarbeitern waehlen. "Zuteilung aufheben" nimmt ihn wieder weg.
+    Beides wird sofort gespeichert; die Meldung in "Wo war ich?" verschwindet
+    dann von allein.
+    Fuer viele Pakete auf einmal: Baustelle oeffnen, Karte "Terminplan" —
+    dort stehen alle Auftraege untereinander mit je einem Stepper.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Sonderfall_erklaeren"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Das ist hier anders"
+    - "Sonderfall"
+    - "Ausnahme eintragen"
+    - "Mops liegt falsch"
+    - "Meldung stummschalten"
+    - "Der Mops meckert zu unrecht"
+    - "Warum meldet der Mops das nicht mehr"
+  antwort: |
+    In "Wo war ich?" steht rechts an jeder Meldung ein kleiner Knopf
+    "ist hier anders" — antippen.
+    Dann eintragen, was hier stattdessen gilt (z.B. "Bauzaun stellt der Bauherr"),
+    Namen dazu, und ob es NUR HIER oder IMMER gilt.
+    Was dann passiert:
+    - Der Mops meldet diese eine Sache nicht mehr. Nicht stumm: die Erklaerung
+      steht im Sonderfall-Buch, mit Namen und Datum. Wer spaeter fragt "warum
+      steht da nichts von einer Dauer", findet den Satz.
+    - Er ZAEHLT mit. Dieselbe Erklaerung zum dritten Mal ist keine Ausnahme mehr —
+      dann fehlt eine Regel. Solche Themen landen auf der Liste
+      "Das sollte der Mops koennen".
+    🔴 "Nur hier" gilt wirklich nur auf dieser Baustelle bei diesem Ding —
+    sonst wuerden echte Luecken auf anderen Baustellen verschwinden.
+    Alles Erklaerte steht in "Wo war ich?" unter "Sonderfaelle" — dort auch die
+    Liste "Das sollte der Mops koennen".
+    Der Mops baut aus den Sonderfaellen KEINE Regel von selbst. Er sammelt nur
+    den Beleg, dass eine fehlt; was daraus wird, entscheidet ein Mensch.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Papiere_Material"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Sicherheitsdatenblatt"
+    - "SDB"
+    - "Papiere"
+    - "Gefahrstoff"
+    - "technisches Merkblatt"
+    - "Datenblatt hinterlegen"
+    - "Welche Materialien haben kein Datenblatt"
+  antwort: |
+    Baustelle oeffnen -> Karte "Papiere". Dort stehen alle Materialien der
+    Baustelle mit dem, was hinterlegt ist.
+    ZWEI verschiedene Papiere, sie tun Verschiedenes:
+    - Sicherheitsdatenblatt (SDB): Gefahren, Schutzausruestung, Erste Hilfe.
+      Pflicht nach GefStoffV. Gilt als zu pruefen, wenn es aelter als drei
+      Jahre ist — Hersteller aendern Rezepturen.
+    - Technisches Merkblatt: Verarbeitung, Mischung, Trocknungszeit. Kein
+      Pflichtpapier, aber DORT steht die Liegezeit fuer den Terminplan.
+    🔴 Das SDB wird nur fuer GEFAHRSTOFFE verlangt (Zement, Bitumen, Harze,
+    Loesemittel, Mineralwolle, Druckgase). Schotter, Pflastersteine und
+    Betonstahl brauchen keins — sonst stuenden achtzig Prozent dauerhaft auf rot.
+    Der Mops erkennt Gefahrstoffe am NAMEN, das ist geraten. Im Blatt gibt es
+    den Schalter "Gefahrstoff" — wer es besser weiss, stellt ihn um, und das
+    gilt dann.
+    In "Wo war ich?" steht die Luecke als Punkt unter dem, was anstuende —
+    kein Alarm.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Namen_verbessern"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Namen verbessern"
+    - "Arbeitspakete heissen gleich"
+    - "Baukonstruktionen"
+    - "Paket umbenennen"
+    - "Warum heissen alle gleich"
+  antwort: |
+    Baustelle oeffnen -> Karte "Namen verbessern". Sie erscheint nur, wenn es
+    wirklich etwas zu verbessern gibt.
+    Warum: aeltere Arbeitspakete wurden nach ihrer DIN-276-Kostengruppe benannt.
+    Dann heissen elf Stueck "Baukonstruktionen" und nur die Nummer vorn
+    unterscheidet sie — das sagt nichts ueber die Arbeit.
+    Der bessere Name ist der erste Positionstext des Titels, den hat der
+    Kalkulator geschrieben: aus "342 Baukonstruktionen" wird
+    "342 Mauerwerk Innenwand Ytong PP 4-0,55, d = 11,5 cm".
+    Mit Vorschau, jeder einzeln abwaehlbar.
+    🔴 Die Nummer bleibt vorn stehen — an ihr haengt die Zuordnung zu den
+    LV-Positionen ("Das gehoert dazu"). Wer selbst umbenannt hat, wird nicht
+    ueberfahren: nur Namen, die bloss eine Kostengruppe nennen, werden angefasst.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Paket_teilen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Paket teilen"
+    - "Arbeitspaket aufteilen"
+    - "Fuer Positionen gibt es keinen Arbeitsschritt"
+    - "Passen Positionen und Schritte zusammen"
+    - "Zwei Arbeiten in einem Paket"
+  antwort: |
+    Im Auftrag unter "Das gehoert dazu" prueft der Mops beide Richtungen:
+    1. Nennt ein Schritt etwas, das im LV gar nicht vorkommt (Bauzaun)?
+       -> beim Schritte-Holen, der Schritt wird abgewaehlt.
+    2. Steht im LV etwas, wofuer es keinen Schritt gibt?
+       -> eigenes Feld mit den betroffenen Positionen.
+    Fall 2 hat meist einen von zwei Gruenden:
+    - Es fehlen wirklich Schritte -> "Mops, wie geht das?" nochmal, oder selbst
+      schreiben.
+    - Das Paket enthaelt ZWEI verschiedene Arbeiten -> Knopf "Paket teilen".
+    🔴 Warum das vorkommt: Arbeitspakete entstehen nach der Titelnummer, und die
+    folgt der DIN 276. Die DIN 276 ist eine KOSTENgliederung — sie sortiert nach
+    "wozu gehoert das Geld", nicht nach "wer macht wann was".
+    "411 Abwasser-, Wasser-, Gasanlagen" enthaelt deshalb den Hausanschluss im
+    Graben UND das Waschbecken im Dachgeschoss. Fuer die Kalkulation richtig,
+    fuer den Bauablauf unbrauchbar.
+    Im Blatt "Paket teilen" hakst du an, was ins neue Paket soll. Der Mops
+    schlaegt eine Trennlinie vor (Erdreich gegen Innenausbau) — das ist geraten,
+    du entscheidest. Das neue Paket heisst "411a ...", die Titelnummer bleibt
+    vorn, und keine Position steht danach in beiden.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Baustelle_loeschen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Baustelle loeschen"
+    - "Wie loesche ich eine Baustelle"
+    - "Arbeitspakete ohne Baustelle"
+    - "Waisen"
+    - "verwaiste Auftraege"
+  antwort: |
+    Baustellenliste -> nach links wischen -> Loeschen. Vorher steht da, was
+    mitgeht: "Das geht mit: 34 Arbeitspakete · 109 LV-Positionen · 3 Maengel."
+    Das laesst sich nicht rueckgaengig machen.
+    🔴 Seit 22.09.2026 gehen die Arbeitspakete MIT. Vorher blieben sie liegen:
+    im Datenmodell steht Event.jobs auf "Nullify", also wurde beim Loeschen nur
+    die Verbindung gekappt und der Auftrag blieb — unsichtbar, weil kein
+    Bildschirm Auftraege ohne Baustelle zeigt. So kamen 965 Stueck zusammen.
+    Das war KEIN Bedienfehler. Es gab keinen richtigen Weg.
+    Der Altbestand: steht als Zeile oben in der Baustellenliste
+    ("X Arbeitspakete ohne Baustelle"), aber nur wenn es welche gibt.
+    Antippen zeigt, was da liegt (die haeufigsten Namen, wie viele noch
+    Arbeitsschritte haben) und bietet "Alle loeschen" an. Unwiderruflich.
+  quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Schritte_fuer_alle"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Schritte fuer alle"
+    - "Arbeitsschritte holen"
+    - "Alle Auftraege auf einmal"
+    - "Muss ich jeden einzeln anklicken"
+    - "Sammelaktion Schritte"
+  antwort: |
+    Baustelle -> Karte "Arbeitsschritte holen". Oder in "Wo war ich?" unter
+    "Schritte schreiben" der Knopf "Fuer alle auf einmal holen".
+    Der Mops geht in dieser Reihenfolge vor, und die hat einen Grund:
+    1. KATALOG — schon von einem Menschen abgenommen. Sofort, gruen,
+       und als einziges VORAUSGEWAEHLT.
+    2. VORLAGE — eine der zwoelf aus der Anfangszeit. Sofort, aber ungeprueft,
+       also NICHT vorausgewaehlt.
+    3. REZEPT — Material und Geraet der Position als Geruest. Sofort, duerftig.
+    4. Der Prof — nur fuer den Rest. Knopf "beim Mops nachfragen", laeuft einen
+       nach dem anderen durch, sichtbar und jederzeit mit "Stopp" abbrechbar.
+       🔴 Eine Anfrage darf bis zu drei Minuten dauern: bei dreissig Auftraegen
+       waeren das anderthalb Stunden. Deshalb erst alles, was nichts kostet.
+    Uebernommen wird nur, was angehakt ist. ABGENOMMEN ist damit nichts —
+    das machst du im Auftrag, und erst dann merkt der Mops es sich.
+
+- id: "App_Alle_Pakete_teilen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Alle Pakete teilen"
+    - "Zwei Arbeiten in einem"
+    - "Teilungsvorschlaege sehen"
+  antwort: |
+    Baustelle -> Karte "Zwei Arbeiten in einem Paket". Sie erscheint nur, wenn
+    der Mops wirklich etwas vermutet.
+    Dort stehen alle Vorschlaege untereinander, mit Begruendung und den
+    betroffenen Positionen. Zwei Wege:
+    - "Alle teilen" nimmt je Paket den OBERSTEN Vorschlag.
+    - "Dieses Paket teilen" macht es einzeln, mit Auswahl und eigenem Namen.
+    Die neuen Pakete heissen wie das alte mit einem "a" hinter der Nummer
+    (411 -> 411a) und haben noch keine Dauer.
+  quelle_kurz: "iMOPS Bedienung"
