@@ -5,6 +5,35 @@ oder ein neuer Teil davon."*
 
 ---
 
+## Was der Mops eigentlich ist
+
+Andreas am 22.09.2026, als ich anfing, vom Bau her zu denken:
+
+> „du solltest doch auch langsam von der DNA des Mops durchdrungen sein. Eine
+> Dokumentations-Wissensmonster-Rezeptmaschine, die zufällig auch Rohbau und
+> Ausbildung von Maurern kann."
+
+🔴 **Der Mops ist kein Bau-Programm, das nebenbei dokumentiert.** Er ist eine
+Nachweis-Maschine, und Rohbau ist gerade nur das, was drinliegt. Darum ging die
+Gastro-Wurzel so glatt mit — es ist dieselbe Mechanik unter verschiedenen Namen:
+
+| Küche | Bau | Ausbildung |
+|---|---|---|
+| Rezept | Arbeitsauftrag | Lernziel aus dem Rahmenplan |
+| Arbeitsschritte | Arbeitsschritte | zu vermittelnde Fertigkeit |
+| Pass: abgegeben, angenommen | Übergabe: gemeldet, übernommen | gefragt, gezeigt |
+| HACCP-Nachweis | Bautagesbericht | Berichtsheft |
+
+Vier Spalten, **eine** Maschine. Wer das vergisst, baut für den Bau, was schon
+für die Küche dasteht — und wundert sich, dass das Berichtsheft „plötzlich" fast
+fertig ist. Es ist derselbe Vorgang, von der anderen Seite angeschaut.
+
+Praktische Folge für jede Instanz: **bevor du etwas Neues für den Bau entwirfst,
+frag, wie es in der Küche hiess.** Meistens gibt es das schon
+(`frischer-kopf-unterschaetzt-den-code`).
+
+---
+
 ## Der alte Nordstern hört da auf, wo dieser anfängt
 
 **Nordstern 1 — „Zeichnung → Baustelle"** (`nordstern-zeichnung-zu-baustelle`):
