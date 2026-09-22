@@ -2046,3 +2046,34 @@
     LV-Positionen ("Das gehoert dazu"). Wer selbst umbenannt hat, wird nicht
     ueberfahren: nur Namen, die bloss eine Kostengruppe nennen, werden angefasst.
   quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Paket_teilen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Paket teilen"
+    - "Arbeitspaket aufteilen"
+    - "Fuer Positionen gibt es keinen Arbeitsschritt"
+    - "Passen Positionen und Schritte zusammen"
+    - "Zwei Arbeiten in einem Paket"
+  antwort: |
+    Im Auftrag unter "Das gehoert dazu" prueft der Mops beide Richtungen:
+    1. Nennt ein Schritt etwas, das im LV gar nicht vorkommt (Bauzaun)?
+       -> beim Schritte-Holen, der Schritt wird abgewaehlt.
+    2. Steht im LV etwas, wofuer es keinen Schritt gibt?
+       -> eigenes Feld mit den betroffenen Positionen.
+    Fall 2 hat meist einen von zwei Gruenden:
+    - Es fehlen wirklich Schritte -> "Mops, wie geht das?" nochmal, oder selbst
+      schreiben.
+    - Das Paket enthaelt ZWEI verschiedene Arbeiten -> Knopf "Paket teilen".
+    🔴 Warum das vorkommt: Arbeitspakete entstehen nach der Titelnummer, und die
+    folgt der DIN 276. Die DIN 276 ist eine KOSTENgliederung — sie sortiert nach
+    "wozu gehoert das Geld", nicht nach "wer macht wann was".
+    "411 Abwasser-, Wasser-, Gasanlagen" enthaelt deshalb den Hausanschluss im
+    Graben UND das Waschbecken im Dachgeschoss. Fuer die Kalkulation richtig,
+    fuer den Bauablauf unbrauchbar.
+    Im Blatt "Paket teilen" hakst du an, was ins neue Paket soll. Der Mops
+    schlaegt eine Trennlinie vor (Erdreich gegen Innenausbau) — das ist geraten,
+    du entscheidest. Das neue Paket heisst "411a ...", die Titelnummer bleibt
+    vorn, und keine Position steht danach in beiden.
+  quelle_kurz: "iMOPS Bedienung"

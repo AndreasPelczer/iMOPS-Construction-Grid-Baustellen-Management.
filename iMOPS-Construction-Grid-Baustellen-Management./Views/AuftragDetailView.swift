@@ -30,6 +30,7 @@ struct AuftragDetailView: View {
     @State private var zeigeAnweisungsVorschlag = false
     @State private var vorgaengerZiel: Auftrag?
     @State private var zeigeUebernahme = false
+    @State private var zeigeTeilen = false
     @State private var begruendung = ""
 
 
@@ -54,6 +55,7 @@ struct AuftragDetailView: View {
                 wasIstDranBand
                 liegezeitBand
                 gehoertDazuCard
+                ohneSchrittBand
                 zeitCard
                 productionListCard
                 modeCard
@@ -96,6 +98,9 @@ struct AuftragDetailView: View {
             Text(kettenFehler ?? "")
         }
         .sheet(isPresented: $zeigeUebernahme) { uebernahmeDialog }
+        .sheet(isPresented: $zeigeTeilen) {
+            PaketTeilenView(job: job).environment(\.managedObjectContext, ctx)
+        }
         .alert("Liegezeit dazwischen?", isPresented: Binding(
             get: { wartezeitVorschlag != nil },
             set: { if !$0 { wartezeitVorschlag = nil } }
@@ -378,6 +383,56 @@ struct AuftragDetailView: View {
     /// wusste das, hat aber nichts gesagt."
     /// Also steht es DORT, wo jemand weitermacht — nicht nur in der Karte, in der
     /// die Zahl eingetippt wurde.
+    /// 🔴 „Passt oben und unten zusammen?" — Andreas, 22.09.2026.
+    /// Bei „411 Abwasser-, Wasser-, Gasanlagen" passte es nicht: oben ein
+    /// Hausanschluss in 2,60 m Tiefe, unten acht Schritte reiner Innenmontage.
+    @ViewBuilder private var ohneSchrittBand: some View {
+        let fehlend = SchrittPassung.ohneSchritt(auftrag: job,
+                                                 schritte: extras.checklist.map(\.title))
+        if !fehlend.isEmpty && !extras.checklist.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(fehlend.count == 1
+                      ? "Für eine Position gibt es keinen Arbeitsschritt"
+                      : "Für \(fehlend.count) Positionen gibt es keinen Arbeitsschritt",
+                      systemImage: "list.bullet.rectangle.portrait")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.orange)
+
+                ForEach(fehlend.prefix(6)) { f in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(f.posNr)
+                            .font(.caption.monospaced()).foregroundStyle(.secondary)
+                            .frame(width: 62, alignment: .leading)
+                        Text(f.bezeichnung).font(.subheadline).lineLimit(2)
+                        Spacer(minLength: 6)
+                        Text(f.menge).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if fehlend.count > 6 {
+                    Text("und \(fehlend.count - 6) weitere")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+
+                Text("Das ist verkauft, aber niemand hat aufgeschrieben, wie es gemacht "
+                     + "wird. Entweder fehlen Schritte — oder das Paket enthält zwei "
+                     + "verschiedene Arbeiten und gehört geteilt.")
+                    .font(.footnote).foregroundStyle(.secondary)
+
+                Button { zeigeTeilen = true } label: {
+                    Label("Paket teilen", systemImage: "square.split.2x1")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(.orange.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
+        }
+    }
+
     @ViewBuilder private var liegezeitBand: some View {
         let zuKurz = job.zuKurzeLiegezeiten
         if let erste = zuKurz.first {

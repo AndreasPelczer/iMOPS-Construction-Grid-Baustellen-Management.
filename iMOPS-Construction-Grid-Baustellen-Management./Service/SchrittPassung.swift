@@ -85,3 +85,103 @@ enum SchrittPassung {
         return treffer
     }
 }
+
+// MARK: - 🔴 Die Gegenrichtung: was im LV steht, wofür es keinen Schritt gibt
+
+extension SchrittPassung {
+
+    /// Andreas, 22.09.2026, vor „411 Abwasser-, Wasser-, Gasanlagen":
+    /// „Sind im oberen Bereich die ganzen Anforderungen mit den Arbeitsschritten
+    ///  passend? Passt oben und unten zusammen?"
+    ///
+    /// Sie passten nicht. Oben standen ein Schmutzwasser-Hausanschluss in 2,60 m
+    /// Tiefe, 30 m Grundleitungen und vier Kontrollschächte; unten acht Schritte aus
+    /// der Vorlage „Sanitär & Heizung" — Wandschlitze, Dämmung, Sanitärobjekte
+    /// montieren. Reine Innenmontage. Für den Graben stand kein Wort da.
+    ///
+    /// Die bisherige Prüfung schaute nur in eine Richtung (nennt ein Schritt etwas,
+    /// das im LV fehlt — Bauzaun). Diese hier schaut zurück: **steht im LV etwas,
+    /// wofür niemand einen Handgriff aufgeschrieben hat?**
+    ///
+    /// 🔴 Absichtlich zurückhaltend: gemeldet wird nur, wenn KEIN Schritt auch nur
+    /// den Kernbegriff der Position trägt. Lieber ein übersehener Hinweis als eine
+    /// Liste, die bei jeder Position meckert — ein Zustand, der immer rot ist, ist
+    /// Rauschen.
+    struct OhneSchritt: Identifiable, Equatable {
+        var id: String { posNr }
+        let posNr: String
+        let bezeichnung: String
+        let menge: String
+        /// Das Wort, an dem es hängt — damit man sieht, wonach gesucht wurde.
+        let kern: String
+    }
+
+    /// Wörter, die überall vorkommen und deshalb nichts beweisen.
+    private static let fuellwoerter: Set<String> = [
+        "und", "oder", "mit", "ohne", "für", "fuer", "von", "bis", "der", "die", "das",
+        "den", "dem", "des", "aus", "auf", "nach", "vor", "bei", "inkl", "incl", "je",
+        "einschl", "gemäß", "gemaess", "laut", "ca", "rd", "pro", "als", "zur", "zum",
+        "liefern", "herstellen", "einbauen", "stellen", "setzen", "arbeiten",
+    ]
+
+    /// Die tragenden Wörter einer Positionsbezeichnung — lang genug, um etwas zu
+    /// bedeuten, und keine Füllsel. Zusammensetzungen werden aufgetrennt:
+    /// „Schmutzwasser-Hausanschluss" gibt „schmutzwasser" UND „hausanschluss".
+    /// 🔴 ä und ae sind dasselbe Wort. „Sanitärinstallation" im LV gegen
+    /// „Sanitaerobjekte montieren" im Schritt — ohne das hier hätte der Mops zwei
+    /// Positionen gemeldet, die längst abgedeckt sind. Derselbe Fehler wie gestern
+    /// in der Anleitungs-Suche.
+    static func flach(_ text: String) -> String {
+        var t = text.lowercased()
+        for (a, b) in [("ä","a"), ("ö","o"), ("ü","u"), ("ß","ss"),
+                       ("ae","a"), ("oe","o"), ("ue","u")] {
+            t = t.replacingOccurrences(of: a, with: b)
+        }
+        return t
+    }
+
+    static func kernbegriffe(_ text: String) -> [String] {
+        flach(text)
+            .replacingOccurrences(of: #"[^\p{L}\p{N}]+"#, with: " ", options: .regularExpression)
+            .split(separator: " ")
+            .map(String.init)
+            .filter { $0.count >= 5 && !fuellwoerter.contains($0) && !$0.allSatisfy(\.isNumber) }
+    }
+
+    /// Deckt irgendein Schritt diese Position ab?
+    ///
+    /// Ein Treffer reicht, und er zählt auch bei Wortstamm-Nähe: „Grundleitungen"
+    /// gilt als abgedeckt, wenn ein Schritt „Leitungen verlegen" heisst. Das ist
+    /// bewusst grosszügig — im Zweifel schweigt der Mops.
+    static func abgedeckt(_ position: LVPosition, von schritten: [String]) -> Bool {
+        let kerne = kernbegriffe(position.bezeichnung ?? "")
+        guard !kerne.isEmpty else { return true }        // ohne Text kein Urteil
+        let schritttext = flach(schritten.joined(separator: " "))
+        guard !schritttext.isEmpty else { return false }
+
+        return kerne.contains { kern in
+            if schritttext.contains(kern) { return true }
+            // Wortstamm: die ersten sechs Zeichen reichen für „leitung(en)",
+            // „montage/montieren", „prüfung/prüfen".
+            let stamm = String(kern.prefix(6))
+            return stamm.count >= 5 && schritttext.contains(stamm)
+        }
+    }
+
+    /// Alle Positionen eines Auftrags, für die kein Schritt existiert.
+    @MainActor
+    static func ohneSchritt(auftrag: Auftrag, schritte: [String]) -> [OhneSchritt] {
+        Arbeitspakete.positionen(fuer: auftrag)
+            .filter { !abgedeckt($0, von: schritte) }
+            .map { p in
+                let menge = p.menge == p.menge.rounded()
+                    ? String(format: "%.0f", p.menge)
+                    : String(format: "%.2f", p.menge)
+                return OhneSchritt(
+                    posNr: p.posNr ?? "—",
+                    bezeichnung: p.bezeichnung ?? "ohne Text",
+                    menge: "\(menge) \(p.einheit ?? "")".trimmingCharacters(in: .whitespaces),
+                    kern: kernbegriffe(p.bezeichnung ?? "").first ?? "")
+            }
+    }
+}

@@ -14,7 +14,17 @@
 //
 //  Die Gliederung steht schon in den Positionsnummern: Raphis Angebote laufen nach
 //  VOB — Titel `31.`, Positionen `31.0010`, `31.0020`. Die Titelnummer folgt der
-//  DIN 276, und die DIN 276 folgt grob dem Bauablauf. Beim BV Setiadji: 109 Positionen
+//  DIN 276.
+//
+//  🔴 KORRIGIERT am 22.09.2026. Hier stand: "und die DIN 276 folgt grob dem
+//  Bauablauf". Das ist falsch, und es war die Ursache eines echten Fehlers.
+//  Die DIN 276 ist eine KOSTENgliederung — sie sortiert danach, wozu das Geld
+//  gehoert, nicht danach, wer wann was macht. Bei Andreas landete deshalb in
+//  "411 Abwasser-, Wasser-, Gasanlagen" ein Schmutzwasser-Hausanschluss in 2,60 m
+//  Tiefe zusammen mit der Sanitaerinstallation im Dachgeschoss: zwei Kolonnen,
+//  ein halbes Jahr Abstand, ein Paket.
+//  Ein Titel ist ein guter ANFANG fuer ein Arbeitspaket, mehr nicht — deshalb
+//  `teilungsVorschlag` und `PaketTeilenView`. Beim BV Setiadji: 109 Positionen
 //  in 17 Titeln (31 Erdarbeiten · 32 Gründung · 33 Mauerwerk · 35 Decken · 36 Dach …).
 //
 //  🔴 ABER: Titelreihenfolge ist NICHT der fertige Bauablauf. Das Gerüst (39) muss vor
@@ -218,15 +228,64 @@ enum Arbeitspakete {
     /// Alle LV-Positionen, die zu diesem Arbeitspaket gehören — in Positionsreihenfolge.
     @MainActor
     static func positionen(fuer auftrag: Auftrag) -> [LVPosition] {
-        // Die echte Verbindung zuerst: wenn sie mal gesetzt ist, gewinnt sie.
+        guard let event = auftrag.event,
+              let alle = event.lvPositionen as? Set<LVPosition> else { return [] }
+
+        // 1. Wurde das Paket geteilt, gilt die ausdrückliche Zuordnung.
+        let eigene = PaketZuordnung.shared.posNummern(fuer: auftrag)
+        if !eigene.isEmpty {
+            let gesucht = Set(eigene)
+            return alle
+                .filter { gesucht.contains($0.posNr ?? "") }
+                .sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }
+        }
+
+        // 2. Die echte 1:1-Verbindung, falls jemand sie gesetzt hat.
         if let einzelne = auftrag.lvPosition { return [einzelne] }
 
-        guard let titelNr = titelNummerAusName(auftrag),
-              let event = auftrag.event,
-              let alle = event.lvPositionen as? Set<LVPosition> else { return [] }
+        // 3. Sonst über die Titelnummer — aber ohne das, was beim Teilen
+        //    ausdrücklich woandershin gegeben wurde.
+        guard let titelNr = titelNummerAusName(auftrag) else { return [] }
         return alle
             .filter { titelNummer($0) == titelNr }
+            .filter { !PaketZuordnung.shared.gehoertWoandershin($0.posNr ?? "", ausser: auftrag) }
             .sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }
+    }
+
+    // MARK: - Teilen
+
+    /// Ein Vorschlag, wo die Trennlinie liegen könnte.
+    struct Teilung {
+        let abtrennen: [LVPosition]
+        let name: String
+        let begruendung: String
+    }
+
+    /// 🔴 Erdarbeiten und Innenausbau in einem Paket sind zwei Kolonnen und oft ein
+    /// halbes Jahr Abstand. Das ist die häufigste Trennlinie — und sie ist GERATEN.
+    /// Der Mops schlägt sie vor, geteilt wird von Hand.
+    @MainActor
+    static func teilungsVorschlag(fuer auftrag: Auftrag) -> Teilung? {
+        let alle = positionen(fuer: auftrag)
+        guard alle.count >= 3 else { return nil }
+
+        // 🔴 Umlaut-blind vergleichen: „Kontrollschächte" trägt den Stamm „schacht",
+        // aber nur, wenn ä und a dasselbe sind. Derselbe Fehler wie zweimal vorher
+        // heute — `SchrittPassung.flach` macht es an einer Stelle richtig.
+        let draussen = ["hausanschluss", "grundleitung", "graben", "erdarbeit", "aushub",
+                        "verfull", "schacht", "kanal", "bettung", "verdicht",
+                        "frostfrei", "sohle", "boschung", "drainage", "rohrgraben"]
+        let getrennt = alle.filter { p in
+            let t = SchrittPassung.flach(p.bezeichnung ?? "")
+            return draussen.contains { t.contains($0) }
+        }
+        guard !getrennt.isEmpty, getrennt.count < alle.count else { return nil }
+
+        return Teilung(
+            abtrennen: getrennt,
+            name: "Erdarbeiten und Anschlüsse",
+            begruendung: "\(getrennt.count) von \(alle.count) Positionen liegen im Erdreich "
+                       + "— andere Kolonne, anderer Zeitpunkt im Bauablauf.")
     }
 
     /// Was das Paket zusammenzählt: Positionen, Summe, und wie viele noch ohne Preis sind.
