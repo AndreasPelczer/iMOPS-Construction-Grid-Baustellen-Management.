@@ -76,8 +76,9 @@ struct ContentView: View {
             Button("Löschen", role: .destructive) { loeschenAusfuehren() }
             Button("Behalten", role: .cancel) { loeschKandidaten = nil }
         } message: {
-            Text("Das geht mit: \(loeschFolgen.satz).\n\nDas lässt sich nicht "
-                 + "rückgängig machen.")
+            Text("Das geht mit: \(loeschFolgen.satz)."
+                 + (loeschFolgen.schritteSatz.map { "\n\n\($0)" } ?? "")
+                 + "\n\nDas lässt sich nicht rückgängig machen.")
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

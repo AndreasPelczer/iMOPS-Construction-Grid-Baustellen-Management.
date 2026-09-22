@@ -105,3 +105,54 @@ struct BaustelleLoeschenTests {
                 "die andere Baustelle behält ihre Aufträge")
     }
 }
+
+// MARK: - 🔴 Was an Arbeitsschritten verloren geht
+//
+// "die arbeitsschritte bleiben ja erhalten oder, die liegen doch unter den
+//  vorlagen oder?" (Andreas, 22.09.2026)
+//
+// Nur die ABGENOMMENEN. `AnweisungsKatalog.merken` nimmt bewusst nur Geprüftes,
+// damit sich ungeprüfte Schritte nicht über alle Baustellen vermehren — die
+// Kehrseite ist, dass ungeprüfte Arbeit beim Löschen verschwindet. Das muss vorher
+// dastehen.
+
+@MainActor
+struct VerloreneSchritteTests {
+
+    private func auftragMitSchritten(_ ctx: NSManagedObjectContext, _ e: Event,
+                                     _ name: String, _ anzahl: Int) {
+        let a = Auftrag(context: ctx)
+        a.processingDetails = name
+        a.status = .pending; a.storageNote = ""; a.event = e
+        var p = AuftragExtrasPayload()
+        p.checklist = (1...anzahl).map { AuftragChecklistItem(title: "Schritt \($0)") }
+        if let d = try? JSONEncoder().encode(p) { a.extras = String(data: d, encoding: .utf8) }
+    }
+
+    @Test func ungepruefteSchritteWerdenGezaehlt() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Arbeit drin"
+        auftragMitSchritten(ctx, e, "Ein ganz eigenartiger Auftragsname xyz", 8)
+        auftragMitSchritten(ctx, e, "Noch ein eigenartiger Name abc", 5)
+        try ctx.save()
+
+        let f = BaustelleLoeschen.folgen(e)
+        #expect(f.auftraegeMitSchritten == 2)
+        #expect(f.schritteNurHier == 13)
+        let satz = try #require(f.schritteSatz)
+        #expect(satz.contains("13 Arbeitsschritte"))
+        #expect(satz.contains("nicht abgenommen"))
+    }
+
+    /// Ohne Schritte kein Satz — es wird nur genannt, was es gibt.
+    @Test func ohneSchritteKeinSatz() throws {
+        let ctx = PersistenceController(inMemory: true).container.viewContext
+        let e = Event(context: ctx); e.title = "BV Leer"
+        let a = Auftrag(context: ctx)
+        a.processingDetails = "Paket ohne Schritte"
+        a.status = .pending; a.storageNote = ""; a.event = e
+        try ctx.save()
+
+        #expect(BaustelleLoeschen.folgen(e).schritteSatz == nil)
+    }
+}

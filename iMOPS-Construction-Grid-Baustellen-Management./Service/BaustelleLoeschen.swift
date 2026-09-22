@@ -38,6 +38,14 @@ enum BaustelleLoeschen {
         var maengel = 0
         var berichte = 0
         var kanten = 0
+        /// 🔴 Arbeitsschritte, die NICHT im Katalog stehen — die sind nach dem
+        /// Löschen wirklich weg. Andreas, 22.09.2026: „Die Arbeitsschritte bleiben
+        /// ja erhalten, oder?" Nur die abgenommenen. `AnweisungsKatalog.merken`
+        /// nimmt bewusst nur Geprüftes, damit sich ungeprüfte Schritte nicht über
+        /// alle Baustellen vermehren — die Kehrseite ist: wer nicht abnimmt,
+        /// verliert die Arbeit.
+        var schritteNurHier = 0
+        var auftraegeMitSchritten = 0
 
         var satz: String {
             var teile: [String] = []
@@ -47,17 +55,40 @@ enum BaustelleLoeschen {
             if berichte > 0 { teile.append("\(berichte) Bautagesberichte") }
             return teile.isEmpty ? "Die Baustelle ist leer." : teile.joined(separator: " · ")
         }
+
+        /// Der Satz über die Arbeitsschritte — nur wenn wirklich welche verloren gehen.
+        var schritteSatz: String? {
+            guard schritteNurHier > 0 else { return nil }
+            return "\(schritteNurHier) Arbeitsschritte in \(auftraegeMitSchritten) "
+                 + (auftraegeMitSchritten == 1 ? "Paket " : "Paketen ")
+                 + "sind noch nicht abgenommen — die stehen nicht im Katalog und "
+                 + "sind noch nicht abgenommen — die stehen nicht im Katalog und sind danach weg."
+        }
     }
 
     @MainActor
     static func folgen(_ event: Event) -> Folgen {
         let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+
+        // Was hängt nur am Auftrag und nicht im Katalog?
+        var nurHier = 0
+        var mitSchritten = 0
+        for j in jobs {
+            let schritte = AuftragExtrasPayload.from(j.extras).checklist
+            guard !schritte.isEmpty else { continue }
+            mitSchritten += 1
+            let imKatalog = AnweisungsKatalog.shared.schritte(fuer: Kausalkette.bezeichnung(j)) != nil
+            if !imKatalog { nurHier += schritte.count }
+        }
+
         return Folgen(
             auftraege: jobs.count,
             positionen: ((event.lvPositionen as? Set<LVPosition>) ?? []).count,
             maengel: ((event.maengel as? Set<Mangel>) ?? []).count,
             berichte: ((event.bautagesberichte as? Set<Bautagesbericht>) ?? []).count,
-            kanten: jobs.reduce(0) { $0 + (($1.voraussetzungen as? Set<Voraussetzung>) ?? []).count })
+            kanten: jobs.reduce(0) { $0 + (($1.voraussetzungen as? Set<Voraussetzung>) ?? []).count },
+            schritteNurHier: nurHier,
+            auftraegeMitSchritten: mitSchritten)
     }
 
     /// Löscht die Baustelle MIT allem, was an ihr hängt.
