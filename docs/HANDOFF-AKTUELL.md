@@ -30,6 +30,27 @@ echten DB gemessen: `startTime` leer, `lastStartTime` bei allen 34 Aufträgen le
 verschwinden live (`NSManagedObjectContextObjectsDidChange`), Einzahl/Mehrzahl,
 **`docs/WESEN-DES-MOPS.md`** (Ton-Doktrin, aus der Pflichtspur verlinkt).
 
+## 💡 Idee vom 22.09. (Gespräch, noch nichts gebaut): Whatsmops
+
+**Der Baustellen-Chat IST der Bautagesbericht.** Andreas' Idee für die Leute ohne
+Apple-Gerät. Ausführlich in der Memory `chatmops-bautagesbericht.md`. Kurz:
+
+- **WebApp statt App** — Fremdfirmen und Arbeiter haben 70-Euro-Androids.
+  🔴 Kein React dafür: das Grap8Web-Bundle ist 388 KB, die Rollen-Mockups 8–11 KB.
+- **Der Chat füllt den Bautagesbericht.** Er hat 18 Felder und wird heute komplett
+  von Hand getippt; aus Häkchen, Fotos und Chat kämen `ausgefuehrteArbeiten`,
+  `behinderungen` (= Nachtragsgrundlage!), `personalAnzahl`, `geraete`; Wetter
+  holt der `WetterService` schon. Der Polier tippt nichts mehr, er gibt frei.
+- **Der Mops chattet mit** — aber nur, wenn er etwas WEISS („fertig" ohne Foto,
+  etwas läuft seit Tagen ohne Meldung). Einmal fragen, nicht dreimal. Keine
+  Antwort ist auch ein Zustand.
+- 🔴 **Chat = Rohstoff, Bericht = einmal und freigegeben**, danach gesperrt
+  (`gesperrtAm`/`freigegebenVon`/`korrigiertVonID` stehen im Modell bereit).
+- 🔴 **Fremdfirmen:** Faden am Nachweispunkt, nie an der Ausführung — sonst Weisung
+  und damit Scheinselbständigkeit.
+- **Zugang:** Link per WhatsApp (trägt das Geheimnis) + 4-stelliger PIN (sagt, wer).
+  `Employee.pin` gibt es schon.
+
 ## 📋 Vormittag 22.09. — Trennlinien, Löschen, Importe, Sammelaktionen
 
 **23 Commits, 694 Tests grün, NICHTS GEPUSHT.** Andreas' Limit war gegen Mittag
