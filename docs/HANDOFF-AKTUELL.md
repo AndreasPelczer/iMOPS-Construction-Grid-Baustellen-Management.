@@ -2,6 +2,11 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+> **🎯 Wohin das Ganze geht:** `docs/NORDSTERN-DIE-KETTE.md` — die zehn Glieder von
+> „LV rein" bis „Nachweis", wo der Bruch liegt (zwischen 6 und 7: Schreibtisch/Apple
+> gegen Baustelle/Android) und was der nächste Teilsieg ist: **ein Auftrag, einmal
+> ganz durch, ohne dass jemand den Bautagesbericht getippt hat.**
+
 ## Delta 21.09.2026 (Abschluss) — 35 Commits, Branch GEPUSHT
 
 `feature/gelaende-dxf-aushub` steht auf GitHub (`6e39040`) und liegt auch auf
