@@ -219,7 +219,16 @@ struct FileInspectionSheet: View {
                     dismiss()
                 }
 
-            case .pdf, .photo, .excel, .unknown:
+            case .gaeb90:
+                // GAEB 90 (.d83) geht denselben Weg wie DA XML — der Importer
+                // kann beides.
+                primaryButton("In LV importieren", icon: "square.and.arrow.down", color: .orange) {
+                    fileHandler.pendingAction = .importGAEB
+                    dismiss()
+                }
+                .disabled(gaebResult == nil)
+
+            case .pdf, .photo, .excel, .unknown, .dxf, .dwg, .ifc, .json:
                 EmptyView()
             }
 

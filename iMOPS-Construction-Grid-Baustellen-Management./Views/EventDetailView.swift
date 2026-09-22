@@ -433,6 +433,8 @@ struct EventDetailView: View {
                     ablaufplanCard
                     TerminplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
                     UebergangszeitenCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
+                    importeCard
+                    teilbarCard
                     namenCard
                     papiereCard
                     DienstplanCard(jobs: (event.jobs?.allObjects as? [Auftrag] ?? []))
@@ -841,6 +843,66 @@ struct EventDetailView: View {
         .sheet(isPresented: $showingMaterialliste) {
             MateriallisteView(event: event)
                 .environment(\.managedObjectContext, viewContext)
+        }
+    }
+
+    // MARK: - Importe (die zweite Tür)
+    //
+    // Die Importe bleiben, wo sie hingehören — GAEB im LV, Pläne in den Unterlagen.
+    // Das hier ist nur der Ort für „ich habe eine Datei, wo gehört die hin?".
+    private var importeCard: some View {
+        NavigationLink {
+            SpaeterLaden { ImporteView(event: event) }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.down.on.square")
+                    .font(.title2).foregroundStyle(.tint)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Importe").font(.headline).foregroundStyle(.primary)
+                    Text("GAEB · Zeichnungen · Unterlagen · Preise — alles an einem Ort")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Pakete mit zwei Arbeiten drin
+    //
+    // 🔴 Ohne diese Karte findet man die Teilungsvorschläge nie — sie stecken sonst
+    // nur im einzelnen Auftrag. Andreas: „sieht für mich nicht viel anders aus."
+    @ViewBuilder private var teilbarCard: some View {
+        let jobs = (event.jobs?.allObjects as? [Auftrag]) ?? []
+        let teilbar = jobs.filter { !Arbeitspakete.teilungsVorschlaege(fuer: $0).isEmpty }
+
+        if !teilbar.isEmpty {
+            NavigationLink {
+                SpaeterLaden { TeilbarePaketeView(event: event) }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "square.split.2x1")
+                        .font(.title2).foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Zwei Arbeiten in einem Paket")
+                            .font(.headline).foregroundStyle(.primary)
+                        Text(teilbar.count == 1
+                             ? "1 Arbeitspaket — der Mops schlägt eine Trennung vor"
+                             : "\(teilbar.count) Arbeitspakete — der Mops schlägt Trennungen vor")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
         }
     }
 

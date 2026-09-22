@@ -54,6 +54,23 @@ struct ContentView: View {
             }
 
             Section {
+                NavigationLink {
+                    SpaeterLaden { ImporteView() }
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "square.and.arrow.down.on.square")
+                            .font(.title3).foregroundStyle(.tint)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Importe").font(.body.weight(.semibold))
+                            Text("alles Einlesbare an einem Ort — GAEB, Zeichnungen, "
+                                 + "Unterlagen, Preise")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            Section {
                 EventFilterPicker(selectedFilter: $selectedFilter)
             }
             Section {

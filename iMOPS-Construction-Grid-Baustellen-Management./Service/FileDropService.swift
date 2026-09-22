@@ -6,35 +6,71 @@ import UniformTypeIdentifiers
 // Zentraler Handler fuer Drag-and-Drop von externen Dateien.
 // Routet Dateien je nach Typ an den richtigen Import-Handler.
 
+/// Was für eine Datei ist das — und was macht der Mops damit?
+///
+/// 🔴 Ergänzt am 22.09.2026. Der Erkenner kannte **kein DXF, kein DWG, kein IFC,
+/// kein JSON und kein GAEB 90 (.d83/.d84)** — also ausgerechnet die Formate, die
+/// Raphi schickt. Gemessen: `.dxf` kommt in sechs Dateien der App vor, im Erkenner
+/// stand es nicht.
+///
+/// Und der Drop selbst (`FileDropOverlayModifier`) war gebaut, getestet und
+/// **nirgends eingehängt** — dasselbe Muster wie `istStartbar` am 21.09.
 enum DroppedFileType {
-    case gaeb       // .x83, .x84, .xml (GAEB)
-    case cad        // .usdz, .obj, .dae, .fbx, .stl, .gltf, .glb
-    case skp        // .skp (SketchUp)
+    case gaeb       // .x83, .x84, .x86, .xml — GAEB DA XML
+    case gaeb90     // .d83, .d84, .d86 — GAEB 90, das ältere Format
+    case dxf        // .dxf — Zeichnung mit Layern, daraus kommen Mengen
+    case dwg        // .dwg — AutoCAD, muss erst umgewandelt werden
+    case ifc        // .ifc — Bauwerksmodell
+    case cad        // .usdz, .obj, .stl, .glb … — 3D zum Ansehen
+    case skp        // .skp — SketchUp
     case pdf        // .pdf
     case photo      // .jpg, .png, .heic
     case excel      // .xlsx, .xls, .csv
+    case json       // .json — LV oder Stammdaten
     case unknown
 
     static func detect(from url: URL) -> DroppedFileType {
-        let ext = url.pathExtension.lowercased()
-        switch ext {
-        case "x83", "x84", "x86":
-            return .gaeb
-        case "xml":
-            return .gaeb
-        case "skp":
-            return .skp
+        switch url.pathExtension.lowercased() {
+        case "x83", "x84", "x86", "xml":          return .gaeb
+        case "d83", "d84", "d86":                 return .gaeb90
+        case "dxf":                               return .dxf
+        case "dwg":                               return .dwg
+        case "ifc", "ifcxml", "ifczip":           return .ifc
+        case "skp":                               return .skp
         case "usdz", "usda", "usdc", "obj", "dae", "scn", "fbx", "stl",
-             "ply", "gltf", "glb", "abc":
-            return .cad
-        case "pdf":
-            return .pdf
+             "ply", "gltf", "glb", "abc":         return .cad
+        case "pdf":                               return .pdf
         case "jpg", "jpeg", "png", "heic", "heif", "gif", "tiff", "bmp":
-            return .photo
-        case "xlsx", "xls", "csv":
-            return .excel
-        default:
-            return .unknown
+                                                  return .photo
+        case "xlsx", "xls", "csv":                return .excel
+        case "json":                              return .json
+        default:                                  return .unknown
+        }
+    }
+
+    /// Wohin die Datei gehört — in Andreas' Worten, nicht in Dateiendungen.
+    var wasDerMopsDamitMacht: String {
+        switch self {
+        case .gaeb:    return "Leistungsverzeichnis einlesen — Positionen, Mengen, Einheiten"
+        case .gaeb90:  return "Leistungsverzeichnis einlesen (älteres GAEB-90-Format)"
+        case .dxf:     return "Zeichnung lesen — Wände, Türen, Gelände, Aushubmengen"
+        case .dwg:     return "AutoCAD-Zeichnung — muss erst auf der Box umgewandelt werden"
+        case .ifc:     return "Bauwerksmodell — Bauteile und Mengen aus den Objektnamen"
+        case .cad:     return "3D-Modell ansehen"
+        case .skp:     return "SketchUp-Modell — wird zu USDZ umgewandelt"
+        case .pdf:     return "Unterlage auswerten — LV, Statik, Bodengutachten, B-Plan"
+        case .photo:   return "Foto ablegen — Mangel, Bautagesbericht, Lieferschein"
+        case .excel:   return "Tabelle einlesen — Mengen, Material, Preise"
+        case .json:    return "Leistungsverzeichnis oder Stammdaten einlesen"
+        case .unknown: return "Der Mops kennt dieses Format nicht"
+        }
+    }
+
+    /// Braucht es eine Baustelle, um die Datei einzulesen?
+    var brauchtBaustelle: Bool {
+        switch self {
+        case .excel, .json, .unknown: return false
+        default:                      return true
         }
     }
 }
@@ -43,6 +79,11 @@ extension DroppedFileType {
     var displayName: String {
         switch self {
         case .gaeb:    return "GAEB-Datei"
+        case .gaeb90:  return "GAEB 90"
+        case .dxf:     return "DXF-Zeichnung"
+        case .dwg:     return "DWG-Zeichnung"
+        case .ifc:     return "IFC-Modell"
+        case .json:    return "JSON-Datei"
         case .cad:     return "3D-Modell"
         case .skp:     return "SketchUp-Datei"
         case .pdf:     return "PDF-Dokument"
@@ -55,6 +96,11 @@ extension DroppedFileType {
     var iconName: String {
         switch self {
         case .gaeb:    return "doc.badge.arrow.up"
+        case .gaeb90:  return "doc.badge.arrow.up"
+        case .dxf:     return "scribble.variable"
+        case .dwg:     return "scribble.variable"
+        case .ifc:     return "building.2"
+        case .json:    return "curlybraces"
         case .cad:     return "cube"
         case .skp:     return "cube.transparent"
         case .pdf:     return "doc.text"
@@ -67,6 +113,11 @@ extension DroppedFileType {
     var iconColor: Color {
         switch self {
         case .gaeb:    return .orange
+        case .gaeb90:  return .orange
+        case .dxf:     return .blue
+        case .dwg:     return .blue
+        case .ifc:     return .purple
+        case .json:    return .orange
         case .cad:     return .green
         case .skp:     return .blue
         case .pdf:     return .red

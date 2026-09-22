@@ -213,6 +213,22 @@ enum Tagesblick {
                                          job: ohneDauer.count == 1 ? ohneDauer[0] : nil,
                                          thema: "dauer-fehlt"))
         }
+        // 🔴 Pakete, in denen zwei verschiedene Arbeiten stecken. Andreas nach dem
+        // Neuanlegen: „sieht für mich nicht viel anders aus und es sind wieder 34
+        // Einträge, das ist richtig?" — ja, der Mops teilt nicht selbst. Aber ohne
+        // diese Zeile FINDET man die Vorschläge nie, und dann ist die Arbeit von
+        // heute Morgen gebaut und ruft keiner.
+        let teilbar = jobs.filter { !Arbeitspakete.teilungsVorschlaege(fuer: $0).isEmpty }
+        if !teilbar.isEmpty {
+            l.anstehend.append(Anstehend(
+                text: teilbar.count == 1
+                    ? "In einem Arbeitspaket stecken zwei verschiedene Arbeiten."
+                    : "In \(teilbar.count) Arbeitspaketen stecken zwei verschiedene Arbeiten.",
+                insLV: false,
+                job: teilbar.count == 1 ? teilbar[0] : nil,
+                thema: "paket-teilbar"))
+        }
+
         // Namen, die bloss die Kostengruppe nennen — „342 Baukonstruktionen" sagt
         // nichts über die Arbeit. Kein Alarm, aber es steht an.
         let schlechtBenannt = Arbeitspakete.umbenennbare(in: event).count
