@@ -170,9 +170,18 @@ class EventListViewModel: NSObject, ObservableObject, NSFetchedResultsController
 
     // MARK: - CRUD
 
+    /// 🔴 Löscht MIT den Aufträgen. `Event.jobs` steht im Modell auf Nullify —
+    /// ein einfaches `delete(event)` kappt nur die Verbindung und lässt die
+    /// Arbeitspakete als Waisen zurück. Gemessen am 21.09.2026: 931 Stück aus
+    /// 23 gelöschten Baustellen, unsichtbar, weil kein Bildschirm sie zeigt.
+    /// Andreas' Frage dazu: „Wie lösche ich eine Baustelle richtig, damit nichts
+    /// verwaist?" — gar nicht, es ging nicht. Jetzt schon.
+    @MainActor
     func deleteEvents(offsets: IndexSet) {
         withAnimation {
-            offsets.map { events[$0] }.forEach { viewContext.delete($0) }
+            for event in offsets.map({ events[$0] }) {
+                BaustelleLoeschen.loesche(event, in: viewContext)
+            }
             saveContext()
         }
     }

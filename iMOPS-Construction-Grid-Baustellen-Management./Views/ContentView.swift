@@ -8,6 +8,11 @@ struct ContentView: View {
     @EnvironmentObject var eventListVM: EventListViewModel
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedFilter: EventFilter = .alle
+    @State private var loeschKandidaten: IndexSet?
+    @State private var loeschFolgen = BaustelleLoeschen.Folgen()
+    @State private var loeschName = ""
+    @State private var zeigeWaisen = false
+    @State private var waisen = 0
     @State private var sortOrder: EventSortOrder = .datumNeuAlt
     @State private var searchText = ""
     @State private var showingAddEventSheet = false
@@ -23,6 +28,31 @@ struct ContentView: View {
                 // Neuzeichnen mit auf — daran ist die App am 21.09. abgestürzt.
                 NavigationLink { SpaeterLaden { TagesblickView() } } label: { TagesblickKarte() }
             }
+            // 🔴 Aufträge ohne Baustelle. Kein Bildschirm zeigt sie sonst — sie sind
+            // beim Löschen liegengeblieben, weil `Event.jobs` auf Nullify steht.
+            // Die Zeile erscheint nur, wenn es wirklich welche gibt.
+            if waisen > 0 {
+                Section {
+                    Button { zeigeWaisen = true } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "questionmark.folder")
+                                .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(waisen) Arbeitspakete ohne Baustelle")
+                                    .font(.subheadline.weight(.semibold))
+                                Text("beim Löschen liegengeblieben — sie stören nicht, "
+                                     + "aber sie werden mehr")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption).foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
             Section {
                 EventFilterPicker(selectedFilter: $selectedFilter)
             }
@@ -33,7 +63,22 @@ struct ContentView: View {
                 )
             }
         }
+        .onAppear { waisen = BaustelleLoeschen.waisen(in: viewContext).count }
+        .sheet(isPresented: $zeigeWaisen) {
+            WaisenAufraeumenView { waisen = BaustelleLoeschen.waisen(in: viewContext).count }
+                .environment(\.managedObjectContext, viewContext)
+        }
         .searchable(text: $searchText, prompt: "Baustelle, Ort, Bauherr...")
+        .alert("\(loeschName) löschen?", isPresented: Binding(
+            get: { loeschKandidaten != nil },
+            set: { if !$0 { loeschKandidaten = nil } }
+        )) {
+            Button("Löschen", role: .destructive) { loeschenAusfuehren() }
+            Button("Behalten", role: .cancel) { loeschKandidaten = nil }
+        } message: {
+            Text("Das geht mit: \(loeschFolgen.satz).\n\nDas lässt sich nicht "
+                 + "rückgängig machen.")
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarLeading) {
@@ -125,8 +170,29 @@ struct ContentView: View {
         }
     }
 
+    /// 🔴 Vor dem Löschen stehen die Folgen da. Nicht als Warnung („bist du sicher?"),
+    /// sondern als Aufzählung dessen, was verschwindet — nach dem Muster vom
+    /// Auftrag-Löschen (destructive-delete-safety).
     private func deleteEvents(offsets: IndexSet) {
-        eventListVM.deleteEvents(offsets: offsets)
+        loeschKandidaten = offsets
+        let betroffen = offsets.map { eventListVM.events[$0] }
+        var f = BaustelleLoeschen.Folgen()
+        for e in betroffen {
+            let g = BaustelleLoeschen.folgen(e)
+            f.auftraege += g.auftraege; f.positionen += g.positionen
+            f.maengel += g.maengel; f.berichte += g.berichte
+        }
+        loeschFolgen = f
+        loeschName = betroffen.count == 1
+            ? (betroffen.first?.title ?? "Baustelle")
+            : "\(betroffen.count) Baustellen"
+    }
+
+    private func loeschenAusfuehren() {
+        if let offsets = loeschKandidaten {
+            eventListVM.deleteEvents(offsets: offsets)
+        }
+        loeschKandidaten = nil
     }
 
     struct ContentView_Previews: PreviewProvider {

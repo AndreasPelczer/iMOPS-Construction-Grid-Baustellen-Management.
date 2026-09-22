@@ -2077,3 +2077,27 @@
     du entscheidest. Das neue Paket heisst "411a ...", die Titelnummer bleibt
     vorn, und keine Position steht danach in beiden.
   quelle_kurz: "iMOPS Bedienung"
+
+- id: "App_Baustelle_loeschen"
+  kategorie: "app-bedienung"
+  app_version_min: "1.0"
+  aliases:
+    - "Baustelle loeschen"
+    - "Wie loesche ich eine Baustelle"
+    - "Arbeitspakete ohne Baustelle"
+    - "Waisen"
+    - "verwaiste Auftraege"
+  antwort: |
+    Baustellenliste -> nach links wischen -> Loeschen. Vorher steht da, was
+    mitgeht: "Das geht mit: 34 Arbeitspakete · 109 LV-Positionen · 3 Maengel."
+    Das laesst sich nicht rueckgaengig machen.
+    🔴 Seit 22.09.2026 gehen die Arbeitspakete MIT. Vorher blieben sie liegen:
+    im Datenmodell steht Event.jobs auf "Nullify", also wurde beim Loeschen nur
+    die Verbindung gekappt und der Auftrag blieb — unsichtbar, weil kein
+    Bildschirm Auftraege ohne Baustelle zeigt. So kamen 965 Stueck zusammen.
+    Das war KEIN Bedienfehler. Es gab keinen richtigen Weg.
+    Der Altbestand: steht als Zeile oben in der Baustellenliste
+    ("X Arbeitspakete ohne Baustelle"), aber nur wenn es welche gibt.
+    Antippen zeigt, was da liegt (die haeufigsten Namen, wie viele noch
+    Arbeitsschritte haben) und bietet "Alle loeschen" an. Unwiderruflich.
+  quelle_kurz: "iMOPS Bedienung"
