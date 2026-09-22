@@ -30,6 +30,58 @@ echten DB gemessen: `startTime` leer, `lastStartTime` bei allen 34 Aufträgen le
 verschwinden live (`NSManagedObjectContextObjectsDidChange`), Einzahl/Mehrzahl,
 **`docs/WESEN-DES-MOPS.md`** (Ton-Doktrin, aus der Pflichtspur verlinkt).
 
+## 📋 Vormittag 22.09. — Trennlinien, Löschen, Importe, Sammelaktionen
+
+**23 Commits, 694 Tests grün, NICHTS GEPUSHT.** Andreas' Limit war gegen Mittag
+fast erreicht; er ist bis 20 Uhr weg.
+
+### Was gebaut wurde
+
+1. **Beide Richtungen der Schritt-Passung.** Bisher nur „Schritt nennt etwas, das
+   im LV fehlt" (Bauzaun). Neu `SchrittPassung.ohneSchritt`: steht im LV etwas,
+   wofür KEIN Schritt existiert? An seinem Fall geprüft: bei „411 Abwasser-,
+   Wasser-, Gasanlagen" waren 5 von 8 Positionen unabgedeckt (Hausanschluss in
+   2,60 m Tiefe, Grundleitungen, Schächte) — die Schritte kamen aus der Vorlage
+   „Sanitär & Heizung", reine Innenmontage.
+
+2. 🔴 **Die Ursache dahinter, und sie war meine.** Im Kopfkommentar von
+   `Arbeitspakete.swift` stand „die DIN 276 folgt grob dem Bauablauf". Tut sie
+   nicht — sie ist eine KOSTENgliederung. KG 410 heisst „alles mit Wasser": vom
+   Graben bis zum Waschbecken. Der Satz ist korrigiert, mit dem Fall als Beleg.
+
+3. **Pakete sind teilbar** (`PaketTeilenView`, `PaketZuordnung` als JSON, weil
+   `Auftrag.lvPosition` 1:1 ist). Sieben **Trennlinien** in `trennlinien.yaml`,
+   erweiterbar ohne Code. 🔴 An BV Setiadji durchgerechnet: von zwölf Vorschlägen
+   waren FÜNF Unsinn (Selbstbezug „311 Erdbau → Erdarbeiten", „Außenwand" als
+   Außenanlage, „Mutterboden abtragen" als Abbruch). Alle vier Ursachen behoben,
+   jede mit eigenem Test. Danach sechs Vorschläge, alle fachlich richtig.
+
+4. **Baustelle löschen nimmt die Arbeitspakete mit.** 🔴 Vorher ging das GAR NICHT
+   richtig: `Event.jobs` steht auf Nullify. Aus 931 Waisen wurden 965, als Andreas
+   um 7:35 Setiadji löschte. Jetzt: `BaustelleLoeschen`, Folgen vorher genannt
+   (inklusive „13 Arbeitsschritte sind noch nicht abgenommen — die sind danach
+   weg"), und eine Tür zum Aufräumen des Altbestands.
+
+5. **Importe an einem Ort** (`ImporteView`) — die bestehenden Wege bleiben, wo sie
+   sind. 🔴 Beim Messen: `DroppedFileType` kannte KEIN DXF, DWG, IFC, JSON und
+   kein GAEB 90 — ausgerechnet Raphis Formate. Und `FileDropOverlayModifier` ist
+   gebaut und **immer noch nirgends eingehängt**.
+
+6. **Sammelaktionen** — Andreas: „ich muss jetzt aber jeden einzeln anklicken".
+   `SchritteSammeln` holt für alle Aufträge auf einmal, in der Reihenfolge
+   Katalog → Vorlage → Rezept → Prof (letzterer nur für den Rest, weil eine
+   Anfrage 180 s dauern darf). Nur der Katalog ist vorausgewählt, und in den
+   Katalog wandert dabei nichts. Dazu `Arbeitspakete.teileAlle`.
+
+### 🔴 Was als Nächstes dran ist
+- **Den Datei-Drop einhängen** — `FileDropOverlayModifier` existiert, ruft keiner.
+- **Auftrag ↔ LV echt verbinden** (toOne→toMany, Migration, seine Entscheidung).
+- **Waisen aufräumen** — die Tür ist da, drücken muss er.
+- Für Raphi: `trennlinien.yaml`, `gefahrstoffe.yaml` und `wartezeiten.yaml`
+  gegenlesen — alle drei sind von mir geraten und tragen das auch so im Kopf.
+- Import-Doctype „Datenblatt" im Backend (`mops-api`), damit Liegezeiten aus
+  Dokumenten kommen.
+
 ## 🌙 Nachtschicht 21./22.09. — die drei Stücke sind GEBAUT
 
 Andreas ist gegen 00:30 schlafen gegangen und hat die Nachtschicht freigegeben
