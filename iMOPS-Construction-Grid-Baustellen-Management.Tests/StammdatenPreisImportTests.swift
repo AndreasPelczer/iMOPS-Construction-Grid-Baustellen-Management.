@@ -144,4 +144,37 @@ struct StammdatenPreisImportTests {
         #expect(bericht.uebersprungen.count == 1)        // die kaputte wird GEMELDET
         #expect(try anzahl(KalkMaterial.self, "KalkMaterial") == 1)
     }
+
+    // MARK: - Erst zeigen, dann speichern (10.10.2026)
+
+    @Test @MainActor
+    func vorschauAendertNichts() throws {
+        let b = service.vorschau(csv: csv, in: ctx)
+        #expect(b.istVorschau && b.landetGesamt == 3 && b.quelleText == csv)
+        #expect(try anzahl(KalkMaterial.self, "KalkMaterial") == 0)   // nichts angelegt
+        #expect(try anzahl(Lohnsatz.self, "Lohnsatz") == 0)
+        #expect(!ctx.hasChanges)                                       // auch nicht ungespeichert im Kontext
+    }
+
+    @Test @MainActor
+    func vorschauZeigtAltNeuOhneZuAendern() throws {
+        _ = service.importiere(csv: csv, in: ctx)
+        let neu = csv.replacingOccurrences(of: "130,00", with: "1300,00")   // der Komma-Fehler
+        let b = service.vorschau(csv: neu, in: ctx)
+        let a = try #require(b.aktualisiertMaterial.first)
+        #expect(a.alt == 130 && a.neu == 1300 && a.auffaellig && a.prozent == 900)
+        #expect(try material("Beton C25/30").preisProEinheit == 130)    // Stammdaten unberührt
+    }
+
+    @Test @MainActor
+    func uebernehmenSpeichertWirklich() throws {
+        let b = service.vorschau(csv: csv, in: ctx)
+        _ = service.importiere(csv: b.quelleText ?? "", in: ctx)
+        #expect(try material("Beton C25/30").preisProEinheit == 130)
+        #expect(!ctx.hasChanges)
+    }
+
+    @Test func kleinerSprungIstNichtAuffaellig() {
+        #expect(!PreisImportBericht.Aenderung(name: "x", alt: 12.40, neu: 13.10, einheit: "Stk").auffaellig)
+    }
 }

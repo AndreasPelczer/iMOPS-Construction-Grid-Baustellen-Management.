@@ -29,7 +29,17 @@ import CoreData
 
 struct PreisImportBericht: Identifiable {
     let id = UUID()
-    struct Aenderung { let name: String; let alt: Double; let neu: Double; let einheit: String }
+    struct Aenderung {
+        let name: String; let alt: Double; let neu: Double; let einheit: String
+        /// Sprung um mehr als 30 % – oft ein Komma-Fehler (13,10 → 1.310). Zeigen, nicht verhindern.
+        var auffaellig: Bool { alt > 0 && abs(neu - alt) / alt > 0.30 }
+        var prozent: Int { alt > 0 ? Int(((neu - alt) / alt * 100).rounded()) : 0 }
+    }
+
+    /// Vorschau (10.10.2026): erst zeigen, dann speichern. Bisher speicherte der Import,
+    /// BEVOR jemand den Bericht sah. `istVorschau` = noch nichts liegt in den Stammdaten.
+    var istVorschau = false
+    var quelleText: String? = nil      // der gelesene Inhalt – „Übernehmen" braucht die Datei nicht nochmal
 
     var neuMaterial: [String] = []
     var aktualisiertMaterial: [Aenderung] = []
@@ -73,8 +83,29 @@ struct StammdatenPreisImportService {
         return importiere(csv: inhalt, in: ctx)
     }
 
+    /// VORSCHAU: dieselbe Rechnung in einem Kind-Kontext, der nie gespeichert wird.
+    /// Danach ist in `ctx` nichts verändert – garantiert, nicht nur versprochen.
+    func vorschau(von url: URL, in ctx: NSManagedObjectContext) -> PreisImportBericht {
+        guard let inhalt = try? String(contentsOf: url, encoding: .utf8) else {
+            var b = PreisImportBericht()
+            b.uebersprungen.append("Datei nicht lesbar: \(url.lastPathComponent)")
+            return b
+        }
+        return vorschau(csv: inhalt, in: ctx)
+    }
+
+    func vorschau(csv text: String, in ctx: NSManagedObjectContext) -> PreisImportBericht {
+        let kind = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        kind.parent = ctx
+        var b = importiere(csv: text, in: kind, speichern: false)
+        kind.rollback()
+        b.istVorschau = true
+        b.quelleText = text
+        return b
+    }
+
     /// Aus CSV-Text importieren (testbar ohne Datei).
-    func importiere(csv text: String, in ctx: NSManagedObjectContext) -> PreisImportBericht {
+    func importiere(csv text: String, in ctx: NSManagedObjectContext, speichern: Bool = true) -> PreisImportBericht {
         var bericht = PreisImportBericht()
 
         let zeilen = text.components(separatedBy: .newlines)
@@ -121,7 +152,7 @@ struct StammdatenPreisImportService {
             }
         }
 
-        if bericht.landetGesamt > 0 {
+        if speichern && bericht.landetGesamt > 0 {
             try? ctx.save()
         }
         return bericht

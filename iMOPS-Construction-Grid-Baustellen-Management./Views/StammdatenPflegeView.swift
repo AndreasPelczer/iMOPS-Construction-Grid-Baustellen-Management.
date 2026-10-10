@@ -107,7 +107,8 @@ struct StammdatenPflegeView: View {
                     guard let url = urls.first else { return }
                     let zugriff = url.startAccessingSecurityScopedResource()
                     defer { if zugriff { url.stopAccessingSecurityScopedResource() } }
-                    bericht = StammdatenPreisImportService.shared.importiere(von: url, in: ctx)
+                    // Erst zeigen, dann speichern: die Vorschau ändert nichts in den Stammdaten.
+                    bericht = StammdatenPreisImportService.shared.vorschau(von: url, in: ctx)
                 case .failure(let fehler):
                     var b = PreisImportBericht()
                     b.uebersprungen.append("Datei-Fehler: \(fehler.localizedDescription)")
@@ -115,7 +116,10 @@ struct StammdatenPflegeView: View {
                 }
             }
             .sheet(item: $bericht) { b in
-                PreisImportBerichtView(bericht: b)
+                PreisImportBerichtView(bericht: b) {
+                    // „Übernehmen": jetzt wirklich – aus dem schon gelesenen Text, dann der Ankunfts-Bericht.
+                    StammdatenPreisImportService.shared.importiere(csv: b.quelleText ?? "", in: ctx)
+                }
             }
         }
     }
@@ -561,8 +565,16 @@ private func neuButton(_ titel: String, _ action: @escaping () -> Void) -> some 
 // Das ist der Beleg, den Andreas & Raphi ohne Bau-Wissen lesen können.
 
 struct PreisImportBerichtView: View {
-    let bericht: PreisImportBericht
+    @State private var bericht: PreisImportBericht
+    private let uebernehmen: (() -> PreisImportBericht)?
     @Environment(\.dismiss) private var dismiss
+
+    init(bericht: PreisImportBericht, uebernehmen: (() -> PreisImportBericht)? = nil) {
+        _bericht = State(initialValue: bericht)
+        self.uebernehmen = uebernehmen
+    }
+
+    private var vorschau: Bool { bericht.istVorschau }
 
     var body: some View {
         NavigationStack {
@@ -573,16 +585,23 @@ struct PreisImportBerichtView: View {
                             .font(.title)
                             .foregroundStyle(bericht.landetGesamt > 0 ? .green : .secondary)
                         VStack(alignment: .leading) {
-                            Text("\(bericht.landetGesamt) Preise gelandet")
+                            Text(vorschau ? "\(bericht.landetGesamt) Preise würden sich ändern" : "\(bericht.landetGesamt) Preise gelandet")
                                 .font(.headline)
-                            Text("\(bericht.gesamtZeilen) Zeilen gelesen · \(bericht.alleLiegen) liegen jetzt in den Stammdaten")
-                                .font(.caption).foregroundStyle(.secondary)
+                            Text(vorschau ? "\(bericht.gesamtZeilen) Zeilen gelesen · noch NICHTS gespeichert – erst mit „Übernehmen“"
+                                          : "\(bericht.gesamtZeilen) Zeilen gelesen · \(bericht.alleLiegen) liegen jetzt in den Stammdaten")
+                                .font(.caption).foregroundStyle(vorschau ? .orange : .secondary)
+                            let auffaellig = (bericht.aktualisiertMaterial + bericht.aktualisiertLohn + bericht.aktualisiertLeistung
+                                              + bericht.aktualisiertGeraet).filter(\.auffaellig).count
+                            if auffaellig > 0 {
+                                Text("⚠ \(auffaellig) Preise springen um mehr als 30 % – Komma prüfen")
+                                    .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                            }
                         }
                     }
                 }
 
                 if !bericht.neuMaterial.isEmpty || !bericht.neuLohn.isEmpty || !bericht.neuLeistung.isEmpty || !bericht.neuGeraet.isEmpty {
-                    Section("Neu angelegt") {
+                    Section(vorschau ? "Würde neu angelegt" : "Neu angelegt") {
                         ForEach(bericht.neuMaterial, id: \.self) { zeile($0, farbe: .green, symbol: "plus.circle.fill") }
                         ForEach(bericht.neuLohn, id: \.self) { zeile($0 + " (Lohn)", farbe: .green, symbol: "plus.circle.fill") }
                         ForEach(bericht.neuLeistung, id: \.self) { zeile($0 + " (Firma-Preis)", farbe: .green, symbol: "plus.circle.fill") }
@@ -591,7 +610,7 @@ struct PreisImportBerichtView: View {
                 }
 
                 if !bericht.aktualisiertMaterial.isEmpty || !bericht.aktualisiertLohn.isEmpty || !bericht.aktualisiertLeistung.isEmpty || !bericht.aktualisiertGeraet.isEmpty {
-                    Section("Preis aktualisiert") {
+                    Section(vorschau ? "Preis würde sich ändern (alt → neu)" : "Preis aktualisiert") {
                         ForEach(bericht.aktualisiertMaterial.indices, id: \.self) { i in
                             aenderung(bericht.aktualisiertMaterial[i])
                         }
@@ -621,11 +640,22 @@ struct PreisImportBerichtView: View {
                     }
                 }
             }
-            .navigationTitle("Ankunfts-Bericht")
+            .navigationTitle(vorschau ? "Vorschau – noch nichts gespeichert" : "Ankunfts-Bericht")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fertig") { dismiss() }.tint(.orange)
+                if vorschau, let uebernehmen {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Verwerfen") { dismiss() }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Übernehmen") { bericht = uebernehmen() }
+                            .tint(.orange)
+                            .disabled(bericht.landetGesamt == 0)
+                    }
+                } else {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Fertig") { dismiss() }.tint(.orange)
+                    }
                 }
             }
         }
@@ -644,7 +674,10 @@ struct PreisImportBerichtView: View {
             Text(a.name).font(.subheadline)
             Spacer()
             Text("\(a.alt.formatted(.number.precision(.fractionLength(0...2)))) → \(a.neu.formatted(.number.precision(.fractionLength(0...2)))) €/\(a.einheit)")
-                .font(.caption.monospacedDigit()).foregroundStyle(.blue)
+                .font(.caption.monospacedDigit()).foregroundStyle(a.auffaellig ? .orange : .blue)
+            if a.auffaellig {
+                Text("⚠ \(a.prozent > 0 ? "+" : "")\(a.prozent) %").font(.caption2.weight(.bold)).foregroundStyle(.orange)
+            }
         }
     }
 }
