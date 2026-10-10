@@ -25,6 +25,7 @@ enum ProjektGenerator {
         if let hausTyp = typ.hausTyp {
             var p = haus
             p.haustyp = hausTyp
+            p.projektTyp = typ.rawValue
             return HouseProjectGenerator.generate(from: p)
         }
         switch typ {
@@ -35,11 +36,33 @@ enum ProjektGenerator {
             return HouseProjectGenerator.generate(from: haus)
         }
     }
+
+    /// Welcher Typ eine GESPEICHERTE Planung ist. Altbestand (vor 10.10.2026) hat kein
+    /// `projektTyp` – die Hofeinfahrt-Vorlage setzt aber immer den Namen „Hofeinfahrt pflastern“.
+    static func typ(von p: HouseProject) -> ProjektTyp {
+        if let t = p.projektTyp.flatMap(ProjektTyp.init(rawValue:)) { return t }
+        if p.projektName == HofeinfahrtVorlage.projektName { return .hofeinfahrt }
+        return ProjektTyp.allCases.first { $0.hausTyp == p.haustyp } ?? .einfamilienhaus
+    }
+
+    /// Eine gespeicherte Planung neu rechnen – mit dem Rechner IHRES Typs. Die EINE Stelle dafür
+    /// (Grundplanung, Planer beim Öffnen, Kennwert-Vergleich).
+    static func neuBerechnen(_ p: HouseProject) -> HouseProjectResult {
+        switch typ(von: p) {
+        case .hofeinfahrt:
+            return HofeinfahrtVorlage.generiere(flaeche: p.wohnflaeche)
+        case let t:
+            return generate(typ: t, haus: p, flaeche: p.wohnflaeche)
+        }
+    }
 }
 
 // MARK: - Hofeinfahrt (erste firm-typische Kleinvorlage)
 
 enum HofeinfahrtVorlage {
+
+    /// Der Name, den die Vorlage ihrer Planung gibt – auch das Erkennungszeichen für Altbestand.
+    static let projektName = "Hofeinfahrt pflastern"
 
     /// Die Pflasterfläche, die der Planer annimmt, wenn keiner eine nennt. EINE Stelle –
     /// der Planer und die Jarvis-Schrittliste zeigen dieselbe Zahl.
@@ -99,7 +122,8 @@ enum HofeinfahrtVorlage {
         ]
 
         var project = HouseProject()
-        project.projektName = "Hofeinfahrt pflastern"
+        project.projektName = projektName
+        project.projektTyp = ProjektTyp.hofeinfahrt.rawValue
         // Die „Fläche" der Hofeinfahrt ist die Pflasterfläche (kein Wohnhaus). Ohne das
         // bliebe `wohnflaeche = 0` → Header „0 m²" und EUR/m² = Kosten ÷ 0 (NaN). Die
         // vier Reiter teilen sich das Feld mit dem Haus-Weg, darum hier belegen.

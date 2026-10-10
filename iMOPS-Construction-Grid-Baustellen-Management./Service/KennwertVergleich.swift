@@ -106,7 +106,7 @@ enum KennwertVergleich {
         let extras = EventExtrasPayload.laden(aus: event)
         guard let projekt = extras.houseProject else { return nil }
 
-        let schaetzung = HouseProjectGenerator.generate(from: projekt).baukosten
+        let schaetzung = ProjektGenerator.neuBerechnen(projekt).baukosten
         let sollJeTopf = schaetzungNachTopf(schaetzung)
 
         // Ist-Summen je Topf aus dem LV. Nur zaehlbare Positionen — ein Deckel zaehlt,

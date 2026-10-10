@@ -236,7 +236,7 @@ struct EventDetailView: View {
 
     private var housePlanningResult: HouseProjectResult? {
         guard let houseProject = extras.houseProject else { return nil }
-        return HouseProjectGenerator.generate(from: houseProject)
+        return ProjektGenerator.neuBerechnen(houseProject)   // mit dem Rechner IHRES Typs (Hofeinfahrt ≠ Haus)
     }
 
     private var lvGesamtFortschritt: Double {
@@ -1486,7 +1486,9 @@ struct EventDetailView: View {
                             .frame(width: 36)
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Grundplanung").font(.headline).foregroundStyle(.primary)
-                            Text("\(Int(result.project.wohnflaeche)) m² · \(result.project.geschosse) Geschoss(e) · \(formatCurrencyShort(result.gesamtkosten))")
+                            Text(ProjektGenerator.typ(von: result.project).istHaus
+                                 ? "\(Int(result.project.wohnflaeche)) m² · \(result.project.geschosse) Geschoss(e) · \(formatCurrencyShort(result.gesamtkosten))"
+                                 : "\(Int(result.project.wohnflaeche)) m² Pflasterfläche · \(ProjektGenerator.typ(von: result.project).anzeige) · \(formatCurrencyShort(result.gesamtkosten))")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
