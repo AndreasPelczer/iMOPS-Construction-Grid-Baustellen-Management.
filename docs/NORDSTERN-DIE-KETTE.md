@@ -135,3 +135,18 @@ ein erfundener Pflichtteil ist schlimmer als keiner.
 - `nachunternehmer-im-mops` — Glied 7 hat zwei Oberflächen, nicht eine mit Schalter
 - `uebergabe-sichern-herz-des-mops` — warum es die Kette überhaupt gibt
 - `ankunfts-nachweis-nicht-uebergabe` — warum Glied 7 zeigen muss, was noch nicht oben ist
+
+---
+
+## Am Horizont (10.10.2026): die eigene Cloud mit Offline-Ablage – Nextcloud auf der Box
+
+Andreas: „das mit dem iCloud gefällt mir nicht“ → seit 10.10. ist der iMOPS-Ordner eine **Samba-Freigabe
+auf der Box** (`smb://mops-box/imops`, nur Tailscale). Baustelle = Ordner: die Box legt beim Melden
+`Baustellen/<Titel>/` mit den Fächern an. **Grenze:** ohne Netz ist die Freigabe nicht da – auf einer
+Baustelle ohne Empfang fehlen die Dateien (die Daten der App sind offline da).
+
+- **Nächster Schritt (klein):** „Offline mitnehmen“ je Baustelle in der App – vor der Fahrt die Unterlagen
+  dieser einen Baustelle aufs Gerät holen, später abgleichen.
+- **Nordstern (groß):** **Nextcloud auf der Box** – eigene Cloud mit Offline-Ablage, Teilen und Abgleich
+  für alles, Datenhoheit wie bei Samba. Dann kann auch `MopsAblage` (heute noch iCloud) auf die eigene
+  Cloud zeigen, und iPad, Mac, Raphi und der Mops sehen wirklich denselben Ordner – auch offline.

@@ -13,6 +13,7 @@
 //
 
 import Foundation
+import CoreData
 import os
 
 private let logger = Logger(subsystem: "com.deadrabbit.imops", category: "JarvisEingang")
@@ -89,6 +90,48 @@ enum JarvisEingang {
             if let d = angebotBis { extras.angebotFrist = d }
         }
 
+    }
+
+    // MARK: - Schnellkalkulation zuweisen (Schritt „kalkulation“)
+
+    struct KalkPosition: Codable, Equatable {
+        var text: String
+        var menge: Double
+        var einheit: String
+        var rezept: String
+    }
+
+    static func kalkPositionen(_ f: [String: String]) -> [KalkPosition] {
+        guard let d = f["positionen"]?.data(using: .utf8) else { return [] }
+        return (try? JSONDecoder().decode([KalkPosition].self, from: d)) ?? []
+    }
+
+    /// Jarvis schreibt normierte Einheiten (m2, m3, stk) – die App und ihr Katalog sprechen m², m³, Stk.
+    static func einheit(_ e: String) -> String {
+        ["m2": "m²", "m3": "m³", "stk": "Stk", "psch": "psch", "m": "m", "t": "t", "h": "h", "kg": "kg"][e.lowercased()] ?? e
+    }
+
+    /// Die Positionen als LV-Positionen in die Baustelle legen – das iPad rechnet sie selbst
+    /// (`LeistungskatalogService.autoMatch` holt das Rezept, wie bei jeder anderen Position).
+    /// Gibt zurück: (angelegt, davon mit Rezept). Speichern macht der Aufrufer.
+    @discardableResult
+    static func legeKalkulation(_ f: [String: String], in event: Event, ctx: NSManagedObjectContext) -> (angelegt: Int, mitRezept: Int) {
+        var nr = (event.lvPositionen?.count ?? 0) + 1
+        var angelegt = 0, mitRezept = 0
+        for p in kalkPositionen(f) where p.menge > 0 {
+            let pos = LVPosition(context: ctx)
+            pos.posNr = String(format: "01.%02d", nr)
+            pos.event = event
+            pos.bezeichnung = p.rezept.isEmpty ? p.text : p.rezept
+            pos.einheit = einheit(p.einheit)
+            pos.menge = p.menge
+            pos.mengenQuelle = .schaetzung
+            pos.quellDatei = "Jarvis-Schnellkalkulation"
+            pos.langtext = "Aus Jarvis: „\(f["satz"] ?? p.text)“ – Menge geschätzt, bitte prüfen."
+            if LeistungskatalogService.autoMatch(position: pos, in: ctx) { mitRezept += 1 }
+            nr += 1; angelegt += 1
+        }
+        return (angelegt, mitRezept)
     }
 
     static func tag(_ s: String) -> Date? {

@@ -58,6 +58,7 @@ struct JarvisEntwurfView: View {
     @State var entwurf: JarvisEingang.Entwurf
     @State private var zeigePlaner = false
     @State private var zeigeTermin = false
+    @State private var zeigeBaustellenWahl = false
     @State private var angelegt: Event?
     @State private var zeigeCanvas = false
     @State private var hinweis: String?
@@ -116,6 +117,23 @@ struct JarvisEntwurfView: View {
                 }
             }
             .onAppear { angelegtSuchen() }
+            .sheet(isPresented: $zeigeBaustellenWahl) {
+                if let s = entwurf.schritte.first(where: { $0.art == "kalkulation" }) {
+                    BaustellenWahl { event in
+                        zeigeBaustellenWahl = false
+                        let r = JarvisEingang.legeKalkulation(s.felder, in: event, ctx: viewContext)
+                        do {
+                            try viewContext.save()
+                            hinweis = "\(r.angelegt) Positionen in „\(event.title ?? "")“ übernommen, \(r.mitRezept) davon mit Rezept – das iPad rechnet sie selbst."
+                            quittiere(s, "uebernommen", baustelleID: BaustellenMeldung.id(fuer: event))
+                            Task { await BaustellenMeldung.meldeAlle(context: viewContext) }
+                        } catch {
+                            hinweis = "Konnte die Positionen nicht speichern: \(error.localizedDescription)"
+                        }
+                    }
+                    .environment(\.managedObjectContext, viewContext)
+                }
+            }
             .navigationDestination(isPresented: $zeigeCanvas) {
                 if let angelegt { EventDetailView(event: angelegt) }
             }
@@ -159,6 +177,7 @@ struct JarvisEntwurfView: View {
         case "baustelle": return "Baustelle \(s.felder["name"] ?? "")"
         case "termin": return s.felder["titel"] ?? "Termin"
         case "abwesenheit": return "\(s.felder["art"] == "abwesend" ? "Abwesend" : "Urlaub"): \(s.felder["name"] ?? "")"
+        case "kalkulation": return "Schnellkalkulation · \(JarvisEingang.kalkPositionen(s.felder).count) Positionen"
         default: return "Canvas der Baustelle öffnen"
         }
     }
@@ -175,6 +194,13 @@ struct JarvisEntwurfView: View {
             guard let t = JarvisEingang.termin(s.felder) else { return "Tag fehlt" }
             return t.ganztags ? "\(t.start.formatted(.dateTime.weekday(.wide).day().month().year())) · Uhrzeit offen"
                               : t.start.formatted(.dateTime.weekday(.wide).day().month().year().hour().minute())
+        case "kalkulation":
+            let p = JarvisEingang.kalkPositionen(s.felder)
+            let liste = p.prefix(4).map { "\($0.menge.formatted()) \(JarvisEingang.einheit($0.einheit)) \($0.rezept.isEmpty ? $0.text : $0.rezept)" }
+            let summe = Double(s.felder["summe"] ?? "") ?? 0
+            return liste.joined(separator: " · ") + (p.count > 4 ? " …" : "")
+                + (summe > 0 ? " · in Jarvis nachgeschlagen: \(summe.formatted(.currency(code: "EUR").locale(Locale(identifier: "de_DE"))))" : "")
+                + " · das iPad rechnet nach"
         case "abwesenheit":
             guard let a = abwesenheit(s) else { return "Zeitraum fehlt" }
             return a.zeitraum + (mitarbeiterBekannt(a.name) ? "" : " · ⚠ „\(a.name)“ steht nicht in der Mitarbeiterliste")
@@ -201,6 +227,7 @@ struct JarvisEntwurfView: View {
         case "baustelle": return "Im Planer öffnen"
         case "termin": return "In den Kalender"
         case "abwesenheit": return "Eintragen"
+        case "kalkulation": return "Baustelle wählen"
         default: return "Canvas öffnen"
         }
     }
@@ -209,6 +236,7 @@ struct JarvisEntwurfView: View {
         switch s.art {
         case "baustelle": zeigePlaner = true
         case "termin": zeigeTermin = true
+        case "kalkulation": zeigeBaustellenWahl = true
         case "abwesenheit":
             guard let a = abwesenheit(s) else { hinweis = "Zeitraum fehlt – so kann ich es nicht eintragen."; return }
             AbwesenheitenStore.shared.hinzu(a)   // doppelt übernommen bleibt ein Eintrag
@@ -296,6 +324,30 @@ struct TerminDialog: UIViewControllerRepresentable {
         init(_ f: @escaping (Bool) -> Void) { fertig = f }
         func eventEditViewController(_ c: EKEventEditViewController, didCompleteWith action: EKEventEditViewAction) {
             fertig(action == .saved)
+        }
+    }
+}
+
+
+/// Welche Baustelle? Die Liste aus der App – angelegt wird nur, was hier angetippt wird.
+struct BaustellenWahl: View {
+    @Environment(\.dismiss) private var dismiss
+    @FetchRequest(sortDescriptors: [NSSortDescriptor(key: "title", ascending: true)]) private var baustellen: FetchedResults<Event>
+    let gewaehlt: (Event) -> Void
+
+    var body: some View {
+        NavigationStack {
+            List(baustellen) { e in
+                Button { gewaehlt(e) } label: {
+                    VStack(alignment: .leading) {
+                        Text(e.title ?? "Unbenannt").font(.body.weight(.semibold))
+                        Text("\(e.lvPositionen?.count ?? 0) LV-Positionen · \(e.location ?? "")").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("Welche Baustelle?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } } }
         }
     }
 }

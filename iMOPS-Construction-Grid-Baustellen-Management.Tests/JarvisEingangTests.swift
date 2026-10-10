@@ -151,3 +151,25 @@ struct KatalogMeldungTests {
         #expect(s.material.first?.lieferant == "SHB" && s.material.first?.preis == 7.9)
     }
 }
+
+struct KalkulationZuweisenTests {
+    private let controller = PersistenceController(inMemory: true)
+
+    @Test @MainActor func positionenLandenImLVUndHolenIhrRezept() throws {
+        let ctx = controller.container.viewContext
+        let b = Leistungsbaustein(context: ctx)
+        b.id = UUID(); b.leistung = "Pflaster verlegen"; b.einheit = "m²"; b.einheitspreisVK = 48.5; b.maurerStunden = 0.8
+        let result = ProjektGenerator.generate(typ: .hofeinfahrt, haus: HouseProject(), flaeche: 100)
+        let event = HouseProjectGenerator.createEvent(from: result, into: ctx)
+        let vorher = event.lvPositionen?.count ?? 0
+        let felder = ["positionen": #"[{"text":"Pflaster","menge":30,"einheit":"m2","rezept":"Pflaster verlegen"},{"text":"Zauberstein","menge":2,"einheit":"stk","rezept":""}]"#,
+                      "satz": "30 m² Pflaster, 2 Stk Zauberstein"]
+        let r = JarvisEingang.legeKalkulation(felder, in: event, ctx: ctx)
+        #expect(r.angelegt == 2 && r.mitRezept == 1)
+        let neu = (event.lvPositionen as? Set<LVPosition> ?? []).filter { $0.quellDatei == "Jarvis-Schnellkalkulation" }
+        #expect((event.lvPositionen?.count ?? 0) == vorher + 2)
+        let pflaster = try #require(neu.first { $0.bezeichnung == "Pflaster verlegen" })
+        #expect(pflaster.einheit == "m²" && pflaster.menge == 30 && pflaster.mengenQuelle == .schaetzung)
+        #expect(neu.contains { $0.bezeichnung == "Zauberstein" && $0.einheit == "Stk" })
+    }
+}
