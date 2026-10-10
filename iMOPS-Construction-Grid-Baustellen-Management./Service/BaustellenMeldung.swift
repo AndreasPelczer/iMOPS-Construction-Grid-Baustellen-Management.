@@ -86,6 +86,18 @@ enum BaustellenMeldung {
         )
     }
 
+    /// Meldung + der Graph, den die App ohnehin für die Leinwand baut (`Grap8Graph`) –
+    /// damit der Canvas auch im Browser (Jarvis) die echte Baustelle zeigt. Nur zum Ansehen:
+    /// Titel, KG, Zustand, Position, Kanten. Kein Bauherr, keine Adresse.
+    static func koerper(_ m: Meldung, graph: Grap8Graph) -> Data? {
+        guard let md = try? JSONEncoder().encode(m),
+              var obj = try? JSONSerialization.jsonObject(with: md) as? [String: Any],
+              let gd = try? JSONEncoder().encode(graph),
+              let g = try? JSONSerialization.jsonObject(with: gd) else { return nil }
+        obj["graph"] = g
+        return try? JSONSerialization.data(withJSONObject: obj)
+    }
+
     /// Beim Wechsel in den Hintergrund: iOS um Zeit bitten, bis die Meldung raus ist.
     /// Befund 10.10.2026 (Box-Log): die App holte bei jedem Zurückkommen Entwürfe ab, meldete
     /// ihre Baustellen aber seit 13:35 nicht mehr – sie wurde eingefroren, bevor der Request rausging.
@@ -108,16 +120,19 @@ enum BaustellenMeldung {
     static func meldeAlle(context: NSManagedObjectContext) async {
         let schluessel = UserDefaults.standard.string(forKey: schluesselKey) ?? ""
         guard !schluessel.isEmpty, let url = URL(string: MopsConfig.host + endpoint) else { return }
-        let meldungen: [Meldung] = await context.perform {
+        let meldungen: [(Meldung, Data?)] = await context.perform {
             let req = NSFetchRequest<Event>(entityName: "Event")
-            return ((try? context.fetch(req)) ?? []).map { meldung(fuer: $0, von: "iMOPS-App") }
+            return ((try? context.fetch(req)) ?? []).map { ev in
+                let m = meldung(fuer: ev, von: "iMOPS-App")
+                return (m, koerper(m, graph: Grap8Graph.aus(ev)))
+            }
         }
-        for m in meldungen {
+        for (m, koerper) in meldungen {
             var req = URLRequest(url: url, timeoutInterval: 20)
             req.httpMethod = "POST"
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.setValue(schluessel, forHTTPHeaderField: "X-Mops-Schluessel")
-            req.httpBody = try? JSONEncoder().encode(m)
+            req.httpBody = koerper ?? (try? JSONEncoder().encode(m))
             do {
                 let (_, antwort) = try await URLSession.shared.data(for: req)
                 let code = (antwort as? HTTPURLResponse)?.statusCode ?? 0
