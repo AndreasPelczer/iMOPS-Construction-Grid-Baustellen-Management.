@@ -46,9 +46,11 @@ Adresse, keine Notizen (Test prüft das). Ohne Mops-Schlüssel (Einstellungen �
 > (Optimistische Anzeige – derselbe Fehler taucht sonst im nächsten Bildschirm wieder auf.)
 > Termin: abgebrochener Kalenderdialog quittiert NICHTS (`action == .saved`).
 
-**Bekannte Einschränkung:** die App meldet ihre Baustellen nur beim Verlassen (Hintergrund).
-„Warum sieht Jarvis meine Baustelle nicht?" → kurz aus iMOPS raus und wieder rein. Jarvis
-sagt in der Baustellen-Tür selbst „Zuletzt gemeldet: vor … Minuten".
+**Wann die App meldet (seit #212):** beim Verlassen (mit `beginBackgroundTask` – vorher fror
+iOS die App ein, bevor die Meldung raus war; Box-Log 10.10.: ab 13:35 kam nichts mehr an),
+beim Zurückkommen und direkt nach dem Anlegen aus einem Jarvis-Entwurf. `/baustellen` ist so
+frisch wie die letzte Meldung; Jarvis sagt in der Baustellen-Tür „Zuletzt gemeldet: vor …".
+Fehlt dort etwas: im Box-Log nach `POST /baustellen/stand` schauen, nicht raten.
 
 **Noch nicht durchgespielt (5 Minuten Unfug, Chat-Claude):** absichtlich falsch auf
 „Verwerfen", Kalender abbrechen, App mitten im Schritt in den Hintergrund, WLAN aus
