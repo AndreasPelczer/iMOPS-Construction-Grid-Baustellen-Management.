@@ -12,12 +12,13 @@ struct HouseConfiguratorView: View {
     @Environment(\.managedObjectContext) private var viewContext
 
     var spezielesEvent: Event? = nil
+    var vorgabe: JarvisEingang.Vorgabe? = nil   // aus einem Jarvis-Entwurf: Werte vorbelegen, Vorlage hier auflösen
     var onCreated: ((Event) -> Void)? = nil
 
     @State private var project = HouseProject()
     // Projekt-Typ: Haus (bestehender Generator) ODER kleine Vorlage (Hofeinfahrt).
     @State private var projektTyp: ProjektTyp = .einfamilienhaus
-    @State private var hofFlaeche = "100"   // m² Pflasterfläche für die Hofeinfahrt
+    @State private var hofFlaeche = String(Int(HofeinfahrtVorlage.standardFlaeche))   // m² Pflasterfläche für die Hofeinfahrt
     @State private var result: HouseProjectResult?
     @State private var selectedTab = 0
     @State private var showingSaveConfirmation = false
@@ -30,8 +31,9 @@ struct HouseConfiguratorView: View {
     @State private var showingAngebotMail = false
     @State private var angebotShareURL: URL? = nil
 
-    init(spezielesEvent: Event? = nil, onCreated: ((Event) -> Void)? = nil) {
+    init(spezielesEvent: Event? = nil, vorgabe: JarvisEingang.Vorgabe? = nil, onCreated: ((Event) -> Void)? = nil) {
         self.spezielesEvent = spezielesEvent
+        self.vorgabe = vorgabe
         self.onCreated = onCreated
     }
 
@@ -44,6 +46,11 @@ struct HouseConfiguratorView: View {
             }
         }
         .onAppear {
+            if result == nil, spezielesEvent == nil, let v = vorgabe {
+                if let typ = v.vorlage { projektTyp = typ }   // „Standard wie im Planer": die Planer-Vorgaben bleiben stehen
+                if !v.name.isEmpty { project.projektName = v.name }
+                if let f = v.flaeche { hofFlaeche = String(Int(f)) }   // genannt → übernommen; sonst bleibt der Standard stehen
+            }
             guard result == nil, let event = spezielesEvent else { return }
             let sourceProject = loadHouseProject(from: event)
             project = sourceProject
@@ -79,7 +86,7 @@ struct HouseConfiguratorView: View {
                     result = ProjektGenerator.generate(
                         typ: projektTyp,
                         haus: project,
-                        flaeche: Double(hofFlaeche.replacingOccurrences(of: ",", with: ".")) ?? 100)
+                        flaeche: Double(hofFlaeche.replacingOccurrences(of: ",", with: ".")) ?? HofeinfahrtVorlage.standardFlaeche)
                 } label: {
                     HStack {
                         Spacer()
@@ -152,11 +159,14 @@ struct HouseConfiguratorView: View {
         .navigationBarTitleDisplayMode(.inline)
         .alert("Baustelle anlegen?", isPresented: $showingSaveConfirmation) {
             Button("Anlegen") {
-                let event = HouseProjectGenerator.createEvent(from: result, into: viewContext)
+                let event = HouseProjectGenerator.createEvent(
+                    from: result, into: viewContext,
+                    start: vorgabe?.start ?? Date(), ort: vorgabe?.ort ?? "",
+                    titel: vorgabe.flatMap { $0.name.isEmpty ? nil : "\($0.name) – \(projektTyp.anzeige)" })
                 do {
                     try viewContext.save()
                     onCreated?(event)
-                    savedSuccessfully = true
+                    savedSuccessfully = vorgabe == nil   // aus dem Entwurf: die Schrittliste zeigt es, kein zweiter Dialog
                 } catch {
                     print("HouseConfiguratorView: Konnte Baustelle nicht speichern: \(error)")
                 }

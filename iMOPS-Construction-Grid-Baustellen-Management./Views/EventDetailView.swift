@@ -19,6 +19,8 @@ struct EventExtrasPayload: Codable {
     var importHerkunft: ImportHerkunft? = nil   // Herkunft der importierten LV-Daten (PDF/JSON)
     var bauphasen: [IstBauphase]? = nil         // manuell geplante Bauphasen (Zeitplan-Reiter)
     var auswertungen: [GespeicherteAuswertung]? = nil   // gespeicherte /extract-doc-Ergebnisse
+    var angebotSumme: Double? = nil             // Angebotssumme in € (z. B. aus einem Jarvis-Entwurf) – auswertbar, kein Fließtext
+    var angebotFrist: Date? = nil               // bis wann das Angebot raus muss
 }
 
 /// Der Bedarf einer Baustelle an einem Katalog-Material — die Grundlage für den
@@ -1425,6 +1427,11 @@ struct EventDetailView: View {
                 if let setup = event.setupTime   { timeRow(icon: "timer",                          title: "Setup", date: setup, color: .orange) }
                 if let start = event.eventStartTime { timeRow(icon: "calendar.day.timeline.leading", title: "Start", date: start, color: Color(uiColor: .tintColor)) }
                 if let end   = event.eventEndTime   { timeRow(icon: "clock.badge.checkmark",          title: "geplant fertig",  date: end,   color: .secondary) }
+                if let frist = extras.angebotFrist  { timeRow(icon: "doc.text",                       title: "Angebot bis",     date: frist, color: .orange) }
+                if let summe = extras.angebotSumme {
+                    Label("Angebotssumme: \(summe.formatted(.currency(code: "EUR").locale(Locale(identifier: "de_DE"))))", systemImage: "eurosign")
+                        .font(.footnote.weight(.semibold))
+                }
                 EventTimelineBar(event: event)
             }
             let beteiligte: [(String, String)] = [
