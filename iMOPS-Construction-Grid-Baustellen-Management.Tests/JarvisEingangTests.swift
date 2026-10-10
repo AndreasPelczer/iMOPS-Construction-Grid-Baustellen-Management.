@@ -134,3 +134,20 @@ struct AbwesenheitenTests {
         #expect(AbwesenheitenStore(fileURL: url).von("Paolo").count == 1)
     }
 }
+
+struct KatalogMeldungTests {
+    private let controller = PersistenceController(inMemory: true)
+
+    @Test @MainActor func meldetRezepteUndMaterialpreise() throws {
+        let ctx = controller.container.viewContext
+        let b = Leistungsbaustein(context: ctx)
+        b.id = UUID(); b.leistung = "Pflaster verlegen"; b.einheit = "m²"; b.einheitspreisVK = 48.5
+        b.maurerStunden = 0.5; b.helferStunden = 0.3; b.kostenGruppeNummer = "520"; b.quelle = "firma-katalog"
+        let m = KalkMaterial(context: ctx)
+        m.id = UUID(); m.name = "Schotter 0/32"; m.einheit = "t"; m.preisProEinheit = 7.9; m.lieferant = "SHB"
+        let s = KatalogMeldung.stand(in: ctx)
+        let l = try #require(s.leistungen.first)
+        #expect(l.ep == 48.5 && abs(l.stunden - 0.8) < 0.0001 && l.einheit == "m²")
+        #expect(s.material.first?.lieferant == "SHB" && s.material.first?.preis == 7.9)
+    }
+}

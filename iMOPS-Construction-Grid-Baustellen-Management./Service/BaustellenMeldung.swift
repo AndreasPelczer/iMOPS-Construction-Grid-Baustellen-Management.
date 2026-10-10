@@ -142,5 +142,6 @@ enum BaustellenMeldung {
             }
         }
         await AbwesenheitenStore.shared.melde()   // gleicher Takt: wer nicht da ist, gehört zum Stand
+        await KatalogMeldung.melde(context: context)   // Rezepte + Materialpreise zum Nachschlagen (Jarvis)
     }
 }
