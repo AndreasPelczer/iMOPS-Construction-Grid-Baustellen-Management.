@@ -173,3 +173,31 @@ struct KalkulationZuweisenTests {
         #expect(neu.contains { $0.bezeichnung == "Zauberstein" && $0.einheit == "Stk" })
     }
 }
+
+struct OfflineUnterlagenTests {
+    private func d(_ pfad: String, _ groesse: Int = 10, _ zeit: String = "2026-10-10T12:00:00+00:00") -> OfflineUnterlagen.Datei {
+        OfflineUnterlagen.Datei(name: (pfad as NSString).lastPathComponent, fach: (pfad as NSString).pathComponents.first ?? "",
+                                pfad: pfad, groesse: groesse, geaendert: zeit)
+    }
+
+    @Test func abgleichHoltNurNeuesUndGeaendertesUndRaeumtGeloeschtes() {
+        let alt = [d("Statik/v1.pdf"), d("Statik/plan.pdf", 10), d("Bilder/weg.jpg")]
+        let neu = [d("Statik/v1.pdf"), d("Statik/plan.pdf", 99), d("Vermessung/neu.dxf")]
+        let p = OfflineUnterlagen.abgleich(alt: alt, neu: neu)
+        #expect(Set(p.holen.map { $0.pfad }) == ["Statik/plan.pdf", "Vermessung/neu.dxf"])
+        #expect(p.gleich.map { $0.pfad } == ["Statik/v1.pdf"])
+        #expect(p.weg.map { $0.pfad } == ["Bilder/weg.jpg"])
+    }
+
+    @Test func erstesMitnehmenHoltAlles() {
+        let p = OfflineUnterlagen.abgleich(alt: [], neu: [d("a.pdf"), d("b.pdf")])
+        #expect(p.holen.count == 2 && p.weg.isEmpty)
+    }
+
+    @Test func jedeBaustelleHatIhrenEigenenOrt() {
+        let basis = FileManager.default.temporaryDirectory
+        #expect(OfflineUnterlagen.ordner(fuer: "HK-1", basis: basis) != OfflineUnterlagen.ordner(fuer: "HK-2", basis: basis))
+        #expect(OfflineUnterlagen.ordner(fuer: "a/b", basis: basis).lastPathComponent == "a_b")
+        #expect(OfflineUnterlagen.stand(fuer: "gibts-nicht-\(UUID())", basis: basis) == nil)
+    }
+}

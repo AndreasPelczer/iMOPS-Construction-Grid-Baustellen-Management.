@@ -384,6 +384,7 @@ struct EventDetailView: View {
 
                 kartenGruppe("Pläne/Unterlagen", systemImage: "doc.on.doc", isExpanded: $gruppePlaene) {
                     BaustelleAblageCard(baustelleName: event.title ?? "")   // iCloud-Ablage-Ordner dieser Baustelle
+                    OfflineUnterlagenCard(event: event)   // Freigabe auf der Box: mitnehmen, abgleichen, offline ansehen
                     cadCard                       // Vorhandene Pläne (Dateien + 3D-Ansicht)
                     BPlanVorgabenCard(event: event)   // nur wenn ein B-Plan ausgewertet ist
                 }
