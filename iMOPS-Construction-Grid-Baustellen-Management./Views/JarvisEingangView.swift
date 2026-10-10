@@ -82,8 +82,11 @@ struct JarvisEntwurfView: View {
                     Section {
                         Button("Rest verwerfen", role: .destructive) {
                             Task {
-                                if let neu = await JarvisEingang.verwerfe(entwurf) { entwurf = neu; dismiss() }
-                                else { hinweis = "Box nicht erreicht – nichts verworfen." }
+                                switch await JarvisEingang.verwerfe(entwurf) {
+                                case .angekommen(let neu): entwurf = neu; dismiss()
+                                case .abgelehnt(let box): if let box { entwurf = box }; hinweis = "Die Box hat einen anderen Stand – so steht es dort."
+                                case .nichtErreicht: hinweis = "Box nicht erreicht – nichts verworfen."
+                                }
                             }
                         }
                     } footer: {
@@ -132,8 +135,11 @@ struct JarvisEntwurfView: View {
                         Button(knopf(s)) { ausfuehren(s) }
                             .buttonStyle(.borderedProminent)
                             .disabled(s.art == "canvas" && angelegt == nil)
-                        Button("Verwerfen") { quittiere(s, "verworfen") }
-                            .buttonStyle(.bordered)
+                        // Kein „Verwerfen" neben einem Knopf, der noch gar nicht geht – daneben tippt man aus Versehen.
+                        if !(s.art == "canvas" && angelegt == nil) {
+                            Button("Verwerfen") { quittiere(s, "verworfen") }
+                                .buttonStyle(.bordered)
+                        }
                     }
                     .padding(.top, 2)
                 } else {
@@ -211,11 +217,16 @@ struct JarvisEntwurfView: View {
 
     private func quittiere(_ s: JarvisEingang.Schritt, _ zustand: String, baustelleID: String = "") {
         Task {
-            if let neu = await JarvisEingang.quittiere(entwurf, schritt: s.nr, zustand: zustand, baustelleID: baustelleID) {
+            switch await JarvisEingang.quittiere(entwurf, schritt: s.nr, zustand: zustand, baustelleID: baustelleID) {
+            case .angekommen(let neu):
                 entwurf = neu
                 hinweis = nil
-            } else {
-                // Lokal trotzdem zeigen, was passiert ist – aber sagen, dass die Box es nicht weiß.
+            case .abgelehnt(let box):
+                // Die Box weiß es anders – ihren Stand zeigen, nicht unseren Wunsch.
+                if let box { entwurf = box }
+                hinweis = "„\(titel(s))“ war auf der Box schon erledigt – so steht es dort."
+            case .nichtErreicht:
+                // Passiert ist es hier trotzdem (z. B. Baustelle angelegt) – zeigen, aber sagen, dass die Box es nicht weiß.
                 if let i = entwurf.schritte.firstIndex(where: { $0.nr == s.nr }) { entwurf.schritte[i].zustand = zustand }
                 hinweis = "Box nicht erreicht – der Entwurf kann beim nächsten Öffnen wieder auftauchen."
             }

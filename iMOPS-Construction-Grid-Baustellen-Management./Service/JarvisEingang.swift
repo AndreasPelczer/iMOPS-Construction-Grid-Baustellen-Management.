@@ -146,28 +146,42 @@ enum JarvisEingang {
         }
     }
 
-    /// Einen Schritt quittieren. Gibt den neuen Stand zurück – nil heißt: nicht angekommen, nochmal versuchen.
-    @discardableResult
-    static func quittiere(_ e: Entwurf, schritt: Int, zustand: String, baustelleID: String = "") async -> Entwurf? {
+    /// Was aus einer Quittung wurde. „abgelehnt" ist NICHT „nicht erreicht": die Box hat
+    /// einen anderen Stand (z. B. Schritt schon verworfen) – dann gilt ihrer, nicht unserer.
+    /// (Befund 10.10.: Canvas war verworfen, das iPad zeigte nach der Ablehnung trotzdem grün.)
+    enum Antwort {
+        case angekommen(Entwurf)
+        case abgelehnt(Entwurf?)        // mit dem Stand der Box, wenn er sich holen ließ
+        case nichtErreicht
+    }
+
+    static func quittiere(_ e: Entwurf, schritt: Int, zustand: String, baustelleID: String = "") async -> Antwort {
         let body = try? JSONEncoder().encode(["zustand": zustand, "baustelle_id": baustelleID, "von": "iMOPS-App"])
-        return await senden(anfrage("/entwuerfe/\(e.id)/schritt/\(schritt)", methode: "POST", body: body))
+        return await senden(anfrage("/entwuerfe/\(e.id)/schritt/\(schritt)", methode: "POST", body: body), id: e.id)
     }
 
-    @discardableResult
-    static func verwerfe(_ e: Entwurf) async -> Entwurf? {
-        await senden(anfrage("/entwuerfe/\(e.id)/verwerfen", methode: "POST"))
+    static func verwerfe(_ e: Entwurf) async -> Antwort {
+        await senden(anfrage("/entwuerfe/\(e.id)/verwerfen", methode: "POST"), id: e.id)
     }
 
-    private static func senden(_ r: URLRequest?) async -> Entwurf? {
-        guard let r else { return nil }
+    static func stand(_ id: String) async -> Entwurf? {
+        guard let r = anfrage("/entwuerfe/\(id)"),
+              let (daten, antwort) = try? await URLSession.shared.data(for: r),
+              (antwort as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+        return try? JSONDecoder().decode(Entwurf.self, from: daten)
+    }
+
+    private static func senden(_ r: URLRequest?, id: String) async -> Antwort {
+        guard let r else { return .nichtErreicht }
         do {
             let (daten, antwort) = try await URLSession.shared.data(for: r)
             let code = (antwort as? HTTPURLResponse)?.statusCode ?? 0
-            guard code == 200 else { logger.warning("Quittung: HTTP \(code)"); return nil }
-            return try JSONDecoder().decode(Entwurf.self, from: daten)
+            if code == 200, let e = try? JSONDecoder().decode(Entwurf.self, from: daten) { return .angekommen(e) }
+            logger.warning("Quittung abgelehnt: HTTP \(code)")
+            return (400..<500).contains(code) ? .abgelehnt(await stand(id)) : .nichtErreicht
         } catch {
             logger.info("Quittung nicht angekommen: \(error.localizedDescription, privacy: .public)")
-            return nil
+            return .nichtErreicht
         }
     }
 }
