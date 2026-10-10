@@ -60,6 +60,10 @@ struct HouseProject: Codable, Identifiable {
 
     // Grunddaten
     var projektName: String = ""
+    /// Welcher Rechner die Planung erzeugt hat (`ProjektTyp.rawValue`, z. B. „hofeinfahrt“).
+    /// Optional, damit alte gespeicherte Planungen lesbar bleiben (Befund 10.10.2026: ohne Typ
+    /// rechnete die Grundplanung eine Hofeinfahrt mit dem HAUS-Rechner nach → 300.000 €).
+    var projektTyp: String? = nil
     var haustyp: Haustyp = .einfamilienhaus
     var wohnflaeche: Double = 140          // m²
     var geschosse: Int = 2

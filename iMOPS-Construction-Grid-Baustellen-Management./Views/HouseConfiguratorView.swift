@@ -54,7 +54,8 @@ struct HouseConfiguratorView: View {
             guard result == nil, let event = spezielesEvent else { return }
             let sourceProject = loadHouseProject(from: event)
             project = sourceProject
-            result = HouseProjectGenerator.generate(from: sourceProject)
+            projektTyp = ProjektGenerator.typ(von: sourceProject)
+            result = ProjektGenerator.neuBerechnen(sourceProject)   // Hofeinfahrt bleibt Hofeinfahrt
         }
     }
 

@@ -94,3 +94,29 @@ struct ProjektGeneratorTests {
         }
     }
 }
+
+// MARK: - Befund 10.10.2026: gespeicherte Planung mit dem Rechner IHRES Typs neu rechnen
+
+struct GrundplanungNachTypTests {
+    @Test func hofeinfahrtBleibtHofeinfahrt() {
+        let erzeugt = ProjektGenerator.generate(typ: .hofeinfahrt, haus: HouseProject(), flaeche: 100)
+        #expect(erzeugt.project.projektTyp == "hofeinfahrt")
+        let neu = ProjektGenerator.neuBerechnen(erzeugt.project)
+        #expect(abs(neu.gesamtkosten - erzeugt.gesamtkosten) < 0.01)
+        #expect(neu.gesamtkosten < 50_000)   // keine 300.000 € mehr für 100 m² Pflaster
+    }
+
+    @Test func altbestandOhneTypWirdAmNamenErkannt() throws {
+        var alt = ProjektGenerator.generate(typ: .hofeinfahrt, haus: HouseProject(), flaeche: 100).project
+        alt.projektTyp = nil   // so liegt Müller vom 10.10. gespeichert
+        #expect(ProjektGenerator.typ(von: alt) == .hofeinfahrt)
+        let daten = try JSONEncoder().encode(alt)
+        let gelesen = try JSONDecoder().decode(HouseProject.self, from: daten)
+        #expect(ProjektGenerator.neuBerechnen(gelesen).gesamtkosten < 50_000)
+    }
+
+    @Test func hausRechnetWieBisher() {
+        let haus = HouseProject()
+        #expect(abs(ProjektGenerator.neuBerechnen(haus).gesamtkosten - HouseProjectGenerator.generate(from: haus).gesamtkosten) < 0.01)
+    }
+}
