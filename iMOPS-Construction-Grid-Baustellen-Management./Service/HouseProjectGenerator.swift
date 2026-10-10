@@ -952,18 +952,21 @@ enum HouseProjectGenerator {
 
     static func createEvent(
         from result: HouseProjectResult,
-        into context: NSManagedObjectContext
+        into context: NSManagedObjectContext,
+        start: Date = Date(),          // Jarvis-Entwurf: der genannte Start statt „heute"
+        ort: String = "",
+        titel: String? = nil
     ) -> Event {
         let event = Event(context: context)
-        event.title = result.project.projektName.isEmpty
+        event.title = titel ?? (result.project.projektName.isEmpty
             ? "\(result.project.haustyp.rawValue) – Neubau"
-            : result.project.projektName
+            : result.project.projektName)
         event.eventNumber = "HK-\(String(result.project.id.prefix(8)).uppercased())"
-        event.location = ""
+        event.location = ort
         event.timeStamp = Date()
 
         // Zeitplan aus Bauphasen berechnen
-        let now = Date()
+        let now = start   // alle Termine (Phasen, Fristen) rechnen ab dem Start
         let cal = Calendar.current
         event.setupTime = cal.date(byAdding: .weekOfYear, value: -1, to: now)
         event.eventStartTime = now

@@ -22,6 +22,8 @@ struct ContentView: View {
 
     var body: some View {
         List {
+            // Entwürfe, die Jarvis auf die Box gelegt hat – nur sichtbar, wenn welche offen sind.
+            JarvisEingangZeile()
             // Die Klammer über ALLE Baustellen — steht vor der Auswahl einer einzelnen.
             Section {
                 // SpaeterLaden: sonst baut NavigationLink das Ziel bei JEDEM
