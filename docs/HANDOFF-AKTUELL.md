@@ -7,6 +7,45 @@
 > gegen Baustelle/Android) und was der nächste Teilsieg ist: **ein Auftrag, einmal
 > ganz durch, ohne dass jemand den Bautagesbericht getippt hat.**
 
+## Delta 10.10.2026 — die Brücke: Baustellen an die Box, Entwürfe von Jarvis zurück
+
+**Zwei PRs, gepusht, NICHT gemergt:** #210 (`feature/bruecke-baustellen-melden`) und
+darauf aufbauend #211 (`feature/jarvis-eingang`). Gegenstück: mops-api #75 + #76 (live).
+Erst #210 mergen, dann #211.
+
+**#210 – die App meldet ihre Baustellen** (`Service/BaustellenMeldung.swift`):
+beim Wechsel in den Hintergrund `POST /baustellen/stand` je Baustelle – Titel, Zeitraum,
+Aufträge (Gewerk, KG, Status, Dauer, Termin, Mitarbeiter). **Kein** Bauherr, keine
+Adresse, keine Notizen (Test prüft das). Ohne Mops-Schlüssel (Einstellungen →
+„Mops-Schlüssel“) passiert nichts. Der Konfigurator gibt den Aufträgen jetzt
+`dauerTage` + Termin aus den Bauphasen desselben Gewerks mit (vorher 0).
+
+**#211 – Entwürfe von Jarvis abholen** (`Service/JarvisEingang.swift`, `Views/JarvisEingangView.swift`):
+- Oben in der Baustellen-Liste: „Entwurf von Jarvis · von heute 13:33 – Müller, Sachsenhausen“
+  (Alter steht drin). Nur sichtbar, wenn auf der Box etwas offen ist.
+- Schrittliste, jeder Schritt einzeln quittiert (`offen → uebernommen | verworfen`):
+  **Baustelle** → Planer vorbelegt (Vorlage kommt als NAME, wird hier aufgelöst;
+  `HofeinfahrtVorlage.standardFlaeche` = die eine Stelle für die 100 m², steht sichtbar
+  auf der Schrittliste), angelegt mit der Planer-eigenen Bestätigung. `createEvent`
+  nimmt `start`/`ort`/`titel` – alle Fristen rechnen ab dem Start.
+  **Termin** → `EKEventEditViewController` vorausgefüllt (keine Kalender-Berechtigung
+  nötig), zählt erst nach „Hinzufügen“. **Canvas** → `EventDetailView`.
+- „Datum oder Betrag?“ hat Folgen: Betrag → `EventExtrasPayload.angebotSumme`, Datum →
+  `angebotFrist` (optional, alte Baustellen bleiben lesbar), beide oben im Canvas. Keine Notiz.
+- 🔴 **Befund im ersten echten Durchlauf:** Fehltipp „Verwerfen“ neben dem noch grauen
+  „Canvas öffnen“; die spätere Quittung lehnte die Box ab (409), **das iPad zeigte
+  trotzdem grün**. Behoben: `JarvisEingang.Antwort` unterscheidet angekommen /
+  abgelehnt (→ Stand der Box holen und zeigen) / nicht erreicht. Neben einem Knopf,
+  der noch nicht geht, steht kein „Verwerfen“ mehr.
+- Tests: `JarvisEingangTests` (7) + `BaustellenMeldungTests` (4) + `ProjektGeneratorTests` → 17/17.
+
+**Gebaut/getestet im Worktree** `$TMPDIR/wt-imops`, Simulator iPad Pro 13 (M5).
+Schlüssel im Simulator gesetzt per `simctl spawn … defaults write … mops_schluessel`.
+
+**Offen:** echte Kalender-/Termin-Verwaltung in der App (heute: System-Kalender);
+Angebotssumme/-frist sind nur sichtbar, noch nicht auswertbar über Baustellen hinweg;
+der Vier-Befehle-Satz (Stufe 3: mehrere Entwürfe aus einem Satz) noch nicht.
+
 ## Delta 21.09.2026 (Abschluss) — 35 Commits, Branch GEPUSHT
 
 `feature/gelaende-dxf-aushub` steht auf GitHub (`6e39040`) und liegt auch auf
