@@ -54,4 +54,16 @@ struct BaustellenMeldungTests {
         let e = testbaustelle()
         #expect(BaustellenMeldung.id(fuer: e) == e.eventNumber)
     }
+
+    @Test func meldungNimmtDenGraphenMitOhneBauherr() throws {
+        let event = testbaustelle()
+        let koerper = try #require(BaustellenMeldung.koerper(BaustellenMeldung.meldung(fuer: event), graph: Grap8Graph.aus(event)))
+        let obj = try #require(try JSONSerialization.jsonObject(with: koerper) as? [String: Any])
+        let graph = try #require(obj["graph"] as? [String: Any])
+        let knoten = try #require(graph["nodes"] as? [[String: Any]])
+        #expect(knoten.count == (event.jobs?.count ?? -1))
+        #expect(graph["edges"] is [Any])
+        let text = String(decoding: koerper, as: UTF8.self)
+        #expect(!text.contains("Mustermann") && !text.contains("Musterweg"))
+    }
 }
