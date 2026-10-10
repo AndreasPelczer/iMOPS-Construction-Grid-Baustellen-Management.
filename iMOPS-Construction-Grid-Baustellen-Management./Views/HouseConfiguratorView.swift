@@ -18,7 +18,7 @@ struct HouseConfiguratorView: View {
     @State private var project = HouseProject()
     // Projekt-Typ: Haus (bestehender Generator) ODER kleine Vorlage (Hofeinfahrt).
     @State private var projektTyp: ProjektTyp = .einfamilienhaus
-    @State private var hofFlaeche = "100"   // m² Pflasterfläche für die Hofeinfahrt
+    @State private var hofFlaeche = String(Int(HofeinfahrtVorlage.standardFlaeche))   // m² Pflasterfläche für die Hofeinfahrt
     @State private var result: HouseProjectResult?
     @State private var selectedTab = 0
     @State private var showingSaveConfirmation = false
@@ -49,6 +49,7 @@ struct HouseConfiguratorView: View {
             if result == nil, spezielesEvent == nil, let v = vorgabe {
                 if let typ = v.vorlage { projektTyp = typ }   // „Standard wie im Planer": die Planer-Vorgaben bleiben stehen
                 if !v.name.isEmpty { project.projektName = v.name }
+                if let f = v.flaeche { hofFlaeche = String(Int(f)) }   // genannt → übernommen; sonst bleibt der Standard stehen
             }
             guard result == nil, let event = spezielesEvent else { return }
             let sourceProject = loadHouseProject(from: event)
@@ -85,7 +86,7 @@ struct HouseConfiguratorView: View {
                     result = ProjektGenerator.generate(
                         typ: projektTyp,
                         haus: project,
-                        flaeche: Double(hofFlaeche.replacingOccurrences(of: ",", with: ".")) ?? 100)
+                        flaeche: Double(hofFlaeche.replacingOccurrences(of: ",", with: ".")) ?? HofeinfahrtVorlage.standardFlaeche)
                 } label: {
                     HStack {
                         Spacer()

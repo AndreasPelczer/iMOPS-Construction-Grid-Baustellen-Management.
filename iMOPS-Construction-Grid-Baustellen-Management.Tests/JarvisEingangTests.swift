@@ -45,7 +45,21 @@ struct JarvisEingangTests {
         #expect(v.vorlage == .hofeinfahrt)
         #expect(v.name == "Müller" && v.ort == "Sachsenhausen")
         #expect(v.angebotBetrag == 30926 && v.angebotBis == nil)
-        #expect(v.angebotNotiz?.contains("30.926") == true)
+        #expect(v.angebotText?.contains("30.926") == true)
+    }
+
+    @Test func betragWirdFeldKeineNotiz() {
+        var extras = EventExtrasPayload()
+        JarvisEingang.Vorgabe(["angebot_betrag": "30926"]).uebertrage(in: &extras)
+        #expect(extras.angebotSumme == 30926 && extras.angebotFrist == nil)
+        var frist = EventExtrasPayload()
+        JarvisEingang.Vorgabe(["angebot_bis": "2026-10-30"]).uebertrage(in: &frist)
+        #expect(frist.angebotFrist != nil && frist.angebotSumme == nil)
+    }
+
+    @Test func flaecheStehtDaAuchWennNichtGesagt() {
+        #expect(JarvisEingang.Vorgabe(["vorlage": "hofeinfahrt"]).vorlageText == "Hofeinfahrt · Fläche 100 m² (Standard aus dem Planer)")
+        #expect(JarvisEingang.Vorgabe(["vorlage": "hofeinfahrt", "flaeche": "120"]).vorlageText == "Hofeinfahrt · Fläche 120 m²")
     }
 
     @Test func terminOhneUhrzeitIstGanztags() throws {

@@ -56,6 +56,7 @@ enum JarvisEingang {
         var vorlage: ProjektTyp?
         var angebotBis: Date?
         var angebotBetrag: Double?
+        var flaeche: Double?               // nur wenn genannt – sonst nimmt der Planer seinen Standard (und zeigt ihn)
 
         init(_ f: [String: String]) {
             name = f["name"] ?? ""
@@ -64,16 +65,30 @@ enum JarvisEingang {
             vorlage = f["vorlage"].flatMap { ProjektTyp(rawValue: $0.lowercased()) }
             angebotBis = f["angebot_bis"].flatMap(JarvisEingang.tag)
             angebotBetrag = f["angebot_betrag"].flatMap(Double.init)
+            flaeche = f["flaeche"].flatMap { Double($0.replacingOccurrences(of: ",", with: ".")) }
         }
 
-        /// Zeile für die Notizen der Baustelle – was am Telefon zum Angebot gesagt wurde.
-        var angebotNotiz: String? {
-            if let d = angebotBis { return "Angebot bis \(d.formatted(date: .numeric, time: .omitted)) (laut Jarvis-Entwurf)" }
-            if let b = angebotBetrag {
-                return "Angebotssumme laut Telefon: \(b.formatted(.currency(code: "EUR").locale(Locale(identifier: "de_DE")))) (Jarvis-Entwurf)"
-            }
+        /// Was zum Angebot gesagt wurde – nur zum Anzeigen. Gespeichert wird es als Feld (`uebertrage`).
+        var angebotText: String? {
+            if let d = angebotBis { return "Angebot bis \(d.formatted(date: .numeric, time: .omitted))" }
+            if let b = angebotBetrag { return "Angebotssumme \(b.formatted(.currency(code: "EUR").locale(Locale(identifier: "de_DE"))))" }
             return nil
         }
+
+        /// „Hofeinfahrt · Fläche 100 m² (Standard aus dem Planer)" – auch was NICHT gesagt wurde, wird gezeigt.
+        var vorlageText: String? {
+            guard let v = vorlage else { return nil }
+            guard v == .hofeinfahrt else { return "Vorlage \(v.anzeige)" }
+            if let f = flaeche { return "Hofeinfahrt · Fläche \(Int(f)) m²" }
+            return "Hofeinfahrt · Fläche \(Int(HofeinfahrtVorlage.standardFlaeche)) m² (Standard aus dem Planer)"
+        }
+
+        /// Betrag → Feld Angebotssumme, Datum → Feld Angebotsfrist. Keine Notiz: die Rückfrage hatte einen Sinn.
+        func uebertrage(in extras: inout EventExtrasPayload) {
+            if let b = angebotBetrag { extras.angebotSumme = b }
+            if let d = angebotBis { extras.angebotFrist = d }
+        }
+
     }
 
     static func tag(_ s: String) -> Date? {

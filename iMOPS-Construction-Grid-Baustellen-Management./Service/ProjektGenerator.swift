@@ -41,6 +41,10 @@ enum ProjektGenerator {
 
 enum HofeinfahrtVorlage {
 
+    /// Die Pflasterfläche, die der Planer annimmt, wenn keiner eine nennt. EINE Stelle –
+    /// der Planer und die Jarvis-Schrittliste zeigen dieselbe Zahl.
+    static let standardFlaeche: Double = 100
+
     /// Baut Massen, Material, Kosten und einen kleinen Bauphasen-Plan aus der
     /// Pflasterfläche (m²). Titel folgen Goldschmitts echten Angeboten
     /// (Baustelleneinrichtung · Erdarbeiten · Unterbau · Randeinfassung · Pflaster).

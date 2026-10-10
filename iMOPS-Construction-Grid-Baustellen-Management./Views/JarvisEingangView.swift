@@ -158,8 +158,8 @@ struct JarvisEntwurfView: View {
             let v = JarvisEingang.Vorgabe(s.felder)
             return [v.ort.isEmpty ? nil : v.ort,
                     v.start.map { "Start \($0.formatted(date: .abbreviated, time: .omitted))" },
-                    v.vorlage.map { "Vorlage \($0.anzeige) (aus dem Planer)" },
-                    v.angebotNotiz].compactMap { $0 }.joined(separator: " · ")
+                    v.vorlageText,
+                    v.angebotText].compactMap { $0 }.joined(separator: " · ")
         case "termin":
             guard let t = JarvisEingang.termin(s.felder) else { return "Tag fehlt" }
             return t.ganztags ? "\(t.start.formatted(.dateTime.weekday(.wide).day().month().year())) · Uhrzeit offen"
@@ -199,8 +199,10 @@ struct JarvisEntwurfView: View {
     private func baustelleAngelegt(_ event: Event) {
         zeigePlaner = false
         let v = entwurf.baustelle.map { JarvisEingang.Vorgabe($0.felder) }
-        if let notiz = v?.angebotNotiz {
-            event.notes = [event.notes, notiz].compactMap { $0 }.joined(separator: "\n\n")
+        if let v, v.angebotBetrag != nil || v.angebotBis != nil {
+            var extras = event.extras.flatMap { try? JSONDecoder().decode(EventExtrasPayload.self, from: Data($0.utf8)) } ?? EventExtrasPayload()
+            v.uebertrage(in: &extras)
+            if let data = try? JSONEncoder().encode(extras) { event.extras = String(data: data, encoding: .utf8) }
             try? viewContext.save()
         }
         angelegt = event
