@@ -59,13 +59,16 @@ struct iMOPSApp: App {
                     NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
                 ) { _ in
                     // Die Brücke: Stand der Baustellen an die Box melden (nur mit Mops-Schlüssel, leise).
-                    let ctx = persistence.container.viewContext
-                    Task { await BaustellenMeldung.meldeAlle(context: ctx) }
+                    // Mit Hintergrund-Frist – sonst friert iOS die App ein, bevor die Meldung raus ist.
+                    BaustellenMeldung.meldeImHintergrund(context: persistence.container.viewContext)
                 }
                 .onReceive(
                     NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
                 ) { _ in
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)
+                    // Auch beim Zurückkommen melden – die Hintergrund-Meldung allein kam am 10.10. nicht verlässlich an.
+                    let ctx = persistence.container.viewContext
+                    Task { await BaustellenMeldung.meldeAlle(context: ctx) }
                 }
                 .onOpenURL { url in
                     importedFileHandler.handleIncomingFile(url: url)

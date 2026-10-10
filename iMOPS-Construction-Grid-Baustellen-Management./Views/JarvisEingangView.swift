@@ -219,6 +219,7 @@ struct JarvisEntwurfView: View {
             try? viewContext.save()
         }
         angelegt = event
+        Task { await BaustellenMeldung.meldeAlle(context: viewContext) }   // gleich melden – Jarvis soll sie sofort kennen
         if let s = entwurf.baustelle { quittiere(s, "uebernommen", baustelleID: BaustellenMeldung.id(fuer: event)) }
     }
 
