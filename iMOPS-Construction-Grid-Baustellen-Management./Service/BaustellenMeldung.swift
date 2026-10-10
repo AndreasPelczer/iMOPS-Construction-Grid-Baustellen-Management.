@@ -13,6 +13,7 @@
 
 import Foundation
 import CoreData
+import UIKit
 import os
 
 private let logger = Logger(subsystem: "com.deadrabbit.imops", category: "BaustellenMeldung")
@@ -83,6 +84,24 @@ enum BaustellenMeldung {
             auftraege: auftraege,
             von: geraet
         )
+    }
+
+    /// Beim Wechsel in den Hintergrund: iOS um Zeit bitten, bis die Meldung raus ist.
+    /// Befund 10.10.2026 (Box-Log): die App holte bei jedem Zurückkommen Entwürfe ab, meldete
+    /// ihre Baustellen aber seit 13:35 nicht mehr – sie wurde eingefroren, bevor der Request rausging.
+    @MainActor
+    static func meldeImHintergrund(context: NSManagedObjectContext) {
+        var aufgabe: UIBackgroundTaskIdentifier = .invalid
+        aufgabe = UIApplication.shared.beginBackgroundTask(withName: "BaustellenMeldung") {
+            UIApplication.shared.endBackgroundTask(aufgabe)
+            aufgabe = .invalid
+        }
+        Task {
+            await meldeAlle(context: context)
+            await MainActor.run {
+                if aufgabe != .invalid { UIApplication.shared.endBackgroundTask(aufgabe); aufgabe = .invalid }
+            }
+        }
     }
 
     /// Alle Baustellen melden. Leise: ohne Schlüssel oder ohne Netz passiert nichts Sichtbares.
