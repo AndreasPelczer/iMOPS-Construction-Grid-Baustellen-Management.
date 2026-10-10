@@ -31,6 +31,10 @@ struct EmployeeDetailView: View {
                     jobsCard
                 }
 
+                if let name = employee.name, !name.isEmpty {
+                    AbwesenheitCard(name: name)
+                }
+
                 if !(employee.notiz ?? "").isEmpty || isEditing {
                     notizCard
                 }

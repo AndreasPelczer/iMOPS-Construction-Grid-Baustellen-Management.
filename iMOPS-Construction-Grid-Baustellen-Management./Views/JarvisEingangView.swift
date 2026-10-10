@@ -158,6 +158,7 @@ struct JarvisEntwurfView: View {
         switch s.art {
         case "baustelle": return "Baustelle \(s.felder["name"] ?? "")"
         case "termin": return s.felder["titel"] ?? "Termin"
+        case "abwesenheit": return "\(s.felder["art"] == "abwesend" ? "Abwesend" : "Urlaub"): \(s.felder["name"] ?? "")"
         default: return "Canvas der Baustelle öffnen"
         }
     }
@@ -174,15 +175,32 @@ struct JarvisEntwurfView: View {
             guard let t = JarvisEingang.termin(s.felder) else { return "Tag fehlt" }
             return t.ganztags ? "\(t.start.formatted(.dateTime.weekday(.wide).day().month().year())) · Uhrzeit offen"
                               : t.start.formatted(.dateTime.weekday(.wide).day().month().year().hour().minute())
+        case "abwesenheit":
+            guard let a = abwesenheit(s) else { return "Zeitraum fehlt" }
+            return a.zeitraum + (mitarbeiterBekannt(a.name) ? "" : " · ⚠ „\(a.name)“ steht nicht in der Mitarbeiterliste")
         default:
             return angelegt == nil ? "geht, sobald die Baustelle angelegt ist" : "Baustelle ist da"
         }
+    }
+
+    private func abwesenheit(_ s: JarvisEingang.Schritt) -> Abwesenheit? {
+        guard let name = s.felder["name"], !name.isEmpty,
+              let von = s.felder["von"].flatMap(JarvisEingang.tag), let bis = s.felder["bis"].flatMap(JarvisEingang.tag) else { return nil }
+        return Abwesenheit(name: name, von: von, bis: max(bis, von), art: s.felder["art"] == "abwesend" ? .abwesend : .urlaub)
+    }
+
+    /// Der Name ist der Schlüssel (wie `Auftrag.employeeName`) – ein Tippfehler fände nie einen Auftrag.
+    private func mitarbeiterBekannt(_ name: String) -> Bool {
+        let req = NSFetchRequest<Employee>(entityName: "Employee")
+        req.predicate = NSPredicate(format: "name ==[c] %@", name)
+        return ((try? viewContext.count(for: req)) ?? 0) > 0
     }
 
     private func knopf(_ s: JarvisEingang.Schritt) -> String {
         switch s.art {
         case "baustelle": return "Im Planer öffnen"
         case "termin": return "In den Kalender"
+        case "abwesenheit": return "Eintragen"
         default: return "Canvas öffnen"
         }
     }
@@ -191,6 +209,10 @@ struct JarvisEntwurfView: View {
         switch s.art {
         case "baustelle": zeigePlaner = true
         case "termin": zeigeTermin = true
+        case "abwesenheit":
+            guard let a = abwesenheit(s) else { hinweis = "Zeitraum fehlt – so kann ich es nicht eintragen."; return }
+            AbwesenheitenStore.shared.hinzu(a)   // doppelt übernommen bleibt ein Eintrag
+            quittiere(s, "uebernommen")
         default:
             zeigeCanvas = true
             quittiere(s, "uebernommen")

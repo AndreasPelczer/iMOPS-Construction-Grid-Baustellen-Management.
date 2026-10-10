@@ -141,5 +141,6 @@ enum BaustellenMeldung {
                 logger.info("Meldung \(m.id, privacy: .public) nicht angekommen: \(error.localizedDescription, privacy: .public)")
             }
         }
+        await AbwesenheitenStore.shared.melde()   // gleicher Takt: wer nicht da ist, gehört zum Stand
     }
 }

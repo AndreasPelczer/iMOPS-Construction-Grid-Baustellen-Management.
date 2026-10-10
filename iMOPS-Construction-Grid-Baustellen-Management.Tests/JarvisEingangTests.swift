@@ -104,3 +104,33 @@ struct JarvisEingangTests {
         #expect(b.zustand == "offen")   // der Zustand selbst bleibt der der Box
     }
 }
+
+struct AbwesenheitenTests {
+    private func store() -> AbwesenheitenStore {
+        AbwesenheitenStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("abw-\(UUID().uuidString).json"))
+    }
+
+    @Test func doppeltUebernommenBleibtEinEintrag() {
+        let s = store()
+        let a = Abwesenheit(name: "Paolo", von: Date(), bis: Date().addingTimeInterval(4 * 86_400))
+        s.hinzu(a)
+        s.hinzu(Abwesenheit(name: "paolo", von: a.von, bis: a.bis))
+        #expect(s.von("Paolo").count == 1)
+    }
+
+    @Test func meldungKenntKeinenGrund() throws {
+        let s = store()
+        s.hinzu(Abwesenheit(name: "Tim", von: Date(), bis: Date(), art: .abwesend))
+        let daten = try #require(s.meldung())
+        let obj = try #require(try JSONSerialization.jsonObject(with: daten) as? [String: Any])
+        let e = try #require((obj["eintraege"] as? [[String: String]])?.first)
+        #expect(Set(e.keys) == ["name", "von", "bis", "art"])
+        #expect(e["art"] == "abwesend")
+    }
+
+    @Test func ueberlebtNeustart() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("abw-\(UUID().uuidString).json")
+        AbwesenheitenStore(fileURL: url).hinzu(Abwesenheit(name: "Paolo", von: Date(), bis: Date()))
+        #expect(AbwesenheitenStore(fileURL: url).von("Paolo").count == 1)
+    }
+}
