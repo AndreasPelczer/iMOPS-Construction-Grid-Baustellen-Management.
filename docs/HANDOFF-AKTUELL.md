@@ -37,7 +37,22 @@ Adresse, keine Notizen (Test prüft das). Ohne Mops-Schlüssel (Einstellungen �
   trotzdem grün**. Behoben: `JarvisEingang.Antwort` unterscheidet angekommen /
   abgelehnt (→ Stand der Box holen und zeigen) / nicht erreicht. Neben einem Knopf,
   der noch nicht geht, steht kein „Verwerfen“ mehr.
-- Tests: `JarvisEingangTests` (7) + `BaustellenMeldungTests` (4) + `ProjektGeneratorTests` → 17/17.
+- Tests: `JarvisEingangTests` (8) + `BaustellenMeldungTests` (4) + `ProjektGeneratorTests` → 18/18.
+
+> 🔴 **Regel daraus (für JEDEN Bildschirm, der mit der Box redet):** Der Zustand wird nie
+> lokal erfunden. Er kommt immer von der Box. Kam eine Quittung nicht an, wird sie gemerkt
+> (`JarvisEingang.ausstehend`, UserDefaults) und beim nächsten Öffnen nachgeschickt; bis
+> dahin zeigt der Schritt orange „hier erledigt – die Box weiß es noch nicht", nie grün.
+> (Optimistische Anzeige – derselbe Fehler taucht sonst im nächsten Bildschirm wieder auf.)
+> Termin: abgebrochener Kalenderdialog quittiert NICHTS (`action == .saved`).
+
+**Bekannte Einschränkung:** die App meldet ihre Baustellen nur beim Verlassen (Hintergrund).
+„Warum sieht Jarvis meine Baustelle nicht?" → kurz aus iMOPS raus und wieder rein. Jarvis
+sagt in der Baustellen-Tür selbst „Zuletzt gemeldet: vor … Minuten".
+
+**Noch nicht durchgespielt (5 Minuten Unfug, Chat-Claude):** absichtlich falsch auf
+„Verwerfen", Kalender abbrechen, App mitten im Schritt in den Hintergrund, WLAN aus
+zwischen Schritt 2 und 3, zweimal schnell auf denselben Knopf.
 
 **Gebaut/getestet im Worktree** `$TMPDIR/wt-imops`, Simulator iPad Pro 13 (M5).
 Schlüssel im Simulator gesetzt per `simctl spawn … defaults write … mops_schluessel`.

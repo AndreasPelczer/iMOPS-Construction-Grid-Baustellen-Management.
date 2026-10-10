@@ -89,4 +89,18 @@ struct JarvisEingangTests {
         #expect(event.eventStartTime == start)
         #expect((event.eventEndTime ?? .distantPast) > start)
     }
+
+    @Test func nichtAngekommeneQuittungWirdGemerktNichtGruenGemalt() throws {
+        let vorher = JarvisEingang.ausstehend
+        defer { JarvisEingang.ausstehend = vorher }
+        let e = try entwurf()
+        let b = try #require(e.baustelle)
+        JarvisEingang.ausstehend = []
+        #expect(!JarvisEingang.istAusstehend(e, b))
+        JarvisEingang.merke(.init(entwurf: e.id, schritt: b.nr, zustand: "uebernommen", baustelleID: "HK-1"))
+        JarvisEingang.merke(.init(entwurf: e.id, schritt: b.nr, zustand: "uebernommen", baustelleID: "HK-1"))   // doppelt getippt
+        #expect(JarvisEingang.istAusstehend(e, b))
+        #expect(JarvisEingang.ausstehend.count == 1)
+        #expect(b.zustand == "offen")   // der Zustand selbst bleibt der der Box
+    }
 }

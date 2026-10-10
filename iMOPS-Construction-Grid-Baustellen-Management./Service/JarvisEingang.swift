@@ -134,7 +134,50 @@ enum JarvisEingang {
         return r
     }
 
+    // MARK: - Ausstehende Quittungen
+    //
+    // Regel (10.10., Chat-Claude): der Zustand wird nie lokal erfunden, er kommt von der Box.
+    // Aber was HIER passiert ist (Baustelle angelegt), ist passiert – kam die Quittung nicht an,
+    // merkt sich die App sie und schickt sie nach. Sonst stünde „Baustelle Müller" beim nächsten
+    // Öffnen wieder offen da und würde doppelt angelegt.
+
+    struct Ausstehend: Codable, Equatable {
+        var entwurf: String
+        var schritt: Int
+        var zustand: String
+        var baustelleID: String
+    }
+
+    private static let ausstehendKey = "jarvis_ausstehende_quittungen"
+
+    static var ausstehend: [Ausstehend] {
+        get { UserDefaults.standard.data(forKey: ausstehendKey).flatMap { try? JSONDecoder().decode([Ausstehend].self, from: $0) } ?? [] }
+        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: ausstehendKey) }
+    }
+
+    static func istAusstehend(_ e: Entwurf, _ s: Schritt) -> Bool {
+        ausstehend.contains { $0.entwurf == e.id && $0.schritt == s.nr }
+    }
+
+    static func merke(_ a: Ausstehend) {
+        var liste = ausstehend.filter { !($0.entwurf == a.entwurf && $0.schritt == a.schritt) }
+        liste.append(a)
+        ausstehend = liste
+    }
+
+    /// Ausstehende nachschicken. Angekommen ODER abgelehnt (Box hat eigenen Stand) → aus der Liste.
+    static func nachschicken() async {
+        for a in ausstehend {
+            let body = try? JSONEncoder().encode(["zustand": a.zustand, "baustelle_id": a.baustelleID, "von": "iMOPS-App"])
+            switch await senden(anfrage("/entwuerfe/\(a.entwurf)/schritt/\(a.schritt)", methode: "POST", body: body), id: a.entwurf) {
+            case .angekommen, .abgelehnt: ausstehend = ausstehend.filter { $0 != a }
+            case .nichtErreicht: return
+            }
+        }
+    }
+
     static func offene() async -> [Entwurf] {
+        await nachschicken()
         guard let r = anfrage("/entwuerfe?zustand=offen") else { return [] }
         do {
             let (daten, antwort) = try await URLSession.shared.data(for: r)

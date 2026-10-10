@@ -61,6 +61,7 @@ struct JarvisEntwurfView: View {
     @State private var angelegt: Event?
     @State private var zeigeCanvas = false
     @State private var hinweis: String?
+    @State private var ausstehendStand = 0   // neu zeichnen, wenn eine Quittung zum Nachschicken dazukam
 
     var body: some View {
         NavigationStack {
@@ -123,14 +124,17 @@ struct JarvisEntwurfView: View {
 
     @ViewBuilder
     private func zeile(_ s: JarvisEingang.Schritt) -> some View {
+        let wartet = s.offen && ausstehendStand >= 0 && JarvisEingang.istAusstehend(entwurf, s)
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: s.zustand == "uebernommen" ? "checkmark.circle.fill" : s.zustand == "verworfen" ? "xmark.circle" : "circle")
-                .foregroundStyle(s.zustand == "uebernommen" ? .green : .secondary)
+            Image(systemName: wartet ? "clock.badge.exclamationmark" : s.zustand == "uebernommen" ? "checkmark.circle.fill" : s.zustand == "verworfen" ? "xmark.circle" : "circle")
+                .foregroundStyle(wartet ? .orange : s.zustand == "uebernommen" ? .green : .secondary)
                 .font(.title3)
             VStack(alignment: .leading, spacing: 4) {
                 Text(titel(s)).font(.body.weight(.semibold))
                 Text(details(s)).font(.caption).foregroundStyle(.secondary)
-                if s.offen {
+                if wartet {
+                    Text("hier erledigt – die Box weiß es noch nicht").font(.caption2).foregroundStyle(.orange)
+                } else if s.offen {
                     HStack {
                         Button(knopf(s)) { ausfuehren(s) }
                             .buttonStyle(.borderedProminent)
@@ -195,7 +199,10 @@ struct JarvisEntwurfView: View {
 
     /// Wurde die Baustelle schon früher übernommen (anderes Öffnen), sie wiederfinden – sonst ginge der Canvas nie auf.
     private func angelegtSuchen() {
-        guard angelegt == nil, let bid = entwurf.baustelle?.baustelle_id, !bid.isEmpty else { return }
+        let vonBox = entwurf.baustelle?.baustelle_id ?? ""
+        let gemerkt = JarvisEingang.ausstehend.first { $0.entwurf == entwurf.id && $0.schritt == entwurf.baustelle?.nr }?.baustelleID ?? ""
+        let bid = vonBox.isEmpty ? gemerkt : vonBox
+        guard angelegt == nil, !bid.isEmpty else { return }
         let req = NSFetchRequest<Event>(entityName: "Event")
         req.predicate = NSPredicate(format: "eventNumber == %@", bid)
         req.fetchLimit = 1
@@ -226,9 +233,10 @@ struct JarvisEntwurfView: View {
                 if let box { entwurf = box }
                 hinweis = "„\(titel(s))“ war auf der Box schon erledigt – so steht es dort."
             case .nichtErreicht:
-                // Passiert ist es hier trotzdem (z. B. Baustelle angelegt) – zeigen, aber sagen, dass die Box es nicht weiß.
-                if let i = entwurf.schritte.firstIndex(where: { $0.nr == s.nr }) { entwurf.schritte[i].zustand = zustand }
-                hinweis = "Box nicht erreicht – der Entwurf kann beim nächsten Öffnen wieder auftauchen."
+                // Kein Grün erfinden. Passiert ist es hier trotzdem – merken und nachschicken.
+                JarvisEingang.merke(.init(entwurf: entwurf.id, schritt: s.nr, zustand: zustand, baustelleID: baustelleID))
+                ausstehendStand += 1
+                hinweis = "Box nicht erreicht – die Quittung wird nachgeschickt, sobald sie wieder da ist."
             }
         }
     }
