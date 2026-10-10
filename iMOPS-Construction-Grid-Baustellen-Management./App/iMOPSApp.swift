@@ -56,6 +56,13 @@ struct iMOPSApp: App {
                     MopsAblage.synchronisiereBaustellen(baustellenNamen)
                 }
                 .onReceive(
+                    NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
+                ) { _ in
+                    // Die Brücke: Stand der Baustellen an die Box melden (nur mit Mops-Schlüssel, leise).
+                    let ctx = persistence.container.viewContext
+                    Task { await BaustellenMeldung.meldeAlle(context: ctx) }
+                }
+                .onReceive(
                     NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
                 ) { _ in
                     NotificationService.shared.updateBadge(context: persistence.container.viewContext)

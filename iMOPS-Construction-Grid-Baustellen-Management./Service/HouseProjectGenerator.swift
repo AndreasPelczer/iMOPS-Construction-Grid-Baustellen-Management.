@@ -1049,6 +1049,16 @@ enum HouseProjectGenerator {
             var jobExtras = AuftragExtrasPayload()
             jobExtras.gewerk = gewerk
 
+            // Dauer und Termin aus den Bauphasen desselben Gewerks (10.10.2026): vorher kamen die
+            // Aufträge mit Dauer 0 und ohne Termin an – „Was steht heute an?" hatte nichts zu lesen.
+            let eigenePhasen = result.phasen.filter { $0.gewerk == gewerk }
+            if !eigenePhasen.isEmpty {
+                job.dauerTage = Double(eigenePhasen.reduce(0) { $0 + $1.dauerWochen } * 5)   // Arbeitstage
+                if let ende = eigenePhasen.map(\.endeWoche).max() {
+                    jobExtras.deadline = cal.date(byAdding: .weekOfYear, value: ende, to: now)
+                }
+            }
+
             // Checkliste aus der passenden Vorlage vorausfuellen (schrittweiser Modus):
             // z. B. Gewerk "Pflaster"/"Unterbau"/"Randeinfassung" -> die Arbeitsschritte
             // stehen sofort im Auftrag, ohne dass man die Vorlage von Hand waehlen muss.

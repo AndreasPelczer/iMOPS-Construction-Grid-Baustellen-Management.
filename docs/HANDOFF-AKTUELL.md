@@ -2,6 +2,11 @@
 
 > Zeigt den letzten Stand. Bei App-Arbeit zuerst hier lesen, dann `rg`, dann bauen.
 
+> **🎯 Wohin das Ganze geht:** `docs/NORDSTERN-DIE-KETTE.md` — die zehn Glieder von
+> „LV rein" bis „Nachweis", wo der Bruch liegt (zwischen 6 und 7: Schreibtisch/Apple
+> gegen Baustelle/Android) und was der nächste Teilsieg ist: **ein Auftrag, einmal
+> ganz durch, ohne dass jemand den Bautagesbericht getippt hat.**
+
 ## Delta 21.09.2026 (Abschluss) — 35 Commits, Branch GEPUSHT
 
 `feature/gelaende-dxf-aushub` steht auf GitHub (`6e39040`) und liegt auch auf
@@ -29,6 +34,73 @@ echten DB gemessen: `startTime` leer, `lastStartTime` bei allen 34 Aufträgen le
 „Wo war ich?" konnte seine Frage nie beantworten), Meldungen führen auf EIN Ding und
 verschwinden live (`NSManagedObjectContextObjectsDidChange`), Einzahl/Mehrzahl,
 **`docs/WESEN-DES-MOPS.md`** (Ton-Doktrin, aus der Pflichtspur verlinkt).
+
+## 🧭 Der Mopsmotor — HACCP und ISO 9001 als Rahmen
+
+Andreas, 22.09.: *„Ist doch alles HACCP. Und das kann der Mops, das ist seine DNA und
+DIN ISO 9001. Das ist der Mopsmotor."* Er erinnert sich richtig — es steht schon im
+Code: `KernelArbeitsschritt.abgenommen` = „HACCP-versiegelt", dazu `pinsMedical` und
+`pinsSOP`. Aus 36 Jahren Küche.
+
+Die sieben HACCP-Grundsätze sitzen schon fast alle im Mops: Kontrollpunkte (Abnahme,
+Nachweispunkte), Überwachung (Abhaken + Foto), Korrekturmassnahmen (`Uebergehung` mit
+Unterschrift), **Verifizierung** (`SonderfallBuch` zählt: 3× erklärt = eine Regel
+fehlt) und Dokumentation (`gesperrtAm`, `korrigiertVonID`). Was fehlt, ist vor allem
+Grundsatz 1: die Gefahrenanalyse — also Kataloge, die sagen, was schiefgehen kann.
+
+🔴 **Und daraus der Unterschied, der den Ton bestimmt:** ein von mir geratener Katalog
+(`trennlinien.yaml`) ist ein Vorschlag. Eine Norm ist es nicht. „Ohne Sicherheitsventil
+darf der Speicher nicht in Betrieb gehen (DIN 4753)" steht, bis es erledigt oder
+unterschrieben ist. Die Form dafür gibt es: `din_normen.yaml` (25 Einträge) mit der
+Lizenzregel im Kopf — Sachverhalte ja, Norm-Wortlaut nein (Beuth).
+
+Details: Memory `mopsmotor-haccp-9001.md`.
+
+## 💡 Der Boiler-Fall — und was er über die Grenze des Mops sagt
+
+Andreas, 22.09.: Bei einem Bekannten wurde ein Boiler eingebaut, der Installateur
+vergass **Überdruckventil und Fuss**. 6.000 € Schaden, zwei Gutachter plus einer von
+der Boilerfirma. *„Die brauchen den Mops. 50 Euro Software, schrittweise abhaken —
+nichts wäre passiert. **Wenn der Planer ihn eingetragen hat.**"*
+
+🔴 **Der Nachsatz ist der Kern.** Der Mops erinnert nur an das, was jemand
+hineingeschrieben hat. Gemessen: in `Resources/Knowledge/` steht **null** über Boiler,
+Warmwasserspeicher, Sicherheitsventile, DIN 4753. Ein Werkzeug gegen Vergessen, das
+selbst nur weiss was man ihm sagt, hilft gegen Schlamperei — nicht gegen Unwissen.
+
+**Vorschlag: ein Pflichtteile-Katalog** (wie `wartezeiten.yaml`, `gefahrstoffe.yaml`):
+je Leistung die Bauteile, die nicht fehlen dürfen, mit Norm und Begründung. Dann
+meldet der Mops beim Schritte-Holen: „Für diese Arbeit sind 4 Pflichtteile hinterlegt,
+zwei kommen in deinen Schritten nicht vor" — dieselbe Mechanik wie
+`SchrittPassung.ohneSchritt`, nur gegen einen Katalog statt gegen das LV.
+Raphi müsste ihn gegenlesen; ein erfundener Pflichtteil ist schlimmer als keiner.
+
+**Und die Kehrseite:** Der Mops darf nie den Eindruck erwecken, er habe GEPRÜFT.
+Er erinnert, zählt und zeigt Lücken — die Verantwortung bleibt bei dem, der
+unterschreibt. (`docs/WESEN-DES-MOPS.md`, Regeln 7 und 8.)
+
+Details in der Memory: `boiler-fall-pflichtteile.md`.
+
+## 💡 Idee vom 22.09. (Gespräch, noch nichts gebaut): Whatsmops
+
+**Der Baustellen-Chat IST der Bautagesbericht.** Andreas' Idee für die Leute ohne
+Apple-Gerät. Ausführlich in der Memory `chatmops-bautagesbericht.md`. Kurz:
+
+- **WebApp statt App** — Fremdfirmen und Arbeiter haben 70-Euro-Androids.
+  🔴 Kein React dafür: das Grap8Web-Bundle ist 388 KB, die Rollen-Mockups 8–11 KB.
+- **Der Chat füllt den Bautagesbericht.** Er hat 18 Felder und wird heute komplett
+  von Hand getippt; aus Häkchen, Fotos und Chat kämen `ausgefuehrteArbeiten`,
+  `behinderungen` (= Nachtragsgrundlage!), `personalAnzahl`, `geraete`; Wetter
+  holt der `WetterService` schon. Der Polier tippt nichts mehr, er gibt frei.
+- **Der Mops chattet mit** — aber nur, wenn er etwas WEISS („fertig" ohne Foto,
+  etwas läuft seit Tagen ohne Meldung). Einmal fragen, nicht dreimal. Keine
+  Antwort ist auch ein Zustand.
+- 🔴 **Chat = Rohstoff, Bericht = einmal und freigegeben**, danach gesperrt
+  (`gesperrtAm`/`freigegebenVon`/`korrigiertVonID` stehen im Modell bereit).
+- 🔴 **Fremdfirmen:** Faden am Nachweispunkt, nie an der Ausführung — sonst Weisung
+  und damit Scheinselbständigkeit.
+- **Zugang:** Link per WhatsApp (trägt das Geheimnis) + 4-stelliger PIN (sagt, wer).
+  `Employee.pin` gibt es schon.
 
 ## 📋 Vormittag 22.09. — Trennlinien, Löschen, Importe, Sammelaktionen
 

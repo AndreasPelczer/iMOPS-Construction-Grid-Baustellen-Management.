@@ -11,6 +11,7 @@ struct SettingsView: View {
 
     // Mops-Server-URL (LAN-IP oder Cloudflare-Tunnel)
     @AppStorage(MopsConfig.Keys.baseURL) private var mopsBaseURL: String = MopsConfig.defaultHost
+    @AppStorage(BaustellenMeldung.schluesselKey) private var mopsSchluessel: String = ""   // Die Brücke: ohne Schlüssel meldet die App nichts
     @State private var mopsServerStatus: String = ""
     @State private var isCheckingMops = false
 
@@ -462,6 +463,10 @@ struct SettingsView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.URL)
+
+                SecureField("Mops-Schlüssel (Baustellen an die Box melden)", text: $mopsSchluessel)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
 
                 HStack {
                     Button("Standard wiederherstellen") {
