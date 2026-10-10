@@ -7,6 +7,32 @@
 > gegen Baustelle/Android) und was der nächste Teilsieg ist: **ein Auftrag, einmal
 > ganz durch, ohne dass jemand den Bautagesbericht getippt hat.**
 
+## Delta 10.10.2026 (Abend) — Canvas im Browser, Urlaub, Preis-Vorschau
+
+Alles gemergt auf main: #212 (Meldung zuverlässig), #213 (Doku), #214, #215, #216.
+
+- **#214 – Canvas-Graph in der Meldung:** `BaustellenMeldung.koerper(_:graph:)` hängt den
+  `Grap8Graph` an `POST /baustellen/stand` (kein Bauherr/keine Adresse – Test). Jarvis zeigt
+  damit die echte Leinwand im Browser: `http://<nipogi>:8090/canvas/?baustelle=HK-…` (nur Ansicht).
+  Die Leinwand-Quelle ist jetzt ein Repo: **`AndreasPelczer/grap8-canvas`** (privat, `~/Projekte/grap8-canvas`);
+  sie hat einen dritten Weg `?baustelle=` (holt `/api/canvas/<id>` von Jarvis). `Grap8Web/` in der App ist
+  noch das alte Bundle – beim nächsten Neubau aus dem Repo übernehmen, die iPad-Brücke ist unverändert.
+- **#215 – Abwesenheiten:** `Service/Abwesenheiten.swift` (`AbwesenheitenStore`, JSON wie `LagerStore`,
+  Schlüssel = Name wie `Auftrag.employeeName`) + `Views/AbwesenheitCard.swift` beim Mitarbeiter („Nicht da“).
+  🔒 nur Urlaub/abwesend, kein Grund. Jarvis-Entwurfsschritt `abwesenheit` („Paolo hat Urlaub vom 20. bis
+  24.10.“) mit ⚠ wenn der Name nicht in der Mitarbeiterliste steht. Geht im Takt der Meldung an die Box;
+  Jarvis' Tür „Mitarbeiter“ = Wochenblick (wer ist wann wo, 🏖, „im Urlaub, aber eingeteilt“).
+- **#216 – Preis-Import erst zeigen, dann speichern:** `StammdatenPreisImportService.vorschau` rechnet in
+  einem Kind-Kontext, der nie gespeichert wird; „Verwerfen / Übernehmen“; ⚠ bei Sprung > 30 %
+  (Komma-Fehler). Erster Baustein der Mail→Stammdaten-Rohrleitung.
+
+**Der „iMOPS“-Ordner ist jetzt eine Samba-Freigabe auf der Box** (`smb://mops-box/imops`, nur über Tailscale),
+nicht mehr iCloud. 🔴 Offen: `Service/MopsAblage.swift` legt die Baustellen-Ordner noch im iCloud-Container an –
+Umstellung auf die Freigabe ist ein eigener Schritt (bis dahin landen App-Ordner und Freigabe auseinander).
+Mails an `mops@baumops.com` landen mit ihren Anhängen in der Freigabe unter `_Firma/Eingang` (mops-api #82).
+
+**Offen hier:** Excel-Preislisten (xlsx) im Import mit Spaltenzuordnung je Lieferant – Sonntagabend mit echter Liste.
+
 ## Delta 10.10.2026 — die Brücke: Baustellen an die Box, Entwürfe von Jarvis zurück
 
 **Zwei PRs, gepusht, NICHT gemergt:** #210 (`feature/bruecke-baustellen-melden`) und
