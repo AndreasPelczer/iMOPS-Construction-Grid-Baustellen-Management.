@@ -48,7 +48,8 @@ struct ProjektGeneratorTests {
 
         #expect(r.project.projektName == "Hofeinfahrt pflastern")
         // Wenige, aber vorhandene Positionen — die vier Reiter haben Inhalt.
-        #expect(r.massen.count == 6)
+        // 5: beim heutigen Aufbau (12 cm Schotter) reicht der Mutterbodenabtrag – kein Aushub darunter (11.10.2026)
+        #expect(r.massen.count == (HofeinfahrtVorlage.aufbauTiefe > HofeinfahrtVorlage.mutterbodenDicke + 0.005 ? 6 : 5))
         #expect(r.materialien.count == 4)
         #expect(r.phasen.count == 4)
         #expect(r.baukosten.gesamtBaukosten > 0)
@@ -118,5 +119,24 @@ struct GrundplanungNachTypTests {
     @Test func hausRechnetWieBisher() {
         let haus = HouseProject()
         #expect(abs(ProjektGenerator.neuBerechnen(haus).gesamtkosten - HouseProjectGenerator.generate(from: haus).gesamtkosten) < 0.01)
+    }
+}
+
+// MARK: - Befund 11.10.2026: ausgehoben = eingebaut (vorher 65 cm raus, 25 cm rein)
+
+struct HofeinfahrtMengenTests {
+    @Test func ausgehobenGleichEingebaut() {
+        let r = HofeinfahrtVorlage.generiere(flaeche: 100)
+        let raus = r.massen.filter { $0.gewerk == "Erdarbeiten" && $0.einheit == "m³" }.reduce(0) { $0 + $1.menge }
+        let rein = HofeinfahrtVorlage.aufbauTiefe * 100
+        #expect(abs(raus - rein) < 1)
+    }
+
+    @Test func mutterbodenKommtGanzRaus() {
+        // Aufbau dünner als die Mutterbodenschicht → Schotter füllt auf, kein Mutterboden bleibt liegen.
+        #expect(HofeinfahrtVorlage.aufbauTiefe >= HofeinfahrtVorlage.mutterbodenDicke - 0.0001)
+        let r = HofeinfahrtVorlage.generiere(flaeche: 100)
+        let schotter = r.materialien.first { $0.titel.hasPrefix("Schotter") }?.menge ?? 0
+        #expect(abs(schotter - HofeinfahrtVorlage.schotterEinbau * 100) < 1)
     }
 }

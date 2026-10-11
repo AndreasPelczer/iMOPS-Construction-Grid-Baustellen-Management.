@@ -178,3 +178,32 @@ struct StammdatenPreisImportTests {
         #expect(!PreisImportBericht.Aenderung(name: "x", alt: 12.40, neu: 13.10, einheit: "Stk").auffaellig)
     }
 }
+
+// MARK: - Riegel 11.10.2026: fremdes Format wird nicht still als Material übernommen
+
+struct PreisImportFremdesFormatTests {
+    private let controller = PersistenceController(inMemory: true)
+
+    /// Aufbau wie eine Recycling-Liste (Kategorie;Material;Körnung;…) – Werte erfunden.
+    private let fremd = """
+    Kategorie;Material;Koernung;Listenpreis;Firmenpreis;Einheit
+    Recycling;RC-Schotter;0/16;9,00;7,00;t
+    Recycling;RC-Schotter;0/32;8,00;6,00;t
+    """
+
+    @Test @MainActor
+    func unbekannterTypWirdNichtUebernommen() {
+        let ctx = controller.container.viewContext
+        let b = StammdatenPreisImportService.shared.vorschau(csv: fremd, in: ctx)
+        #expect(b.landetGesamt == 0)          // keine „0/16“-Einheit in den Stammdaten
+        #expect(b.fremdesFormat == 3)         // Kopfzeile zählt mit – sie ist keine erkannte Kopfzeile
+        #expect(b.uebersprungen.contains { $0.contains("unbekannter Typ") })
+    }
+
+    @Test @MainActor
+    func leererTypBleibtMaterial() {
+        let ctx = controller.container.viewContext
+        let b = StammdatenPreisImportService.shared.vorschau(csv: ";Kantenschutz;m;2,50;Markt", in: ctx)
+        #expect(b.neuMaterial == ["Kantenschutz"] && b.fremdesFormat == 0)
+    }
+}

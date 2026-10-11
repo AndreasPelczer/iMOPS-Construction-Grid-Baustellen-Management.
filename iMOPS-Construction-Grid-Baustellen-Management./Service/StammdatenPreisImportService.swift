@@ -23,7 +23,11 @@ import CoreData
 //   leistung;Baustelle einrichten;pau;1921,72;Firma-Katalog
 //   geraet;Bagger 9to;Std;45,60;Firma-Katalog
 // - typ: "material" -> KalkMaterial, "lohn" -> Lohnsatz, "leistung" -> Firma-Katalog,
-//   "geraet" -> Geraet (fester Std-Satz für die Auswahlliste). Fehlt/unklar -> material.
+//   "geraet" -> Geraet (fester Std-Satz für die Auswahlliste). Leer -> material.
+//   Ein ANDERER Typ wird NICHT übernommen (Riegel 11.10.2026): mit echten Listen geprüft –
+//   Vath (Kategorie;Material;Körnung;…) landete sonst mit „0/16“ als Einheit und dem
+//   Listen- statt Firmenpreis, BauSu (nummer;bezeichnung;li_preis;…) mit einem Preis als
+//   Einheit. Fremde Formate brauchen eine Spaltenzuordnung, kein stilles „wird schon Material sein“.
 // - lieferant ist optional und trägt die HERKUNFT der Zahl (Xella, Markt, dein Wert …).
 // - Eine Kopfzeile (beginnt mit "typ" oder enthält "name") wird erkannt und übersprungen.
 
@@ -55,6 +59,7 @@ struct PreisImportBericht: Identifiable {
     var unveraendertGeraet: [String] = []
     var uebersprungen: [String] = []      // Zeile + Grund
     var gesamtZeilen = 0
+    var fremdesFormat = 0                 // Zeilen mit unbekanntem Typ – Liste hat ein anderes Format
 
     var landetGesamt: Int {
         neuMaterial.count + aktualisiertMaterial.count + neuLohn.count + aktualisiertLohn.count
@@ -104,6 +109,9 @@ struct StammdatenPreisImportService {
         return b
     }
 
+    /// Leer = material (so war es immer). Alles andere ist ein fremdes Format.
+    static let bekannteTypen: Set<String> = ["", "material", "lohn", "leistung", "geraet", "gerät"]
+
     /// Aus CSV-Text importieren (testbar ohne Datei).
     func importiere(csv text: String, in ctx: NSManagedObjectContext, speichern: Bool = true) -> PreisImportBericht {
         var bericht = PreisImportBericht()
@@ -130,6 +138,11 @@ struct StammdatenPreisImportService {
             let preisText = spalten.count > 3 ? spalten[3] : ""
             let lieferant = spalten.count > 4 ? spalten[4] : ""
 
+            guard Self.bekannteTypen.contains(typ) else {
+                bericht.fremdesFormat += 1
+                bericht.uebersprungen.append("„\(zeile)“ — unbekannter Typ „\(spalten[0])“ (erwartet: material, lohn, leistung, geraet)")
+                continue
+            }
             guard !name.isEmpty else {
                 bericht.uebersprungen.append("„\(zeile)“ — kein Name")
                 continue

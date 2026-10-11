@@ -596,6 +596,10 @@ struct PreisImportBerichtView: View {
                                 Text("⚠ \(auffaellig) Preise springen um mehr als 30 % – Komma prüfen")
                                     .font(.caption.weight(.semibold)).foregroundStyle(.orange)
                             }
+                            if bericht.fremdesFormat > 0 {
+                                Text("⚠ \(bericht.fremdesFormat) Zeilen nicht übernommen – diese Liste hat ein anderes Format (erwartet: typ;name;einheit;preis;lieferant)")
+                                    .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                            }
                         }
                     }
                 }
