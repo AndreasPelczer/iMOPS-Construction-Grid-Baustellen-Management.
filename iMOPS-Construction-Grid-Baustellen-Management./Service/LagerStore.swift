@@ -278,6 +278,11 @@ final class LagerStore: ObservableObject {
         let d = LagerDaten(lagerorte: lagerorte, buchungen: buchungen, mindestbestaende: mindestbestaende)
         guard let raw = try? JSONEncoder().encode(d) else { return }
         try? raw.write(to: fileURL, options: .atomic)
+        // Nach jeder Buchung den Stand an die Box (LagerMeldung) – nur fürs echte Lager, nie aus Tests.
+        guard fileURL.lastPathComponent == "lager.json", let body = meldung(),
+              let schluessel = UserDefaults.standard.string(forKey: BaustellenMeldung.schluesselKey), !schluessel.isEmpty,
+              let url = URL(string: MopsConfig.host + "/lager/stand") else { return }
+        Task { await LagerStore.sende(body, an: url, schluessel: schluessel) }
     }
 }
 
