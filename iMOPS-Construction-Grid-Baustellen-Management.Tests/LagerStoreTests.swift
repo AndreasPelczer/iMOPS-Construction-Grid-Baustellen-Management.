@@ -26,6 +26,25 @@ struct LagerStoreTests {
         #expect(s.gesamtbestand(artikelCode: "SCH-032") == 7)
     }
 
+    /// Die Meldung an die Box: Bestand je Artikel und Ort, Meldebestand – keine Buchungen, keine Notizen.
+    @Test func meldungTraegtBestandUndOrteOhneBuchungen() throws {
+        let s = store()
+        let hof = s.addLagerort(name: "Hof")
+        s.eingang(artikelCode: "STW-995", name: "Stützwinkel 995", einheit: "Stk", menge: 12, lagerortID: hof.id, notiz: "Lieferschein 4711")
+        s.ausgang(artikelCode: "STW-995", name: "Stützwinkel 995", einheit: "Stk", menge: 2, lagerortID: hof.id, baustelle: "Muster")
+        s.setMindestbestand(artikelCode: "STW-995", schwelle: 4)
+        let json = try #require(s.meldung())
+        let d = try #require(try JSONSerialization.jsonObject(with: json) as? [String: Any])
+        let artikel = try #require(d["artikel"] as? [[String: Any]])
+        #expect(artikel.count == 1)
+        #expect(artikel[0]["code"] as? String == "STW-995")
+        #expect(artikel[0]["bestand"] as? Double == 10)
+        #expect(artikel[0]["mindestbestand"] as? Double == 4)
+        #expect((artikel[0]["orte"] as? [[String: Any]])?.first?["ort"] as? String == "Hof")
+        let text = String(decoding: json, as: UTF8.self)
+        #expect(!text.contains("4711") && !text.contains("Muster"))
+    }
+
     @Test func bestandGetrenntJeLagerort() {
         let s = store()
         let hof = s.addLagerort(name: "Hof")
