@@ -66,4 +66,24 @@ struct BaustellenMeldungTests {
         let text = String(decoding: koerper, as: UTF8.self)
         #expect(!text.contains("Mustermann") && !text.contains("Musterweg"))
     }
+
+    @Test func lvGehtMitUnterpunktZaehltNicht() throws {
+        // LV-Spiegel 16.10.: Positionen gehen mit, ein Unterpunkt (Beleg unter Deckel) zählt nicht in die Summe.
+        let event = testbaustelle()
+        let ctx = event.managedObjectContext!
+        let deckel = LVPosition(context: ctx)
+        deckel.posNr = "01.0010"; deckel.bezeichnung = "Testmauerwerk"; deckel.menge = 12; deckel.einheit = "m3"
+        deckel.event = event
+        let teil = LVPosition(context: ctx)
+        teil.posNr = "01.0010.1"; teil.bezeichnung = "Testbeleg"; teil.menge = 3; teil.einheit = "m3"
+        teil.event = event; teil.deckel = deckel
+        let m = BaustellenMeldung.meldung(fuer: event)
+        #expect(m.lv.map(\.pos_nr) == ["01.0010", "01.0010.1"])
+        #expect(m.lv.first { $0.pos_nr == "01.0010.1" }?.zaehlt == false)
+        #expect(m.lv.first?.menge == 12 && m.lv.first?.einheit == "m3")
+        #expect(m.lv.allSatisfy { $0.ep == 0 && $0.ep_quelle == "" })   // ohne Kalkulation kein erfundener Preis
+        #expect(m.lv_summe_netto == 0)
+        let json = String(data: try JSONEncoder().encode(m), encoding: .utf8) ?? ""
+        #expect(!json.contains("Mustermann") && json.contains("Testmauerwerk"))
+    }
 }

@@ -34,6 +34,21 @@ enum BaustellenMeldung {
         var mitarbeiter: String
     }
 
+    /// Eine LV-Zeile, wie die App sie gerechnet hat (16.10.2026, LV-Spiegel für den Büromops).
+    /// Der Büromops rechnet NICHT nach – er zeigt, was hier steht. EP kommt aus
+    /// `LVKalkulator.effektiverEP` (Angebot → kalkulierter VK → 0), derselbe Resolver wie PDF/CSV/GAEB.
+    struct LVZeile: Codable, Equatable {
+        var pos_nr: String
+        var text: String
+        var menge: Double
+        var einheit: String
+        var kg: String
+        var ep: Double
+        var gp: Double
+        var ep_quelle: String      // "angebot" | "kalkulation" | "" (noch kein Preis)
+        var zaehlt: Bool           // false = Unterpunkt unter einem Deckel / doppelte Bewehrung – nicht in der Summe
+    }
+
     struct Meldung: Codable, Equatable {
         var id: String
         var titel: String
@@ -43,6 +58,8 @@ enum BaustellenMeldung {
         var ende: String?
         var auftraege: [AuftragMeldung]
         var von: String
+        var lv: [LVZeile] = []
+        var lv_summe_netto: Double = 0
     }
 
     private static let tag: DateFormatter = {
@@ -74,6 +91,7 @@ enum BaustellenMeldung {
                 mitarbeiter: job.employeeName ?? ""
             )
         }
+        let (lv, summe) = lvZeilen(fuer: event)
         return Meldung(
             id: id(fuer: event),
             titel: event.title ?? "",
@@ -82,8 +100,30 @@ enum BaustellenMeldung {
             start: event.eventStartTime.map { tag.string(from: $0) },
             ende: event.eventEndTime.map { tag.string(from: $0) },
             auftraege: auftraege,
-            von: geraet
+            von: geraet,
+            lv: lv,
+            lv_summe_netto: summe
         )
+    }
+
+    /// Das LV der Baustelle als Spiegel: gleiche Preise, gleiche Zählregel wie die Exporte
+    /// (`zaehlbarePositionen()` – ohne Unterpunkte, doppelte Bewehrung einmal). Summe = nur was zählt.
+    static func lvZeilen(fuer event: Event, store: AngebotsStore = .shared) -> ([LVZeile], Double) {
+        let alle = (event.lvPositionen as? Set<LVPosition> ?? []).sorted { ($0.posNr ?? "") < ($1.posNr ?? "") }
+        let zaehlbar = Set(alle.zaehlbarePositionen().map(\.objectID))
+        var summe = 0.0
+        let zeilen = alle.map { p -> LVZeile in
+            let ep = LVKalkulator.effektiverEP(for: p, store: store)
+            let ausAngebot = (store.guenstigster(for: p.objectID.uriRepresentation().absoluteString)?.einzelpreis ?? 0) > 0
+            let zaehlt = zaehlbar.contains(p.objectID)
+            let gp = ep * p.menge
+            if zaehlt { summe += gp }
+            return LVZeile(pos_nr: p.posNr ?? "", text: String((p.bezeichnung ?? "").prefix(500)),
+                           menge: p.menge, einheit: p.einheit ?? "", kg: p.kostenGruppeNummer ?? "",
+                           ep: ep, gp: gp, ep_quelle: ep > 0 ? (ausAngebot ? "angebot" : "kalkulation") : "",
+                           zaehlt: zaehlt)
+        }
+        return (zeilen, summe)
     }
 
     /// Meldung + der Graph, den die App ohnehin für die Leinwand baut (`Grap8Graph`) –
